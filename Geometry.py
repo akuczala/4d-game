@@ -5,9 +5,20 @@ import numpy as np
 
 #a point is a vector
 Point = vec.Vec
-#a line is a length 2 tuple of points
-def Line(p1,p2):
-	return (p1,p2)
+#a line is a 2 tuple of points
+# def Line(p1,p2):
+# 	return (p1,p2)
+
+#or, a line is a class that encapsulates a 2-tuple, which comes with nice printing
+#somehow this supports iteration
+class Line():
+	def __init__(self,p1,p2):
+		self.points = (p1,p2)
+	def __getitem__(self,i):
+		return self.points[i]
+	def __str__(self):
+		return "Line(" + str(self.points[0]) + "," + str(self.points[1]) + ")"
+	__repr__ = __str__
 
 #apply function to each point in line
 def line_map(f,line,*args,**kwargs):
@@ -54,6 +65,7 @@ class Face:
 		return Face(self.edges.copy(),self.normal_ref.copy(),self.color) #color is a tuple and therefore immutable
 	def __str__(self):
 		return 'Face, edges ' + str(edges) + ', normal_ref= ' + str(normal_ref)
+	__repr__ = __str__
 	#return vertex indices included in face
 	def get_verts(self,shape):
 		return np.unique(np.array(shape.edges)[np.array(self.edges)].reshape(-1).astype(np.int))

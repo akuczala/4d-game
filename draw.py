@@ -15,8 +15,8 @@ z0 = 0
 
 #returns new list with instances of None removed
 #usually list comprehension will do this
-# def remove_None(some_list):
-#     return list(filter(None.__ne__,some_list))
+def remove_None(some_list):
+     return list(filter(None.__ne__,some_list))
 
 def to_screen(v2,scale,center):
     return v2*scale + center
@@ -126,24 +126,21 @@ class DrawOpenGL2D(Draw):
     def draw_lines(self,camera,lines,color):
         if len(lines) < 1:
             return
-        lines_rel = camera.transform(lines)
+
+        lines_rel = [line_map(camera.transform,line) for line in lines]
         #clip lines to front of camera (z>z0)
         #remove all lines that are completely clipped (for which clip_line_z0 returns None)
-        clipped_lines = [Clipping.clip_line_z0(line,z0,small_z)
-            for line in lines_rel if line is not None]
-        #clipped_lines = clipped_lines[clipped_lines[:,:,-1] >= 0]
-
+        clipped_lines = remove_None([Clipping.clip_line_z0(line,z0,small_z)
+            for line in lines_rel])
         #don't draw anything if there isn't anything to draw
         if len(clipped_lines) < 1:
             return
 
-        #clipped_lines = clipped_lines.reshape(clipped_lines.shape[0]//2,2,-1)
-
-        projected_lines = [line_map(self.project) for line in clipped_lines]
-
+        projected_lines = [line_map(self.project,line) for line in clipped_lines]
         #clip to viewing sphere
-        sphere_clipped_lines = [Clipping.clip_line_sphere(line,r=self.view_radius)
-            for line in projected_lines if line is not None]
+        sphere_clipped_lines = remove_None([
+            Clipping.clip_line_sphere(line,r=self.view_radius)
+            for line in projected_lines])
         if len(sphere_clipped_lines) < 1:
             return
 
@@ -151,6 +148,7 @@ class DrawOpenGL2D(Draw):
             self.draw_lines_2d(sphere_clipped_lines,color)
         except:
             print('problem drawing',sphere_clipped_lines)
+            raise
 
     def draw_points(self,camera,points,color):
         points_rel = camera.transform(points)
@@ -195,7 +193,7 @@ class DrawOpenGL2D(Draw):
         glBegin(GL_LINES)
         for line in lines:
             for point in line:
-                glVertex2f(*shift_scale_point(point))
+                glVertex2f(*self.shift_scale_point(point))
         glEnd()
 class DrawOpenGL3D(Draw):
     def __init__(self,pygame,size,draw_origin,focal=4,stereo=True):
@@ -225,7 +223,7 @@ class DrawOpenGL3D(Draw):
             for dorigin, angles in zip([self.stereo_sep,-self.stereo_sep],self.stereo_view_angles):
                 self.draw_bounding_sphere(self.draw_origin + dorigin, angles)
         else:
-            self.draw_bounding_sphere(self.draw_origin,self.stereo_view_angles)
+            self.draw_bounding_sphere(self.draw_origin,self.stereo_view_angles[0])
 
     def draw_bounding_sphere(self,draw_origin,draw_angles):   
         self.draw_circle_3d(self.view_radius,[0,1],GRAY,draw_origin = draw_origin, draw_angles = draw_angles)
@@ -278,41 +276,38 @@ class DrawOpenGL3D(Draw):
     def draw_lines(self,camera,lines,color):
         if len(lines) < 1:
             return
-        lines_rel = camera.transform(lines)
-        clipped_lines = np.vectorize(lambda line: Clipping.clip_line_z0(line,z0,small_z),
-                                     signature='(l,n)->(l,n)')(lines_rel)
-        #only draw if z > 0
-        clipped_lines = clipped_lines[clipped_lines[:,:,-1] >= 0]
+        lines_rel = [line_map(camera.transform,line) for line in lines]
+        #clip lines to front of camera (z>z0)
+        #remove all lines that are completely clipped (for which clip_line_z0 returns None)
+        clipped_lines = remove_None([Clipping.clip_line_z0(line,z0,small_z)
+            for line in lines_rel])
+        #don't draw anything if there isn't anything to draw
         if len(clipped_lines) < 1:
             return
-        clipped_lines = clipped_lines.reshape(clipped_lines.shape[0]//2,2,-1)
-        #print(clipped_lines.shape)
-        projected_lines = np.vectorize(self.project,signature='(n)->(m)')(clipped_lines)
+
+        projected_lines = [line_map(self.project,line) for line in clipped_lines]
         #clip projected lines to unit sphere
-        
-        # projected_lines = np.vectorize(lambda line: Clipping.clip_line_sphere(line,r=1.),
-        #                             signature = '(l,n)->(l,n)')(projected_lines)
-        sphere_clipped_lines = []
-        for i in range(len(projected_lines)):
-            line = Clipping.clip_line_sphere(projected_lines[i],r=self.view_radius)
-            if line is not None:
-                sphere_clipped_lines.append(line)
-        sphere_clipped_lines = np.array(sphere_clipped_lines)
+        sphere_clipped_lines = remove_None([
+            Clipping.clip_line_sphere(line,r=self.view_radius)
+            for line in projected_lines])
+        if len(sphere_clipped_lines) < 1:
+            return
 
         #remove lines with points outside of cube
         #print(projected_lines.shape)
         # projected_lines = projected_lines[projected_lines[:,:,0] < 1.]
-        #try:
-        if self.stereo:
-            self.draw_lines_3d(sphere_clipped_lines,color,
-                draw_origin=self.draw_origin + self.stereo_sep, draw_angles = self.stereo_view_angles[0])
-            self.draw_lines_3d(sphere_clipped_lines,color,
-                draw_origin=self.draw_origin - self.stereo_sep, draw_angles = self.stereo_view_angles[1])
-        else:
-            self.draw_lines_3d(sphere_clipped_lines,color,
-                draw_origin=self.draw_origin, draw_angles = self.view_angles)
-        #except:
-        #    print('problem drawing',projected_lines)
+        try:
+            if self.stereo:
+                self.draw_lines_3d(sphere_clipped_lines,color,
+                    draw_origin=self.draw_origin + self.stereo_sep, draw_angles = self.stereo_view_angles[0])
+                self.draw_lines_3d(sphere_clipped_lines,color,
+                    draw_origin=self.draw_origin - self.stereo_sep, draw_angles = self.stereo_view_angles[1])
+            else:
+                self.draw_lines_3d(sphere_clipped_lines,color,
+                    draw_origin=self.draw_origin, draw_angles = self.view_angles)
+        except:
+            print('problem drawing',projected_lines)
+            raise
     def draw_lines_3d(self,lines,color,line_width=2,draw_origin = None,draw_angles = [30,30]):
         if draw_origin is None:
             draw_origin = self.draw_origin
@@ -324,8 +319,9 @@ class DrawOpenGL3D(Draw):
         glColor3f(*color)
         glLineWidth(line_width)
         glBegin(GL_LINES)
-        for point in lines.reshape(-1,3):
-            glVertex3f(*point)
+        for line in lines:
+            for point in line:
+                glVertex3f(*point)
         glEnd()
     def draw_circle_3d(self,radius,axes,color,n_points=30,line_width = 2,draw_origin = None,draw_angles = [30,30]):
         if draw_origin is None:

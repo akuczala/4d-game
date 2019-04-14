@@ -20,6 +20,7 @@ class Camera:
 		self.clipping = True
 		self.cheld = False #this is a kludge for pressing a key once
 		self.update_rot_matrix(0,1,0)
+		self.enable_mouse = False
 	def update_rot_matrix(self,axis1,axis2,angle):
 		#rows of the frame are the vectors. so to transform the frame, we multiply on the right
 		R = vec.rotation_matrix(self.frame[axis1],self.frame[axis2],angle)
@@ -134,28 +135,29 @@ class Camera:
 		#dmx, dmy = pygame.mouse.get_rel()
 		#mx, my = pygame.mouse.get_pos() #accesses state; mouse may not be moving RIGHT NOW
 		#check for mouse motion events
-		dmx, dmy = 0,0
-		#there can be many events here. which to choose?
-		for event in events:
-			if event.type == pygame.MOUSEMOTION:
-				#print('mooovesd',event.pos)
-				mx, my = event.pos
-				dmx, dmy = mx - draw_class.center[0], my - draw_class.center[1]
-				#break #choose first event
-		if abs(dmx) > 2 or abs(dmy) > 2:
-			#print(dmx,dmy)
-			update = True
-			pygame.mouse.set_pos(draw_class.center)
-			if d == 3:
-				self.update_rot_matrix(1, 2, -dmy/draw_class.height*32*self.ang_speed)
-				self.update_rot_matrix(0, 2, dmx/draw_class.height*32*self.ang_speed)
-			if d == 4:
-				if keys[pygame.K_RSHIFT] or keys[pygame.K_LSHIFT]:
-					self.update_rot_matrix(2, 3, dmx/draw_class.height*32*self.ang_speed)
-				else:
-					self.update_rot_matrix(0, 3, dmx/draw_class.height*32*self.ang_speed)
-				self.update_rot_matrix(1, 3, -dmy/draw_class.height*32*self.ang_speed)
-			mouse_in = True
+		if self.enable_mouse:
+			dmx, dmy = 0,0
+			#there can be many events here. which to choose?
+			for event in events:
+				if event.type == pygame.MOUSEMOTION:
+					#print('mooovesd',event.pos)
+					mx, my = event.pos
+					dmx, dmy = mx - draw_class.center[0], my - draw_class.center[1]
+					#break #choose first event
+			if abs(dmx) > 2 or abs(dmy) > 2:
+				#print(dmx,dmy)
+				update = True
+				pygame.mouse.set_pos(draw_class.center)
+				if d == 3:
+					self.update_rot_matrix(1, 2, -dmy/draw_class.height*32*self.ang_speed)
+					self.update_rot_matrix(0, 2, dmx/draw_class.height*32*self.ang_speed)
+				if d == 4:
+					if keys[pygame.K_RSHIFT] or keys[pygame.K_LSHIFT]:
+						self.update_rot_matrix(2, 3, dmx/draw_class.height*32*self.ang_speed)
+					else:
+						self.update_rot_matrix(0, 3, dmx/draw_class.height*32*self.ang_speed)
+					self.update_rot_matrix(1, 3, -dmy/draw_class.height*32*self.ang_speed)
+				mouse_in = True
 		
 		
 		#if key_in:
