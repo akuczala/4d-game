@@ -1,31 +1,18 @@
-import numpy as np
-import numpy.linalg as lin
 import itertools
 from camera import Camera
+import vec
+import numpy as np
 
-def rotmat(t):
-	return np.array([[np.cos(t),np.sin(t)],[-np.sin(t),np.cos(t)]])
-def rotation_matrix(v1,v2,th = None): #finds rotation matrix between two (normalized) vectors (rotates v1 to v2)
-	u = v1/lin.norm(v1)
-	v = v2/lin.norm(v2)
-	if th is None:
-		costh = np.dot(u,v)
-		sinth = np.sqrt(1-costh**2)
-	else:
-		costh = np.cos(th)
-		sinth = np.sin(th)
-	#sinth = np.sin(np.arccos(costh))
-	R = np.array([[costh,-sinth],[sinth,costh]])
-	w = (v - np.dot(u,v)*u); w = w/lin.norm(w)
-	uw_mat = np.array([u,w])
-	return np.eye(len(u)) - np.outer(u,u) - np.outer(w,w) + np.dot(uw_mat.T,np.dot(R,uw_mat))
-def rotation_matrix_aligned(dir1,dir2,th):
-	costh = np.cos(th)
-	sinth = np.sin(th)
-	if dir1 == 0 and dir2 == 2:
-		return np.array([[costh,0,-sinth],[0,1,0],[sinth,0,costh]])
-	if dir1 == 1 and dir2 == 2:
-		return np.array([[1,0,0],[0,costh,-sinth],[0,sinth,costh]])
+#a point is a vector
+Point = vec.Vec
+#a line is a length 2 tuple of points
+def Line(p1,p2):
+	return (p1,p2)
+
+#apply function to each point in line
+def line_map(f,line,*args,**kwargs):
+	return Line(f(line[0],*args,**kwargs),f(line[1],*args,**kwargs))
+
 class HyperPlane:
 	def __init__(self,normal,threshold):
 		self.normal = normal
@@ -38,10 +25,10 @@ def line_plane_intersect(line,plane):
 	p0 = line[0]; p1 = line[1]
 	n = plane.normal
 	th = plane.threshold
-	p0n = np.dot(p0,n)
-	p1n = np.dot(p1,n)
+	p0n = vec.dot(p0,n)
+	p1n = vec.dot(p1,n)
 	#line is contained in plane
-	if np.isclose(p0n,0) and np.isclose(p1n,0):
+	if vec.isclose(p0n,0) and vec.isclose(p1n,0):
 		return None
 	#plane does not intersect line segment
 	t = (p0n-th)/(p0n-p1n)
@@ -49,11 +36,16 @@ def line_plane_intersect(line,plane):
 		return None
 	return (1-t)*p0 + t*p1
 
+#an edge is a 2-tuple of vertex indices
+def Edge(vi1,vi2):
+	return (vi1,vi2)
+
+#A face is more complicated
 class Face:
 	def __init__(self,edges,normal,color = None):
-		self.edges = edges
-		self.normal = normal
-		self.normal_ref = normal.copy()
+		self.edges = edges #list of edge indices belonging to some shape
+		self.normal = normal #current normal
+		self.normal_ref = normal.copy() # normal's orientation relative to the shape
 		if color is None:
 			self.color = (255,255,255) #default white
 		else:
@@ -64,14 +56,14 @@ class Face:
 		return 'Face, edges ' + str(edges) + ', normal_ref= ' + str(normal_ref)
 	#return vertex indices included in face
 	def get_verts(self,shape):
-		return np.unique(shape.edges[self.edges].reshape(-1).astype(np.int))
+		return np.unique(np.array(shape.edges)[np.array(self.edges)].reshape(-1).astype(np.int))
 	#rotate face normals and recalculate centers, thresholds
 	def update(self,shape,rot_mat):
-		self.normal = np.dot(rot_mat,self.normal_ref)
-		self.center = np.mean(shape.verts[self.get_verts(shape)],axis=0)
-		self.threshold = np.dot(self.normal,self.center)
+		self.normal = vec.dot(rot_mat,self.normal_ref)
+		self.center = vec.barycenter([shape.verts[vi] for vi in self.get_verts(shape)])
+		self.threshold = vec.dot(self.normal,self.center)
 	def update_visibility(self,camera):
-		norm_dot_cam = np.dot(self.normal,self.center - camera.pos)
+		norm_dot_cam = vec.dot(self.normal,self.center - camera.pos)
 		self.visible = norm_dot_cam < 0
 
 def num_planes(d):
@@ -79,19 +71,19 @@ def num_planes(d):
 
 class ConvexShape:
 	def __init__(self,verts,edges,faces,pos = None,angles = None,scale=None):
-		d = verts.shape[-1]
-		self.verts_ref = verts
-		self.verts = verts.copy()
-		self.edges = edges
-		self.faces = faces
-		self.ref_frame = np.eye(d)
+		d = vec.dim(verts[0])
+		self.verts_ref = verts #relative vertex positions
+		self.verts = verts.copy() #absolute vertex positions
+		self.edges = edges #list of edges
+		self.faces = faces #list of faces
+		self.ref_frame = vec.eye(d)
 		self.transparent = False
 		if pos is None:
-			self.pos = np.zeros([d])
+			self.pos = vec.zero_vec(d)
 		else:
 			self.pos = pos
 		if angles is None:
-			self.angles = np.zeros([num_planes(d)])
+			self.angles = vec.zero_vec(num_planes(d))
 		else:
 			self.angles = angles
 		if scale is None:
@@ -107,17 +99,16 @@ class ConvexShape:
 						   pos = self.pos.copy(),angles = self.angles.copy(),scale = self.scale)
 	def transform(self):
 		#rotate and translate vertices from reference points
-		Rxz = rotation_matrix(self.ref_frame[0],self.ref_frame[-1],self.angles[0])
-		Rzy = rotation_matrix(self.ref_frame[1],self.ref_frame[-1],self.angles[1])
-		rot_mat = np.dot(Rxz,Rzy)
-		self.verts = np.vectorize(lambda v: np.dot(rot_mat,v*self.scale) + self.pos,
-								  signature='(n)->(n)')(self.verts_ref)
+		Rxz = vec.rotation_matrix(self.ref_frame[0],self.ref_frame[-1],self.angles[0])
+		Rzy = vec.rotation_matrix(self.ref_frame[1],self.ref_frame[-1],self.angles[1])
+		rot_mat = vec.dot(Rxz,Rzy)
+		self.verts = [vec.dot(rot_mat,v*self.scale) + self.pos for v in self.verts_ref]
 		#update faces
 		for face in self.faces:
 			face.update(self,rot_mat)
 	#get line corresponding to edge
 	def get_line(self,edge):
-		return self.verts[self.edges[edge]]
+		return [self.verts[vi] for vi in self.edges[edge]]
 	#update shape
 	def update(self,pos=None,angles=None,scale=None):
 		if pos is not None:
@@ -129,7 +120,7 @@ class ConvexShape:
 		self.transform()
 	#find indices of (d-1) faces that are joined by a (d-2) edge
 	def calc_subfaces(self):
-		d = self.verts.shape[-1]
+		d = vec.dim(self.verts[0])
 		if d == 3:
 			n_target = 1
 		if d == 4:
@@ -137,7 +128,7 @@ class ConvexShape:
 		subfaces = []
 		for i,j in itertools.combinations(range(len(self.faces)),2):
 				if ConvexShape.count_common_edges(self.faces[i],self.faces[j]) >= n_target:
-					subfaces.append([i,j])
+					subfaces.append(Edge(i,j))
 		self.subfaces = np.array(subfaces)
 	def count_common_edges(face1,face2):
 		both_edges = np.append(face1.edges,face2.edges)
@@ -150,21 +141,21 @@ class ConvexShape:
 				face.update_visibility(camera)
 
 def build_cube(d):
-	verts = np.array(list(itertools.product(range(2), repeat=d)))
+	verts = list(itertools.product(range(2), repeat=d))
 	def calc_cube_edges(verts):
-		d = verts.shape[-1]
-		edges = np.array([],dtype=np.int).reshape(0,2)
+		d = vec.dim(verts[0])
+		edges = []
 		for i,j in itertools.combinations(range(len(verts)),2):
 			n_shared = np.count_nonzero(np.logical_not(np.logical_xor(verts[i],verts[j])))
 			if n_shared == d-1:
-				edges = np.append(edges,[[i,j]],axis=0)
+				edges.append(vec.Vec([i,j]))
 		return edges
 	edges = calc_cube_edges(verts)
 	def vert_to_index(vert):
 		d = len(vert)
 		return np.sum(2**np.flipud(np.arange(3))*vert)
 	def calc_cube_faces(edges,verts):
-		d = verts.shape[-1]
+		d = vec.dim(verts[0])
 		faces = []
 		n_face_verts = 2**(d-1)
 		faces_vi = []
@@ -172,6 +163,7 @@ def build_cube(d):
 		for i in range(d):
 			faces_vi.append(np.sum(2**np.arange(d)*np.roll(verts[:n_face_verts],i,axis=-1),axis=-1))
 			faces_vi.append(np.sum(2**np.arange(d)*np.roll(verts[n_face_verts:],i,axis=-1),axis=-1))
+		#print(faces_vi)
 		faces_vi = np.array(faces_vi)
 		for face_vi in faces_vi:
 			face_edges = []
@@ -181,8 +173,9 @@ def build_cube(d):
 					if np.all(np.equal([v1,v2],edges[ei])) or np.all(np.equal([v2,v1],edges[ei])):
 						face_edges.append(ei)
 			#calc face normal
-			align_1 = np.all(verts[face_vi],axis=0)
-			align_0 = np.all(np.logical_not(verts[face_vi]),axis=0)
+			verts_in_face = np.array(verts)[face_vi]
+			align_1 = np.all(verts_in_face,axis=0)
+			align_0 = np.all(np.logical_not(verts_in_face),axis=0)
 			face_normal = align_1.astype(np.float) - align_0.astype(np.float)
 			#print(face_normal)
 			faces.append(Face(face_edges,face_normal))
@@ -202,4 +195,4 @@ def build_cube(d):
 		return faces
 	faces = calc_cube_faces(edges,verts)
 	#scale and translate verts so that the cube's corners are at +- 1 and the center is in the center
-	return ConvexShape(verts*2 - np.ones([d]),edges,faces)
+	return ConvexShape(verts*2 - vec.ones_vec(d),edges,faces)

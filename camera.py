@@ -1,6 +1,7 @@
 from Geometry import *
 import pygame
 import numpy as np
+import vec
 from colors import *
 class Camera:
 	ang_speed = 0.05
@@ -21,14 +22,14 @@ class Camera:
 		self.update_rot_matrix(0,1,0)
 	def update_rot_matrix(self,axis1,axis2,angle):
 		#rows of the frame are the vectors. so to transform the frame, we multiply on the right
-		R = rotation_matrix(self.frame[axis1],self.frame[axis2],angle)
+		R = vec.rotation_matrix(self.frame[axis1],self.frame[axis2],angle)
 		self.frame = np.dot(self.frame, R)
 
 		self.rot_matrix = self.frame.T
 
 		self.rot_matrix_T = self.rot_matrix.T
 	def look_at(self,p):
-		self.frame = rotation_matrix(self.ref_frame[-1],p).T
+		self.frame = vec.rotation_matrix(self.ref_frame[-1],p).T
 		self.rot_matrix = self.frame.T
 		self.rot_matrix_T = self.rot_matrix.T
 	def rotate(self,point,inverse=False):

@@ -12,6 +12,12 @@ from OpenGL.GLU import *
 small_z = 0.001
 z0 = 0
 #focal = 4.
+
+#returns new list with instances of None removed
+#usually list comprehension will do this
+# def remove_None(some_list):
+#     return list(filter(None.__ne__,some_list))
+
 def to_screen(v2,scale,center):
     return v2*scale + center
 
@@ -24,6 +30,7 @@ class Draw:
         self.focal = focal
         self.draw_origin = draw_origin
         self.view_radius = view_radius
+    #project d-dimensional vector to d-1 dimensional vector
     def project(self,v):
         if np.isclose(v[-1],z0):
             z = z0 + small_z
@@ -44,15 +51,16 @@ class Draw:
             for face in shape.faces:
                 if face.visible:
                     color = face.color
+                    #calculate scaled lines, for aesthetics
+                    def scale_point(p,scale):
+                        return (1-scale)*face.center + p*scale
                     #self.draw_face_fuzz(camera,face,shape,shapes)
-                    lines = shape.get_line(face.edges)
+                    lines = [shape.get_line(edge) for edge in face.edges]
                     scale_face = 0.9
-                    scaled_lines = np.vectorize(lambda p: (1-scale_face)*face.center + p*scale_face,
-                                         signature='(d)->(d)')(lines)
-                    scale_face = 0.4
-                    scaled_lines2 = np.vectorize(lambda p: (1-scale_face)*face.center + p*scale_face,
-                                         signature='(d)->(d)')(lines)
-                    #lines = np.concatenate((scaled_lines,scaled_lines2))
+                    scaled_lines = [line_map(scale_point,p,scale_face) for p in lines]
+                    #scale_face2 = 0.4
+                    #scaled_lines2 = [line_map(scale_point,p,scale_face2) for p in lines]
+                    #lines = scaled_lines + scaled_lines2
                     lines = scaled_lines
                     if camera.clipping:
                         clipped_lines = Clipping.clip_lines(lines,shape,shapes)
@@ -60,7 +68,7 @@ class Draw:
                         self.draw_lines(camera,clipped_lines,color)
                     else: #noclip
                         self.draw_lines(camera,lines,color)
-    #this is slow, and doesn't quite work
+    #this is slow, and doesn't quite workpygame.quit()
     #draw points randomly over faces
     def draw_face_fuzz(self,camera,face,shape,shapes):
         verts = shape.verts[face.get_verts(shape)]
@@ -112,31 +120,38 @@ class DrawOpenGL2D(Draw):
     def init_draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) # clear the screen
         #glLoadIdentity()                                   # reset position
+
+    #consider removing duplicate consecutive points
+    #since draw_lines_2d converts list of lines to list of points, and connects the dots
     def draw_lines(self,camera,lines,color):
         if len(lines) < 1:
             return
         lines_rel = camera.transform(lines)
-        clipped_lines = np.vectorize(lambda line: Clipping.clip_line_z0(line,z0,small_z),
-                                     signature='(l,n)->(l,n)')(lines_rel)
-        #only draw if z > 0
-        clipped_lines = clipped_lines[clipped_lines[:,:,-1] >= 0]
+        #clip lines to front of camera (z>z0)
+        #remove all lines that are completely clipped (for which clip_line_z0 returns None)
+        clipped_lines = [Clipping.clip_line_z0(line,z0,small_z)
+            for line in lines_rel if line is not None]
+        #clipped_lines = clipped_lines[clipped_lines[:,:,-1] >= 0]
+
+        #don't draw anything if there isn't anything to draw
         if len(clipped_lines) < 1:
             return
-        clipped_lines = clipped_lines.reshape(clipped_lines.shape[0]//2,2,-1)
-        projected_lines = np.vectorize(self.project,signature='(n)->(m)')(clipped_lines)
-        sphere_clipped_lines = []
-        for i in range(len(projected_lines)):
-            line = Clipping.clip_line_sphere(projected_lines[i],r=self.view_radius)
-            if line is not None:
-                sphere_clipped_lines.append(line)
+
+        #clipped_lines = clipped_lines.reshape(clipped_lines.shape[0]//2,2,-1)
+
+        projected_lines = [line_map(self.project) for line in clipped_lines]
+
+        #clip to viewing sphere
+        sphere_clipped_lines = [Clipping.clip_line_sphere(line,r=self.view_radius)
+            for line in projected_lines if line is not None]
         if len(sphere_clipped_lines) < 1:
             return
-        sphere_clipped_lines = np.array(sphere_clipped_lines)
-        #print(sphere_clipped_lines)
+
         try:
             self.draw_lines_2d(sphere_clipped_lines,color)
         except:
             print('problem drawing',sphere_clipped_lines)
+
     def draw_points(self,camera,points,color):
         points_rel = camera.transform(points)
         not_clipped = np.vectorize(lambda point_rel: not Clipping.point_clipped(point_rel,[HyperPlane(np.array([0,0,1]),small_z)]),
@@ -172,13 +187,15 @@ class DrawOpenGL2D(Draw):
     #     glVertex2f(*points[0])
     #     glVertex2f(*points[1])
     #     glEnd()
+    def shift_scale_point(self,point):
+        return point*self.screen_scale + self.center
     def draw_lines_2d(self,lines,color,line_width=2):
-        lines = (lines)*self.screen_scale + self.center
         glColor3f(*color)
         glLineWidth(line_width)
         glBegin(GL_LINES)
-        for point in lines.reshape(-1,2):
-            glVertex2f(*point)
+        for line in lines:
+            for point in line:
+                glVertex2f(*shift_scale_point(point))
         glEnd()
 class DrawOpenGL3D(Draw):
     def __init__(self,pygame,size,draw_origin,focal=4,stereo=True):
