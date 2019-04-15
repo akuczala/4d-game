@@ -2,10 +2,10 @@
 # import vector3
 from Geometry import *
 import Clipping
-from camera import Camera
+
 from colors import *
 import numpy as np
-import pygame
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from util import *
@@ -69,6 +69,7 @@ class Draw:
                          for scale_face in self.face_scales])
                     lines = scaled_lines
 
+                    #clipping = False doubles the framerate
                     if camera.clipping:
                         clipped_lines = Clipping.clip_lines(
                             lines, shape, shapes)
@@ -80,7 +81,6 @@ class Draw:
     #this is slow, out of date and doesn't quite work
     #draw points randomly over faces
     def draw_face_fuzz(self, camera, face, shape, shapes):
-        verts = shape.verts[face.get_verts(shape)]
         n_points = 100
         #weights = np.random.uniform(size=[n_points,len(verts)])
         #weights = weights/np.sum(weights,axis=1,keepdims=True)
@@ -134,6 +134,11 @@ class DrawOpenGL2D(Draw):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the screen
         #glLoadIdentity()                                   # reset position
 
+    def draw(self, camera, shapes):
+        super().draw(camera, shapes)
+        self.draw_circle_2d(self.view_radius, GRAY)
+
+    #merge more with 3D version
     #consider removing duplicate consecutive points
     #since draw_lines_2d converts list of lines to list of points, and connects the dots
     def draw_lines(self, camera, lines, color):
@@ -209,6 +214,22 @@ class DrawOpenGL2D(Draw):
         for line in lines:
             for point in line:
                 glVertex2f(*self.shift_scale_point(point))
+        glEnd()
+
+    def draw_circle_2d(self,
+                       radius,
+                       color,
+                       n_points=60,
+                       line_width=2,
+                       draw_origin=vec.zero_vec(2)):
+        glColor3f(*color)
+        glLineWidth(line_width)
+        glBegin(GL_LINE_LOOP)
+        for i in range(n_points):
+            x = math.cos(math.pi * 2 * i / n_points) * radius
+            y = math.sin(math.pi * 2 * i / n_points) * radius
+            p = vec.Vec([x, y]) + draw_origin
+            glVertex2f(*self.shift_scale_point(p))
         glEnd()
 
 
