@@ -19,10 +19,7 @@ class Camera:
 
         self.ref_frame = vec.eye(d)
         self.frame = self.ref_frame
-        self.clipping = True
-        self.cheld = False  #this is a kludge for pressing a key once
         self.update_rot_matrix(0, 1, 0)
-        self.enable_mouse = False
 
     def update_rot_matrix(self, axis1, axis2, angle):
         #rows of the frame are the vectors. so to transform the frame, we multiply on the right
@@ -33,6 +30,7 @@ class Camera:
 
         self.rot_matrix_T = self.rot_matrix.T
 
+        self.update_plane()
     def look_at(self, p):
         self.frame = vec.rotation_matrix(self.ref_frame[-1], p).T
         self.rot_matrix = self.frame.T
@@ -64,3 +62,6 @@ class Camera:
         for frame_line, color in zip(frame_lines,
                                      [PURPLE, MAGENTA, ORANGE, CYAN][:d]):
             draw_class.draw_lines(self, [frame_line], color)
+
+    def update_plane(self):
+        self.plane = HyperPlane(self.frame[-1],vec.dot(self.pos,self.frame[-1]))

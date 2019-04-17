@@ -37,8 +37,10 @@ rot_keymapping = {
     }
 }
 
+enable_mouse = False
 
 def input_update(camera, draw_class, shapes):
+    global enable_mouse #for some reason nonlocal doesn't work
     update = False
     quit = False
     keys = pygame.key.get_pressed()
@@ -59,15 +61,23 @@ def input_update(camera, draw_class, shapes):
                 print('transparency', shapes[0].transparent)
             #toggle clipping
             if event.key == pygame.K_c:
-                camera.clipping = not camera.clipping
-                camera.cheld = True
-                print('clipping', camera.clipping)
+                draw_class.clipping = not draw_class.clipping
+                print('clipping', draw_class.clipping)
+            #toggle mouse
+            if event.key == pygame.K_m:
+                enable_mouse = not enable_mouse
+            # #window resize
+            # if event.key == pygame.VIDEORESIZE:
+            #     draw_class.width = event.w
+            #     draw_class.height = event.h
+            #     #need to reinitialize pygame surface
             #end game
             if event.key == pygame.K_ESCAPE:
                 quit = True
-    # if keys[pygame.K_ESCAPE]:
-    #     quit = True
 
+    #keys that cause continuous action (e.g. movement)
+
+    #moving forward and backward
     if keys[pygame.K_w]:
         camera.pos = camera.pos + camera.speed * camera.heading()
         update = True
@@ -95,7 +105,7 @@ def input_update(camera, draw_class, shapes):
                 update = True
 
     #check for mouse motion events
-    if camera.enable_mouse:
+    if enable_mouse:
         dmx, dmy = 0, 0
         #there can be many events here. which to choose?
         for event in events:
@@ -123,4 +133,7 @@ def input_update(camera, draw_class, shapes):
                 camera.update_rot_matrix(
                     1, 3, -dmy / draw_class.height * 32 * camera.ang_speed)
 
+    #any kind of whatever, update the plane
+    if update:
+        camera.update_plane()
     return update, quit

@@ -1,4 +1,6 @@
-from Geometry import *
+#from Geometry import *
+from Geometry import Line, HyperPlane
+from util import flatten
 import vec
 from math import sqrt
 
@@ -142,13 +144,39 @@ def clip_line_z0(line, z0, small_z):
     else:
         return [v1, intersect]
 
+#clip everything behind the plane
+def clip_line_plane(line, plane, small_z):
+    p0 = line[0]
+    p1 = line[1]
+
+    n = plane.normal
+    th = plane.threshold +small_z
+
+    p0n = vec.dot(p0, n)
+    p1n = vec.dot(p1, n)
+
+    p0_safe = p0n >= th
+    p1_safe = p1n >= th
+    #if both vertices are behind, draw neither
+    if (not p0_safe) and (not p1_safe):
+        return None
+    #both vertices in front
+    if p0_safe and p1_safe:
+        return line
+    #if one of the vertices is behind the camera
+    t_intersect = (p0n - th ) / (p0n - p1n)
+    intersect = vec.linterp(p0,p1,t_intersect)
+    if (not p0_safe) and p1_safe:
+        return Line(intersect, p1)
+    else:
+        return Line(p0, intersect)
 
 def plane0_intersect(v1, v2,
                      z0):  #point of intersection with plane at x[-1] = z0
     t = (v1[-1] - z0) / (v1[-1] - v2[-1])
     return vec.linterp(v1, v2, t)
 
-
+#INCOMPLETE / should probably use existing boundary routines
 #clip line to lie within a cube at the origin of radius r
 #returns clipped line
 def clip_line_cube(line, r):
@@ -163,10 +191,12 @@ def clip_line_cube(line, r):
     if (not v0_in_cube) and (not v1_in_cube):
         return None
 
-    if (not v0_in_cube) and v1_in_cube:
-        return Line(intersect, v1)
-    else:
-        return Line(v0, intersect)
+    #need to determine which plane of the cube
+    #that the line intersects
+    # if (not v0_in_cube) and v1_in_cube:
+    #     return Line(intersect, v1)
+    # else:
+    #     return Line(v0, intersect)
 
 
 def sphere_line_intersect(line, r):

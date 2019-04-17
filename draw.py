@@ -1,15 +1,13 @@
-# import matrix44
-# import vector3
-from Geometry import *
 import Clipping
-
+import vec
 from colors import *
 import numpy as np
-
+from Geometry import line_map
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from util import *
 import math
+import pygame
 
 small_z = 0.001
 z0 = 0
@@ -21,11 +19,14 @@ def to_screen(v2, scale, center):
     return v2 * scale + center
 
 
+#maybe keep this a class and make __init__ a normal function?
+#can we still do inheritance / should we?
+#or, should we turn this into a module?
 class Draw:
-    def __init__(self, pygame, size, draw_origin, focal, view_radius=5):
+    def __init__(self, size, draw_origin, focal, view_radius=5):
         self.width, self.height = self.size = size
         self.center = (self.width // 2, self.height // 2)
-        self.pygame = pygame
+        #self.pygame = pygame
         self.focal = focal
         self.draw_origin = draw_origin
         self.view_radius = view_radius
@@ -69,14 +70,46 @@ class Draw:
                          for scale_face in self.face_scales])
                     lines = scaled_lines
 
-                    #clipping = False doubles the framerate
-                    if camera.clipping:
-                        clipped_lines = Clipping.clip_lines(
-                            lines, shape, shapes)
-                        #draw clipped line
-                        self.draw_lines(camera, clipped_lines, color)
-                    else:  #noclip
-                        self.draw_lines(camera, lines, color)
+                    #clip things behind camera first
+                    lines = remove_None([Clipping.clip_line_plane(line,camera.plane,small_z) for line in lines])
+                    if len(lines) > 1:
+                        #clipping = False doubles the framerate
+                        if self.clipping:
+                            clipped_lines = Clipping.clip_lines(
+                                lines, shape, shapes)
+                            #draw clipped line
+                            self.draw_lines(camera, clipped_lines, color)
+                        else:  #noclip
+                            self.draw_lines(camera, lines, color)
+
+    #transforms lines to camera space and clips lines behind the camera,
+    #then projects the lines down to d-1 and does viewport clipping
+    def clip_project_lines(self, camera, lines, color):
+        if len(lines) < 1:
+            return []
+
+        lines_rel = [line_map(camera.transform, line) for line in lines]
+
+        #clip lines to front of camera (z>z0) (that's the old way to do it!)
+        #though it is unclear which way is faster
+        # clipped_lines = remove_None(
+        #     [Clipping.clip_line_z0(line, z0, small_z) for line in lines_rel])
+        # #don't draw anything if there isn't anything to draw
+        # if len(clipped_lines) < 1:
+        #     return []
+
+        projected_lines = [
+            line_map(self.project, line) for line in lines_rel
+        ]
+        #clip to viewing sphere
+        sphere_clipped_lines = remove_None([
+            Clipping.clip_line_sphere(line, r=self.view_radius)
+            for line in projected_lines
+        ])
+        if len(clipped_lines) < 1:
+            return []
+
+        return sphere_clipped_lines
 
     #this is slow, out of date and doesn't quite work
     #draw points randomly over faces
@@ -112,23 +145,34 @@ class Draw:
         else:
             self.draw_points(camera, points, face.color)
 
+    def enable_smoothing(self):
+        glEnable(GL_LINE_SMOOTH)
+        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+        glEnable(GL_POINT_SMOOTH)
+        glHint(GL_POINT_SMOOTH_HINT, GL_NICEST)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
 
 class DrawOpenGL2D(Draw):
-    def __init__(self, pygame, size, draw_origin, focal=4, screen_scale=60):
-        super().__init__(pygame, size, draw_origin, focal)
+    def __init__(self, size, draw_origin, focal=6, screen_scale=15):
+        super().__init__(size, draw_origin, focal)
         self.screen_scale = screen_scale
-        self.screen = self.pygame.display.set_mode(
-            self.size, pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF)
+        self.screen = pygame.display.set_mode(
+            self.size, pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF
+            | pygame.RESIZABLE)
+
         self.initGL()
 
     def initGL(self):
+        print('init GL')
         glViewport(0, 0, self.width, self.height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glOrtho(0.0, self.width, 0.0, self.height, 0.0, 1.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        print('init GL')
+        self.enable_smoothing()
 
     def init_draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the screen
@@ -142,29 +186,9 @@ class DrawOpenGL2D(Draw):
     #consider removing duplicate consecutive points
     #since draw_lines_2d converts list of lines to list of points, and connects the dots
     def draw_lines(self, camera, lines, color):
-        if len(lines) < 1:
-            return
-
-        lines_rel = [line_map(camera.transform, line) for line in lines]
-        #clip lines to front of camera (z>z0)
-        #remove all lines that are completely clipped (for which clip_line_z0 returns None)
-        clipped_lines = remove_None(
-            [Clipping.clip_line_z0(line, z0, small_z) for line in lines_rel])
-        #don't draw anything if there isn't anything to draw
-        if len(clipped_lines) < 1:
-            return
-
-        projected_lines = [
-            line_map(self.project, line) for line in clipped_lines
-        ]
-        #clip to viewing sphere
-        sphere_clipped_lines = remove_None([
-            Clipping.clip_line_sphere(line, r=self.view_radius)
-            for line in projected_lines
-        ])
+        sphere_clipped_lines = self.clip_project_lines(camera, lines, color)
         if len(sphere_clipped_lines) < 1:
             return
-
         try:
             self.draw_lines_2d(sphere_clipped_lines, color)
         except:
@@ -205,9 +229,10 @@ class DrawOpenGL2D(Draw):
             glEnd()
 
     def shift_scale_point(self, point):
-        return point * self.screen_scale + self.center
+        return point * self.height / self.screen_scale + self.center
 
     def draw_lines_2d(self, lines, color, line_width=2):
+
         glColor3f(*color)
         glLineWidth(line_width)
         glBegin(GL_LINES)
@@ -234,9 +259,9 @@ class DrawOpenGL2D(Draw):
 
 
 class DrawOpenGL3D(Draw):
-    def __init__(self, pygame, size, draw_origin, focal=4, stereo=True):
-        super().__init__(pygame, size, draw_origin, focal)
-        self.screen = self.pygame.display.set_mode(
+    def __init__(self, size, draw_origin, focal=4, stereo=True):
+        super().__init__(size, draw_origin, focal)
+        self.screen = pygame.display.set_mode(
             self.size, pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF)
         self.initGL()
         self.resize(*size)
@@ -247,6 +272,7 @@ class DrawOpenGL3D(Draw):
         self.stereo_view_angles = [[30, 30], [120, 30]]
 
     def initGL(self):
+        print('init GL')
         glClearColor(0.0, 0.0, 0.0, 1.0)
         # Set background color to black and opaque
         glClearDepth(1.0)
@@ -311,14 +337,6 @@ class DrawOpenGL3D(Draw):
 #         # Upload the inverse camera matrix to OpenGL
 #         glLoadMatrixd(self.camera_matrix.get_inverse().to_opengl())
 
-    def enable_smoothing(self):
-        glEnable(GL_LINE_SMOOTH)
-        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-        glEnable(GL_POINT_SMOOTH)
-        glHint(GL_POINT_SMOOTH_HINT, GL_NICEST)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
     def resize(self, width, height):  # GLsizei for non-negative integer
         # Compute aspect ratio of the new window
         if (height == 0):
@@ -342,31 +360,9 @@ class DrawOpenGL3D(Draw):
         glMatrixMode(GL_MODELVIEW)
 
     def draw_lines(self, camera, lines, color):
-        if len(lines) < 1:
-            return
-        lines_rel = [line_map(camera.transform, line) for line in lines]
-        #clip lines to front of camera (z>z0)
-        #remove all lines that are completely clipped (for which clip_line_z0 returns None)
-        clipped_lines = remove_None(
-            [Clipping.clip_line_z0(line, z0, small_z) for line in lines_rel])
-        #don't draw anything if there isn't anything to draw
-        if len(clipped_lines) < 1:
-            return
-
-        projected_lines = [
-            line_map(self.project, line) for line in clipped_lines
-        ]
-        #clip projected lines to unit sphere
-        sphere_clipped_lines = remove_None([
-            Clipping.clip_line_sphere(line, r=self.view_radius)
-            for line in projected_lines
-        ])
+        sphere_clipped_lines = self.clip_project_lines(camera, lines, color)
         if len(sphere_clipped_lines) < 1:
             return
-
-        #remove lines with points outside of cube
-        #print(projected_lines.shape)
-        # projected_lines = projected_lines[projected_lines[:,:,0] < 1.]
         try:
             if self.stereo:
                 self.draw_lines_3d(
@@ -386,7 +382,7 @@ class DrawOpenGL3D(Draw):
                     draw_origin=self.draw_origin,
                     draw_angles=self.view_angles)
         except:
-            print('problem drawing', projected_lines)
+            print('problem drawing', sphere_clipped_lines)
             raise
 
     def draw_lines_3d(self,

@@ -1,5 +1,4 @@
 import itertools
-from camera import Camera
 import vec
 import numpy as np
 from util import *
