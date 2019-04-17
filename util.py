@@ -1,19 +1,19 @@
+from functools import reduce
+from operator import iconcat
 
-from math import pi
 
-def format_number(n, accuracy=6):
-    """Formats a number in a friendly manner (removes trailing zeros and unneccesary point."""
+# return list of unique elements (does not preserve order)
+def unique(some_list):
+    return list(set(some_list))
+
     
-    fs = "%."+str(accuracy)+"f"
-    str_n = fs%float(n)
-    if '.' in str_n:
-        str_n = str_n.rstrip('0').rstrip('.')
-    if str_n == "-0":
-        str_n = "0"
-    #str_n = str_n.replace("-0", "0")
-    return str_n
-    
+# flattens list of lists
+# fastest flatten according to
+# https://stackoverflow.com/a/45323085
+def flatten(list_of_lists):
+    return reduce(iconcat, list_of_lists, [])
 
-def lerp(a, b, i):
-    """Linear enterpolate from a to b."""
-    return a+(b-a)*i
+
+# usually list comprehension will do this
+def remove_None(some_list):
+    return list(filter(None.__ne__, some_list))
