@@ -1,13 +1,18 @@
 import Clipping
 import vec
-from colors import *
+
 import numpy as np
-from Geometry import line_map
-from OpenGL.GL import *
-from OpenGL.GLU import *
-from util import *
+from Geometry import line_map, HyperPlane
+
+from util import remove_None, flatten
 import math
 import pygame
+import colors
+
+import OpenGL.GL as gl
+import OpenGL.GLU as glu
+from OpenGL.GL import glBegin, glEnd, glLineWidth, glVertex2f, glVertex3f
+from OpenGL.GL import glColor3f, GL_LINES, GL_LINE_LOOP
 
 small_z = 0.001
 z0 = 0
@@ -71,7 +76,10 @@ class Draw:
                     lines = scaled_lines
 
                     #clip things behind camera first
-                    lines = remove_None([Clipping.clip_line_plane(line,camera.plane,small_z) for line in lines])
+                    lines = remove_None([
+                        Clipping.clip_line_plane(line, camera.plane, small_z)
+                        for line in lines
+                    ])
                     if len(lines) > 1:
                         #clipping = False doubles the framerate
                         if self.clipping:
@@ -98,18 +106,29 @@ class Draw:
         # if len(clipped_lines) < 1:
         #     return []
 
-        projected_lines = [
-            line_map(self.project, line) for line in lines_rel
-        ]
+        projected_lines = [line_map(self.project, line) for line in lines_rel]
         #clip to viewing sphere
         sphere_clipped_lines = remove_None([
             Clipping.clip_line_sphere(line, r=self.view_radius)
             for line in projected_lines
         ])
-        if len(clipped_lines) < 1:
+        if len(sphere_clipped_lines) < 1:
             return []
 
         return sphere_clipped_lines
+
+    #out of date
+    def draw_frame_lines(self, camera):
+        d = len(camera.pos)
+        frame_origin = camera.frame[-1] * 0.1
+        frame_origin += camera.pos
+        frame_lines = np.stack((np.zeros([d, d]), camera.frame)).transpose(
+            1, 0, 2)
+        frame_lines = frame_lines * 0.5 + frame_origin
+        for frame_line, color in zip(frame_lines, [
+                colors.PURPLE, colors.MAGENTA, colors.ORANGE, colors.CYAN
+        ][:d]):
+            self.draw_lines(camera, [frame_line], color)
 
     #this is slow, out of date and doesn't quite work
     #draw points randomly over faces
@@ -123,8 +142,7 @@ class Draw:
         v1 = shape.verts[shape.edges[face.edges[0]][1]]
         v2 = shape.verts[shape.edges[face.edges[2]][0]]
         points = np.vectorize(
-            lambda t: line_interpolate(t[0], v0, v1) + line_interpolate(
-                t[1], v0, v2),
+            lambda t: vec.linterp(v0, v1, t[0]) + vec.linterp(v0, v2, t[1]),
             signature='(l)->(n)')(t_vals)
         #print(points.shape)
         if camera.clipping:
@@ -146,12 +164,12 @@ class Draw:
             self.draw_points(camera, points, face.color)
 
     def enable_smoothing(self):
-        glEnable(GL_LINE_SMOOTH)
-        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-        glEnable(GL_POINT_SMOOTH)
-        glHint(GL_POINT_SMOOTH_HINT, GL_NICEST)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        gl.glEnable(gl.GL_LINE_SMOOTH)
+        gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_NICEST)
+        gl.glEnable(gl.GL_POINT_SMOOTH)
+        gl.glHint(gl.GL_POINT_SMOOTH_HINT, gl.GL_NICEST)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
 
 class DrawOpenGL2D(Draw):
@@ -166,21 +184,22 @@ class DrawOpenGL2D(Draw):
 
     def initGL(self):
         print('init GL')
-        glViewport(0, 0, self.width, self.height)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glOrtho(0.0, self.width, 0.0, self.height, 0.0, 1.0)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
+        gl.glViewport(0, 0, self.width, self.height)
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        gl.glOrtho(0.0, self.width, 0.0, self.height, 0.0, 1.0)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
         self.enable_smoothing()
 
     def init_draw(self):
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the screen
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT
+                   | gl.GL_DEPTH_BUFFER_BIT)  # clear the screen
         #glLoadIdentity()                                   # reset position
 
     def draw(self, camera, shapes):
         super().draw(camera, shapes)
-        self.draw_circle_2d(self.view_radius, GRAY)
+        self.draw_circle_2d(self.view_radius, colors.GRAY)
 
     #merge more with 3D version
     #consider removing duplicate consecutive points
@@ -273,17 +292,17 @@ class DrawOpenGL3D(Draw):
 
     def initGL(self):
         print('init GL')
-        glClearColor(0.0, 0.0, 0.0, 1.0)
+        gl.glClearColor(0.0, 0.0, 0.0, 1.0)
         # Set background color to black and opaque
-        glClearDepth(1.0)
+        gl.glClearDepth(1.0)
         # Set background depth to farthest
-        glEnable(GL_DEPTH_TEST)
+        gl.glEnable(gl.GL_DEPTH_TEST)
         # Enable depth testing for z-culling
-        glDepthFunc(GL_LEQUAL)
+        gl.glDepthFunc(gl.GL_LEQUAL)
         # Set the type of depth-test
-        glShadeModel(GL_SMOOTH)
+        gl.glShadeModel(gl.GL_SMOOTH)
         # Enable smooth shading
-        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+        gl.glHint(gl.GL_PERSPECTIVE_CORRECTION_HINT, gl.GL_NICEST)
         # Nice perspective corrections
         self.enable_smoothing()
         #self.init_camera()
@@ -302,17 +321,17 @@ class DrawOpenGL3D(Draw):
     def draw_bounding_sphere(self, draw_origin, draw_angles):
         self.draw_circle_3d(
             self.view_radius, [0, 1],
-            GRAY,
+            colors.GRAY,
             draw_origin=draw_origin,
             draw_angles=draw_angles)
         self.draw_circle_3d(
             self.view_radius, [1, 2],
-            GRAY,
+            colors.GRAY,
             draw_origin=draw_origin,
             draw_angles=draw_angles)
         self.draw_circle_3d(
             self.view_radius, [2, 0],
-            GRAY,
+            colors.GRAY,
             draw_origin=draw_origin,
             draw_angles=draw_angles)
 
@@ -337,6 +356,8 @@ class DrawOpenGL3D(Draw):
 #         # Upload the inverse camera matrix to OpenGL
 #         glLoadMatrixd(self.camera_matrix.get_inverse().to_opengl())
 
+#NOT USED / probably from sample code
+
     def resize(self, width, height):  # GLsizei for non-negative integer
         # Compute aspect ratio of the new window
         if (height == 0):
@@ -345,19 +366,20 @@ class DrawOpenGL3D(Draw):
         aspect = width / height
 
         # Set the viewport to cover the new window
-        glViewport(0, 0, width, height)
+        gl.glViewport(0, 0, width, height)
 
         # Set the aspect ratio of the clipping volume to match the viewport
-        glMatrixMode(GL_PROJECTION)
+        gl.glMatrixMode(gl.GL_PROJECTION)
         # To operate on the Projection matrix
-        glLoadIdentity()
+        gl.glLoadIdentity()
         # Reset
         # Enable perspective projection with fovy, aspect, zNear and zFar
-        gluPerspective(45.0, aspect, 0.1, 100.0)
+        glu.gluPerspective(45.0, aspect, 0.1, 100.0)
 
     def init_draw(self):
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # clear the screen
-        glMatrixMode(GL_MODELVIEW)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT
+                   | gl.GL_DEPTH_BUFFER_BIT)  # clear the screen
+        gl.glMatrixMode(gl.GL_MODELVIEW)
 
     def draw_lines(self, camera, lines, color):
         sphere_clipped_lines = self.clip_project_lines(camera, lines, color)
@@ -393,14 +415,14 @@ class DrawOpenGL3D(Draw):
                       draw_angles=[30, 30]):
         if draw_origin is None:
             draw_origin = self.draw_origin
-        glLoadIdentity()  # reset position
-        glTranslatef(*draw_origin)
+        gl.glLoadIdentity()  # reset position
+        gl.glTranslatef(*draw_origin)
         #origin of plotting
-        glRotatef(draw_angles[1], 1, 0, 0)
-        glRotatef(draw_angles[0], 0, 1, 0)
+        gl.glRotatef(draw_angles[1], 1, 0, 0)
+        gl.glRotatef(draw_angles[0], 0, 1, 0)
 
-        glColor3f(*color)
-        glLineWidth(line_width)
+        gl.glColor3f(*color)
+        gl.glLineWidth(line_width)
         glBegin(GL_LINES)
         for line in lines:
             for point in line:
@@ -417,11 +439,11 @@ class DrawOpenGL3D(Draw):
                        draw_angles=[30, 30]):
         if draw_origin is None:
             draw_origin = self.draw_origin
-        glLoadIdentity()  # reset position
-        glTranslatef(*draw_origin)
+        gl.glLoadIdentity()  # reset position
+        gl.glTranslatef(*draw_origin)
         #origin of plotting
-        glRotatef(draw_angles[1], 1, 0, 0)
-        glRotatef(draw_angles[0], 0, 1, 0)
+        gl.glRotatef(draw_angles[1], 1, 0, 0)
+        gl.glRotatef(draw_angles[0], 0, 1, 0)
         glColor3f(*color)
         glLineWidth(line_width)
         glBegin(GL_LINE_LOOP)

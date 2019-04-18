@@ -1,8 +1,5 @@
-from Geometry import *
-import numpy as np
 import vec
-from colors import *
-
+from Geometry import HyperPlane
 
 class Camera:
     ang_speed = 0.05
@@ -51,17 +48,6 @@ class Camera:
         #Rxz = rotation_matrix_aligned(0,2,-self.angles[0])
         #return np.dot(self.heading_matrix_T,self.ref_frame[-1])
         return self.frame[-1]
-
-    def draw_frame_lines(self, draw_class):
-        d = len(self.pos)
-        frame_origin = self.frame[-1] * 0.1
-        frame_origin += self.pos
-        frame_lines = np.stack((np.zeros([d, d]), self.frame)).transpose(
-            1, 0, 2)
-        frame_lines = frame_lines * 0.5 + frame_origin
-        for frame_line, color in zip(frame_lines,
-                                     [PURPLE, MAGENTA, ORANGE, CYAN][:d]):
-            draw_class.draw_lines(self, [frame_line], color)
 
     def update_plane(self):
         self.plane = HyperPlane(self.frame[-1],vec.dot(self.pos,self.frame[-1]))

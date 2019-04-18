@@ -1,4 +1,3 @@
-#from Geometry import *
 from Geometry import Line, HyperPlane
 from util import flatten
 import vec

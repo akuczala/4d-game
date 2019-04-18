@@ -1,7 +1,7 @@
 import itertools
 import vec
 import numpy as np
-from util import *
+from util import flatten, unique
 
 #a point is a vector
 Point = vec.Vec
