@@ -2,7 +2,7 @@ import Clipping
 import vec
 
 import numpy as np
-from Geometry import line_map, HyperPlane
+from Geometry import line_map
 
 from util import remove_None, flatten
 import math
@@ -16,7 +16,7 @@ import opengl_draw_2d
 small_z = 0.001
 z0 = 0
 
-def init(d, size, focal=6, view_radius=5, stereo=False):
+def init(d, size, focal=6, view_radius=5, stereo=False, n_fuzz_points = 10):
     this.d = d
 
     #this.pygame = pygame
@@ -28,6 +28,8 @@ def init(d, size, focal=6, view_radius=5, stereo=False):
     this.face_scales = [0.95]
 
     this.bounds_color = colors.GRAY
+    this.random_fuzz = np.random.uniform(size=[n_fuzz_points, d-1]) #for face fuzz
+
     if d == 3:
         this.graphics = opengl_draw_2d
         this.draw_origin = vec.zero_vec(d)
@@ -67,12 +69,14 @@ def draw(camera, shapes):
             if face.visible:
                 color = face.color
 
+                draw_face_fuzz(camera,face,shape,shapes)
+
                 #calculate scaled lines, for aesthetics
                 def scale_point(p, scale):
                     return vec.linterp(face.center, p, scale)
 
-                #this.draw_face_fuzz(camera,face,shape,shapes)
                 lines = [shape.get_edgei_line(ei) for ei in face.edgeis]
+                #lines = []
 
                 scaled_lines = flatten(
                     [[line_map(scale_point, p, scale_face) for p in lines]
@@ -152,35 +156,32 @@ def draw_frame_lines(camera):
 #this is slow, out of date and doesn't quite work
 #draw points randomly over faces
 def draw_face_fuzz(camera, face, shape, shapes):
-    n_points = 100
     #weights = np.random.uniform(size=[n_points,len(verts)])
     #weights = weights/np.sum(weights,axis=1,keepdims=True)
     #points = np.dot(weights,verts)
-    t_vals = np.random.uniform(size=[n_points, 2])
-    v0 = shape.verts[shape.edges[face.edges[0]][0]]
-    v1 = shape.verts[shape.edges[face.edges[0]][1]]
-    v2 = shape.verts[shape.edges[face.edges[2]][0]]
-    points = np.vectorize(
-        lambda t: vec.linterp(v0, v1, t[0]) + vec.linterp(v0, v2, t[1]),
-        signature='(l)->(n)')(t_vals)
+    
+    verts = [shape.verts[i] for i in face.get_verts(shape)]
+    #points = [vec.linterp(verts[0], verts[1], t[0]) + vec.linterp(verts[0], verts[2], t[1]) for t in t_vals]
+    if this.d == 3:
+        points = [vec.linterp(vec.linterp(verts[0], verts[1], t[0]),vec.linterp(verts[2], verts[3], t[0]),t[1]) for t in this.random_fuzz]
+    if this.d == 4:
+        points = [vec.linterp(
+            vec.linterp(vec.linterp(verts[0], verts[1], t[0]),vec.linterp(verts[2], verts[3], t[0]),t[1]),
+            vec.linterp(vec.linterp(verts[4], verts[5], t[0]),vec.linterp(verts[6], verts[7], t[0]),t[1]),t[2]) for t in this.random_fuzz]
     #print(points.shape)
-    if camera.clipping:
-        clipped = np.full([len(points)], False)
+    if this.clipping:
+        clipped = [False for i in range(len(points))]
         for clipping_shape in shapes:
             if (clipping_shape is
                     not shape) and (not clipping_shape.transparent):
-                clipped = np.logical_and(
-                    clipped,
-                    np.vectorize(
-                        lambda point: Clipping.point_clipped(
-                            point, clipping_shape.boundaries),
-                        signature='(n)->()')(points))
-        clipped_points = points[np.logical_not(clipped)]
+                new_clipped = [Clipping.point_clipped(point,clipping_shape.boundaries) for point in points]
+                clipped = [clip1 or clip2 for clip1,clip2 in zip(clipped,new_clipped)]
+        clipped_points = [point for point,clip in zip(points,clipped) if (not clip)]
         if len(clipped_points) < 1:
             return
-        this.draw_points(camera, clipped_points, face.color)
+        draw_points(camera, clipped_points, face.color)
     else:
-        this.draw_points(camera, points, face.color)
+        draw_points(camera, points, face.color)
 
 
 #consider removing duplicate consecutive points
@@ -215,29 +216,32 @@ def draw_lines(camera, lines, color):
         raise
 
 
-#out of date
-def draw_points(this, camera, points, color):
-    points_rel = camera.transform(points)
-    not_clipped = np.vectorize(
-        lambda point_rel: not Clipping.point_clipped(
-            point_rel, [HyperPlane(np.array([0, 0, 1]), small_z)]),
-        signature='(n)->()')(points_rel)
-    #only draw if z > 0
-    clipped_points = points_rel[not_clipped]
+#d=4 isnt right
+def draw_points(camera, points, color):
+
+    clipped_points = [point for point in points if (not Clipping.point_clipped(
+               point, [camera.plane], small_z))]
+
+    #clipped_points = points #DEBUG
+
     if len(clipped_points) < 1:
         return
-    projected_points = np.vectorize(
-        this.project, signature='(n)->(m)')(clipped_points)
+
+    points_rel = camera.transform(clipped_points)
+    
+    projected_points = [project(point) for point in points_rel]
     #clip into circle
-    in_circle = np.vectorize(
-        lambda point: np.dot(point, point) < this.view_radius**2,
-        signature='(n)->()')(projected_points)
-    projected_points = projected_points[in_circle]
-    #point_2d = stuff
-    #try:
-    this.draw_points_2d(projected_points, color)
-    #except:
-    #    print('problem drawing',points)
+    projected_points = [point for point in projected_points if np.dot(point, point) < this.view_radius**2]
+
+    try:
+        if this.d == 3:
+            this.graphics.draw_points_2d(projected_points, color)
+        if this.d == 4:
+            this.graphics.draw_points_3d(projected_points, color,draw_origin=this.draw_origin,
+                    draw_angles=this.view_angles)
+    except:
+       print('problem drawing',points)
+       raise
 
 
 #     def init_camera(this):

@@ -42,9 +42,9 @@ def calc_boundary(face1, face2, origin):
 
 
 #returns boolean (True,False) if point is (clipped,not clipped)
-def point_clipped(point, boundaries):
+def point_clipped(point, boundaries,dth=0):
     for boundary in boundaries:
-        if vec.dot(point, boundary.normal) >= boundary.threshold:
+        if vec.dot(point, boundary.normal) >= boundary.threshold+dth:
             return False
     return True
 
@@ -55,10 +55,6 @@ def clip_lines(lines, shape, clipping_shapes):
     for clipping_shape in clipping_shapes:
 
         if clipping_shape is not shape and (not clipping_shape.transparent):
-            # clipped_lines = []
-            # for line in lines:
-            #     new_lines = clip_line(line, clipping_shape.boundaries)
-            #     clipped_lines = clipped_lines + new_lines
             clipped_lines = flatten(
                 [clip_line(line, clipping_shape.boundaries) for line in lines])
             lines = clipped_lines

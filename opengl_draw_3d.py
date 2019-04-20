@@ -8,7 +8,7 @@ import vec
 import math
 
 
-def init(size, draw_origin=vec.Vec([0.0,0.0,-15.0]), focal=4, stereo=True):
+def init(size, draw_origin=vec.Vec([0.0, 0.0, -15.0]), focal=4, stereo=True):
     this.size = size
     this.size = size
     this.width, this.height = size
@@ -55,6 +55,7 @@ def initGL():
     #self.init_camera()
     #self.set_camera([0.,10.,0.])
 
+
 def enable_smoothing():
     gl.glEnable(gl.GL_LINE_SMOOTH)
     gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_NICEST)
@@ -63,17 +64,14 @@ def enable_smoothing():
     gl.glEnable(gl.GL_BLEND)
     gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
+
 def init_draw():
     gl.glClear(gl.GL_COLOR_BUFFER_BIT
                | gl.GL_DEPTH_BUFFER_BIT)  # clear the screen
     gl.glMatrixMode(gl.GL_MODELVIEW)
 
 
-def draw_lines_3d(lines,
-                  color,
-                  draw_origin,
-                  draw_angles,
-                  line_width=2):
+def draw_lines_3d(lines, color, draw_origin, draw_angles, line_width=2):
     gl.glLoadIdentity()  # reset position
     gl.glTranslatef(*draw_origin)
     #origin of plotting
@@ -88,7 +86,8 @@ def draw_lines_3d(lines,
             glVertex3f(*point)
     glEnd()
 
-def draw_sphere(radius, draw_origin, draw_angles,color):
+
+def draw_sphere(radius, draw_origin, draw_angles, color):
     draw_circle_3d(
         radius, [0, 1],
         color,
@@ -104,6 +103,7 @@ def draw_sphere(radius, draw_origin, draw_angles,color):
         color,
         draw_origin=draw_origin,
         draw_angles=draw_angles)
+
 
 def draw_circle_3d(radius,
                    axes,
@@ -128,3 +128,20 @@ def draw_circle_3d(radius,
         p[axes[1]] = y
         glVertex3f(*p)
     glEnd()
+
+
+def draw_points_3d(points, color, draw_origin, draw_angles, line_width=2):
+    gl.glLoadIdentity()  # reset position
+    gl.glTranslatef(*draw_origin)
+    #origin of plotting
+    gl.glRotatef(draw_angles[1], 1, 0, 0)
+    gl.glRotatef(draw_angles[0], 0, 1, 0)
+
+    glColor3f(*color)
+    #draw each point as a line with (almost) identical start and end points
+    glLineWidth(line_width)
+    for point in points:
+        glBegin(GL_LINES)
+        glVertex3f(*point)
+        glVertex3f(*(point + vec.Vec([0.01, 0, 0])))
+        glEnd()

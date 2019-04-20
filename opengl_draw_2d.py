@@ -73,12 +73,11 @@ def draw_circle_2d(radius,
     glEnd()
 
 def draw_points_2d(points, color, line_width=2):
-    points = (points) * this.screen_scale + this.center
     glColor3f(*color)
-    #draw each point as a line with identical start and end points
+    #draw each point as a line with (almost) identical start and end points
     glLineWidth(line_width)
     for point in points:
         glBegin(GL_LINES)
-        glVertex2f(*point)
-        glVertex2f(*(point + vec.Vec([1, 0])))
+        glVertex2f(*shift_scale_point(point))
+        glVertex2f(*(shift_scale_point(point) + vec.Vec([1, 0])))
         glEnd()
