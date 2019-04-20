@@ -1,4 +1,5 @@
 import pygame
+import inputs as this
 
 trans_keymapping = {
     3: {
@@ -40,7 +41,6 @@ rot_keymapping = {
 enable_mouse = False
 
 def input_update(camera, draw_class, shapes):
-    global enable_mouse #for some reason nonlocal doesn't work
     update = False
     quit = False
     keys = pygame.key.get_pressed()
@@ -65,7 +65,7 @@ def input_update(camera, draw_class, shapes):
                 print('clipping', draw_class.clipping)
             #toggle mouse
             if event.key == pygame.K_m:
-                enable_mouse = not enable_mouse
+                this.enable_mouse = not this.enable_mouse
             # #window resize
             # if event.key == pygame.VIDEORESIZE:
             #     draw_class.width = event.w

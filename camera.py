@@ -5,7 +5,7 @@ class Camera:
     ang_speed = 0.05
     speed = 0.1
 
-    def __init__(self, pos, draw_class, angles=None):
+    def __init__(self, pos, angles=None):
         d = len(pos)
 
         self.pos = pos
