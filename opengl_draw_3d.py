@@ -104,6 +104,16 @@ def draw_sphere(radius, draw_origin, draw_angles, color):
         draw_origin=draw_origin,
         draw_angles=draw_angles)
 
+def draw_cylinder(radius, height, draw_origin, draw_angles, color,axis=1):
+    circle_axes = [0,1,2]
+    circle_axes.pop(axis)
+    height_vec = vec.one_hot(3,axis)
+    for h in [0,height,-height]:
+        draw_circle_3d(
+            radius, circle_axes,
+            color,
+            draw_origin=draw_origin + h*height_vec,
+            draw_angles=draw_angles)
 
 def draw_circle_3d(radius,
                    axes,

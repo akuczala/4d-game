@@ -1,8 +1,7 @@
 from Geometry import Line, HyperPlane
 from util import flatten
 import vec
-from math import sqrt
-
+import math
 
 #calculate the boundaries of the invisible region behind a shape
 def calc_boundaries(faces, subfaces, origin):
@@ -212,7 +211,7 @@ def sphere_line_intersect(line, r):
     if discr < 0:
         return None
 
-    sqrt_discr = sqrt(discr)
+    sqrt_discr = math.sqrt(discr)
     tm = -v0r_dv - sqrt_discr
     tp = -v0r_dv + sqrt_discr
 
@@ -247,3 +246,41 @@ def clip_line_sphere(line, r):
         return Line(intersect[0], v1)
     else:
         return Line(v0, intersect[1])
+
+#axis coordinate is not properly clipped by tube
+#need t value at intersection
+def clip_line_cylinder(line,r,h,axis):
+    def make_line(u0,u1,a0,a1,axis):
+        return Line(vec.insert_index(u0,axis,a0),vec.insert_index(u1,axis,a1))
+
+    v0 = line[0]
+    v1 = line[1]
+    #components parallel to axis
+    a0 = v0[axis]
+    a1 = v1[axis]
+    #components perpendicular to axis
+    u0 = vec.drop_index(v0,axis)
+    u1 = vec.drop_index(v1,axis)
+    #line is outside
+    if (a0 > h and a1 > h) or (a0 < -h and a1 < -h):
+        return None
+
+    #clip lines to be within cylinder radius
+    tube_clipped = clip_line_sphere(Line(u0,u1),r)
+    if tube_clipped is None:
+        return None
+    cu0 = tube_clipped[0]
+    cu1 = tube_clipped[1]
+    #clip lines to be within +/- h
+
+    a0_inside = abs(a0) < h
+    a1_inside = abs(a1) < h
+
+    
+    if a0_inside and a1_inside:
+        return make_line(cu0,cu1,a0,a1,axis)
+
+    if a0_inside and (not a1_inside):
+        return make_line(cu0,cu1,a0,math.copysign(h,a1),axis)
+    else:
+        return make_line(cu0,cu1,math.copysign(h,a0),a1,axis)

@@ -84,3 +84,11 @@ def rotation_matrix_aligned(dir1, dir2, th):
 #0 ⩽ x ⩽ 1
 def linterp(v1, v2, x):
     return v1 * (1 - x) + v2 * x
+
+#return vector with index removed (used for cylinder clipping)
+def drop_index(v,index):
+    return Vec([v[i] for i in range(len(v)) if i != index])
+def insert_index(v,index,vi):
+    return np.insert(v,index,vi)
+def one_hot(d,index):
+    return np.eye(d)[index]

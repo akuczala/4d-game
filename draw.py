@@ -23,6 +23,8 @@ def init(d, size, focal=6, view_radius=5, stereo=False, n_fuzz_points=10):
     #this.pygame = pygame
     this.focal = focal
     this.view_radius = view_radius
+    this.view_height = view_radius
+    this.view_boundary = 'sphere'
     #scale faces very slightly to avoid drawing edges on top of each other
     #also, for some reason, setting this to one leads to a divide by 0 error
     #when there's transparency
@@ -32,8 +34,9 @@ def init(d, size, focal=6, view_radius=5, stereo=False, n_fuzz_points=10):
     this.show_fuzz = False
     this.random_fuzz = np.random.uniform(size=[n_fuzz_points,
                                                d - 1])  #for face fuzz
-    this.width = size[0]; this.height = size[1]
-    this.center = (this.width // 2, this.height //2) #needed for mouse input
+    this.width = size[0]
+    this.height = size[1]
+    this.center = (this.width // 2, this.height // 2)  #needed for mouse input
 
     if d == 3:
         this.graphics = opengl_draw_2d
@@ -80,6 +83,13 @@ def draw(camera, shapes):
                 draw_face_lines(camera, face, shape, shapes)
 
     #draw boundary of (d-1) screen
+    if this.view_boundary == 'sphere':
+        draw_spherical_boundary()
+    if this.view_boundary == 'cylinder':
+        draw_cylindrical_boundary()
+
+
+def draw_spherical_boundary():
     if this.d == 3:
         this.graphics.draw_circle_2d(this.view_radius, this.bounds_color)
     if this.d == 4:
@@ -92,6 +102,22 @@ def draw(camera, shapes):
         else:
             this.graphics.draw_sphere(this.view_radius, this.draw_origin,
                                       this.view_angles, this.bounds_color)
+
+
+def draw_cylindrical_boundary():
+    if this.d == 3:
+        this.graphics.draw_square(this.view_radius, this.bounds_color)
+    if this.d == 4:
+        if this.stereo:
+            for dorigin, angles in zip([this.stereo_sep, -this.stereo_sep],
+                                       this.stereo_view_angles):
+                this.graphics.draw_cylinder(
+                    this.view_radius, this.view_height,
+                    this.draw_origin + dorigin, angles, this.bounds_color,axis=1)
+        else:
+            this.graphics.draw_cylinder(
+                this.view_radius, this.view_height, this.draw_origin,
+                this.view_angles, this.bounds_color,axis=1)
 
 
 def draw_face_lines(camera, face, shape, shapes):
@@ -140,15 +166,22 @@ def clip_project_lines(camera, lines, color):
     #     return []
 
     projected_lines = [line_map(project, line) for line in lines_rel]
-    #clip to viewing sphere
-    sphere_clipped_lines = remove_None([
-        Clipping.clip_line_sphere(line, r=this.view_radius)
-        for line in projected_lines
-    ])
-    if len(sphere_clipped_lines) < 1:
+    #clip to viewing region
+    if this.view_boundary == 'sphere':
+        view_clipped_lines = remove_None([
+            Clipping.clip_line_sphere(line, r=this.view_radius)
+            for line in projected_lines
+        ])
+    if this.view_boundary == 'cylinder':
+        view_clipped_lines = remove_None([
+            Clipping.clip_line_cylinder(
+                line, r=this.view_radius, h=this.view_height, axis=1)
+            for line in projected_lines
+        ])
+    if len(view_clipped_lines) < 1:
         return []
 
-    return sphere_clipped_lines
+    return view_clipped_lines
 
 
 #out of date
@@ -218,32 +251,32 @@ def draw_face_fuzz(camera, face, shape, shapes):
 #consider removing duplicate consecutive points
 #since draw_lines_2d converts list of lines to list of points, and connects the dots
 def draw_lines(camera, lines, color):
-    sphere_clipped_lines = clip_project_lines(camera, lines, color)
-    if len(sphere_clipped_lines) < 1:
+    view_clipped_lines = clip_project_lines(camera, lines, color)
+    if len(view_clipped_lines) < 1:
         return
     try:
         if this.d == 3:
-            this.graphics.draw_lines_2d(sphere_clipped_lines, color)
+            this.graphics.draw_lines_2d(view_clipped_lines, color)
         if this.d == 4:
             if this.stereo:
                 this.graphics.draw_lines_3d(
-                    sphere_clipped_lines,
+                    view_clipped_lines,
                     color,
                     draw_origin=this.draw_origin + this.stereo_sep,
                     draw_angles=this.stereo_view_angles[0])
                 this.graphics.draw_lines_3d(
-                    sphere_clipped_lines,
+                    view_clipped_lines,
                     color,
                     draw_origin=this.draw_origin - this.stereo_sep,
                     draw_angles=this.stereo_view_angles[1])
             else:
                 this.graphics.draw_lines_3d(
-                    sphere_clipped_lines,
+                    view_clipped_lines,
                     color,
                     draw_origin=this.draw_origin,
                     draw_angles=this.view_angles)
     except:
-        print('problem drawing', sphere_clipped_lines)
+        print('problem drawing', view_clipped_lines)
         raise
 
 
@@ -262,7 +295,9 @@ def draw_points(camera, points, color):
     points_rel = camera.transform(clipped_points)
 
     projected_points = [project(point) for point in points_rel]
-    #clip into circle
+
+    #need to implement clipping into cylinder
+    #clip into sphere
     projected_points = [
         point for point in projected_points
         if np.dot(point, point) < this.view_radius**2
