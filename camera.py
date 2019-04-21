@@ -29,7 +29,7 @@ class Camera:
 
         self.update_plane()
     def look_at(self, p):
-        self.frame = vec.rotation_matrix(self.ref_frame[-1], p).T
+        self.frame = vec.rotation_matrix(self.ref_frame[-1], p-self.pos).T
         self.rot_matrix = self.frame.T
         self.rot_matrix_T = self.rot_matrix.T
 

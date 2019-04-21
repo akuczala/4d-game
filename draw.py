@@ -16,7 +16,8 @@ import opengl_draw_2d
 small_z = 0.001
 z0 = 0
 
-def init(d, size, focal=6, view_radius=5, stereo=False, n_fuzz_points = 10):
+
+def init(d, size, focal=6, view_radius=5, stereo=False, n_fuzz_points=10):
     this.d = d
 
     #this.pygame = pygame
@@ -28,14 +29,18 @@ def init(d, size, focal=6, view_radius=5, stereo=False, n_fuzz_points = 10):
     this.face_scales = [0.95]
 
     this.bounds_color = colors.GRAY
-    this.random_fuzz = np.random.uniform(size=[n_fuzz_points, d-1]) #for face fuzz
+    this.show_fuzz = False
+    this.random_fuzz = np.random.uniform(size=[n_fuzz_points,
+                                               d - 1])  #for face fuzz
+    this.width = size[0]; this.height = size[1]
+    this.center = (this.width // 2, this.height //2) #needed for mouse input
 
     if d == 3:
         this.graphics = opengl_draw_2d
         this.draw_origin = vec.zero_vec(d)
         this.graphics.init(size, this.draw_origin)
     if d == 4:
-        this.draw_origin = vec.Vec([0.0,0.0,-15.0])
+        this.draw_origin = vec.Vec([0.0, 0.0, -15.0])
         this.graphics = opengl_draw_3d
         this.graphics.init(size, this.draw_origin)
         this.stereo = stereo
@@ -55,48 +60,26 @@ def project(v):
 
 
 def draw(camera, shapes):
-
+    #initialize frame
     this.graphics.init_draw()
 
     for shape in shapes:
         shape.update_visibility(camera)
-        shape.boundaries = Clipping.calc_boundaries(shape.faces,
-                                                    shape.subfaces, camera.pos)
-
+        #calculate boundaries for clipping
+        if this.clipping:
+            shape.boundaries = Clipping.calc_boundaries(
+                shape.faces, shape.subfaces, camera.pos)
+    #draw shapes
     for shape in shapes:
 
         for face in shape.faces:
             if face.visible:
-                color = face.color
+                if this.show_fuzz:
+                    draw_face_fuzz(camera, face, shape, shapes)
 
-                draw_face_fuzz(camera,face,shape,shapes)
+                draw_face_lines(camera, face, shape, shapes)
 
-                #calculate scaled lines, for aesthetics
-                def scale_point(p, scale):
-                    return vec.linterp(face.center, p, scale)
-
-                lines = [shape.get_edgei_line(ei) for ei in face.edgeis]
-                #lines = []
-
-                scaled_lines = flatten(
-                    [[line_map(scale_point, p, scale_face) for p in lines]
-                     for scale_face in this.face_scales])
-                lines = scaled_lines
-
-                #clip things behind camera first
-                lines = remove_None([
-                    Clipping.clip_line_plane(line, camera.plane, small_z)
-                    for line in lines
-                ])
-                if len(lines) > 1:
-                    #clipping = False doubles the framerate
-                    if this.clipping:
-                        clipped_lines = Clipping.clip_lines(
-                            lines, shape, shapes)
-                        #draw clipped line
-                        draw_lines(camera, clipped_lines, color)
-                    else:  #noclip
-                        draw_lines(camera, lines, color)
+    #draw boundary of (d-1) screen
     if this.d == 3:
         this.graphics.draw_circle_2d(this.view_radius, this.bounds_color)
     if this.d == 4:
@@ -108,8 +91,36 @@ def draw(camera, shapes):
                                           this.bounds_color)
         else:
             this.graphics.draw_sphere(this.view_radius, this.draw_origin,
-                                      this.stereo_view_angles[0],
-                                      this.bounds_color)
+                                      this.view_angles, this.bounds_color)
+
+
+def draw_face_lines(camera, face, shape, shapes):
+    color = face.color
+
+    #calculate scaled lines, for aesthetics
+    def scale_point(p, scale):
+        return vec.linterp(face.center, p, scale)
+
+    lines = [shape.get_edgei_line(ei) for ei in face.edgeis]
+    #lines = []
+
+    scaled_lines = flatten(
+        [[line_map(scale_point, p, scale_face) for p in lines]
+         for scale_face in this.face_scales])
+    lines = scaled_lines
+
+    #clip things behind camera first
+    lines = remove_None([
+        Clipping.clip_line_plane(line, camera.plane, small_z) for line in lines
+    ])
+    if len(lines) > 1:
+        #clipping = False doubles the framerate
+        if this.clipping:
+            clipped_lines = Clipping.clip_lines(lines, shape, shapes)
+            #draw clipped line
+            draw_lines(camera, clipped_lines, color)
+        else:  #noclip
+            draw_lines(camera, lines, color)
 
 
 #transforms lines to camera space and clips lines behind the camera,
@@ -159,24 +170,44 @@ def draw_face_fuzz(camera, face, shape, shapes):
     #weights = np.random.uniform(size=[n_points,len(verts)])
     #weights = weights/np.sum(weights,axis=1,keepdims=True)
     #points = np.dot(weights,verts)
-    
+
     verts = [shape.verts[i] for i in face.get_verts(shape)]
     #points = [vec.linterp(verts[0], verts[1], t[0]) + vec.linterp(verts[0], verts[2], t[1]) for t in t_vals]
     if this.d == 3:
-        points = [vec.linterp(vec.linterp(verts[0], verts[1], t[0]),vec.linterp(verts[2], verts[3], t[0]),t[1]) for t in this.random_fuzz]
+        points = [
+            vec.linterp(
+                vec.linterp(verts[0], verts[1], t[0]),
+                vec.linterp(verts[2], verts[3], t[0]), t[1])
+            for t in this.random_fuzz
+        ]
     if this.d == 4:
-        points = [vec.linterp(
-            vec.linterp(vec.linterp(verts[0], verts[1], t[0]),vec.linterp(verts[2], verts[3], t[0]),t[1]),
-            vec.linterp(vec.linterp(verts[4], verts[5], t[0]),vec.linterp(verts[6], verts[7], t[0]),t[1]),t[2]) for t in this.random_fuzz]
+        points = [
+            vec.linterp(
+                vec.linterp(
+                    vec.linterp(verts[0], verts[1], t[0]),
+                    vec.linterp(verts[2], verts[3], t[0]), t[1]),
+                vec.linterp(
+                    vec.linterp(verts[4], verts[5], t[0]),
+                    vec.linterp(verts[6], verts[7], t[0]), t[1]), t[2])
+            for t in this.random_fuzz
+        ]
     #print(points.shape)
     if this.clipping:
         clipped = [False for i in range(len(points))]
         for clipping_shape in shapes:
             if (clipping_shape is
                     not shape) and (not clipping_shape.transparent):
-                new_clipped = [Clipping.point_clipped(point,clipping_shape.boundaries) for point in points]
-                clipped = [clip1 or clip2 for clip1,clip2 in zip(clipped,new_clipped)]
-        clipped_points = [point for point,clip in zip(points,clipped) if (not clip)]
+                new_clipped = [
+                    Clipping.point_clipped(point, clipping_shape.boundaries)
+                    for point in points
+                ]
+                clipped = [
+                    clip1 or clip2
+                    for clip1, clip2 in zip(clipped, new_clipped)
+                ]
+        clipped_points = [
+            point for point, clip in zip(points, clipped) if (not clip)
+        ]
         if len(clipped_points) < 1:
             return
         draw_points(camera, clipped_points, face.color)
@@ -216,11 +247,12 @@ def draw_lines(camera, lines, color):
         raise
 
 
-#d=4 isnt right
 def draw_points(camera, points, color):
 
-    clipped_points = [point for point in points if (not Clipping.point_clipped(
-               point, [camera.plane], small_z))]
+    clipped_points = [
+        point for point in points
+        if (not Clipping.point_clipped(point, [camera.plane], small_z))
+    ]
 
     #clipped_points = points #DEBUG
 
@@ -228,20 +260,32 @@ def draw_points(camera, points, color):
         return
 
     points_rel = camera.transform(clipped_points)
-    
+
     projected_points = [project(point) for point in points_rel]
     #clip into circle
-    projected_points = [point for point in projected_points if np.dot(point, point) < this.view_radius**2]
+    projected_points = [
+        point for point in projected_points
+        if np.dot(point, point) < this.view_radius**2
+    ]
 
     try:
         if this.d == 3:
             this.graphics.draw_points_2d(projected_points, color)
+
         if this.d == 4:
-            this.graphics.draw_points_3d(projected_points, color,draw_origin=this.draw_origin,
-                    draw_angles=this.view_angles)
+            if this.stereo:
+                for dorigin, angles in zip([this.stereo_sep, -this.stereo_sep],
+                                           this.stereo_view_angles):
+                    this.graphics.draw_points_3d(projected_points, color,
+                                                 this.draw_origin + dorigin,
+                                                 angles)
+            else:
+                this.graphics.draw_points_3d(projected_points, color,
+                                             this.draw_origin,
+                                             this.view_angles)
     except:
-       print('problem drawing',points)
-       raise
+        print('problem drawing', points)
+        raise
 
 
 #     def init_camera(this):

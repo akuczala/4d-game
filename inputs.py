@@ -1,4 +1,5 @@
 import pygame
+import draw
 import inputs as this
 
 trans_keymapping = {
@@ -40,7 +41,7 @@ rot_keymapping = {
 
 enable_mouse = False
 
-def input_update(camera, draw_class, shapes):
+def input_update(camera, shapes):
     update = False
     quit = False
     keys = pygame.key.get_pressed()
@@ -61,15 +62,19 @@ def input_update(camera, draw_class, shapes):
                 print('transparency', shapes[0].transparent)
             #toggle clipping
             if event.key == pygame.K_c:
-                draw_class.clipping = not draw_class.clipping
-                print('clipping', draw_class.clipping)
+                draw.clipping = not draw.clipping
+                print('clipping', draw.clipping)
+            #toggle fuzz
+            if event.key == pygame.K_f:
+                draw.show_fuzz = not draw.show_fuzz
+                print('show fuzz', draw.show_fuzz)
             #toggle mouse
             if event.key == pygame.K_m:
                 this.enable_mouse = not this.enable_mouse
             # #window resize
             # if event.key == pygame.VIDEORESIZE:
-            #     draw_class.width = event.w
-            #     draw_class.height = event.h
+            #     draw.width = event.w
+            #     draw.height = event.h
             #     #need to reinitialize pygame surface
             #end game
             if event.key == pygame.K_ESCAPE:
@@ -77,6 +82,17 @@ def input_update(camera, draw_class, shapes):
 
     #keys that cause continuous action (e.g. movement)
 
+    #adjust view radius
+    if keys[pygame.K_PERIOD]:
+        draw.view_radius = max(draw.view_radius + 0.1,0)
+        update = True
+    if keys[pygame.K_COMMA]:
+        draw.view_radius = max(draw.view_radius - 0.1,0)
+        update = True
+
+    if keys[pygame.K_s]:
+        camera.pos = camera.pos - camera.speed * camera.heading()
+        update = True
     #moving forward and backward
     if keys[pygame.K_w]:
         camera.pos = camera.pos + camera.speed * camera.heading()
@@ -112,26 +128,26 @@ def input_update(camera, draw_class, shapes):
             if event.type == pygame.MOUSEMOTION:
                 #print('mooovesd',event.pos)
                 mx, my = event.pos
-                dmx, dmy = mx - draw_class.center[0], my - draw_class.center[1]
+                dmx, dmy = mx - draw.center[0], my - draw.center[1]
                 #break #choose first event
         if abs(dmx) > 2 or abs(dmy) > 2:
             #print(dmx,dmy)
             update = True
-            pygame.mouse.set_pos(draw_class.center)
+            pygame.mouse.set_pos(draw.center)
             if d == 3:
                 camera.update_rot_matrix(
-                    1, 2, -dmy / draw_class.height * 32 * camera.ang_speed)
+                    1, 2, -dmy / draw.height * 32 * camera.ang_speed)
                 camera.update_rot_matrix(
-                    0, 2, dmx / draw_class.height * 32 * camera.ang_speed)
+                    0, 2, dmx / draw.height * 32 * camera.ang_speed)
             if d == 4:
                 if keys[pygame.K_RSHIFT] or keys[pygame.K_LSHIFT]:
                     camera.update_rot_matrix(
-                        2, 3, dmx / draw_class.height * 32 * camera.ang_speed)
+                        2, 3, dmx / draw.height * 32 * camera.ang_speed)
                 else:
                     camera.update_rot_matrix(
-                        0, 3, dmx / draw_class.height * 32 * camera.ang_speed)
+                        0, 3, dmx / draw.height * 32 * camera.ang_speed)
                 camera.update_rot_matrix(
-                    1, 3, -dmy / draw_class.height * 32 * camera.ang_speed)
+                    1, 3, -dmy / draw.height * 32 * camera.ang_speed)
 
     #any kind of whatever, update the plane
     if update:

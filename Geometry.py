@@ -259,4 +259,5 @@ def build_cube(d):
     faces = calc_cube_faces(edges, verts)
     #scale and translate verts so that the cube's corners are at +- 1
     #and the center is in the center
-    return ConvexShape(verts * 2 - vec.ones_vec(d)/2, edges, faces)
+    verts = [2*Point(list(v)) - vec.ones_vec(d) for v in verts] #convert to Point data type
+    return ConvexShape(verts, edges, faces)
