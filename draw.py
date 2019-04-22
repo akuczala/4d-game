@@ -106,7 +106,7 @@ def draw_spherical_boundary():
 
 def draw_cylindrical_boundary():
     if this.d == 3:
-        this.graphics.draw_rectangle(this.view_radius, this.view_height, this.bounds_color)
+        this.graphics.draw_rectangle(this.view_radius*2, this.view_height, this.bounds_color)
     if this.d == 4:
         if this.stereo:
             for dorigin, angles in zip([this.stereo_sep, -this.stereo_sep],

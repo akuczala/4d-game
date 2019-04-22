@@ -108,7 +108,7 @@ def draw_cylinder(radius, height, draw_origin, draw_angles, color,axis=1):
     circle_axes = [0,1,2]
     circle_axes.pop(axis)
     height_vec = vec.one_hot(3,axis)
-    for h in [0,height,-height]:
+    for h in [0,height/2,-height/2]:
         draw_circle_3d(
             radius, circle_axes,
             color,

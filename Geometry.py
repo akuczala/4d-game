@@ -2,7 +2,7 @@ import itertools
 import vec
 import numpy as np
 from util import flatten, unique
-
+import math
 #a point is a vector
 Point = vec.Vec
 
@@ -202,7 +202,9 @@ class ConvexShape:
             else:
                 face.update_visibility(camera)
 
-
+#note: uses numpy quite, and assumes verts and edges
+#are lists of numpy arrays
+#these are converted into Vec and Edge objects at the end
 def build_cube(d):
     verts = list(itertools.product(range(2), repeat=d))
 
@@ -260,4 +262,42 @@ def build_cube(d):
     #scale and translate verts so that the cube's corners are at +- 1
     #and the center is in the center
     verts = [2*Point(list(v)) - vec.ones_vec(d) for v in verts] #convert to Point data type
+    edges = [Edge(e[0],e[1]) for e in edges] # convert to Edges data type
     return ConvexShape(verts, edges, faces)
+
+#builds 3d cylinder
+def build_cylinder(r,h,axis,n_circ_pts):
+    d = 3
+    circle_coords = [(lambda angle: r*vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*i/n_circ_pts) for i in range(n_circ_pts)]
+    #normals point halfway between each pair of circle coords
+    normal_coords = [(lambda angle: vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*(i+0.5)/n_circ_pts) for i in range(n_circ_pts)]
+    top_verts = [vec.insert_index(p,axis,h/2) for p in circle_coords]
+    bottom_verts = [vec.insert_index(p,axis,-h/2) for p in circle_coords]
+    verts = top_verts + bottom_verts
+
+    top_edges = [Edge(i,(i+1)%n_circ_pts) for i in range(n_circ_pts)]
+    bottom_edges = [Edge(i + n_circ_pts,(i+1)%n_circ_pts + n_circ_pts) for i in range(n_circ_pts)]
+    long_edges = [Edge(i,i+n_circ_pts) for i in range(n_circ_pts)]
+    edges = top_edges + bottom_edges + long_edges
+
+    top_face = Face(edgeis = list(range(0,n_circ_pts)), normal = vec.one_hot(d,axis))
+    bottom_face = Face(edgeis = list(range(n_circ_pts,2*n_circ_pts)), normal = -vec.one_hot(d,axis))
+    normal_vecs = [vec.insert_index(p,axis,0) for p in normal_coords]
+    long_faces = [Face(edgeis = [i,i+n_circ_pts,2*n_circ_pts + i,2*n_circ_pts + (i+1)%n_circ_pts],
+        normal = normal_vecs[i]) for i in range(n_circ_pts)]
+
+    faces = [top_face,bottom_face] + long_faces
+
+    return ConvexShape(verts,edges,faces)
+
+#builds 4d duocylinder
+#n_circ points is a length two list of # points around each perp circle
+#rs is a list of radii of each circle
+#each face is a prism. if circle 0 has m points and circle 1 has n points,
+#there are m n-prisms and n m-prisms
+def build_duocylinder(rs,h,axes,n_circ_pts):
+    d = 4
+    circle_coords = [
+    [(lambda angle: r*vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*i/n_circ_pts)
+        for i in range(n_pts)] for r,n_pts in zip(rs,n_circ_pts)]
+    

@@ -77,7 +77,7 @@ def draw_rectangle(width,height,color,line_width=2):
     glLineWidth(line_width)
     glBegin(GL_LINE_LOOP)
     for coords in [[1,1],[1,-1],[-1,-1],[-1,1]]:
-        glVertex2f(*shift_scale_point(vec.Vec([width,height])*vec.Vec(coords)))
+        glVertex2f(*shift_scale_point(vec.Vec([width/2,height/2])*vec.Vec(coords)))
     glEnd()
 
 

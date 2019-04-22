@@ -275,6 +275,7 @@ def clip_line_sphere(line, r):
 def clip_line_cylinder(line,r,h,axis):
     def make_line(u0,u1,a0,a1,axis):
         return Line(vec.insert_index(u0,axis,a0),vec.insert_index(u1,axis,a1))
+    half_h = h/2
 
     v0 = line[0]
     v1 = line[1]
@@ -285,7 +286,7 @@ def clip_line_cylinder(line,r,h,axis):
     u0 = vec.drop_index(v0,axis)
     u1 = vec.drop_index(v1,axis)
     #line is outside
-    if (a0 > h and a1 > h) or (a0 < -h and a1 < -h):
+    if (a0 > half_h and a1 > half_h) or (a0 < -half_h and a1 < -half_h):
         return None
 
     #clip lines to be within cylinder radius
@@ -324,10 +325,10 @@ def clip_line_cylinder(line,r,h,axis):
     
     #clip top and bottom of cylinder
     d = vec.dim(v0)
-    clipped_line = clip_line_plane(new_line,HyperPlane(-vec.one_hot(d,axis),-h))
+    clipped_line = clip_line_plane(new_line,HyperPlane(-vec.one_hot(d,axis),-half_h))
     if clipped_line is None:
         return None
 
-    clipped_line = clip_line_plane(clipped_line,HyperPlane(vec.one_hot(d,axis),-h))
+    clipped_line = clip_line_plane(clipped_line,HyperPlane(vec.one_hot(d,axis),-half_h))
 
     return clipped_line
