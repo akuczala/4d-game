@@ -82,12 +82,14 @@ def input_update(camera, shapes):
 
     #keys that cause continuous action (e.g. movement)
 
-    #adjust view radius
+    #adjust view radius, height
     if keys[pygame.K_PERIOD]:
         draw.view_radius = max(draw.view_radius + 0.1,0)
+        draw.view_height = max(draw.view_height + 0.1,0)
         update = True
     if keys[pygame.K_COMMA]:
         draw.view_radius = max(draw.view_radius - 0.1,0)
+        draw.view_height = max(draw.view_height - 0.1,0)
         update = True
 
     if keys[pygame.K_s]:

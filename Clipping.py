@@ -139,7 +139,7 @@ def clip_line_z0(line, z0, small_z):
         return [v1, intersect]
 
 #clip everything behind the plane
-def clip_line_plane(line, plane, small_z):
+def clip_line_plane(line, plane, small_z=0):
     p0 = line[0]
     p1 = line[1]
 
@@ -192,8 +192,10 @@ def clip_line_cube(line, r):
     # else:
     #     return Line(v0, intersect)
 
-
+#returns either none or pair of intersecting points
+#note that tm and p are NOT bound between 0 and 1
 def sphere_line_intersect(line, r):
+
     v0 = line[0]
     v1 = line[1]
     dv = v1 - v0
@@ -221,10 +223,31 @@ def sphere_line_intersect(line, r):
         return None
     if tm < 0 and tp < 0:
         return None
-    new_line = Line(v0 + tm * dv, v0 + tp * dv)
-    #print(new_line)
-    return new_line
+    intersect_points = [v0 + tm * dv, v0 + tp * dv]
+    
+    return intersect_points
 
+def sphere_t_intersect(line,r):
+    v0 = line[0]
+    v1 = line[1]
+    v0sq = vec.dot(v0,v0)
+    v1sq = vec.dot(v1,v1)
+    v0dotv1 = vec.dot(v0,v1)
+    #quadratic parameters
+    a = v0sq + v1sq - 2*v0dotv1
+    b = 2*(-v0sq + v0dotv1)
+    c = v0sq - r*r
+
+    discr = b*b-4*a*c
+
+    if discr < 0:
+        return None
+
+    sqrt_discr = math.sqrt(discr)
+    tm = (-b - sqrt_discr)/(2*a)
+    tp = (-b + sqrt_discr)/(2*a)
+
+    return (tm,tp)
 
 def clip_line_sphere(line, r):
     v0 = line[0]
@@ -266,21 +289,45 @@ def clip_line_cylinder(line,r,h,axis):
         return None
 
     #clip lines to be within cylinder radius
-    tube_clipped = clip_line_sphere(Line(u0,u1),r)
-    if tube_clipped is None:
-        return None
-    cu0 = tube_clipped[0]
-    cu1 = tube_clipped[1]
-    #clip lines to be within +/- h
+    #would be nice if we could neatly merge this functionality with sphere clipping
+    t_roots = sphere_t_intersect(Line(u0,u1),r)
+    u0_in_circle = vec.dot(u0, u0) < r * r
+    u1_in_circle = vec.dot(u1, u1) < r * r
 
-    a0_inside = abs(a0) < h
-    a1_inside = abs(a1) < h
-
-    
-    if a0_inside and a1_inside:
-        return make_line(cu0,cu1,a0,a1,axis)
-
-    if a0_inside and (not a1_inside):
-        return make_line(cu0,cu1,a0,math.copysign(h,a1),axis)
+    if u0_in_circle and u1_in_circle:
+        circ_line = Line(u0,u1)
     else:
-        return make_line(cu0,cu1,math.copysign(h,a0),a1,axis)
+        if (not u0_in_circle) and (not u1_in_circle):
+            #(extended) line does not intersect circle
+            if t_roots is None:
+                return None
+            #check to see if segment intersecs
+            #need only check one root to see if line segment intersects
+            if t_roots[0] < 0 or t_roots[0] > 1:
+                return None
+            else:
+                circ_line = Line(vec.linterp(u0,u1,t_roots[0]),vec.linterp(u0,u1,t_roots[1]))
+                new_a0 = vec.linterp(a0,a1,t_roots[0])
+                new_a1 = vec.linterp(a0,a1,t_roots[1])
+                a0 = new_a0; a1 = new_a1
+        else:
+            if u0_in_circle and (not u1_in_circle):
+                #print("u0 in",tm,tp,line)
+                circ_line = Line(u0,vec.linterp(u0,u1,t_roots[1]))
+                a1 = vec.linterp(a0,a1,t_roots[1])
+            else:
+                #print("u1 in",tm,tp,line)
+                circ_line = Line(vec.linterp(u0,u1,t_roots[0]),u1)
+                a0 = vec.linterp(a0,a1,t_roots[0])
+
+    new_line = make_line(circ_line[0],circ_line[1],a0,a1,axis)
+    
+    #clip top and bottom of cylinder
+    d = vec.dim(v0)
+    clipped_line = clip_line_plane(new_line,HyperPlane(-vec.one_hot(d,axis),-h))
+    if clipped_line is None:
+        return None
+
+    clipped_line = clip_line_plane(clipped_line,HyperPlane(vec.one_hot(d,axis),-h))
+
+    return clipped_line

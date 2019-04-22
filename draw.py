@@ -17,13 +17,13 @@ small_z = 0.001
 z0 = 0
 
 
-def init(d, size, focal=6, view_radius=5, stereo=False, n_fuzz_points=10):
+def init(d, size, focal=6, view_radius=5, view_height = 5, stereo=False, n_fuzz_points=10):
     this.d = d
 
     #this.pygame = pygame
     this.focal = focal
     this.view_radius = view_radius
-    this.view_height = view_radius
+    this.view_height = view_height
     this.view_boundary = 'sphere'
     #scale faces very slightly to avoid drawing edges on top of each other
     #also, for some reason, setting this to one leads to a divide by 0 error
@@ -106,7 +106,7 @@ def draw_spherical_boundary():
 
 def draw_cylindrical_boundary():
     if this.d == 3:
-        this.graphics.draw_square(this.view_radius, this.bounds_color)
+        this.graphics.draw_rectangle(this.view_radius, this.view_height, this.bounds_color)
     if this.d == 4:
         if this.stereo:
             for dorigin, angles in zip([this.stereo_sep, -this.stereo_sep],

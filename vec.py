@@ -31,6 +31,8 @@ def barycenter(vecs):
 def isclose(x, y):
     return np.isclose(x, y)
 
+def allisclose(x, y):
+    return np.all(np.isclose(x, y))
 
 def zero_vec(d):
     return np.zeros((d))
@@ -53,6 +55,7 @@ def rotmat(t):
 
 
 #finds rotation matrix between two (normalized) vectors (rotates v1 to v2)
+#this is probably very expensive as is
 def rotation_matrix(v1, v2, th=None):
     u = v1 / norm(v1)
     v = v2 / norm(v2)
@@ -65,7 +68,8 @@ def rotation_matrix(v1, v2, th=None):
     #sinth = np.sin(np.arccos(costh))
     R = Matrix([[costh, -sinth], [sinth, costh]])
     w = (v - dot(u, v) * u)
-    w = w / norm(w)
+    if not allisclose(w,zero_vec(dim(w))):
+        w = w / norm(w)
     uw_mat = np.array([u, w])
     return np.eye(len(u)) - np.outer(u, u) - np.outer(w, w) + np.dot(
         uw_mat.T, np.dot(R, uw_mat))
