@@ -39,7 +39,6 @@ def calc_boundary(face1, face2, origin):
 
     return HyperPlane(n3, th3)
 
-
 #returns boolean (True,False) if point is (clipped,not clipped)
 def point_clipped(point, boundaries,dth=0):
     for boundary in boundaries:

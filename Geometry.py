@@ -162,10 +162,12 @@ class ConvexShape:
         #update faces
         for face in self.faces:
             face.update(self, rot_mat)
-
+    #get line corresponding to edge
+    def get_edge_line(self, edge):
+        return [self.verts[vi] for vi in edge]
     #get line corresponding to edge index
     def get_edgei_line(self, ei):
-        return [self.verts[vi] for vi in self.edges[ei]]
+        return self.get_edge_line(self.edges[ei])
 
     #update shape
     def update(self, pos=None, angles=None, scale=None):
@@ -295,9 +297,61 @@ def build_cylinder(r,h,axis,n_circ_pts):
 #rs is a list of radii of each circle
 #each face is a prism. if circle 0 has m points and circle 1 has n points,
 #there are m n-prisms and n m-prisms
-def build_duocylinder(rs,h,axes,n_circ_pts):
+def build_duocylinder(rs,axes,n_circ_pts):
     d = 4
+    if len(unique(flatten(axes))) < d:
+        raise Exception("all axes must be distinct")
     circle_coords = [
-    [(lambda angle: r*vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*i/n_circ_pts)
+    [(lambda angle: r*vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*(i+0.5)/n_pts)
         for i in range(n_pts)] for r,n_pts in zip(rs,n_circ_pts)]
-    
+    #just a guess
+    normal_coords = [
+    [(lambda angle: r*vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*(i+0.5)/n_pts)
+        for i in range(n_pts)] for r,n_pts in zip(rs,n_circ_pts)]
+    def make_vert(circ0,circ1,axes):
+        v = vec.zero_vec(d)
+        v[axes[0][0]] = circ0[0]
+        v[axes[0][1]] = circ0[1]
+        v[axes[1][0]] = circ1[0]
+        v[axes[1][1]] = circ1[1]
+        return v
+    verts = [make_vert(c1,c2,axes) for c1,c2 in itertools.product(*circle_coords)]
+
+    #we need m loops of length n and n loops of length m
+    edges_1 = [Edge(j+i*n_circ_pts[1],(j+1)%n_circ_pts[1]+i*n_circ_pts[1])
+        for i,j in itertools.product(range(n_circ_pts[0]),range(n_circ_pts[1]))]
+    edges_2 = [Edge(j+i*n_circ_pts[1],j + ((i+1)%n_circ_pts[0])*n_circ_pts[1])
+        for i,j in itertools.product(range(n_circ_pts[0]),range(n_circ_pts[1]))]
+
+    edges = edges_1 + edges_2
+
+    def make_normal(vec0,vec1,axes):
+        v = vec.zero_vec(d)
+        v[axes[0][0]] = vec0[0]
+        v[axes[0][1]] = vec0[1]
+        v[axes[1][0]] = vec1[0]
+        v[axes[1][1]] = vec1[1]
+        return vec.unit(v)
+    #we need m n-prisms and n m-prisms
+    def make_face1(i,n_circ_pts):
+        m = n_circ_pts[0]; n = n_circ_pts[1]
+        cap1_edgeis = [j + i*n for j in range(n)]
+        cap2_edgeis = [j + ((i+1)%m)*n for j in range(n)]
+        long_edgeis = [m*n + j + i*n for j in range(n)]
+        #long2_edgeis = [m*n + j + i*n for j in range(m)]
+        return Face(edgeis = cap1_edgeis + cap2_edgeis + long_edgeis,
+            normal = make_normal(normal_coords[0][i],vec.zero_vec(2),axes) #placeholder; need to think about this
+            )
+    def make_face2(j,n_circ_pts):
+        m = n_circ_pts[0]; n = n_circ_pts[1]
+        cap1_edgeis = [m*n + j + i*n for i in range(m)]
+        cap2_edgeis = [m*n + (j+1)%n + i*n for i in range(m)]
+        long_edgeis = [j + i*n for i in range(m)]
+        #long2_edgeis = [m*n + j + i*n for j in range(m)]
+        return Face(edgeis = cap1_edgeis + cap2_edgeis + long_edgeis,
+            normal = make_normal(normal_coords[1][j],vec.zero_vec(2),axes) #placeholder; need to think about this
+            )
+    faces_1 = [make_face1(i,n_circ_pts) for i in range(n_circ_pts[0])]
+    faces_2 = [make_face2(j,n_circ_pts) for j in range(n_circ_pts[1])]
+    faces = faces_1 + faces_2
+    return ConvexShape(verts,edges,faces)

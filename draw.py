@@ -3,7 +3,7 @@ import vec
 
 import numpy as np
 from Geometry import line_map
-
+from Geometry import Line
 from util import remove_None, flatten
 import math
 
@@ -61,7 +61,21 @@ def project(v):
         z = v[-1]
     return this.focal * v[:-1] / (z)
 
+def draw_wireframe(camera,shape,color):
+    #init?
+    for edge in shape.edges:
+        lines = [shape.get_edge_line(edge) for edge in shape.edges]
+        lines = camera_clip_lines(lines,camera)
+    if len(lines) < 1:
+        return
+    draw_lines(camera, lines, color)
 
+def draw_normals(camera,shape,color):
+    lines = [Line(face.center,face.center + face.normal) for face in shape.faces]
+    lines = camera_clip_lines(lines,camera)
+    if len(lines) < 1:
+        return
+    draw_lines(camera, lines, color)
 def draw(camera, shapes):
     #initialize frame
     this.graphics.init_draw()
@@ -135,10 +149,8 @@ def draw_face_lines(camera, face, shape, shapes):
          for scale_face in this.face_scales])
     lines = scaled_lines
 
-    #clip things behind camera first
-    lines = remove_None([
-        Clipping.clip_line_plane(line, camera.plane, small_z) for line in lines
-    ])
+    lines = camera_clip_lines(lines,camera)
+
     if len(lines) > 1:
         #clipping = False doubles the framerate
         if this.clipping:
@@ -148,8 +160,12 @@ def draw_face_lines(camera, face, shape, shapes):
         else:  #noclip
             draw_lines(camera, lines, color)
 
-
-#transforms lines to camera space and clips lines behind the camera,
+#clip things behind camera
+def camera_clip_lines(lines,camera):
+    return remove_None([
+        Clipping.clip_line_plane(line, camera.plane, small_z) for line in lines
+    ])
+#transforms lines to camera space
 #then projects the lines down to d-1 and does viewport clipping
 def clip_project_lines(camera, lines, color):
     if len(lines) < 1:

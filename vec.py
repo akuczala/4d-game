@@ -19,7 +19,9 @@ def dot(x, y):
 def norm(x):
     return lin.norm(x)
 
-
+def unit(x):
+    return x/norm(x)
+    
 def linf_norm(x):
     return lin.norm(x, ord=np.inf)
 
