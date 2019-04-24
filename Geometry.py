@@ -1,10 +1,13 @@
 import itertools
 import vec
+from vec import Vec
 import numpy as np
+
 from util import flatten, unique
 import math
+from numpy.linalg import svd
 #a point is a vector
-Point = vec.Vec
+Point = Vec
 
 #a line is a 2 tuple of points
 # def Line(p1,p2):
@@ -109,6 +112,12 @@ class Face:
         norm_dot_cam = vec.dot(self.normal, self.center - camera.pos)
         self.visible = norm_dot_cam < 0
 
+    def check_normal(self,shape):
+        vertis = self.get_verts(shape)
+        verts = [shape.verts_ref[vi] for vi in vertis]
+        dots = [vec.dot(v-self.center,self.normal_ref) for v in verts]
+        return np.all(vec.isclose(dots,vec.zero_vec(len(dots))))
+
 
 def num_planes(d):
     return d * (d - 1) // 2
@@ -137,7 +146,8 @@ class ConvexShape:
             self.scale = scale
         self.subfaces = self.calc_subfaces()
         self.update()
-
+        if not self.check_normals():
+            print("Warning: not all normals perpendicular")
     #full copy
     def copy(self):
         faces_copy = [face.copy() for face in self.faces]
@@ -204,6 +214,9 @@ class ConvexShape:
             else:
                 face.update_visibility(camera)
 
+    def check_normals(self):
+        return np.all([face.check_normal(self) for face in self.faces])
+
 #note: uses numpy quite, and assumes verts and edges
 #are lists of numpy arrays
 #these are converted into Vec and Edge objects at the end
@@ -217,7 +230,7 @@ def build_cube(d):
             n_shared = np.count_nonzero(
                 np.logical_not(np.logical_xor(verts[i], verts[j])))
             if n_shared == d - 1:
-                edges.append(vec.Vec([i, j]))
+                edges.append(Vec([i, j]))
         return edges
 
     edges = calc_cube_edges(verts)
@@ -253,7 +266,7 @@ def build_cube(d):
             verts_in_face = np.array(verts)[face_vi]
             align_1 = np.all(verts_in_face, axis=0)
             align_0 = np.all(np.logical_not(verts_in_face), axis=0)
-            face_normal = vec.Vec(
+            face_normal = Vec(
                 list(align_1.astype(np.float) - align_0.astype(np.float)))
             #print(face_normal)
             faces.append(Face(face_edgeis, face_normal))
@@ -270,9 +283,9 @@ def build_cube(d):
 #builds 3d cylinder
 def build_cylinder(r,h,axis,n_circ_pts):
     d = 3
-    circle_coords = [(lambda angle: r*vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*i/n_circ_pts) for i in range(n_circ_pts)]
+    circle_coords = [(lambda angle: r*Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*i/n_circ_pts) for i in range(n_circ_pts)]
     #normals point halfway between each pair of circle coords
-    normal_coords = [(lambda angle: vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*(i+0.5)/n_circ_pts) for i in range(n_circ_pts)]
+    normal_coords = [(lambda angle: Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*(i+0.5)/n_circ_pts) for i in range(n_circ_pts)]
     top_verts = [vec.insert_index(p,axis,h/2) for p in circle_coords]
     bottom_verts = [vec.insert_index(p,axis,-h/2) for p in circle_coords]
     verts = top_verts + bottom_verts
@@ -302,12 +315,9 @@ def build_duocylinder(rs,axes,n_circ_pts):
     if len(unique(flatten(axes))) < d:
         raise Exception("all axes must be distinct")
     circle_coords = [
-    [(lambda angle: r*vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*(i+0.5)/n_pts)
+    [(lambda angle: r*Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*(i+0.5)/n_pts)
         for i in range(n_pts)] for r,n_pts in zip(rs,n_circ_pts)]
-    #just a guess
-    normal_coords = [
-    [(lambda angle: r*vec.Vec([math.cos(angle),math.sin(angle)]))(2*math.pi*(i+0.5)/n_pts)
-        for i in range(n_pts)] for r,n_pts in zip(rs,n_circ_pts)]
+    
     def make_vert(circ0,circ1,axes):
         v = vec.zero_vec(d)
         v[axes[0][0]] = circ0[0]
@@ -325,33 +335,74 @@ def build_duocylinder(rs,axes,n_circ_pts):
 
     edges = edges_1 + edges_2
 
-    def make_normal(vec0,vec1,axes):
-        v = vec.zero_vec(d)
-        v[axes[0][0]] = vec0[0]
-        v[axes[0][1]] = vec0[1]
-        v[axes[1][0]] = vec1[0]
-        v[axes[1][1]] = vec1[1]
-        return vec.unit(v)
+    #make normals point from center of shape to center of face
+    #happens to work
+    def make_normal(edgeis,verts,edges):
+        vertis = unique(flatten([edges[ei] for ei in edgeis]))
+        verts_in_face = [verts[vi] for vi in vertis]
+        center = vec.barycenter(verts_in_face)
+        return vec.unit(center)
     #we need m n-prisms and n m-prisms
     def make_face1(i,n_circ_pts):
         m = n_circ_pts[0]; n = n_circ_pts[1]
         cap1_edgeis = [j + i*n for j in range(n)]
         cap2_edgeis = [j + ((i+1)%m)*n for j in range(n)]
         long_edgeis = [m*n + j + i*n for j in range(n)]
-        #long2_edgeis = [m*n + j + i*n for j in range(m)]
-        return Face(edgeis = cap1_edgeis + cap2_edgeis + long_edgeis,
-            normal = make_normal(normal_coords[0][i],vec.zero_vec(2),axes) #placeholder; need to think about this
+        edgeis = cap1_edgeis + cap2_edgeis + long_edgeis
+        return Face(edgeis = edgeis,
+            normal = make_normal(edgeis,verts,edges)
             )
     def make_face2(j,n_circ_pts):
         m = n_circ_pts[0]; n = n_circ_pts[1]
         cap1_edgeis = [m*n + j + i*n for i in range(m)]
         cap2_edgeis = [m*n + (j+1)%n + i*n for i in range(m)]
         long_edgeis = [j + i*n for i in range(m)]
-        #long2_edgeis = [m*n + j + i*n for j in range(m)]
-        return Face(edgeis = cap1_edgeis + cap2_edgeis + long_edgeis,
-            normal = make_normal(normal_coords[1][j],vec.zero_vec(2),axes) #placeholder; need to think about this
+        edgeis = cap1_edgeis + cap2_edgeis + long_edgeis
+        return Face(edgeis = edgeis,
+            normal = make_normal(edgeis,verts,edges)
             )
     faces_1 = [make_face1(i,n_circ_pts) for i in range(n_circ_pts[0])]
     faces_2 = [make_face2(j,n_circ_pts) for j in range(n_circ_pts[1])]
     faces = faces_1 + faces_2
+    return ConvexShape(verts,edges,faces)
+
+
+#build (polar-parameterized) 3d sphere
+#we exclude theta = +/- pi, and cap off the poles with circle faces
+#so basically it's a warped cylinder?
+def build_sphere_3d(r,phi_pts, theta_pts):
+    d = 3
+    verts = [r*Vec([math.cos(ph)*math.sin(th),math.sin(ph)*math.sin(th),math.cos(th)])
+    for th,ph in ((math.pi*(i+1)/(theta_pts+1),2*math.pi*j/phi_pts) for (i,j) in
+        itertools.product(range(theta_pts),range(phi_pts)))]
+
+    phi_edges = [Edge(j + phi_pts*i, (j+1)%phi_pts + phi_pts*i) for i,j in itertools.product(range(theta_pts),range(phi_pts))]
+    theta_edges = [Edge(j + phi_pts*i, j + phi_pts*(i+1)) for i,j in itertools.product(range(theta_pts-1),range(phi_pts))]
+
+    edges = phi_edges + theta_edges
+
+    top_face = Face(edgeis = list(range(0,phi_pts)), normal = vec.one_hot(d,-1))
+    bottom_face = Face(edgeis = list(range(phi_pts*(theta_pts-1),phi_pts*theta_pts)), normal = -vec.one_hot(d,-1))
+    def make_middle_face(i,j):
+        edgeis = [j + i*phi_pts, j + (i+1)*phi_pts,
+        phi_pts*theta_pts + j + i*phi_pts, phi_pts*theta_pts + (j+1)%phi_pts + i*phi_pts]
+
+        vertis = unique(flatten([edges[ei] for ei in edgeis]))
+        verts_in_face = [verts[vi] for vi in vertis]
+        center = vec.barycenter(verts_in_face)
+        rel_verts = [v - center for v in verts_in_face]
+        #find vector perpendicular to all vertices
+        #it is the column of V corresponding to the zero singular value
+        #since numpy sorts singular value from largest to smallest,
+        #it is the last row in V transpose.
+        perp = Vec(svd(np.array(rel_verts))[-1][-1])
+        #want our vector to be pointing outwards
+        if vec.dot(perp,center) < 0:
+            perp = -perp
+        normal = vec.unit(perp)
+
+        return Face(edgeis = edgeis, normal = normal)
+    middle_faces = [make_middle_face(i,j) for i,j in itertools.product(range(theta_pts-1),range(phi_pts))]
+
+    faces = [top_face,bottom_face] + middle_faces
     return ConvexShape(verts,edges,faces)
