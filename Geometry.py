@@ -124,7 +124,7 @@ def num_planes(d):
 
 
 class ConvexShape:
-    def __init__(self, verts, edges, faces, pos=None, angles=None, scale=None):
+    def __init__(self, verts, edges, faces, pos=None, frame = None, scale=None):
         d = vec.dim(verts[0])
         self.verts_ref = verts  #relative vertex positions
         self.verts = verts.copy()  #absolute vertex positions
@@ -136,10 +136,10 @@ class ConvexShape:
             self.pos = vec.zero_vec(d)
         else:
             self.pos = pos
-        if angles is None:
-            self.angles = vec.zero_vec(num_planes(d))
+        if frame is None:
+            self.frame = vec.eye(d)
         else:
-            self.angles = angles
+            self.frame = frame
         if scale is None:
             self.scale = 1.
         else:
@@ -156,35 +156,34 @@ class ConvexShape:
             self.edges.copy(),
             faces_copy,
             pos=self.pos.copy(),
-            angles=self.angles.copy(),
+            frame=self.frame.copy(),
             scale=self.scale)
 
     def transform(self):
         #rotate and translate vertices from reference points
-        Rxz = vec.rotation_matrix(self.ref_frame[0], self.ref_frame[-1],
-                                  self.angles[0])
-        Rzy = vec.rotation_matrix(self.ref_frame[1], self.ref_frame[-1],
-                                  self.angles[1])
-        rot_mat = vec.dot(Rxz, Rzy)
         self.verts = [
-            vec.dot(rot_mat, v * self.scale) + self.pos for v in self.verts_ref
+            vec.dot(self.frame, v * self.scale) + self.pos for v in self.verts_ref
         ]
         #update faces
         for face in self.faces:
-            face.update(self, rot_mat)
+            face.update(self, self.frame)
     #get line corresponding to edge
     def get_edge_line(self, edge):
         return [self.verts[vi] for vi in edge]
     #get line corresponding to edge index
     def get_edgei_line(self, ei):
         return self.get_edge_line(self.edges[ei])
-
+    def rotate(self, axis1, axis2, angle):
+        #rows of the frame are the vectors. so to transform the frame, we multiply on the right
+        R = vec.rotation_matrix(self.frame[axis1], self.frame[axis2], angle)
+        self.frame = vec.dot(self.frame, R)
+        self.update()
     #update shape
-    def update(self, pos=None, angles=None, scale=None):
+    def update(self, pos=None, frame=None, scale=None):
         if pos is not None:
             self.pos = pos
-        if angles is not None:
-            self.angles = angles
+        if frame is not None:
+            self.frame = frame
         if scale is not None:
             self.scale = scale
         self.transform()
@@ -230,7 +229,7 @@ def build_cube(d):
             n_shared = np.count_nonzero(
                 np.logical_not(np.logical_xor(verts[i], verts[j])))
             if n_shared == d - 1:
-                edges.append(Vec([i, j]))
+                edges.append([i, j])
         return edges
 
     edges = calc_cube_edges(verts)
@@ -279,6 +278,14 @@ def build_cube(d):
     verts = [2*Point(list(v)) - vec.ones_vec(d) for v in verts] #convert to Point data type
     edges = [Edge(e[0],e[1]) for e in edges] # convert to Edges data type
     return ConvexShape(verts, edges, faces)
+
+#doesn't clip other shapes properly, although if our target is
+#always the farthest object this doesnt matter
+def build_3d_target():
+    face_verts = [Vec([1,1,0]),Vec([1,-1,0]),Vec([-1,-1,0]),Vec([-1,1,0])]
+    face_edges = [Edge(0,1),Edge(1,2),Edge(2,3),Edge(3,0)]
+    return ConvexShape(verts = face_verts, edges = face_edges,
+                                     faces = [Face([0,1,2,3],normal = Vec([0,0,-1]))])
 
 #builds 3d cylinder
 def build_cylinder(r,h,axis,n_circ_pts):

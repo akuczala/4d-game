@@ -1,6 +1,7 @@
 import Clipping
 import vec
-
+import itertools
+from vec import Vec
 import numpy as np
 from Geometry import line_map
 from Geometry import Line
@@ -63,9 +64,8 @@ def project(v):
 
 def draw_wireframe(camera,shape,color):
     #init?
-    for edge in shape.edges:
-        lines = [shape.get_edge_line(edge) for edge in shape.edges]
-        lines = camera_clip_lines(lines,camera)
+    lines = [shape.get_edge_line(edge) for edge in shape.edges]
+    lines = camera_clip_lines(lines,camera)
     if len(lines) < 1:
         return
     draw_lines(camera, lines, color)
@@ -133,6 +133,24 @@ def draw_cylindrical_boundary():
                 this.view_radius, this.view_height, this.draw_origin,
                 this.view_angles, this.bounds_color,axis=1)
 
+#lines should be cached somewhere
+#works only for d=3
+def draw_floor(scale,h,color,camera,shapes):
+    n = 10
+    r = n*scale/2
+    lines = [Line(Vec([scale*i-r,h,scale*j-r]),Vec([scale*i-r,h,scale*(j+1)-r])) for i,j in itertools.product(range(n),range(n))]
+    lines = lines + [Line(Vec([scale*i-r,h,scale*j-r]),Vec([scale*(i+1)-r,h,scale*j-r])) for i,j in itertools.product(range(n),range(n))]
+
+    lines = camera_clip_lines(lines,camera)
+
+    if len(lines) > 1:
+        #clipping = False doubles the framerate
+        if this.clipping:
+            clipped_lines = Clipping.clip_lines(lines, None, shapes)
+            #draw clipped line
+            draw_lines(camera, clipped_lines, color)
+        else:  #noclip
+            draw_lines(camera, lines, color)
 
 def draw_face_lines(camera, face, shape, shapes):
     color = face.color
@@ -194,6 +212,8 @@ def clip_project_lines(camera, lines, color):
                 line, r=this.view_radius, h=this.view_height, axis=1)
             for line in projected_lines
         ])
+    if this.view_boundary == 'none':
+        view_clipped_lines = projected_lines
     if len(view_clipped_lines) < 1:
         return []
 

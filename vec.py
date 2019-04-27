@@ -1,9 +1,13 @@
 import numpy as np
 import numpy.linalg as lin
 
-#let vectors be numpy arrays
-Vec = np.array
-Matrix = np.array
+#let vectors, matrices be dtype numpy arrays
+dtype = np.float32
+
+def Vec(list):
+    return np.array(list,dtype=dtype)
+def Matrix(listoflists):
+    return np.array(listoflists,dtype=dtype)
 
 #np.array gives most of the features we want for our vector class
 
@@ -37,25 +41,22 @@ def allisclose(x, y):
     return np.all(np.isclose(x, y))
 
 def zero_vec(d):
-    return np.zeros((d))
+    return np.zeros((d),dtype=dtype)
 
 
 def zero_mat(d):
-    return np.zeros((d, d))
+    return np.zeros((d, d),dtype=dtype)
 
 
 def ones_vec(d):
-    return np.ones((d))
+    return np.ones((d),dtype=dtype)
 
 
 def eye(n):
-    return np.eye(n)
+    return np.eye(n,dtype=dtype)
 
-
-def rotmat(t):
-    return np.array([[np.cos(t), np.sin(t)], [-np.sin(t), np.cos(t)]])
-
-
+def outer(v1,v2):
+    return np.outer(v1,v2)
 #finds rotation matrix between two (normalized) vectors (rotates v1 to v2)
 #this is probably very expensive as is
 def rotation_matrix(v1, v2, th=None):
@@ -63,23 +64,23 @@ def rotation_matrix(v1, v2, th=None):
     v = v2 / norm(v2)
     if th is None:
         costh = np.dot(u, v)
-        sinth = np.sqrt(1 - costh**2)
+        sinth = np.sqrt(1 - min(1,costh**2)) #prevent numerical errors
     else:
-        costh = np.cos(th)
-        sinth = np.sin(th)
+        costh = np.cos(th,dtype=dtype)
+        sinth = np.sin(th,dtype=dtype)
     #sinth = np.sin(np.arccos(costh))
     R = Matrix([[costh, -sinth], [sinth, costh]])
     w = (v - dot(u, v) * u)
     if not allisclose(w,zero_vec(dim(w))):
         w = w / norm(w)
     uw_mat = np.array([u, w])
-    return np.eye(len(u)) - np.outer(u, u) - np.outer(w, w) + np.dot(
-        uw_mat.T, np.dot(R, uw_mat))
+    return eye(len(u)) - outer(u, u) - outer(w, w) + dot(
+        uw_mat.T, dot(R, uw_mat))
 
 
 def rotation_matrix_aligned(dir1, dir2, th):
-    costh = np.cos(th)
-    sinth = np.sin(th)
+    costh = np.cos(th,dtype=dtype)
+    sinth = np.sin(th,dtype=dtype)
     if dir1 == 0 and dir2 == 2:
         return Matrix([[costh, 0, -sinth], [0, 1, 0], [sinth, 0, costh]])
     if dir1 == 1 and dir2 == 2:
@@ -97,4 +98,4 @@ def drop_index(v,index):
 def insert_index(v,index,vi):
     return np.insert(v,index,vi)
 def one_hot(d,index):
-    return np.eye(d)[index]
+    return eye(d)[index]

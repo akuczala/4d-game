@@ -1,5 +1,5 @@
 import vec
-from Geometry import HyperPlane
+from Geometry import HyperPlane, build_cube
 
 class Camera:
     ang_speed = 0.05
@@ -16,6 +16,8 @@ class Camera:
 
         self.ref_frame = vec.eye(d)
         self.frame = self.ref_frame
+        self.target_shape = build_cube(d)
+        self.target_distance = 30
         self.update_rot_matrix(0, 1, 0)
 
     def update_rot_matrix(self, axis1, axis2, angle):
@@ -51,3 +53,4 @@ class Camera:
 
     def update_plane(self):
         self.plane = HyperPlane(self.frame[-1],vec.dot(self.pos,self.frame[-1]))
+        self.target_shape.update(pos = self.pos + self.target_distance*self.frame[-1],frame=self.rot_matrix)

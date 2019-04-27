@@ -9,7 +9,7 @@ def calc_boundaries(faces, subfaces, origin):
     for subface in subfaces:
         face1 = faces[subface[0]]
         face2 = faces[subface[1]]
-        #if one face is visible, the other not
+        #if one face is visible, the other not,
         if face1.visible == (not face2.visible):
             boundary = calc_boundary(face1, face2, origin)
             boundaries.append(boundary)
