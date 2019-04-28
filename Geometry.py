@@ -178,6 +178,8 @@ class ConvexShape:
         R = vec.rotation_matrix(self.frame[axis1], self.frame[axis2], angle)
         self.frame = vec.dot(self.frame, R)
         self.update()
+    def calc_bounding_radius(self):
+        return max(vec.dot(dv,dv) for dv in ((v - self.pos) for v in self.verts))
     #update shape
     def update(self, pos=None, frame=None, scale=None):
         if pos is not None:
@@ -187,6 +189,7 @@ class ConvexShape:
         if scale is not None:
             self.scale = scale
         self.transform()
+        self.bounding_radius = self.calc_bounding_radius()
 
     #find indices of (d-1) faces that are joined by a (d-2) edge
     def calc_subfaces(self):
@@ -286,6 +289,44 @@ def build_3d_target():
     face_edges = [Edge(0,1),Edge(1,2),Edge(2,3),Edge(3,0)]
     return ConvexShape(verts = face_verts, edges = face_edges,
                                      faces = [Face([0,1,2,3],normal = Vec([0,0,-1]))])
+
+def build_floor(d,n,scale,h):
+    r = scale*n
+    # if d == 3:
+    #     perm = [0,2,1]
+    # else:
+    #     perm = [0,2,3,1]
+    # def make_vert(floor_vert):
+    #     vec.permute(floor_vert,perm)
+    # thing = [[[scale*i,-r,h],[scale*i,r,h]] for i in range(n)]
+    # lines = flatten(Line(vec.permute
+    if d == 3:
+        lines = flatten([
+            [Line(
+            Vec([scale*i,h,-r]),
+            Vec([scale*i,h,r]))
+        for i in range(-n,n+1)],
+        [Line(
+            Vec([-r,h,scale*i]),
+            Vec([r,h,scale*i]))
+        for i in range(-n,n+1)]
+        ])
+    if d == 4:
+        lines = flatten([
+            [Line(
+            Vec([scale*i,h,scale*j,-r]),
+            Vec([scale*i,h,scale*j,r]))
+        for i,j in itertools.product(range(-n,n+1),range(-n,n+1))],
+        [Line(
+            Vec([-r,h,scale*j,scale*i]),
+            Vec([r,h,scale*j,scale*i]))
+        for i,j in itertools.product(range(-n,n+1),range(-n,n+1))],
+        [Line(
+            Vec([scale*i,h,-r,scale*j]),
+            Vec([scale*i,h,r,scale*j]))
+        for i,j in itertools.product(range(-n,n+1),range(-n,n+1))]
+        ])
+    return lines
 
 #builds 3d cylinder
 def build_cylinder(r,h,axis,n_circ_pts):

@@ -1,7 +1,9 @@
 from Geometry import Line, HyperPlane
-from util import flatten
+from util import flatten, remove_None
 import vec
 import math
+
+small_z = 0.001
 
 #calculate the boundaries of the invisible region behind a shape
 def calc_boundaries(faces, subfaces, origin):
@@ -59,7 +61,6 @@ def clip_lines(lines, shape, clipping_shapes):
         else:
             clipped_lines = lines
     return clipped_lines
-
 
 #return list of new, clipped lines from the set of boundaries generated from a shape
 #(a single line could be clipped into 0, 1 or 2 lines)
@@ -226,6 +227,37 @@ def sphere_line_intersect(line, r):
     
     return intersect_points
 
+#returns true if the line intersects the sphere at pos
+def sphere_line_intersectQ(line,r,pos):
+    v0 = line[0]
+    v1 = line[1]
+    dv = v1 - v0
+    dv_norm = vec.norm(dv)
+    dv = dv / dv_norm
+
+    v0_rel = v0 - pos
+    v0r_dv = vec.dot(v0_rel, dv)
+
+    discr = (v0r_dv)**2 - vec.dot(v0_rel, v0_rel) + r * r
+
+    #print('discr',discr)
+    #no intersection with line
+    if discr < 0:
+        return False
+
+    sqrt_discr = math.sqrt(discr)
+    tm = -v0r_dv - sqrt_discr
+    tp = -v0r_dv + sqrt_discr
+
+    #print('tm,tp',tm,tp)
+    #no intersection with line segment
+    if tm > dv_norm and tp > dv_norm:
+        return False
+    if tm < 0 and tp < 0:
+        return False
+
+    return True
+
 def sphere_t_intersect(line,r):
     v0 = line[0]
     v1 = line[1]
@@ -331,3 +363,10 @@ def clip_line_cylinder(line,r,h,axis):
     clipped_line = clip_line_plane(clipped_line,HyperPlane(vec.one_hot(d,axis),-half_h))
 
     return clipped_line
+
+
+#clip things behind camera
+def camera_clip_lines(lines,camera):
+    return remove_None([
+        clip_line_plane(line, camera.plane, small_z) for line in lines
+    ])

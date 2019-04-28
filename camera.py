@@ -54,3 +54,7 @@ class Camera:
     def update_plane(self):
         self.plane = HyperPlane(self.frame[-1],vec.dot(self.pos,self.frame[-1]))
         self.target_shape.update(pos = self.pos + self.target_distance*self.frame[-1],frame=self.rot_matrix)
+
+    def reset_frame(self):
+        self.frame = vec.eye(vec.dim(self.pos))
+        self.update_rot_matrix(0,1,0)

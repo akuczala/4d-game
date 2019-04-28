@@ -71,6 +71,8 @@ def input_update(camera, shapes):
             #toggle mouse
             if event.key == pygame.K_m:
                 this.enable_mouse = not this.enable_mouse
+            if event.key == pygame.K_r:
+                camera.reset_frame()
             # #window resize
             # if event.key == pygame.VIDEORESIZE:
             #     draw.width = event.w

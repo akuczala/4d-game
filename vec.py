@@ -99,3 +99,5 @@ def insert_index(v,index,vi):
     return np.insert(v,index,vi)
 def one_hot(d,index):
     return eye(d)[index]
+def permute(v,indices):
+    return Vec([v[i] for i in indices])
