@@ -194,7 +194,7 @@ def clip_project_lines(camera, lines, color):
 
 #this is slow and only works for rectangular faces
 #draw points randomly over faces
-def draw_face_fuzz(face, camera, shape, shapes):
+def draw_face_fuzz_old(face, camera, shape, shapes):
     #weights = np.random.uniform(size=[n_points,len(verts)])
     #weights = weights/np.sum(weights,axis=1,keepdims=True)
     #points = np.dot(weights,verts)
@@ -242,6 +242,29 @@ def draw_face_fuzz(face, camera, shape, shapes):
     else:
         draw_points(camera, points, face.color)
 
+def draw_face_fuzz(face, camera, shape, shapes):
+    points = face.fuzz_points
+    if this.clipping:
+        clipped = [False for i in range(len(points))]
+        for clipping_shape in shapes:
+            if (clipping_shape is
+                    not shape) and (not clipping_shape.transparent):
+                new_clipped = [
+                    Clipping.point_clipped(point, clipping_shape.boundaries)
+                    for point in points
+                ]
+                clipped = [
+                    clip1 or clip2
+                    for clip1, clip2 in zip(clipped, new_clipped)
+                ]
+        clipped_points = [
+            point for point, clip in zip(points, clipped) if (not clip)
+        ]
+        if len(clipped_points) < 1:
+            return
+        draw_points(camera, clipped_points, face.color)
+    else:
+        draw_points(camera, points, face.color)
 
 def draw_lines(camera, lines, color):
     view_clipped_lines = clip_project_lines(camera, lines, color)
@@ -291,10 +314,11 @@ def draw_points(camera, points, color):
 
     #need to implement clipping into cylinder
     #clip into sphere
-    projected_points = [
-        point for point in projected_points
-        if np.dot(point, point) < this.view_radius**2
-    ]
+    if this.view_boundary == 'sphere':
+        projected_points = [
+            point for point in projected_points
+            if np.dot(point, point) < this.view_radius**2
+        ]
 
     try:
         if this.d == 3:

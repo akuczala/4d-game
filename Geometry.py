@@ -6,6 +6,10 @@ import numpy as np
 from util import flatten, unique
 import math
 from numpy.linalg import svd
+
+def num_planes(d):
+    return d * (d - 1) // 2
+
 #a point is a vector
 Point = Vec
 
@@ -76,6 +80,8 @@ class Edge():
 
 #A face is more complicated
 class Face:
+    n_fuzz_points = 10
+    fuzz_seed = None
     def __init__(self, edgeis, normal, color=None):
         self.edgeis = edgeis  #list of edge indices belonging to some shape
         self.normal = normal  #current normal
@@ -102,25 +108,46 @@ class Face:
         return unique(flatten([shape.edges[ei] for ei in self.edgeis]))
 
     #rotate face normals and recalculate centers, thresholds
-    def update(self, shape, rot_mat):
+    def update(self, shape, rot_mat, update_face_fuzz = True):
         self.normal = vec.dot(rot_mat, self.normal_ref)
         self.center = vec.barycenter(
             [shape.verts[vi] for vi in self.get_verts(shape)])
         self.threshold = vec.dot(self.normal, self.center)
-
+        #need to shift and scale points as well as rotate
+        if update_face_fuzz:
+            self.fuzz_points = [vec.dot(rot_mat, point*shape.scale) + shape.pos for point in self.fuzz_points_ref]
     def update_visibility(self, camera):
         norm_dot_cam = vec.dot(self.normal, self.center - camera.pos)
         self.visible = norm_dot_cam < 0
 
+    #check if normal_ref is in fact perpendicular to verts_ref - center
     def check_normal(self,shape):
         vertis = self.get_verts(shape)
         verts = [shape.verts_ref[vi] for vi in vertis]
         dots = [vec.dot(v-self.center,self.normal_ref) for v in verts]
         return np.all(vec.isclose(dots,vec.zero_vec(len(dots))))
 
+    #generate random set of points within face
+    #these are in the verts_ref basis
+    #so that they only need be generated once
+    #and can be transformed using the usual transform function
+    def calc_fuzz_points(self,shape):
+        verts_ref = [shape.verts[vi] for vi in self.get_verts(shape)]
+        center_ref = vec.barycenter(verts_ref)
+        verts_ref = [v - center_ref for v in verts_ref]
+        n_verts = len(verts_ref)
 
-def num_planes(d):
-    return d * (d - 1) // 2
+        np.random.seed(seed=Face.fuzz_seed)
+        convex_coefs = np.random.uniform(size=(Face.n_fuzz_points,n_verts))
+        convex_coefs = [coefs/sum(coefs) for coefs in convex_coefs]
+        self.fuzz_points_ref = [sum(coef*vert for coef, vert in zip(coefs,verts_ref)) + center_ref for coefs in convex_coefs]
+        self.fuzz_points = self.fuzz_points_ref
+
+#could have more info here if, for example, we wanted to draw
+#subfaces
+class Subface:
+    def __init__ (self, faces):
+        self.faces = faces
 
 
 class ConvexShape:
@@ -145,7 +172,8 @@ class ConvexShape:
         else:
             self.scale = scale
         self.subfaces = self.calc_subfaces()
-        self.update()
+        self.calc_face_fuzz()
+        self.update(update_face_fuzz = True)
         if not self.check_normals():
             print("Warning: not all normals perpendicular")
     #full copy
@@ -159,14 +187,14 @@ class ConvexShape:
             frame=self.frame.copy(),
             scale=self.scale)
 
-    def transform(self):
+    def transform(self,**kwargs):
         #rotate and translate vertices from reference points
         self.verts = [
             vec.dot(self.frame, v * self.scale) + self.pos for v in self.verts_ref
         ]
         #update faces
         for face in self.faces:
-            face.update(self, self.frame)
+            face.update(self, self.frame,**kwargs)
     #get line corresponding to edge
     def get_edge_line(self, edge):
         return [self.verts[vi] for vi in edge]
@@ -181,14 +209,14 @@ class ConvexShape:
     def calc_bounding_radius(self):
         return max(vec.dot(dv,dv) for dv in ((v - self.pos) for v in self.verts))
     #update shape
-    def update(self, pos=None, frame=None, scale=None):
+    def update(self, pos=None, frame=None, scale=None, update_face_fuzz = True):
         if pos is not None:
             self.pos = pos
         if frame is not None:
             self.frame = frame
         if scale is not None:
             self.scale = scale
-        self.transform()
+        self.transform(update_face_fuzz = update_face_fuzz)
         self.bounding_radius = self.calc_bounding_radius()
 
     #find indices of (d-1) faces that are joined by a (d-2) edge
@@ -202,7 +230,7 @@ class ConvexShape:
         for i, j in itertools.combinations(range(len(self.faces)), 2):
             if ConvexShape.count_common_edges(self.faces[i],
                                               self.faces[j]) >= n_target:
-                subfaces.append(Edge(i, j))
+                subfaces.append(Subface(faces=[i, j]))
         return subfaces
 
     def count_common_edges(face1, face2):
@@ -218,6 +246,10 @@ class ConvexShape:
 
     def check_normals(self):
         return np.all([face.check_normal(self) for face in self.faces])
+
+    def calc_face_fuzz(self):
+        for face in self.faces:
+            face.calc_fuzz_points(self)
 
 #note: uses numpy quite, and assumes verts and edges
 #are lists of numpy arrays

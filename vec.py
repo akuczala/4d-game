@@ -68,7 +68,7 @@ def rotation_matrix(v1, v2, th=None):
     else:
         costh = np.cos(th,dtype=dtype)
         sinth = np.sin(th,dtype=dtype)
-    #sinth = np.sin(np.arccos(costh))
+
     R = Matrix([[costh, -sinth], [sinth, costh]])
     w = (v - dot(u, v) * u)
     if not allisclose(w,zero_vec(dim(w))):
@@ -78,13 +78,13 @@ def rotation_matrix(v1, v2, th=None):
         uw_mat.T, dot(R, uw_mat))
 
 
-def rotation_matrix_aligned(dir1, dir2, th):
-    costh = np.cos(th,dtype=dtype)
-    sinth = np.sin(th,dtype=dtype)
-    if dir1 == 0 and dir2 == 2:
-        return Matrix([[costh, 0, -sinth], [0, 1, 0], [sinth, 0, costh]])
-    if dir1 == 1 and dir2 == 2:
-        return Matrix([[1, 0, 0], [0, costh, -sinth], [0, sinth, costh]])
+# def rotation_matrix_aligned(dir1, dir2, th):
+#     costh = np.cos(th,dtype=dtype)
+#     sinth = np.sin(th,dtype=dtype)
+#     if dir1 == 0 and dir2 == 2:
+#         return Matrix([[costh, 0, -sinth], [0, 1, 0], [sinth, 0, costh]])
+#     if dir1 == 1 and dir2 == 2:
+#         return Matrix([[1, 0, 0], [0, costh, -sinth], [0, sinth, costh]])
 
 
 #linear interpolation between vectors p1 at x=0 and p2 at x=1

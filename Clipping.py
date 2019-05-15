@@ -9,13 +9,15 @@ small_z = 0.001
 def calc_boundaries(faces, subfaces, origin):
     boundaries = []
     for subface in subfaces:
-        face1 = faces[subface[0]]
-        face2 = faces[subface[1]]
+        face1 = faces[subface.faces[0]]
+        face2 = faces[subface.faces[1]]
         #if one face is visible, the other not,
         if face1.visible == (not face2.visible):
             boundary = calc_boundary(face1, face2, origin)
             boundaries.append(boundary)
     #visible faces are boundaries
+    #more concise but probably slower
+    #boundaries = boundaries + [HyperPlane(normal=face.normal, threshold=face.threshold) for face in faces if face.visible]
     for face in faces:
         if face.visible:
             boundaries.append(

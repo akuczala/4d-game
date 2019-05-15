@@ -1,0 +1,59 @@
+4d game as a first person puzzle game
+
+Juxtapose 3d and 4d puzzles, with 3d serving as primer for the 4d
+start with very very simple "puzzles", that teach navigation
+down corridors with simple turns / branches
+
+keep things gravity bound; the forward-back/up-down/U(1) seems like a
+useful orientation tool.
+have visual thematic indicators for particular absolute directions (up/down).
+but want to teach that it is natural to swap one's left and right.
+need to think carefully about how turning left/right/ana/keta should be
+handled wrt to this swapping. maybe i should have a model of how a 4d
+agent would actually move. a-priori i would expect U(1) symmetry as the
+4d analogue of bilateral symmetry. don't want to think about generalization
+of having two eyes.
+An alternative to "swapping left and right": a 4d agent has an absolute sense
+of left/right/ana/keta wrt to their own frame. eh idunno. the problem is 
+probably roughly equivalent to floating around 3d space and not getting
+disoriented. Imagine you're a floating cylinder that experiences friction. Spinning around your
+axis doesn't accomplish much so why would that be one of your actuators?
+all you need to be able to do is thrust forward, and turn left, right, up
+and down. 
+
+maybe have initial restrictions on the ability to look up/down to prevent confusion
+
+item collection / button pressing to explore all directions
+initial, if not all, puzzles must be trivial in 3d to be tractable
+
+must teach player what they are even looking at
+
+start with a very simple environment. later start adding
+ornamentation
+
+familiar, simplified environments, such as
+a house with rooms
+a desert island (teach how horizons work)
+a city block
+a river (with / without bridge)
+a pond
+a beach
+a tower?
+courtyard
+
+4d environment as an extension of the 3d environment. show the 3d
+environment that was just navigated as a slice of the 4d one
+
+spatial orientation puzzles
+
+rolling puzzles
+heaven forbid rigid body puzzles
+
+
+some logic quest shit
+
+is there a way to make faces look like they don't suddenly appear,
+maybe by adjusting the opacity, or shading, as if lit?
+
+speaking of lighting... how practical is that?
+the fact that shadows are 3d might be interesting
