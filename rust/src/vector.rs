@@ -1,15 +1,18 @@
+pub mod vec2; pub mod vec3;
+pub mod mat2; pub mod mat3;
+
 use fmt::Display;
 use std::ops::{Add,Sub,Mul,Div,Index};
-use crate::vec2::Vec2;
-use crate::vec3::Vec3;
-use crate::mat2::Mat2;
-use crate::mat3::Mat3;
+pub use vec2::Vec2;
+pub use vec3::Vec3;
+pub use mat2::Mat2;
+pub use mat3::Mat3;
 use std::fmt;
 //use alga::linear::FiniteDimInnerSpace;
 pub type VecIndex = usize;
-pub type Field = f64;
+pub type Field = f32;
 const EPSILON : Field = 0.0001;
-
+pub use std::f32::consts::PI;
 pub fn is_close(a : Field, b : Field) -> bool {
   (a-b).abs() < EPSILON
 }
@@ -108,12 +111,12 @@ where V: VectorTrait
 }
 
 pub fn test_vectors() {
-    let v1 = Vec2(1.0,2.0);
-    let v2 = Vec2(3.0,4.0);
+    let v1 = Vec2::new(1.0,2.0);
+    let v2 = Vec2::new(3.0,4.0);
     diagnostic(v1,v2);
 
-    let v1 = Vec3(1.0,2.0,3.0);
-    let v2 = Vec3(4.0,5.0,6.0);
+    let v1 = Vec3::new(1.0,2.0,3.0);
+    let v2 = Vec3::new(4.0,5.0,6.0);
     diagnostic(v1,v2);
 
     println!("Test matrix mult 2d");

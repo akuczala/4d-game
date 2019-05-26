@@ -1,3 +1,5 @@
+pub mod buildshapes;
+
 use std::fmt;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,is_close};
 use crate::colors::Color;
@@ -147,8 +149,8 @@ struct Subface<V : VectorTrait> {
 
 pub struct Shape<V : VectorTrait> {
   verts_ref : Vec<V>,
-  verts : Vec<V>,
-  edges : Vec<Edge>,
+  pub verts : Vec<V>,
+  pub edges : Vec<Edge>,
   pub faces : Vec<Face<V>>,
   ref_frame : V::M,
   frame : V::M,
@@ -205,8 +207,8 @@ impl <V : VectorTrait> Shape<V> {
     self.transform();
   }
   pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) {
-    let R = vector::rotation_matrix(self.frame[axis1],self.frame[axis2],Some(angle));
-    self.frame = self.frame.dot(R);
+    let rot_mat = vector::rotation_matrix(self.frame[axis1],self.frame[axis2],Some(angle));
+    self.frame = self.frame.dot(rot_mat);
     self.update();
   }
   pub fn update_visibility(&mut self, camera_pos : V) {

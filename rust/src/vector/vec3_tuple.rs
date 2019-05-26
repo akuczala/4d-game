@@ -1,7 +1,7 @@
 use std::ops::{Add,Sub,Mul,Div,Index};
 use std::fmt;
 use crate::vector::{VecIndex,VectorTrait,Field};
-use crate::mat3::Mat3;
+use super::mat3::Mat3;
 
 #[derive(Copy,Clone)]
 pub struct Vec3(pub Field,pub Field,pub Field);
