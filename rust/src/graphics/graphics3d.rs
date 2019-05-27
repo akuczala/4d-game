@@ -2,6 +2,39 @@ use glium::Surface;
 use super::init_glium;
 use super::listen_events;
 
+use crate::vector::VectorTrait;
+
+#[derive(Copy, Clone)]
+pub struct Vertex {
+    pub position: [f32; 3],
+}
+implement_vertex!(Vertex, position);
+
+pub const VERTEX_SHADER_SRC: &str = r#"
+        #version 140
+        in vec3 position;
+        in vec3 normal;
+
+        out vec3 v_normal;
+
+        uniform mat4 perspective;
+        uniform mat4 view;
+        uniform mat4 model;
+        void main() {
+            mat4 modelview = view * model;
+            v_normal = transpose(inverse(mat3(modelview))) * normal;
+            gl_Position = perspective * modelview * vec4(position, 1.0);
+        }
+    "#;
+
+pub const FRAGMENT_SHADER_SRC : &str = r#"
+    #version 140
+    out vec4 color;
+    void main() {
+        color = vec4(0.0, 1.0, 0.0, 1.0);
+    }
+"#;
+
 fn build_perspective_mat<S>(target : &S) -> [[f32 ; 4] ; 4]
 where S : Surface
 {
@@ -57,21 +90,10 @@ fn build_view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -
 
 pub fn test_glium_3d() {
     use crate::geometry::buildshapes::build_cylinder;
-    #[derive(Copy, Clone)]
-    struct Vertex {
-        position: [f32; 3],
-    }
-    implement_vertex!(Vertex, position);
 
     let (mut events_loop, display) = init_glium();
 
-    //let positions = glium::VertexBuffer::new(&display, &teapot::VERTICES).unwrap();
-    //let normals = glium::VertexBuffer::new(&display, &teapot::NORMALS).unwrap();
-    // let indices = glium::IndexBuffer::new(&display,
-    //     glium::index::PrimitiveType::LinesList,
-    //     &teapot::INDICES).unwrap();
-
-    //cylinder?
+    //cylinder
     let cylinder = build_cylinder(50.0,100.0,32);
     let vertices : Vec<Vertex> = cylinder.verts.iter().map(|v| Vertex{position : *v.get_arr() as [f32 ; 3]}).collect();
 
@@ -88,47 +110,25 @@ pub fn test_glium_3d() {
         &display,
         glium::index::PrimitiveType::LinesList,&test_vertis).unwrap();
 
-    let vertex_shader_src = r#"
-        #version 140
-        in vec3 position;
-        in vec3 normal;
+    
 
-        out vec3 v_normal;
-
-        uniform mat4 perspective;
-        uniform mat4 view;
-        uniform mat4 model;
-        void main() {
-            mat4 modelview = view * model;
-            v_normal = transpose(inverse(mat3(modelview))) * normal;
-            gl_Position = perspective * modelview * vec4(position, 1.0);
-        }
-    "#;
-
-    let fragment_shader_src = r#"
-        #version 140
-        out vec4 color;
-        void main() {
-            color = vec4(1.0, 0.0, 0.0, 1.0);
-        }
-    "#;
-
-    let program = glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src,
+    let program = glium::Program::from_source(&display, VERTEX_SHADER_SRC, FRAGMENT_SHADER_SRC,
                                               None).unwrap();
 
     let mut closed = false;
     while !closed {
         let mut target = display.draw();
-        target.clear_color(0.0, 0.0, 1.0, 1.0);
+        target.clear_color(0.05, 0.0, 0.05, 1.0);
 
         let model = [
             [0.01, 0.0, 0.0, 0.0],
             [0.0, 0.01, 0.0, 0.0],
             [0.0, 0.0, 0.01, 0.0],
-            [0.0, 0.0, 2.0, 1.0f32]
+            [0.0, 0.0, 0.0, 1.0f32]
         ];
         let perspective = build_perspective_mat(&target);
-        let view = build_view_matrix(&[2.0, -1.0, 1.0], &[-2.0, 1.0, 1.0], &[0.0, 1.0, 0.0]);
+        
+        let view = build_view_matrix(&[1.0, 1.0, -2.0], &[-1.0,-1.0,2.0], &[0.0, 1.0, 0.0]);
 
         target.draw(&positions, &indices, &program,
             &uniform! { model: model, view : view, perspective : perspective },

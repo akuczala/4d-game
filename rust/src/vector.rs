@@ -9,8 +9,9 @@ pub use mat2::Mat2;
 pub use mat3::Mat3;
 use std::fmt;
 //use alga::linear::FiniteDimInnerSpace;
-pub type VecIndex = usize;
+pub type VecIndex = i8;
 pub type Field = f32;
+
 const EPSILON : Field = 0.0001;
 pub use std::f32::consts::PI;
 pub fn is_close(a : Field, b : Field) -> bool {
@@ -20,11 +21,16 @@ pub fn is_close(a : Field, b : Field) -> bool {
 pub trait VectorTrait: Copy + Display +
  Add<Output=Self> + Sub<Output=Self> +
  Mul<Field,Output=Self> + Div<Field,Output=Self> +
- Index<VecIndex>
+ Index<VecIndex,Output=Field>
  //+ std::iter::Sum
  {
 
   type M : MatrixTrait<Self>;
+  type SubV: VectorTrait;
+  type Arr;
+
+  fn get_arr(&self) -> &Self::Arr;
+
   fn dot(self, rhs: Self) -> Field;
   fn norm_sq(self) -> Field {
     self.dot(self)
@@ -43,6 +49,7 @@ pub trait VectorTrait: Copy + Display +
   fn one_hot(i: VecIndex) -> Self{
     Self::M::id()[i]
   }
+  fn project(&self) -> Self::SubV;
   fn linterp(v1: Self, v2: Self,x : Field) -> Self {
     v1*(1.-x) + v2*x
   }
@@ -120,11 +127,11 @@ pub fn test_vectors() {
     diagnostic(v1,v2);
 
     println!("Test matrix mult 2d");
-    let mat1 = Mat2::new(&[1.0,2.0,3.0,4.0]);
-    let mat2 = Mat2::new(&[5.0,6.0,7.0,8.0]);
+    let mat1 = Mat2::new(&[[1.0,2.0],[3.0,4.0]]);
+    let mat2 = Mat2::new(&[[5.0,6.0],[7.0,8.0]]);
     println!("{}",mat1.dot(mat2));
     println!("Test matrix mult 3d");
-    let mat1 = Mat3::new(&[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0]);
-    let mat2 = Mat3::new(&[10.,11.,12.,13.,14.,15.,16.,17.,18.]);
+    let mat1 = Mat3::new(&[[1.0,2.0,3.0],[4.0,5.0,6.0],[7.0,8.0,9.0]]);
+    let mat2 = Mat3::new(&[[10.,11.,12.],[13.,14.,15.],[16.,17.,18.]]);
     println!("{}",mat1.dot(mat2));
   }

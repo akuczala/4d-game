@@ -18,8 +18,12 @@ impl Index<VecIndex> for Mat3 {
     }
 }
 impl Mat3{
-  pub fn new(c : &[Field; 9]) -> Mat3 {
-    Mat3(Vec3::new(c[0],c[1],c[2]),Vec3::new(c[3],c[4],c[5]),Vec3::new(c[6],c[7],c[8]))
+  pub fn new(c : &[[Field; 3] ; 3]) -> Mat3 {
+    Mat3(
+        Vec3::new(c[0][0],c[0][1],c[0][2]),
+        Vec3::new(c[1][0],c[1][1],c[1][2]),
+        Vec3::new(c[2][0],c[2][1],c[2][2])
+      )
   }
 }
 impl Add<Mat3> for Mat3 {
@@ -66,9 +70,9 @@ impl MatrixTrait<Vec3> for Mat3 {
   }
   fn id() -> Mat3 {
     Mat3::new(&
-      [1.,0.,0.,
-      0.,1.,0.,
-      0.,0.,1.])
+      [[1.,0.,0.],
+      [0.,1.,0.],
+      [0.,0.,1.]])
   }
   fn dot(self, rhs: Mat3) -> Mat3 {
     let rhs_t = rhs.transpose();

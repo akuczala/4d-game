@@ -1,6 +1,6 @@
 use std::ops::{Add,Sub,Mul,Div,Index};
 use std::fmt;
-use crate::vector::{VecIndex,VectorTrait,Field};
+use crate::vector::{VecIndex,VectorTrait,Field,Vec2};
 use super::mat3::Mat3;
 
 #[derive(Copy,Clone)]
@@ -10,8 +10,9 @@ impl Vec3 {
   {
     Vec3{arr : [v0,v1,v2]}
   }
-  pub fn get_arr(&self) -> &[Field ; 3]{
-    &self.arr
+  pub fn from_arr(arr : &[Field ; 3]) -> Vec3
+  {
+    Vec3{arr : *arr}
   }
 }
 impl Index<VecIndex> for Vec3 {
@@ -19,9 +20,12 @@ impl Index<VecIndex> for Vec3 {
 
     fn index(&self, i: VecIndex) -> &Self::Output {
         match i {
-            0 => &self.get_arr()[0],
-            1 => &self.get_arr()[1],
-            2 => &self.get_arr()[2],
+             0 => &self.get_arr()[0],
+             1 => &self.get_arr()[1],
+             2 => &self.get_arr()[2],
+            -1 => &self.get_arr()[2],
+            -2 => &self.get_arr()[1],
+            -3 => &self.get_arr()[0],
             _ => panic!("Invalid index {} for Vec3", i)
         }
     }
@@ -61,6 +65,13 @@ impl Div<Field> for Vec3 {
 
 impl VectorTrait for Vec3 {
   type M = Mat3;
+  type SubV = Vec2;
+  type Arr = [Field ; 3];
+
+  fn get_arr(&self) -> &[Field ; 3]{
+    &self.arr
+  }
+
   fn norm(self) -> Field {
     (self[0]*self[0] + self[1]*self[1] + self[2]*self[2]).sqrt()
   }
@@ -72,6 +83,9 @@ impl VectorTrait for Vec3 {
   }
   fn ones() -> Vec3{
     Vec3::new(1.,1.,1.)
+  }
+  fn project(&self) -> Vec2 {
+    Vec2::new(self[0],self[1])
   }
 }
 
