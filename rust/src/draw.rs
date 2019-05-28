@@ -26,7 +26,7 @@ fn project<V>(v : V) -> V::SubV
 where V : VectorTrait
 {
 	let z;
-	let focal : Field = 6.0;
+	let focal : Field = 2.0;
 	if V::is_close(v,V::ones()*Z0) {
 		z = Z0 + SMALL_Z;
 	} else {
@@ -37,9 +37,9 @@ where V : VectorTrait
 fn view_transform<V>(camera : &Camera<V>, point : V) -> V
 where V : VectorTrait
 {
-	camera.frame.transpose() * point
+	camera.frame.transpose() * (point - camera.pos)
 }
-fn draw<V>(display : &glium::Display, camera : &Camera<V>, shape : Shape<V>)
+fn draw<V>(display : &glium::Display, camera : &Camera<V>, shape : &Shape<V>)
 where V : VectorTrait
 {
 	//draw_wireframe(display,camera,shape)
@@ -47,7 +47,7 @@ where V : VectorTrait
 
 pub fn draw_wireframe<V>(display : &glium::Display,
 	camera : &Camera<V>,
-	shape : Shape<V>) -> (Vec<V::SubV>,Vec<VertIndex>)
+	shape : &Shape<V>) -> (Vec<V::SubV>,Vec<VertIndex>)
 where V: VectorTrait
 {
 	//concatenate vertex indices from each edge to get list
@@ -57,12 +57,12 @@ where V: VectorTrait
         vertis.push(edge.0);
         vertis.push(edge.1);
     }
-    let verts = shape.verts;
+    let verts = &shape.verts;
     let view_verts = verts.iter().map(|v| view_transform(camera,*v));
     let proj_verts : Vec<V::SubV> = view_verts.map(|v| project(v)).collect();
-    for v in proj_verts.iter() {
-    	println!("{}", v);
-    }
+    // for v in proj_verts.iter() {
+    // 	println!("{}", v);
+    // }
     (proj_verts, vertis)
     //graphics::draw_lines(display,proj_verts,vertis);
 

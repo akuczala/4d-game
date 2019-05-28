@@ -155,7 +155,7 @@ pub struct Shape<V : VectorTrait> {
   ref_frame : V::M,
   frame : V::M,
   pos : V,
-  scale : Field,
+  pub scale : Field,
 
   transparent : bool
 }
@@ -209,6 +209,10 @@ impl <V : VectorTrait> Shape<V> {
   pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) {
     let rot_mat = vector::rotation_matrix(self.frame[axis1],self.frame[axis2],Some(angle));
     self.frame = self.frame.dot(rot_mat);
+    self.update();
+  }
+  pub fn set_pos(&mut self, pos : &V) {
+    self.pos = *pos;
     self.update();
   }
   pub fn update_visibility(&mut self, camera_pos : V) {

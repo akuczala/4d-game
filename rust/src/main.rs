@@ -10,7 +10,8 @@ mod draw;
 mod colors;
 mod graphics;
 
+
 fn main() {
     graphics::graphics2d::test_glium_2();
-    graphics::graphics3d::test_glium_3d();
+    //graphics::graphics3d::test_glium_3d();
 }

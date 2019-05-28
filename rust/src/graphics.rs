@@ -22,13 +22,40 @@ fn init_glium() -> (winit::EventsLoop, glium::Display){
 
     (events_loop,display)
 }
-
+struct ButtonsPressed {
+	w : bool,
+	s : bool,
+	a : bool,
+	d : bool
+}
+impl ButtonsPressed {
+	fn new() -> Self{
+		ButtonsPressed {
+			w: false, s: false, a : false, d : false
+		}
+	}
+}
 // listing the events produced by application and waiting to be received
-fn listen_events(events_loop :  &mut winit::EventsLoop, mut closed: &mut bool) {
+fn listen_events(events_loop :  &mut winit::EventsLoop, closed: &mut bool, pressed : &mut ButtonsPressed) {
     events_loop.poll_events(|ev| {
             match ev {
                 glutin::Event::WindowEvent { event, .. } => match event {
                     glutin::WindowEvent::CloseRequested => *closed = true,
+                    glutin::WindowEvent::KeyboardInput{input, ..} => match input {
+                    	glutin::KeyboardInput{ virtual_keycode, state, ..} => match (virtual_keycode, state) {
+                    		(Some(glutin::VirtualKeyCode::W), glutin::ElementState::Pressed) => pressed.w = true,
+                    		(Some(glutin::VirtualKeyCode::W), glutin::ElementState::Released) => pressed.w = false,
+                    		(Some(glutin::VirtualKeyCode::S), glutin::ElementState::Pressed) => pressed.s = true,
+                    		(Some(glutin::VirtualKeyCode::S), glutin::ElementState::Released) => pressed.s = false,
+                    		(Some(glutin::VirtualKeyCode::A), glutin::ElementState::Pressed) => pressed.a = true,
+                    		(Some(glutin::VirtualKeyCode::A), glutin::ElementState::Released) => pressed.a = false,
+                    		(Some(glutin::VirtualKeyCode::D), glutin::ElementState::Pressed) => pressed.d = true,
+                    		(Some(glutin::VirtualKeyCode::D), glutin::ElementState::Released) => pressed.d = false,
+                    		_ => (),
+
+                    	},
+
+                    },
                     _ => (),
                 },
                 _ => (),
@@ -51,9 +78,6 @@ impl VertexMake for crate::vector::Vec3 {
 		Self::Vertex{position : *self.get_arr() as [f32 ; 3]}
 	}
 }
-// //{
-// 		Vertex{position : *v.get_arr()}
-// 	}
 pub fn draw_lines<V,U>(display : glium::Display, verts : Vec<V>, vertis : Vec<VertIndex>)
 where V : VectorTrait + VertexMake
 {

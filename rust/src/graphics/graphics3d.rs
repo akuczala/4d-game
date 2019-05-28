@@ -2,7 +2,7 @@ use glium::Surface;
 use super::init_glium;
 use super::listen_events;
 
-use crate::vector::VectorTrait;
+use crate::vector::{VectorTrait,Vec3};
 
 #[derive(Copy, Clone)]
 pub struct Vertex {
@@ -90,6 +90,8 @@ fn build_view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -
 
 pub fn test_glium_3d() {
     use crate::geometry::buildshapes::build_cylinder;
+    use super::ButtonsPressed;
+    let mut pressed = ButtonsPressed::new();
 
     let (mut events_loop, display) = init_glium();
 
@@ -114,8 +116,9 @@ pub fn test_glium_3d() {
 
     let program = glium::Program::from_source(&display, VERTEX_SHADER_SRC, FRAGMENT_SHADER_SRC,
                                               None).unwrap();
-
+    let mut pos = Vec3::new(0.0,0.0,0.0);
     let mut closed = false;
+    let dz = 0.001;
     while !closed {
         let mut target = display.draw();
         target.clear_color(0.05, 0.0, 0.05, 1.0);
@@ -124,7 +127,7 @@ pub fn test_glium_3d() {
             [0.01, 0.0, 0.0, 0.0],
             [0.0, 0.01, 0.0, 0.0],
             [0.0, 0.0, 0.01, 0.0],
-            [0.0, 0.0, 0.0, 1.0f32]
+            [pos[0], pos[1], pos[2], 1.0f32]
         ];
         let perspective = build_perspective_mat(&target);
         
@@ -135,7 +138,21 @@ pub fn test_glium_3d() {
                     &Default::default()).unwrap();
         target.finish().unwrap();
 
-        listen_events(&mut events_loop,&mut closed);
+        listen_events(&mut events_loop,&mut closed, &mut pressed);
+        if pressed.w {
+            pos = pos + Vec3::new(0.0,0.0,dz);
+        }
+        if pressed.s {
+            pos = pos - Vec3::new(0.0,0.0,dz);
+        }
+        if pressed.d {
+            pos = pos + Vec3::new(dz,0.0,0.0);
+        }
+        if pressed.a {
+            pos = pos - Vec3::new(dz,0.0,0.0);
+        }
+
+        
     } 
 
 }

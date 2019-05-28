@@ -31,81 +31,27 @@ pub const FRAGMENT_SHADER_SRC : &str = r#"
     out vec4 color;
 
     void main() {
-        color = vec4(my_attr,0.0,1.0);
+        color = vec4(1.0,1.0,1.0,1.0);
     }
     "#;
-
-pub fn test_glium() {
-    use crate::vector::{Vec2};
-    let (mut events_loop, display) = init_glium();
-
-
-    let shape = vec![Vec2::new(-0.5, -0.5),Vec2::new(-0.0, 0.5),Vec2::new( 0.5, -0.25)];
-    let shape : Vec<Vertex> = shape.iter().map(|v| Vertex{position : *v.get_arr() as [f32 ; 2]}).collect();
-
-    let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
-    let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
-
-
-    let program = glium::Program::from_source(&display,
-        VERTEX_SHADER_SRC,
-        FRAGMENT_SHADER_SRC, None)
-    .unwrap();
-
-    let mut t: f32 = -0.5;
-    let mut closed = false;
-    while !closed {
-        // we update `t`
-        t += 0.0002;
-        if t > 0.5 {
-            t = -0.5;
-        }
-        let mut target = display.draw();
-
-        let perspective = [
-            [1., 0., 0., 0.],
-            [0., 1., 0., 0.],
-            [0., 0., 1., 0.],
-            [0., 0., 0., 1.032f32]];
-        let uniforms = uniform! {
-            perspective : perspective,
-            matrix: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [ t , 0.0, 0.0, 1.0f32],
-            ]
-        };
-
-        target.clear_color(0.0,0.0,1.0,1.0);
-        target.draw(&vertex_buffer, &indices, &program, &uniforms,
-            &Default::default()).unwrap();
-        target.finish().unwrap();
-        
-        listen_events(&mut events_loop, &mut closed)
-    }
+use crate::vector::{Vec2};
+fn verts_to_vertexes(verts : &Vec<Vec2>) -> Vec<Vertex> {
+    verts.iter().map(|v| Vertex{position : *v.get_arr() as [f32 ; 2]}).collect()
 }
-
 pub fn test_glium_2() {
     use crate::vector::{Vec2,Vec3};
     use crate::draw::Camera;
+    use super::ButtonsPressed;
+    let mut pressed = ButtonsPressed::new();
+
     let (mut events_loop, display) = init_glium();
 
-    let cylinder = crate::geometry::buildshapes::build_cylinder(2.0,2.0,32);
-    let camera = crate::draw::Camera{
-        pos : Vec3::new(1.0, 1.0, -10.0),
+    let mut cylinder = crate::geometry::buildshapes::build_cylinder(1.0,2.0,32);
+    let camera = Camera{
+        pos : Vec3::new(0.0, 0.0, -10.0),
         frame : <Vec3 as VectorTrait>::M::id()
     };
-    let (verts, vertis) = crate::draw::draw_wireframe(&display,&camera,cylinder);
-    let shape : Vec<Vertex> = verts.iter().map(|v| Vertex{position : *v.get_arr() as [f32 ; 2]}).collect();
-    let convert_vertis : Vec<u16> = vertis.iter().map(|v| *v as u16).collect();
-    let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
-    let indices = glium::IndexBuffer::new(
-        &display,
-        glium::index::PrimitiveType::LinesList
-        ,&convert_vertis
-        )
-    .unwrap();
+    
 
     let program = glium::Program::from_source(&display,
         VERTEX_SHADER_SRC,
@@ -114,13 +60,15 @@ pub fn test_glium_2() {
 
     let mut t: f32 = -0.5;
     let mut closed = false;
+    let mut pos = Vec3::zero();
+    let dz = 0.001;
+    let mut update = true;
     while !closed {
         // we update `t`
-        t += 0.0002;
-        if t > 0.5 {
-            t = -0.5;
+        t += 0.02;
+        if t > 5.5 {
+            t = -5.5;
         }
-        let mut target = display.draw();
 
         let perspective = [
             [1., 0., 0., 0.],
@@ -133,15 +81,52 @@ pub fn test_glium_2() {
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [ t , 0.0, 0.0, 1.0f32],
+                [ 0.0, 0.0, 0.0 , 1.0f32],
             ]
         };
+        if pressed.w {
+            pos = pos + Vec3::new(0.0,0.0,dz);
+            update = true;
+        }
+        if pressed.s {
+            pos = pos - Vec3::new(0.0,0.0,dz);
+            update = true;
+        }
+        if pressed.d {
+            pos = pos + Vec3::new(dz,0.0,0.0);
+            update = true;
+        }
+        if pressed.a {
+            pos = pos - Vec3::new(dz,0.0,0.0);
+            update = true;
+        }
+        if update {
+            cylinder.set_pos(&pos);
+            cylinder.rotate(1,2,0.01f32);
+            let (verts, vertis) = crate::draw::draw_wireframe(&display,&camera,&cylinder);
 
-        target.clear_color(0.0,0.0,1.0,1.0);
-        target.draw(&vertex_buffer, &indices, &program, &uniforms,
-            &Default::default()).unwrap();
-        target.finish().unwrap();
+            let vertexes : Vec<Vertex> = verts_to_vertexes(&verts);
+            let convert_vertis : Vec<u16> = vertis.iter().map(|v| *v as u16).collect();
+            //would like to use VertexBuffer::dynamic and modify buffer rather than recreate over and over
+            let vertex_buffer = glium::VertexBuffer::new(&display, &vertexes).unwrap();
+            let indices = glium::IndexBuffer::new(
+                &display,
+                glium::index::PrimitiveType::LinesList
+                ,&convert_vertis
+                )
+            .unwrap();
+
+            let mut target = display.draw();
+            target.clear_color(0.0,0.1,0.1,1.0);
+            target.draw(&vertex_buffer, &indices, &program, &uniforms,
+                &Default::default()).unwrap();
+            target.finish().unwrap();
+
+            update = false;
+        }
         
-        listen_events(&mut events_loop, &mut closed)
+        listen_events(&mut events_loop, &mut closed, &mut pressed);
+
+        
     }
 }
