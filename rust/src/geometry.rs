@@ -215,6 +215,9 @@ impl <V : VectorTrait> Shape<V> {
     self.pos = *pos;
     self.update();
   }
+  pub fn get_pos(&mut self) -> &V {
+    &self.pos
+  }
   pub fn update_visibility(&mut self, camera_pos : V) {
     for face in self.faces.iter_mut() {
       if self.transparent {

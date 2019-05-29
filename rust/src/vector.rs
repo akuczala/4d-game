@@ -18,16 +18,19 @@ pub fn is_close(a : Field, b : Field) -> bool {
   (a-b).abs() < EPSILON
 }
 
+//consider using #![feature(associated_consts)]
+//to define vector dimension (might not need to explicity use feature?)
 pub trait VectorTrait: Copy + Display +
  Add<Output=Self> + Sub<Output=Self> +
  Mul<Field,Output=Self> + Div<Field,Output=Self> +
  Index<VecIndex,Output=Field>
  //+ std::iter::Sum
  {
-
   type M : MatrixTrait<Self>;
   type SubV: VectorTrait;
   type Arr;
+
+  const DIM : VecIndex;
 
   fn get_arr(&self) -> &Self::Arr;
 

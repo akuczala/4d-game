@@ -66,6 +66,8 @@ impl VectorTrait for Vec2 {
 
   type Arr = [Field ; 2];
 
+  const DIM : VecIndex = 2;
+  
   fn get_arr(&self) -> &[Field ; 2]{
     &self.arr
   }

@@ -1,5 +1,5 @@
 use glium::Surface;
-use super::init_glium;
+
 use super::listen_events;
 
 use crate::vector::{VectorTrait,Vec3};

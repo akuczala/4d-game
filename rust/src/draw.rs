@@ -26,7 +26,7 @@ fn project<V>(v : V) -> V::SubV
 where V : VectorTrait
 {
 	let z;
-	let focal : Field = 2.0;
+	let focal : Field = 1.0;
 	if V::is_close(v,V::ones()*Z0) {
 		z = Z0 + SMALL_Z;
 	} else {
@@ -45,7 +45,7 @@ where V : VectorTrait
 	//draw_wireframe(display,camera,shape)
 }
 
-pub fn draw_wireframe<V>(display : &glium::Display,
+pub fn draw_wireframe<V>(//display : &glium::Display,
 	camera : &Camera<V>,
 	shape : &Shape<V>) -> (Vec<V::SubV>,Vec<VertIndex>)
 where V: VectorTrait
