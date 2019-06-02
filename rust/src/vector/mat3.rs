@@ -10,9 +10,13 @@ impl Index<VecIndex> for Mat3 {
 
     fn index(&self, i: VecIndex) -> &Self::Output {
         match i {
-            0 => &self.0,
-            1 => &self.1,
-            2 => &self.2,
+             0 => &self.0,
+             1 => &self.1,
+             2 => &self.2,
+            -1 => &self.2,
+            -2 => &self.1,
+            -3 => &self.0,
+
             _ => panic!("Invalid index {} for Mat3", i)
         }
     }

@@ -2,7 +2,7 @@ pub mod vec2; pub mod vec3;
 pub mod mat2; pub mod mat3;
 
 use fmt::Display;
-use std::ops::{Add,Sub,Mul,Div,Index};
+use std::ops::{Add,Sub,Mul,Div,Index,Neg};
 pub use vec2::Vec2;
 pub use vec3::Vec3;
 pub use mat2::Mat2;
@@ -17,11 +17,13 @@ pub use std::f32::consts::PI;
 pub fn is_close(a : Field, b : Field) -> bool {
   (a-b).abs() < EPSILON
 }
-
+pub fn scalar_linterp(a : Field, b : Field, t : Field) -> Field {
+  a*(1.0-t) + b
+}
 //consider using #![feature(associated_consts)]
 //to define vector dimension (might not need to explicity use feature?)
 pub trait VectorTrait: Copy + Display +
- Add<Output=Self> + Sub<Output=Self> +
+ Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
  Mul<Field,Output=Self> + Div<Field,Output=Self> +
  Index<VecIndex,Output=Field>
  //+ std::iter::Sum

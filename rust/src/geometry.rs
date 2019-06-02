@@ -8,30 +8,20 @@ use crate::vector;
 use crate::colors::WHITE;
 //use std::ops::Index;
 
-// pub trait LineTrait {
-//   type V: VectorTrait;
-//   fn fst(&self) -> Self::V;
-//   fn snd(&self) -> Self::V;
-// }
-
-// pub struct Line3(Vec3,Vec3);
-
-// impl LineTrait for Line3 {
-//   type V = Vec3;
-//   fn fst(&self) -> Vec3 {
-//     self.0
-//   }
-//   fn snd(&self) -> Vec3 {
-//     self.1
-//   }
-// }
-
 pub struct Line<V : VectorTrait>(pub V,pub V);
 impl<V : VectorTrait> fmt::Display for Line<V> {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Line({},{})", self.0,self.1)
     }
+}
+impl<V : VectorTrait> Line<V> {
+  pub fn map<F,U>(&self, f : F) -> Line<U>
+  where U : VectorTrait,
+  F : Fn(V) -> U
+  {
+    Line(f(self.0),f(self.1))
+  }
 }
 pub struct Plane<V : VectorTrait> {
   pub normal : V,
@@ -75,18 +65,18 @@ impl fmt::Display for Edge {
 }
 #[derive(Clone)]
 pub struct Face<V : VectorTrait> {
-  normal : V, 
+  pub normal : V, 
   normal_ref : V,
 
   pub center : V,
   center_ref : V,
 
-  threshold : Field,
+  pub threshold : Field,
 
-  color : Color,
-  visible : bool,
+  pub color : Color,
+  pub visible : bool,
 
-  edgeis : Vec<EdgeIndex>,
+  pub edgeis : Vec<EdgeIndex>,
   vertis: Vec<VertIndex>
 
 }
@@ -143,8 +133,8 @@ impl<V : VectorTrait> fmt::Display for Face<V> {
     }
 }
 
-struct Subface<V : VectorTrait> {
-  faces : Vec<Face<V>>
+pub struct SubFace {
+  pub faceis : Vec<FaceIndex>
 }
 
 pub struct Shape<V : VectorTrait> {
@@ -186,13 +176,11 @@ impl <V : VectorTrait> Shape<V> {
     };
     shape
   }
-  // pub fn get_facei_verts(&self, facei : FaceIndex)
-  // {
-  //   let face_verts : Vec<V> = Vec::new();
-  //   for v in self.verts.iter() {
-  //     face_verts.push(self.verts[facei.vert[]])
-  //   }
-  // }
+  //pub fn get_face_verts(&self, face : Face)
+  pub fn get_facei_verts(&self, facei : FaceIndex) -> Vec<V>
+  {
+    self.faces[facei].vertis.iter().map(|vi| self.verts[*vi]).collect()
+  }
   pub fn transform(&mut self) {
     for (v,vr) in self.verts.iter_mut().zip(self.verts_ref.iter()) {
       *v = self.frame * (*vr * self.scale) + self.pos;

@@ -1,4 +1,4 @@
-use std::ops::{Add,Sub,Mul,Div,Index};
+use std::ops::{Add,Sub,Neg,Mul,Div,Index};
 use std::fmt;
 use crate::vector::{VecIndex,VectorTrait,Field};
 use super::mat2::Mat2;
@@ -43,6 +43,15 @@ impl Sub<Vec2> for Vec2 {
     Vec2::new(self[0]-rhs[0],self[1]-rhs[1])
   }
 }
+impl Neg for Vec2
+{
+  type Output = Vec2;
+  
+  fn neg(self) -> Vec2 {
+    Vec2::zero() - self
+  }
+}
+
 impl Mul<Field> for Vec2 {
   type Output = Vec2;
   
