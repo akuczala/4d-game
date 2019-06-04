@@ -1,11 +1,13 @@
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,rotation_matrix};
 use crate::geometry::{VertIndex,Shape,Line,Plane};
-use crate::graphics;
+//use crate::graphics;
 use crate::clipping::clip_line_plane;
+use crate::colors::Color;
 
 const Z0 : Field = 0.0;
-const SMALL_Z : Field = 0.001;
 
+const SMALL_Z : Field = 0.001;
+const Z_NEAR : Field = 0.5; 
 pub struct Camera<V>
 where V : VectorTrait
 {
@@ -18,8 +20,8 @@ where V : VectorTrait
 impl<V> Camera<V>
 where V : VectorTrait
 {
-	const SPEED : Field = 0.05;
-	const ANG_SPEED : Field = 0.01;
+	const SPEED : Field = 0.01;
+	const ANG_SPEED : Field = 0.005;
 	pub fn new(pos : V) -> Camera<V> {
 		Camera{
 			pos,
@@ -28,8 +30,9 @@ where V : VectorTrait
 			plane : Plane{normal : V::one_hot(-1), threshold : V::one_hot(-1).dot(pos)}
 		}
 	}
-	pub fn look_at(&mut self, point : V) {
-		self.frame = rotation_matrix(V::one_hot(-1),point - self.pos,None);
+	pub fn look_at(&mut self, point : &V) {
+		//self.frame = rotation_matrix(V::one_hot(-1),*point - self.pos,None);
+		self.frame = rotation_matrix(V::one_hot(-1),*point - self.pos,None).transpose();
 		self.update_heading();
 		self.update_plane();
 	}
@@ -38,22 +41,60 @@ where V : VectorTrait
 		self.update_plane();
 	}
 	pub fn rotate(&mut self, axis1 : VecIndex, axis2 : VecIndex, speed_mult : Field) {
-		self.frame = rotation_matrix(
+		self.frame = self.frame.dot(
+			rotation_matrix(
 			self.frame[axis1], self.frame[axis2],
-			Some(speed_mult*Self::ANG_SPEED)).dot(self.frame);
+			Some(speed_mult*Self::ANG_SPEED)));
 		self.update_heading();
 		self.update_plane();
 	}
 	pub fn update_plane(&mut self) {
 		self.plane = Plane{
 			normal : self.frame[-1],
-			threshold : self.frame.transpose()[-1].dot(self.pos)
+			threshold : self.frame[-1].dot(self.pos)
 		}
 	}
 	pub fn update_heading(&mut self) {
-		self.heading = self.frame.transpose()[-1];
+		self.heading = self.frame[-1];
 	}
 }
+
+pub struct DrawVertex<V>
+where V: VectorTrait
+{
+	pub vertex : V,
+	pub color : Color
+}
+
+pub struct DrawLine<V>
+where V : VectorTrait
+{
+	pub line : Line<V>,
+	pub color : Color,
+}
+impl<V : VectorTrait> DrawLine<V> {
+	pub fn map_line<F,U>(self, f : F) -> DrawLine<U>
+	where U : VectorTrait,
+	F : Fn(Line<V>) -> Line<U>
+	{
+		DrawLine{
+			line : f(self.line),
+			color : self.color
+		}
+	}
+	pub fn get_draw_verts(&self) -> (DrawVertex<V>,DrawVertex<V>) {
+		(DrawVertex{
+			vertex : self.line.0,
+			color : self.color
+		},
+		DrawVertex{
+			vertex : self.line.1,
+			color : self.color
+		})
+	}
+}
+
+
 fn project<V>(v : V) -> V::SubV
 where V : VectorTrait
 {
@@ -69,7 +110,42 @@ where V : VectorTrait
 fn view_transform<V>(camera : &Camera<V>, point : V) -> V
 where V : VectorTrait
 {
-	camera.frame.transpose() * (point - camera.pos)
+	camera.frame * (point - camera.pos)
+}
+//this takes a line and returns Option<Line>
+pub fn transform_line<V>(line : Line<V>, camera : &Camera<V>) -> Option<Line<V::SubV>>
+where V : VectorTrait
+{
+	let clipped_line = clip_line_plane(line,&camera.plane,Z_NEAR);
+	let view_line = clipped_line
+		.map(|line| line
+		.map(|v| view_transform(&camera,v)));
+	let proj_line = view_line
+		.map(|line| line
+		.map(project));
+	proj_line
+}
+//apply transform line to the lines in draw_lines
+//need to do nontrivial destructuring and reconstructing
+//in order to properly handle Option
+//would probably benefit from something monad-like
+pub fn transform_draw_lines<V>(
+	draw_lines : Vec<Option<DrawLine<V>>>,
+	camera : &Camera<V>) -> Vec<Option<DrawLine<V::SubV>>>
+where V : VectorTrait
+{
+	draw_lines.into_iter()
+		.map(|opt_draw_line| match opt_draw_line {
+			Some(draw_line) => {
+				let transformed_line = transform_line(draw_line.line,&camera);
+				match transformed_line {
+					Some(line) => Some(DrawLine{line, color : draw_line.color}),
+					None => None
+				}
+			}
+			None => None
+		})
+		.collect()
 }
 pub fn transform_lines<V>(lines : Vec<Option<Line<V>>>,
 	camera : &Camera<V>) -> Vec<Option<Line<V::SubV>>>
@@ -78,7 +154,7 @@ where V : VectorTrait
 	let clipped_lines = lines
 	.into_iter()
 	.map(|maybe_line| match maybe_line {
-		Some(line) => clip_line_plane(line,&camera.plane,2.0),
+		Some(line) => clip_line_plane(line,&camera.plane,Z_NEAR),
 		None => None
 	});
     //let clipped_lines = lines.map(|line| Some(line)); //no clipping
@@ -94,35 +170,43 @@ where V : VectorTrait
 }
 pub fn draw_shape<V>(
 	camera : &Camera<V>,
-	shape : &Shape<V>)  -> Vec<Option<Line<V::SubV>>>
+	shape : &Shape<V>,
+	face_scale : Field)  -> Vec<Option<DrawLine<V::SubV>>>
 
 where V : VectorTrait
 {
-	let mut shape_lines : Vec<Option<Line<V>>> = Vec::new();
-
+	//probably worth computing / storing number of lines
+	//and using Vec::with_capacity
+	let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 	//get lines from each face
+	//would like to have a draw face method that takes a vec of face scaling as argument
 	for face in &shape.faces {
-		let scale_point = |v| V::linterp(face.center,v,0.8);
+		let scale_point = |v| V::linterp(face.center,v,face_scale);
 		for edgei in &face.edgeis {
 			let edge = &shape.edges[*edgei];
 			//println!("{}",edge);
-			shape_lines.push(
-				match face.visible {
-					true => Some(Line(
-						shape.verts[edge.0],
-						shape.verts[edge.1])
-					.map(scale_point)),
-					false => None
+			if face.visible || shape.transparent {
+					shape_lines.push(
+						Some(DrawLine{
+							line : Line(
+							shape.verts[edge.0],
+							shape.verts[edge.1])
+							.map(scale_point),
+							color : face.color
+							})
+					);
+				} else {
+					shape_lines.push(None);
 				}
-			);
 		}
 	}
-	transform_lines(shape_lines,camera)
+	transform_draw_lines(shape_lines, &camera)
+	
 }
 
 pub fn draw_wireframe<V>(//display : &glium::Display,
 	camera : &Camera<V>,
-	shape : &Shape<V>) -> Vec<Option<Line<V::SubV>>>
+	shape : &Shape<V>, color : Color) -> Vec<Option<DrawLine<V::SubV>>>
 where V: VectorTrait
 {
 	//concatenate vertex indices from each edge to get list
@@ -133,20 +217,12 @@ where V: VectorTrait
         vertis.push(edge.1);
     }
 
-    // for pair in vertis.chunks(2) {
-    // 	lines.push(Line(shape.verts[pair[0]],shape.verts[pair[1]]));
-    // }
     let lines : Vec<Option<Line<V>>> = vertis.chunks(2)
     	.map(|pair| Some(Line(shape.verts[pair[0]],shape.verts[pair[1]]))).collect();
     
-    transform_lines(lines, camera)
-    //let view_verts = verts.iter().map(|v| view_transform(camera,*v));
+    let draw_lines = lines.into_iter().map(|opt_line| opt_line
+    	.map(|line| DrawLine{line,color})).collect();
 
-    //let proj_verts : Vec<V::SubV> = view_verts.map(|v| project(v)).collect();
-    // for v in proj_verts.iter() {
-    // 	println!("{}", v);
-    // }
-    //(proj_verts, vertis)
-    //graphics::draw_lines(display,proj_verts,vertis);
+    transform_draw_lines(draw_lines, camera)
 
 }

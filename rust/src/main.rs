@@ -18,9 +18,11 @@ fn main() {
     test_glium_2();
     //graphics::graphics3d::test_glium_3d();
 }
-use crate::vector::{VectorTrait,MatrixTrait};
+//use crate::vector::{VectorTrait,MatrixTrait};
 use crate::graphics::Graphics;
 use crate::input::Input;
+use crate::colors::*;
+
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 
@@ -45,35 +47,40 @@ pub fn test_glium_2() {
     let mut input = Input::new(events_loop);
     let mut graphics =  crate::graphics::Graphics2d::new(display);
 
-    let mut cylinder = crate::geometry::buildshapes::build_cylinder(1.0,2.0,10);
-    let mut camera = Camera::new(Vec3::new(0.0, 0.0, -10.0));
-    
+    let mut cylinder = crate::geometry::buildshapes::build_cube(1.0);
+    let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW];
+    for (face, color) in cylinder.faces.iter_mut().zip(face_colors) {
+        face.color = color;
+    }
 
-    //let lines = crate::draw::draw_wireframe(&camera,&cylinder);
-    let lines = crate::draw::draw_shape(&camera,&cylinder);
+    let mut camera = Camera::new(Vec3::new(5.0,5.0, -10.0));
+    camera.look_at(cylinder.get_pos());
+
+    let mut draw_lines = crate::draw::draw_shape(&camera,&cylinder,0.9);
+    draw_lines.append(&mut crate::draw::draw_shape(&camera,&cylinder,0.5));
     //vertex buffer (and presumably index buffer) do not allow size of array
     //to change (at least using the write operation)
     
-    graphics.new_vertex_buffer_from_lines(&lines);
+    graphics.new_vertex_buffer_from_lines(&draw_lines);
     //graphics.new_index_buffer(&vertis);
 
-    //let mut t: f32 = -0.5;
-    let mut update = true;
     while !input.closed {
 
-        if update {
+        if input.update {
             //cylinder.rotate(1,2,0.001f32);
             //let lines = crate::draw::draw_wireframe(&camera,&cylinder);
             cylinder.update_visibility(camera.pos);
-            let lines = crate::draw::draw_shape(&camera,&cylinder);
-            graphics.draw_lines(&lines);
+            draw_lines = crate::draw::draw_shape(&camera,&cylinder,0.9);
+            draw_lines.append(&mut crate::draw::draw_shape(&camera,&cylinder,0.5));
+            graphics.draw_lines(&draw_lines);
 
             
-            update = false;
+            //update = false;
         }
         
         input.listen_events();
-        update = input.update_camera(&mut camera);
+        input.update_camera(&mut camera);
+        input.update_shape(&mut cylinder);
         input.print_debug(&camera);
 
         

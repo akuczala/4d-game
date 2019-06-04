@@ -3,7 +3,9 @@ use crate::vector::{VectorTrait,MatrixTrait};
 use crate::geometry::{VertIndex,Line};
 use super::Graphics;
 use crate::vector::{Vec2,Vec3};
-
+use crate::colors::Color;
+use glium::Surface;
+use crate::draw::{DrawVertex,DrawLine};
 
 
 #[derive(Copy, Clone)]
@@ -44,12 +46,11 @@ pub struct Graphics2d {
     program : glium::Program
 }
 
-const BEHIND : Vertex = Vertex{
-    position : [0.0,0.0,0.5],
-    color : [1.0,0.0,0.0,0.0f32]
-};
-const BEHIND2 : Vertex = Vertex{
-    position : [0.0,10.0,0.5],
+//vertices are invisible at z = 10.0,
+//so they don't get drawn.
+//was originally using these for debugging
+const NO_DRAW : Vertex = Vertex{
+    position : [0.0,0.0,10.0],
     color : [1.0,0.0,0.0,1.0f32]
 };
 
@@ -97,13 +98,19 @@ impl Graphics for Graphics2d {
         &self.program
     }
 
-    fn new_vertex_buffer(&mut self, verts : &Vec<Self::V>) {
-        self.vertex_buffer = glium::VertexBuffer::dynamic(&self.display, &Self::verts_to_gl(&verts)).unwrap();
+    fn set_display(&mut self, display : glium::Display) {
+        self.display = display;
     }
-    fn new_vertex_buffer_from_lines(&mut self, lines : &Vec<Option<Line<Self::V>>>) {
-        let vertexes = Self::opt_line_to_gl(&lines);
-        self.vertex_buffer = glium::VertexBuffer::dynamic(&self.display, &vertexes).unwrap();
+    fn set_vertex_buffer(&mut self, vertex_buffer : glium::VertexBuffer<Self::VertexType>) {
+        self.vertex_buffer = vertex_buffer;
     }
+    fn set_index_buffer(&mut self, index_buffer : glium::IndexBuffer<u16>) {
+        self.index_buffer = index_buffer;
+    }
+    fn set_program(&mut self, program : glium::Program) {
+        self.program = program;
+    }
+
     fn new_index_buffer(&mut self, vertis : &Vec<VertIndex>) {
         self.index_buffer = glium::IndexBuffer::dynamic(
                 &self.display,
@@ -113,34 +120,55 @@ impl Graphics for Graphics2d {
             .unwrap();
     }
 
-    fn verts_to_gl(verts : &Vec<Vec2>) -> Vec<Vertex> {
-        verts.iter().map(Self::vert_to_gl)
-            .collect()
-    }
-    fn vert_to_gl(vert: &Vec2) -> Vertex {
-        let arr = *vert.get_arr() ;
-        Vertex{
-            position : [arr[0],arr[1],0.0] as [f32 ; 3],
-            color : [1.0,1.0,1.0,1.0f32]
+    //make this consume its input?
+    fn vert_to_gl(vert: &Option<DrawVertex<Self::V>>) -> Vertex {
+        match *vert {
+            Some(DrawVertex{vertex,color}) => {
+                let arr = *vertex.get_arr() ;
+                Vertex{
+                    position : [arr[0],arr[1],0.0] as [f32 ; 3],
+                    color : *color.get_arr()
+                }
+
+            }
+            None => NO_DRAW
         }
+        
     }
-    fn vert_to_gl_red(vert: &Vec2) -> Vertex {
-        let arr = *vert.get_arr() ;
-        Vertex{
-            position : [arr[0],arr[1],0.0] as [f32 ; 3],
-            color : [1.0,0.0,0.0,0.0f32]
-        }
-    }
-    fn opt_line_to_gl(opt_lines: &Vec<Option<Line<Vec2>>>) -> Vec<Vertex> {
+    //make this consume its input?
+    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<Self::V>>>) -> Vec<Vertex> {
         let mut verts : Vec<Vertex> = Vec::new();
         for opt_line in opt_lines.iter() {
             let (v0,v1) = match opt_line {
-                Some(Line(v0,v1)) => (Self::vert_to_gl(v0),Self::vert_to_gl(v1)),
-                None => (BEHIND,BEHIND2)
+                Some(draw_line)
+                    => {
+                        let (v0,v1) = draw_line.get_draw_verts();
+                        (Self::vert_to_gl(&Some(v0)),Self::vert_to_gl(&Some(v1)))
+                    }
+                None => (NO_DRAW,NO_DRAW)
             };
             verts.push(v0); verts.push(v1);
         }
         verts
     }
+    fn build_perspective_mat<S>(target : &S) -> [[f32 ; 4] ; 4]
+    where S : Surface
+    {
+        let (width, height) = target.get_dimensions();
+        let aspect_ratio = height as f32 / width as f32;
+        let fov: f32 = 3.141592 / 3.0;
+        //let zfar = 1024.0;
+        //let znear = 0.1;
+
+        let f = 1.0 / (fov / 2.0).tan();
+
+        [
+            [f*aspect_ratio, 0., 0., 0.],
+            [0., f, 0., 0.],
+            [0., 0., 1., 0.],
+            [0., 0., 0., 1.032f32]
+        ]
+    }
+    
 }
 

@@ -147,7 +147,7 @@ pub struct Shape<V : VectorTrait> {
   pos : V,
   pub scale : Field,
 
-  transparent : bool
+  pub transparent : bool
 }
 impl <V : VectorTrait> Shape<V> {
   pub fn new(verts : Vec<V>, edges: Vec<Edge>, mut faces: Vec<Face<V>>) -> Shape<V> {
