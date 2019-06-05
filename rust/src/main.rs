@@ -55,9 +55,8 @@ pub fn test_glium_2() {
 
     let mut camera = Camera::new(Vec3::new(5.0,5.0, -10.0));
     camera.look_at(cylinder.get_pos());
-
-    let mut draw_lines = crate::draw::draw_shape(&camera,&cylinder,0.9);
-    draw_lines.append(&mut crate::draw::draw_shape(&camera,&cylinder,0.5));
+    let face_scales = vec![0.5,0.9];
+    let mut draw_lines = crate::draw::draw_shape(&camera,&cylinder,&face_scales);
     //vertex buffer (and presumably index buffer) do not allow size of array
     //to change (at least using the write operation)
     
@@ -70,8 +69,7 @@ pub fn test_glium_2() {
             //cylinder.rotate(1,2,0.001f32);
             //let lines = crate::draw::draw_wireframe(&camera,&cylinder);
             cylinder.update_visibility(camera.pos);
-            draw_lines = crate::draw::draw_shape(&camera,&cylinder,0.9);
-            draw_lines.append(&mut crate::draw::draw_shape(&camera,&cylinder,0.5));
+            draw_lines = crate::draw::draw_shape(&camera,&cylinder,&face_scales);
             graphics.draw_lines(&draw_lines);
 
             

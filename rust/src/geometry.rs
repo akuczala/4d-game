@@ -142,6 +142,10 @@ pub struct Shape<V : VectorTrait> {
   pub verts : Vec<V>,
   pub edges : Vec<Edge>,
   pub faces : Vec<Face<V>>,
+  pub subfaces : Vec<SubFace>,
+
+  pub boundaries : Vec<Plane<V>>,
+
   ref_frame : V::M,
   frame : V::M,
   pos : V,
@@ -168,6 +172,8 @@ impl <V : VectorTrait> Shape<V> {
     verts : verts,
     edges : edges,
     faces : faces,
+    subfaces : Vec::new(), //want to actually call calc_subfaces here
+    boundaries : Vec::new(),
     ref_frame : V::M::id(),
     frame : V::M::id(),
     pos : V::zero(),

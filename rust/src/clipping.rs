@@ -1,5 +1,5 @@
 use crate::vector::{VectorTrait,Field,scalar_linterp};
-use crate::geometry::{Line,Plane,SubFace,Face};
+use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 
 pub fn clip_line_plane<V>(line : Line<V>, plane : &Plane<V>, small_z : Field) -> Option<Line<V>>
 where V : VectorTrait {
@@ -27,12 +27,105 @@ where V : VectorTrait {
     }
 
 }
-
-pub fn calc_boundaries<V>(faces :  Vec<Face<V>>,
-    subfaces : Vec<SubFace>,
-    origin : V) -> Vec<Plane<V>>
-where V : VectorTrait
+pub enum ReturnLines<V : VectorTrait>
 {
+    TwoLines(Line<V>,Line<V>),
+    OneLine(Line<V>),
+    NoLines
+}
+pub fn clip_line<V : VectorTrait>(
+    line : Line<V>,
+    boundaries : &Vec<Plane<V>>
+    ) -> ReturnLines<V> {
+    let Line(p0,p1)= line;
+
+    let (mut a,mut b) = (0.0 as Field,1.0 as Field);
+
+    let (mut p0_all_safe, mut p1_all_safe) = (false,false);
+
+    for boundary in boundaries {
+
+        let n = boundary.normal;
+        let th = boundary.threshold;
+
+        let (p0n, p1n) = (p0.dot(n), p1.dot(n));
+        let (p0_safe, p1_safe) = (p0n >= th, p1n >= th);
+
+        if p0_safe && p1_safe {
+            a = 0.0; b = 1.0;
+            p0_all_safe = true; p1_all_safe = true;
+            break;
+        }
+        if p0_safe && !p1_safe {
+            let t_intersect = (p0n - th) / (p0n - p1n);
+            a = a.max(t_intersect);
+        }
+        if !p0_safe && p1_safe {
+            let t_intersect = (p0n - th) / (p0n - p1n);
+            b = b.min(t_intersect);
+        }
+        p0_all_safe = p0_all_safe || p0_safe;
+        p1_all_safe = p1_all_safe || p1_safe;
+    }
+
+    if p0_all_safe && p1_all_safe {
+        //return two lines if we've intersected the shape
+        if a > 0.0 && b < 1.0 {
+            return ReturnLines::TwoLines(
+                Line(p0, V::linterp(p0,p1,a) ),
+                Line(V::linterp(p0,p1,b), p1)
+                )
+        } else {
+            return ReturnLines::OneLine(line)
+        }
+    }
+    if p0_all_safe && !p1_all_safe {
+        return ReturnLines::OneLine(Line(p0, V::linterp(p0,p1,a)))
+    }
+    if !p0_all_safe && p1_all_safe {
+        return ReturnLines::OneLine(Line(V::linterp(p0,p1,b), p1))
+    }
+    ReturnLines::NoLines
+}
+
+pub fn clip_lines<V : VectorTrait>(
+    mut lines : Vec<Option<Line<V>>>,
+    shape : &Shape<V>,
+    clipping_shapes: &Vec<Shape<V>>
+    ) ->  Vec<Option<Line<V>>>
+{
+    let mut clipped_lines = lines;
+    for clipping_shape in clipping_shapes {
+        //compare pointers
+        let same_shape = clipping_shape as *const _ != shape as *const _;
+        if same_shape && !clipping_shape.transparent {
+            let mut additional_lines : Vec<Option<Line<V>>> = Vec::new();
+            //would like to map in place here, with side effects
+            //(creating additonal lines)
+            //worst case, we could push back and forth between two Vecs
+            //with capacities slightly greater than initial # lines
+            for opt_line in clipped_lines.iter_mut() {
+                *opt_line = match *opt_line {
+                    Some(line) => match clip_line(line, &clipping_shape.boundaries) {
+                        ReturnLines::TwoLines(line0,line1) => {
+                            additional_lines.push(Some(line1)); //push extra lines on to other vector
+                            Some(line0)
+                        }
+                        ReturnLines::OneLine(line) => Some(line),
+                        ReturnLines::NoLines => None
+
+                    }
+                    None => None
+                }
+            }
+            clipped_lines.append(&mut additional_lines);
+        }
+    }
+    clipped_lines
+}
+pub fn calc_boundaries<V : VectorTrait>(faces :  Vec<Face<V>>,
+    subfaces : Vec<SubFace>,
+    origin : V) -> Vec<Plane<V>> {
     let mut boundaries : Vec<Plane<V>> = Vec::new();
     for subface in subfaces {
         let face1 = &faces[subface.faceis[0]];

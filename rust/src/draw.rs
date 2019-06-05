@@ -1,5 +1,5 @@
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,rotation_matrix};
-use crate::geometry::{VertIndex,Shape,Line,Plane};
+use crate::geometry::{VertIndex,Shape,Line,Plane,Face};
 //use crate::graphics;
 use crate::clipping::clip_line_plane;
 use crate::colors::Color;
@@ -168,10 +168,39 @@ where V : VectorTrait
     			.map(project))).collect();
     proj_lines
 }
+pub fn calc_face_lines<V>(
+	face : &Face<V>,
+	shape : &Shape<V>,
+	face_scales : &Vec<Field>
+	) -> Vec<Option<DrawLine<V>>>
+where V : VectorTrait {
+	let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
+	for &face_scale in face_scales {
+		let scale_point = |v| V::linterp(face.center,v,face_scale);
+		for edgei in &face.edgeis {
+			let edge = &shape.edges[*edgei];
+			//println!("{}",edge);
+			if face.visible || shape.transparent {
+				shape_lines.push(
+					Some(DrawLine{
+						line : Line(
+						shape.verts[edge.0],
+						shape.verts[edge.1])
+						.map(scale_point),
+						color : face.color
+						})
+				);
+			} else {
+				shape_lines.push(None);
+			}
+		}
+	}
+	shape_lines
+}
 pub fn draw_shape<V>(
 	camera : &Camera<V>,
 	shape : &Shape<V>,
-	face_scale : Field)  -> Vec<Option<DrawLine<V::SubV>>>
+	face_scale : &Vec<Field>)  -> Vec<Option<DrawLine<V::SubV>>>
 
 where V : VectorTrait
 {
@@ -181,24 +210,7 @@ where V : VectorTrait
 	//get lines from each face
 	//would like to have a draw face method that takes a vec of face scaling as argument
 	for face in &shape.faces {
-		let scale_point = |v| V::linterp(face.center,v,face_scale);
-		for edgei in &face.edgeis {
-			let edge = &shape.edges[*edgei];
-			//println!("{}",edge);
-			if face.visible || shape.transparent {
-					shape_lines.push(
-						Some(DrawLine{
-							line : Line(
-							shape.verts[edge.0],
-							shape.verts[edge.1])
-							.map(scale_point),
-							color : face.color
-							})
-					);
-				} else {
-					shape_lines.push(None);
-				}
-		}
+		shape_lines.append(&mut calc_face_lines(face,&shape,&face_scale));
 	}
 	transform_draw_lines(shape_lines, &camera)
 	
