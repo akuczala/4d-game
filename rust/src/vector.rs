@@ -18,7 +18,7 @@ pub fn is_close(a : Field, b : Field) -> bool {
   (a-b).abs() < EPSILON
 }
 pub fn scalar_linterp(a : Field, b : Field, t : Field) -> Field {
-  a*(1.0-t) + b
+  a*(1.0-t) + b*t
 }
 //consider using #![feature(associated_consts)]
 //to define vector dimension (might not need to explicity use feature?)

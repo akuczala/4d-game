@@ -58,11 +58,11 @@ pub type FaceIndex = usize;
 
 pub struct Edge(pub VertIndex,pub VertIndex);
 impl fmt::Display for Edge {
-    // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Edge({},{})", self.0, self.1)
     }
 }
+
 #[derive(Clone)]
 pub struct Face<V : VectorTrait> {
   pub normal : V, 
@@ -80,6 +80,7 @@ pub struct Face<V : VectorTrait> {
   vertis: Vec<VertIndex>
 
 }
+
 impl<V : VectorTrait> Face<V> {
   pub fn new(edgeis : Vec<EdgeIndex>, normal : V) -> Face<V> {
     let face = Face{
@@ -134,9 +135,40 @@ impl<V : VectorTrait> fmt::Display for Face<V> {
 }
 
 pub struct SubFace {
-  pub faceis : Vec<FaceIndex>
+  pub faceis : (FaceIndex,FaceIndex)
+}
+impl fmt::Display for SubFace {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SubFace({},{})", self.faceis.0, self.faceis.1)
+    }
 }
 
+//find indices of (d-1) faces that are joined by a (d-2) edge
+fn calc_subfaces<V : VectorTrait>(faces : &Vec<Face<V>>) -> Vec<SubFace> {
+  let n_target = match V::DIM {
+    3 => 1,
+    4 => 2,
+    _ => panic!("Invalid dimension for computing subfaces")
+  };
+  let mut subfaces : Vec<SubFace> = Vec::new();
+  for i in 0..faces.len() {
+    for j in 0..i {
+      if count_common_edges(&faces[i],&faces[j]) >= n_target {
+        subfaces.push(SubFace{faceis : (i,j)})
+      }
+    }
+  }
+  subfaces
+}
+fn count_common_edges<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> usize {
+  let total_edges = face1.edgeis.len() + face2.edgeis.len();
+  let unique_edges = face1.edgeis.iter()
+    .chain(face2.edgeis.iter())
+    .unique()
+    .count();
+  total_edges - unique_edges
+
+}
 pub struct Shape<V : VectorTrait> {
   verts_ref : Vec<V>,
   pub verts : Vec<V>,
@@ -167,12 +199,13 @@ impl <V : VectorTrait> Shape<V> {
       //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
       face.center = face.center_ref.clone();
     }
-    let shape = Shape{
+    let mut shape = Shape{
     verts_ref : verts.clone(),
     verts : verts,
     edges : edges,
+    subfaces : calc_subfaces(&faces), //must come before faces : faces
     faces : faces,
-    subfaces : Vec::new(), //want to actually call calc_subfaces here
+    
     boundaries : Vec::new(),
     ref_frame : V::M::id(),
     frame : V::M::id(),
@@ -180,8 +213,10 @@ impl <V : VectorTrait> Shape<V> {
     scale : 1.0,
     transparent: false
     };
+    shape.update();
     shape
   }
+
   //pub fn get_face_verts(&self, face : Face)
   pub fn get_facei_verts(&self, facei : FaceIndex) -> Vec<V>
   {
@@ -193,7 +228,7 @@ impl <V : VectorTrait> Shape<V> {
     }
     for face in &mut self.faces {
       face.normal = self.frame * face.normal_ref;
-      face.center = self.frame * face.center_ref;
+      face.center = self.frame * face.center_ref + self.pos;
       face.threshold = face.normal.dot(face.center);
     }
   }
@@ -205,9 +240,10 @@ impl <V : VectorTrait> Shape<V> {
     self.frame = self.frame.dot(rot_mat);
     self.update();
   }
-  pub fn set_pos(&mut self, pos : &V) {
+  pub fn set_pos(mut self, pos : &V) -> Self {
     self.pos = *pos;
     self.update();
+    self
   }
   pub fn get_pos(&mut self) -> &V {
     &self.pos

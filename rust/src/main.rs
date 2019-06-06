@@ -20,6 +20,7 @@ fn main() {
 }
 //use crate::vector::{VectorTrait,MatrixTrait};
 use crate::graphics::Graphics;
+use crate::geometry::buildshapes;
 use crate::input::Input;
 use crate::colors::*;
 
@@ -47,16 +48,23 @@ pub fn test_glium_2() {
     let mut input = Input::new(events_loop);
     let mut graphics =  crate::graphics::Graphics2d::new(display);
 
-    let mut cylinder = crate::geometry::buildshapes::build_cube(1.0);
+    let mut cube = buildshapes::build_cube(1.0);
     let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW];
-    for (face, color) in cylinder.faces.iter_mut().zip(face_colors) {
+    for (face, color) in cube.faces.iter_mut().zip(face_colors) {
         face.color = color;
     }
+    let cylinder = buildshapes::build_cylinder(1.0,1.0,8)
+        .set_pos(&Vec3::new(2.0,0.0,0.0));;
 
-    let mut camera = Camera::new(Vec3::new(5.0,5.0, -10.0));
-    camera.look_at(cylinder.get_pos());
-    let face_scales = vec![0.5,0.9];
-    let mut draw_lines = crate::draw::draw_shape(&camera,&cylinder,&face_scales);
+    let prism = buildshapes::build_cylinder(1.0,1.0,3)
+        .set_pos(&Vec3::new(0.0,0.0,3.0));
+    let mut shapes = vec![cube,cylinder,prism];
+
+    let mut camera = Camera::new(Vec3::new(2.0,0.0, -10.0));
+    camera.look_at(shapes[0].get_pos());
+    let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
+    let mut draw_lines = crate::draw::draw_shapes(&camera,&mut shapes,&face_scales);
+    let mut cur_lines_length = draw_lines.len();
     //vertex buffer (and presumably index buffer) do not allow size of array
     //to change (at least using the write operation)
     
@@ -66,19 +74,25 @@ pub fn test_glium_2() {
     while !input.closed {
 
         if input.update {
-            //cylinder.rotate(1,2,0.001f32);
+            shapes[1].rotate(1,2,0.001f32);
             //let lines = crate::draw::draw_wireframe(&camera,&cylinder);
-            cylinder.update_visibility(camera.pos);
-            draw_lines = crate::draw::draw_shape(&camera,&cylinder,&face_scales);
+            draw_lines = crate::draw::draw_shapes(&camera,&mut shapes,&face_scales);
+            //make new buffer if the number of lines changes
+            if draw_lines.len() != cur_lines_length {
+                graphics.new_vertex_buffer_from_lines(&draw_lines);
+                println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
+                cur_lines_length = draw_lines.len();
+            }
             graphics.draw_lines(&draw_lines);
 
             
-            //update = false;
+            input.update = true; //set to true for constant updating
         }
         
         input.listen_events();
         input.update_camera(&mut camera);
-        input.update_shape(&mut cylinder);
+        input.update_shape(&mut shapes[1]);
+        
         input.print_debug(&camera);
 
         

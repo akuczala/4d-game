@@ -16,6 +16,8 @@ where V : VectorTrait
 	pub heading : V,
 	pub plane : Plane<V>,
 
+	pub clipping : bool,
+
 }
 impl<V> Camera<V>
 where V : VectorTrait
@@ -27,7 +29,9 @@ where V : VectorTrait
 			pos,
 			frame : V::M::id(),
 			heading : V::one_hot(-1),
-			plane : Plane{normal : V::one_hot(-1), threshold : V::one_hot(-1).dot(pos)}
+			plane : Plane{normal : V::one_hot(-1), threshold : V::one_hot(-1).dot(pos)},
+
+			clipping : true
 		}
 	}
 	pub fn look_at(&mut self, point : &V) {
@@ -197,22 +201,40 @@ where V : VectorTrait {
 	}
 	shape_lines
 }
-pub fn draw_shape<V>(
+pub fn draw_shapes<V>(
 	camera : &Camera<V>,
-	shape : &Shape<V>,
+	shapes : &mut Vec<Shape<V>>,
 	face_scale : &Vec<Field>)  -> Vec<Option<DrawLine<V::SubV>>>
 
 where V : VectorTrait
 {
+	//update shape visibility and boundaries
+	for shape in shapes.iter_mut() {
+		shape.update_visibility(camera.pos);
+		//calculate boundaries for clipping
+		if camera.clipping {
+			shape.boundaries = crate::clipping::calc_boundaries(
+				&shape.faces, &shape.subfaces, camera.pos);
+		}
+	}
 	//probably worth computing / storing number of lines
 	//and using Vec::with_capacity
-	let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
-	//get lines from each face
-	//would like to have a draw face method that takes a vec of face scaling as argument
-	for face in &shape.faces {
-		shape_lines.append(&mut calc_face_lines(face,&shape,&face_scale));
+	
+	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();
+	
+	//compute lines for each shape
+	for (shape_index,shape) in shapes.iter().enumerate() {
+		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
+		//get lines from each face
+		for face in &shape.faces {
+			shape_lines.append(&mut calc_face_lines(face,&shape,&face_scale));
+		}
+		//clip these lines and append to list
+		let mut clipped_lines = crate::clipping::clip_draw_lines(
+			shape_lines, shape, shape_index, shapes);
+		lines.append(&mut clipped_lines);
 	}
-	transform_draw_lines(shape_lines, &camera)
+	transform_draw_lines(lines, &camera)
 	
 }
 

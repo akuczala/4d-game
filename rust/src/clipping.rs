@@ -1,6 +1,6 @@
 use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
-
+use crate::draw::DrawLine;
 pub fn clip_line_plane<V>(line : Line<V>, plane : &Plane<V>, small_z : Field) -> Option<Line<V>>
 where V : VectorTrait {
     let Line(p0,p1)= line;
@@ -67,7 +67,7 @@ pub fn clip_line<V : VectorTrait>(
         p0_all_safe = p0_all_safe || p0_safe;
         p1_all_safe = p1_all_safe || p1_safe;
     }
-
+    //both endpoints visible
     if p0_all_safe && p1_all_safe {
         //return two lines if we've intersected the shape
         if a > 0.0 && b < 1.0 {
@@ -76,6 +76,7 @@ pub fn clip_line<V : VectorTrait>(
                 Line(V::linterp(p0,p1,b), p1)
                 )
         } else {
+            //return entire line if we haven't intersected the shape
             return ReturnLines::OneLine(line)
         }
     }
@@ -85,51 +86,60 @@ pub fn clip_line<V : VectorTrait>(
     if !p0_all_safe && p1_all_safe {
         return ReturnLines::OneLine(Line(V::linterp(p0,p1,b), p1))
     }
+    //if neither point is visible, don't draw the line
     ReturnLines::NoLines
 }
 
-pub fn clip_lines<V : VectorTrait>(
-    mut lines : Vec<Option<Line<V>>>,
-    shape : &Shape<V>,
+pub fn clip_draw_lines<V : VectorTrait>(
+    lines : Vec<Option<DrawLine<V>>>,
+    shape : &Shape<V>, shape_index : usize, //for debug
     clipping_shapes: &Vec<Shape<V>>
-    ) ->  Vec<Option<Line<V>>>
+    ) ->  Vec<Option<DrawLine<V>>>
 {
     let mut clipped_lines = lines;
-    for clipping_shape in clipping_shapes {
+    for (clip_shape_index,clipping_shape) in clipping_shapes.iter().enumerate() {
         //compare pointers
-        let same_shape = clipping_shape as *const _ != shape as *const _;
-        if same_shape && !clipping_shape.transparent {
-            let mut additional_lines : Vec<Option<Line<V>>> = Vec::new();
+        //let same_shape = clipping_shape as *const _ == shape as *const _;
+        let same_shape = clip_shape_index == shape_index;
+        if !same_shape && !clipping_shape.transparent {
+            //let mut additional_lines : Vec<Option<Line<V>>> = Vec::new();
+            let mut new_lines : Vec<Option<DrawLine<V>>> = Vec::new();
             //would like to map in place here, with side effects
             //(creating additonal lines)
             //worst case, we could push back and forth between two Vecs
             //with capacities slightly greater than initial # lines
-            for opt_line in clipped_lines.iter_mut() {
-                *opt_line = match *opt_line {
-                    Some(line) => match clip_line(line, &clipping_shape.boundaries) {
+            //right now i just push on to a new Vec every time
+            for opt_draw_line in clipped_lines.into_iter() {
+                let new_line = match opt_draw_line {
+                    Some(DrawLine{line,color}) => match clip_line(line, &clipping_shape.boundaries) {
                         ReturnLines::TwoLines(line0,line1) => {
-                            additional_lines.push(Some(line1)); //push extra lines on to other vector
-                            Some(line0)
+                            //additional_lines.push(Some(line1)); //push extra lines on to other vector
+                            new_lines.push(Some(DrawLine{line : line1,color}));
+                            Some(DrawLine{line : line0,color})
                         }
-                        ReturnLines::OneLine(line) => Some(line),
+                        ReturnLines::OneLine(line) => Some(DrawLine{line,color}),
                         ReturnLines::NoLines => None
 
                     }
                     None => None
-                }
+                };
+                new_lines.push(new_line);
             }
-            clipped_lines.append(&mut additional_lines);
+            clipped_lines = new_lines;
+            //clipped_lines.append(&mut additional_lines);
         }
     }
     clipped_lines
 }
-pub fn calc_boundaries<V : VectorTrait>(faces :  Vec<Face<V>>,
-    subfaces : Vec<SubFace>,
+pub fn calc_boundaries<V : VectorTrait>(faces :  &Vec<Face<V>>,
+    subfaces : &Vec<SubFace>,
     origin : V) -> Vec<Plane<V>> {
+
     let mut boundaries : Vec<Plane<V>> = Vec::new();
+
     for subface in subfaces {
-        let face1 = &faces[subface.faceis[0]];
-        let face2 = &faces[subface.faceis[1]];
+        let face1 = &faces[subface.faceis.0];
+        let face2 = &faces[subface.faceis.1];
         if face1.visible == !face2.visible {
             let boundary = calc_boundary(face1, face2, origin);
             boundaries.push(boundary);
@@ -157,7 +167,7 @@ where V : VectorTrait
     //k1 and k2 must have opposite signs
     let k1 = n1.dot(origin) - th1;
     let k2 = n2.dot(origin) - th2;
-    assert!(k1*k2 < 0.0);
+    assert!(k1*k2 < 0.0,"k1 = {}, k2 = {}",k1,k2);
 
     let t = k1/(k1 - k2);
 
