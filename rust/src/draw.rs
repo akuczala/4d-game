@@ -35,8 +35,8 @@ where V : VectorTrait
 		}
 	}
 	pub fn look_at(&mut self, point : &V) {
-		//self.frame = rotation_matrix(V::one_hot(-1),*point - self.pos,None);
-		self.frame = rotation_matrix(V::one_hot(-1),*point - self.pos,None).transpose();
+		//self.frame = rotation_matrix(V::one_hot(-1),*point - self.pos,None).transpose();
+		self.frame = rotation_matrix(*point - self.pos, V::one_hot(-1), None);
 		self.update_heading();
 		self.update_plane();
 	}
@@ -223,7 +223,7 @@ where V : VectorTrait
 	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();
 	
 	//compute lines for each shape
-	for (shape_index,shape) in shapes.iter().enumerate() {
+	for shape in shapes.iter() {
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
 		for face in &shape.faces {
@@ -231,7 +231,7 @@ where V : VectorTrait
 		}
 		//clip these lines and append to list
 		let mut clipped_lines = crate::clipping::clip_draw_lines(
-			shape_lines, shape, shape_index, shapes);
+			shape_lines, shape, shapes);
 		lines.append(&mut clipped_lines);
 	}
 	transform_draw_lines(lines, &camera)

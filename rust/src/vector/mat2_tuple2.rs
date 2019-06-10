@@ -1,4 +1,4 @@
-use super::vec2::Vec2;
+use super::Vec2;
 use crate::vector::{VectorTrait,MatrixTrait,VecIndex,Field};
 use std::ops::{Add,Sub,Mul,Index};
 use std::fmt;
@@ -6,7 +6,7 @@ use std::fmt;
 //column major
 
 #[derive(Copy,Clone)]
-pub struct Mat2{arr : [[Field ; 2] ; 2]}
+pub struct Mat2(Vec2,Vec2);
 
 impl Mat2{
   pub fn from_vecs(v0 : Vec2, v1 : Vec2) -> Mat2 {
@@ -14,7 +14,7 @@ impl Mat2{
   }
   pub fn from_arr(arr : &[[Field ; 2] ; 2]) -> Mat2
   {
-    Mat2{arr : *arr}
+    Mat2(Vec2::from_arr(&arr[0]),Vec2::from_arr(&arr[1]))
   }
 }
 impl Add<Mat2> for Mat2 {
@@ -53,8 +53,8 @@ impl Index<VecIndex> for Mat2 {
 
     fn index(&self, i: VecIndex) -> &Self::Output {
         match i {
-            0 => &Vec2::from_arr(&self.arr[0]),
-            1 | -1 => &Vec2::from_arr(&self.arr[1]),
+            0 => &self.0,
+            1 | -1 => &self.1,
             _ => panic!("Invalid index {} for Mat2", i)
         }
     }
@@ -64,8 +64,8 @@ impl MatrixTrait<Vec2> for Mat2 {
  // type V = Vec2;
   type Arr = [[Field ; 2] ;2 ];
 
-  fn get_arr(&self) -> &Self::Arr {
-    &self.arr
+  fn get_arr(&self) -> Self::Arr {
+    [*self[0].get_arr(), *self[1].get_arr()]
   }
 
   fn map_els<F : Fn(Field) -> Field + Copy>(self, f : F) -> Self {

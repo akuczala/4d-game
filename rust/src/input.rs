@@ -14,7 +14,8 @@ pub struct ButtonsPressed {
     pub k : bool,
     pub t : bool,
     pub space : bool,
-    pub alt : bool
+    pub alt : bool,
+    pub being_touched : bool
 }
 impl ButtonsPressed {
     pub fn new() -> Self{
@@ -23,7 +24,8 @@ impl ButtonsPressed {
             a : false, d : false,
             i : false, k : false,
             t : true, //toggle transparency on key up
-            space : false, alt : false
+            space : false, alt : false,
+            being_touched : false,
         }
     }
 }
@@ -149,8 +151,13 @@ impl Input {
                             		_ => (),
                                 }
                         	},
-
                         },
+                        glutin::WindowEvent::Touch(glutin::Touch{phase, ..}) => match phase {
+                                glutin::TouchPhase::Started => pressed.being_touched = true,
+                                glutin::TouchPhase::Ended => pressed.being_touched = false,
+                                _ => (),
+
+                            }
                         _ => (),
                     },
                     _ => (),

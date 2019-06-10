@@ -1,7 +1,7 @@
 use std::ops::{Add,Sub,Neg,Mul,Div,Index};
 use std::fmt;
 use crate::vector::{VecIndex,VectorTrait,Field,Vec2};
-use super::mat3::Mat3;
+use super::Mat3;
 
 #[derive(Copy,Clone)]
 pub struct Vec3{arr: [Field ; 3]}
@@ -34,7 +34,7 @@ impl Add<Vec3> for Vec3 {
   type Output = Vec3;
   
   fn add(self, rhs: Self) -> Vec3 {
-  Vec3::new(self[0]+rhs[0],self[1]+rhs[1],self[2]+rhs[2])
+    self.zip_map(rhs,|a,b| a+b)
   }
 }
 
@@ -42,7 +42,7 @@ impl Sub<Vec3> for Vec3 {
   type Output = Vec3;
   
   fn sub(self, rhs: Self) -> Vec3 {
-  Vec3::new(self[0]-rhs[0],self[1]-rhs[1],self[2]-rhs[2])
+  self.zip_map(rhs,|a,b| a-b)
   }
 }
 impl Neg for Vec3
@@ -58,7 +58,8 @@ impl Mul<Field> for Vec3 {
   type Output = Vec3;
   
   fn mul(self, rhs: Field) -> Vec3 {
-    Vec3::new(self[0]*rhs,self[1]*rhs,self[2]*rhs)
+    //Vec3::new(self[0]*rhs,self[1]*rhs,self[2]*rhs)
+    self.map(|v_i| v_i*rhs)
   }
 }
 
@@ -66,7 +67,7 @@ impl Div<Field> for Vec3 {
   type Output = Vec3;
   
   fn div(self, rhs: Field) -> Vec3 {
-    Vec3::new(self[0]/rhs,self[1]/rhs,self[2]/rhs)
+    self*(1.0/rhs)
   }
 }
 
@@ -81,18 +82,17 @@ impl VectorTrait for Vec3 {
   fn get_arr(&self) -> &[Field ; 3]{
     &self.arr
   }
-
-  fn norm(self) -> Field {
-    (self[0]*self[0] + self[1]*self[1] + self[2]*self[2]).sqrt()
+  fn map<F : Fn(Field) -> Field>(self, f : F) -> Self {
+    Vec3::new(f(self[0]),f(self[1]),f(self[2]))
+  }
+  fn zip_map<F : Fn(Field, Field) -> Field>(self, rhs : Self, f : F) -> Self {
+    Vec3::new(f(self[0],rhs[0]),f(self[1],rhs[1]),f(self[2],rhs[2]))
   }
   fn dot(self, rhs: Vec3) -> Field {
     (self[0]*rhs[0] + self[1]*rhs[1] + self[2]*rhs[2])
   }
-  fn zero() -> Vec3{
-    Vec3::new(0.,0.,0.)
-  }
-  fn ones() -> Vec3{
-    Vec3::new(1.,1.,1.)
+  fn constant(a : Field) -> Vec3{
+    Vec3::new(a,a,a)
   }
   fn project(&self) -> Vec2 {
     Vec2::new(self[0],self[1])

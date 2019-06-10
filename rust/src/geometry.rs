@@ -1,5 +1,5 @@
 pub mod buildshapes;
-
+pub mod buildfloor;
 use std::fmt;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,is_close};
 use crate::colors::Color;

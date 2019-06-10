@@ -1,15 +1,18 @@
-pub mod vec2; pub mod vec3;
-pub mod mat2; pub mod mat3;
-
+pub mod vec2; pub mod vec3; pub mod vec4;
+pub mod mat2_tuple2; pub mod mat3_tuple2;
+pub mod mat4_tuple2;
+//pub mod vec4;
 use fmt::Display;
 use std::ops::{Add,Sub,Mul,Div,Index,Neg};
 pub use vec2::Vec2;
 pub use vec3::Vec3;
-pub use mat2::Mat2;
-pub use mat3::Mat3;
+pub use vec4::Vec4;
+pub use mat2_tuple2::Mat2;
+pub use mat3_tuple2::Mat3;
+pub use mat4_tuple2::Mat4;
 use std::fmt;
 //use alga::linear::FiniteDimInnerSpace;
-pub type VecIndex = i8;
+pub type VecIndex = i8; //i8
 pub type Field = f32;
 
 const EPSILON : Field = 0.0001;
@@ -35,6 +38,8 @@ pub trait VectorTrait: Copy + Display +
   const DIM : VecIndex;
 
   fn get_arr(&self) -> &Self::Arr;
+  fn map<F : Fn(Field) -> Field>(self, f : F) -> Self;
+  fn zip_map<F : Fn(Field,Field) -> Field>(self, rhs : Self, f : F) -> Self;
 
   fn dot(self, rhs: Self) -> Field;
   fn norm_sq(self) -> Field {
@@ -49,8 +54,13 @@ pub trait VectorTrait: Copy + Display +
   fn is_close(v1: Self, v2: Self) -> bool {
     (v1-v2).norm_sq() < EPSILON*EPSILON
   }
-  fn zero() -> Self;
-  fn ones() -> Self;
+  fn zero() -> Self {
+    Self::constant(0.0)
+  }
+  fn ones() -> Self {
+    Self::constant(1.0)
+  }
+  fn constant(a : Field) -> Self;
   fn one_hot(i: VecIndex) -> Self{
     Self::M::id()[i]
   }
@@ -59,7 +69,6 @@ pub trait VectorTrait: Copy + Display +
     v1*(1.-x) + v2*x
   }
 }
-
 //impl<T> Foo for T where T: Clone + Mul<i64> + Add<i64> + ... {}
 
 //fn foo<C>() where i64: From<C>, C: Foo {}
@@ -81,10 +90,15 @@ pub trait MatrixTrait<V>: Display + Copy + Add<Output=Self> + Sub<Output=Self>
  + Mul<V,Output=V> //weirdly only the last Mul is remembered
  + Index<VecIndex,Output=V>
 {
-  fn transpose(self) -> Self;
+  type Arr;
+
+  fn get_arr(&self) -> Self::Arr;
+  fn map_els<F : Fn(Field) -> Field + Copy>(self, f : F) -> Self;
+  fn zip_map_els<F : Fn(Field,Field) -> Field + Copy>(self, rhs : Self, f : F) -> Self;
+  //fn transpose(self) -> Self;
   fn outer(v1: V, v2: V) -> Self;
   fn id() -> Self;
-  fn dot(self,rhs: Self) -> Self; //matrix multiplication
+  fn dot(self, rhs : Self) -> Self;
 }
 
 
@@ -118,8 +132,9 @@ where V: VectorTrait
 {
   let mat = rotation_matrix(v1,v2,None);
   println!("rot mat:{}",mat);
-  println!("{}",mat.dot(mat.transpose()));
+  //println!("{}",mat.dot(mat.transpose()));
   println!("correct rotation: {}",V::is_close(v2.normalize(),mat * v1.normalize()));
+  println!("Difference: {}", v2.normalize() - mat * v1.normalize());
 }
 
 pub fn test_vectors() {
@@ -131,12 +146,33 @@ pub fn test_vectors() {
     let v2 = Vec3::new(4.0,5.0,6.0);
     diagnostic(v1,v2);
 
+    let v1 = Vec4::new(1.0,2.0,3.0,4.0);
+    let v2 = Vec4::new(5.0,6.0,7.0,8.0);
+    diagnostic(v1,v2);
+
     println!("Test matrix mult 2d");
-    let mat1 = Mat2::new(&[[1.0,2.0],[3.0,4.0]]);
-    let mat2 = Mat2::new(&[[5.0,6.0],[7.0,8.0]]);
+    let mat1 = Mat2::from_arr(&[[1.0,2.0],[3.0,4.0]]);
+    let mat2 = Mat2::from_arr(&[[5.0,6.0],[7.0,8.0]]);
     println!("{}",mat1.dot(mat2));
+
     println!("Test matrix mult 3d");
-    let mat1 = Mat3::new(&[[1.0,2.0,3.0],[4.0,5.0,6.0],[7.0,8.0,9.0]]);
-    let mat2 = Mat3::new(&[[10.,11.,12.],[13.,14.,15.],[16.,17.,18.]]);
+    let mat1 = Mat3::from_arr(&[[1.0,2.0,3.0],[4.0,5.0,6.0],[7.0,8.0,9.0]]);
+    let mat2 = Mat3::from_arr(&[[10.,11.,12.],[13.,14.,15.],[16.,17.,18.]]);
     println!("{}",mat1.dot(mat2));
+
+    println!("Test matrix mult 3d");
+    let mat1 = Mat4::from_arr(&[
+      [1.0,2.0,3.0,4.0],
+      [5.0,6.0,7.0,8.0],
+      [9.0,0.1,1.1,1.2],
+      [1.3,1.4,1.5,1.6]
+      ]);
+    let mat2 = Mat4::from_arr(&[
+      [10.,11.,12.,13.],
+      [14.,15.,16.,17.],
+      [18.,19.,20.,21.],
+      [22.,23.,24.,25.]
+      ]);
+    println!("{}",mat1.dot(mat2));
+
   }

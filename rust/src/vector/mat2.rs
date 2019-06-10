@@ -71,7 +71,7 @@ impl MatrixTrait<Vec2> for Mat2 {
       [[1.,0.],
       [0.,1.]])
   }
-  //probably not correct
+
   fn dot(self, rhs: Mat2) -> Mat2 {
     let rhs_t = rhs.transpose();
     Mat2(self * (rhs_t)[0], self * (rhs_t)[1]).transpose()

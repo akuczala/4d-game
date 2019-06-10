@@ -92,15 +92,15 @@ pub fn clip_line<V : VectorTrait>(
 
 pub fn clip_draw_lines<V : VectorTrait>(
     lines : Vec<Option<DrawLine<V>>>,
-    shape : &Shape<V>, shape_index : usize, //for debug
+    shape : &Shape<V>,
     clipping_shapes: &Vec<Shape<V>>
     ) ->  Vec<Option<DrawLine<V>>>
 {
     let mut clipped_lines = lines;
-    for (clip_shape_index,clipping_shape) in clipping_shapes.iter().enumerate() {
+    for clipping_shape in clipping_shapes.iter() {
         //compare pointers
-        //let same_shape = clipping_shape as *const _ == shape as *const _;
-        let same_shape = clip_shape_index == shape_index;
+        let same_shape = clipping_shape as *const _ == shape as *const _;
+        //let same_shape = clip_shape_index == shape_index;
         if !same_shape && !clipping_shape.transparent {
             //let mut additional_lines : Vec<Option<Line<V>>> = Vec::new();
             let mut new_lines : Vec<Option<DrawLine<V>>> = Vec::new();

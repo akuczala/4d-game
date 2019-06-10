@@ -6,7 +6,7 @@ use super::{Shape,Face,Edge};
 use crate::vector::PI;
 use crate::vector::Field;
 
-pub fn build_cylinder(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
+pub fn build_prism(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 
 	//starting angle causes first edge to be parallel to y axis
 	//lets us define a cube as a cylinder
@@ -44,18 +44,5 @@ pub fn build_cylinder(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 
 }
 pub fn build_cube(length : Field) -> Shape<Vec3> {
-	build_cylinder(length/(2.0 as Field).sqrt(),length,4)
-}
-fn test_cylinder()
-{
-    let mut cylinder = build_cylinder(1.0,1.0,4);
-    for face in cylinder.faces.iter() {
-        println!("{}",face.center);
-    }
-    println!("rotate");
-    cylinder.rotate(1,2,3.141592653/2.0);
-
-    for face in cylinder.faces.iter() {
-        println!("{}",face.center);
-    }
+	build_prism(length/(2.0 as Field).sqrt(),length,4)
 }

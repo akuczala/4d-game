@@ -1,7 +1,7 @@
 use std::ops::{Add,Sub,Neg,Mul,Div,Index};
 use std::fmt;
 use crate::vector::{VecIndex,VectorTrait,Field};
-use super::mat2::Mat2;
+use super::Mat2;
 
 #[derive(Copy,Clone)]
 pub struct Vec2{pub arr : [Field ; 2]}
@@ -29,18 +29,19 @@ impl Index<VecIndex> for Vec2 {
         }
     }
 }
+
 impl Add<Vec2> for Vec2 {
   type Output = Vec2;
   
   fn add(self, rhs: Self) -> Vec2 {
-    Vec2::new(self[0]+rhs[0],self[1]+rhs[1])
+    self.zip_map(rhs,|a,b| a+b)
   }
 }
 impl Sub<Vec2> for Vec2 {
   type Output = Vec2;
   
   fn sub(self, rhs: Self) -> Vec2 {
-    Vec2::new(self[0]-rhs[0],self[1]-rhs[1])
+    self.zip_map(rhs,|a,b| a-b)
   }
 }
 impl Neg for Vec2
@@ -56,14 +57,15 @@ impl Mul<Field> for Vec2 {
   type Output = Vec2;
   
   fn mul(self, rhs: Field) -> Vec2 {
-    Vec2::new(self[0]*rhs,self[1]*rhs)
+    //Vec2::new(self[0]*rhs,self[1]*rhs)
+    self.map(|v_i| v_i*rhs)
   }
 }
 impl Div<Field> for Vec2 {
   type Output = Vec2;
   
   fn div(self, rhs: Field) -> Vec2 {
-    Vec2::new(self[0]/rhs,self[1]/rhs)
+    self*(1.0/rhs)
   }
 }
 impl VectorTrait for Vec2 {
@@ -80,18 +82,18 @@ impl VectorTrait for Vec2 {
   fn get_arr(&self) -> &[Field ; 2]{
     &self.arr
   }
-
-  fn norm(self) -> Field {
-    (self[0]*self[0] + self[1]*self[1]).sqrt()
+  fn map<F : Fn(Field) -> Field>(self, f : F) -> Self {
+    Vec2::new(f(self[0]),f(self[1]))
+  }
+  fn zip_map<F : Fn(Field, Field) -> Field>(self, rhs : Self, f : F) -> Self {
+    Vec2::new(f(self[0],rhs[0]),f(self[1],rhs[1]))
   }
   fn dot(self, rhs: Vec2) -> Field {
     (self[0]*rhs[0] + self[1]*rhs[1])
   }
-  fn zero() -> Vec2{
-    Vec2::new(0.,0.)
-  }
-  fn ones() -> Vec2{
-    Vec2::new(1.,1.)
+
+  fn constant(a : Field) -> Vec2 {
+    Vec2::new(a,a)
   }
   //should really return Field
   //I instead just throw away the second component

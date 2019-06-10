@@ -1,9 +1,8 @@
 
-use crate::vector::{VectorTrait,MatrixTrait};
-use crate::geometry::{VertIndex,Line};
+use crate::vector::{VectorTrait};
+use crate::geometry::{VertIndex};
 use super::Graphics;
-use crate::vector::{Vec2,Vec3};
-use crate::colors::Color;
+use crate::vector::{Vec2};
 use glium::Surface;
 use crate::draw::{DrawVertex,DrawLine};
 
