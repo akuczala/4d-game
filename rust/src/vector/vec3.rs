@@ -1,4 +1,4 @@
-use std::ops::{Add,Sub,Neg,Mul,Div,Index};
+use std::ops::{Add,Sub,Neg,Mul,Div,Index,IndexMut};
 use std::fmt;
 use crate::vector::{VecIndex,VectorTrait,Field,Vec2};
 use super::Mat3;
@@ -20,15 +20,22 @@ impl Index<VecIndex> for Vec3 {
 
     fn index(&self, i: VecIndex) -> &Self::Output {
         match i {
-             0 => &self.get_arr()[0],
-             1 => &self.get_arr()[1],
-             2 => &self.get_arr()[2],
-            -1 => &self.get_arr()[2],
-            -2 => &self.get_arr()[1],
-            -3 => &self.get_arr()[0],
+             0 | -3 => &self.get_arr()[0],
+             1 | -2 => &self.get_arr()[1],
+             2 | -1 => &self.get_arr()[2],
             _ => panic!("Invalid index {} for Vec3", i)
         }
     }
+}
+impl IndexMut<VecIndex> for Vec3 {
+  fn index_mut<'a>(&'a mut self, index: VecIndex) -> &'a mut Self::Output {
+    match index {
+             0 | -3 => &mut self.arr[0],
+             1 | -2 => &mut self.arr[1],
+             2 | -1 => &mut self.arr[2],
+            _ => panic!("Invalid index {} for Vec3", index)
+    }
+  }
 }
 impl Add<Vec3> for Vec3 {
   type Output = Vec3;

@@ -21,11 +21,12 @@ pub const VERTEX_SHADER_SRC : &str = r#"
     in vec4 color;
     out vec4 in_color;
     uniform mat4 perspective;
-    uniform mat4 matrix;
+    uniform mat4 view;
+    uniform mat4 model;
 
     void main() {
         in_color = color;
-        gl_Position = perspective * matrix * vec4(position, 1.0);
+        gl_Position = perspective * view * model * vec4(position, 1.0);
     }
     "#;
 pub const FRAGMENT_SHADER_SRC : &str = r#"

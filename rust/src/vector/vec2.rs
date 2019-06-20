@@ -1,4 +1,4 @@
-use std::ops::{Add,Sub,Neg,Mul,Div,Index};
+use std::ops::{Add,Sub,Neg,Mul,Div,Index,IndexMut};
 use std::fmt;
 use crate::vector::{VecIndex,VectorTrait,Field};
 use super::Mat2;
@@ -29,6 +29,16 @@ impl Index<VecIndex> for Vec2 {
         }
     }
 }
+impl IndexMut<VecIndex> for Vec2 {
+  fn index_mut<'a>(&'a mut self, index: VecIndex) -> &'a mut Self::Output {
+    match index {
+      0 | -2 => &mut self.arr[0],
+     1 | -1=> &mut self.arr[1],
+    _ => panic!("Invalid index {} for Vec2", index)
+    }
+  }
+}
+
 
 impl Add<Vec2> for Vec2 {
   type Output = Vec2;

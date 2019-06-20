@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate glium;
+#[macro_use] extern crate itertools;
 
 #[allow(dead_code)]
 mod vector;
@@ -15,13 +16,14 @@ mod input;
 //mod text_wrapper;
 
 fn main() {
-    test_glium_2();
+    //test_glium_2();
+    buildshapes::build_duoprism_4d([2.0,3.0],[[0,1],[2,3]],[3,4]); 
     //vector::test_vectors();
     //graphics::graphics3d::test_glium_3d();
 }
 //use crate::vector::{VectorTrait,MatrixTrait};
 use crate::graphics::Graphics;
-use crate::geometry::{Shape,buildshapes};
+use crate::geometry::{Shape,buildshapes,buildfloor};
 use crate::input::Input;
 use crate::colors::*;
 
@@ -43,15 +45,15 @@ fn init_glium() -> (winit::EventsLoop,  glium::Display) {
 use crate::vector::Vec3;
 pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
 
-    let mut cube = buildshapes::build_cube(1.0);
+    let mut cube = buildshapes::build_cube_3d(1.0);
     let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW];
     for (face, color) in cube.faces.iter_mut().zip(face_colors) {
         face.color = color;
     }
-    let cylinder = buildshapes::build_prism(1.0,1.0,8)
+    let cylinder = buildshapes::build_prism_3d(1.0,1.0,8)
         .set_pos(&Vec3::new(2.0,0.0,0.0));;
 
-    let prism = buildshapes::build_prism(1.0,1.0,3)
+    let prism = buildshapes::build_prism_3d(1.0,1.0,3)
         .set_pos(&Vec3::new(0.0,0.0,3.0));
     vec![cube,cylinder,prism]
 }
@@ -73,6 +75,9 @@ pub fn test_glium_2() {
     let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
 
     let mut draw_lines = crate::draw::draw_shapes(&camera,&mut shapes,&face_scales);
+    draw_lines.append(&mut crate::draw::draw_lines_color(
+        &camera, &shapes,
+        buildfloor::build_floor3(5,1.0,-1.0),CYAN));
     let mut cur_lines_length = draw_lines.len();
     
     graphics.new_vertex_buffer_from_lines(&draw_lines);
@@ -85,7 +90,9 @@ pub fn test_glium_2() {
             }
 
             draw_lines = crate::draw::draw_shapes(&camera,&mut shapes,&face_scales);
-            
+            draw_lines.append(&mut crate::draw::draw_lines_color(
+            &camera, &shapes,
+            buildfloor::build_floor3(5,1.0,-1.0),CYAN));
             //make new buffer if the number of lines changes
             if draw_lines.len() != cur_lines_length {
                 graphics.new_vertex_buffer_from_lines(&draw_lines);

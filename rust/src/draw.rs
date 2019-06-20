@@ -231,13 +231,29 @@ where V : VectorTrait
 		}
 		//clip these lines and append to list
 		let mut clipped_lines = crate::clipping::clip_draw_lines(
-			shape_lines, shape, shapes);
+			shape_lines, Some(shape), shapes);
 		lines.append(&mut clipped_lines);
 	}
 	transform_draw_lines(lines, &camera)
 	
 }
+pub fn draw_lines_color<V : VectorTrait>(
+	camera :&Camera<V>,
+	shapes : &Vec<Shape<V>>,
+	lines : Vec<Line<V>>,
+	color : Color
+	) -> Vec<Option<DrawLine<V::SubV>>> {
 
+	let draw_lines = lines
+		.into_iter()
+		.map(|line| Some(DrawLine{line : line,color}))
+		.collect();
+
+	let clipped_lines = crate::clipping::clip_draw_lines(
+			draw_lines, None, shapes);
+
+	transform_draw_lines(clipped_lines, &camera)
+}
 pub fn draw_wireframe<V>(//display : &glium::Display,
 	camera : &Camera<V>,
 	shape : &Shape<V>, color : Color) -> Vec<Option<DrawLine<V::SubV>>>

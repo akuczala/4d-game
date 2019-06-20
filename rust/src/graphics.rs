@@ -1,7 +1,8 @@
 pub mod graphics2d;
-//pub mod graphics3d;
+pub mod graphics3d;
 
 pub use graphics2d::Graphics2d;
+pub use graphics3d::Graphics3d;
 use crate::colors::Color;
 //use glium::glutin;
 use glium::Surface;
@@ -11,7 +12,7 @@ use glium::Surface;
 //use glium::glutin::dpi::LogicalSize;
 use glium::vertex::Vertex;
 
-use crate::vector::{VectorTrait};
+use crate::vector::{VectorTrait, MatrixTrait};
 use crate::geometry::{VertIndex,Line};
 use crate::draw::{DrawVertex,DrawLine};
 
@@ -63,8 +64,41 @@ pub trait Graphics {
 	}
     fn opt_lines_to_gl(opt_lines : &Vec<Option<DrawLine<Self::V>>>) -> Vec<Self::VertexType>;
     
-    fn build_perspective_mat<S>(target : &S) -> [[f32 ; 4] ; 4]
-    where S : Surface;
+    fn build_perspective_mat<S : Surface>(target : &S) -> [[f32 ; 4] ; 4];
+
+    fn build_view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -> [[f32; 4]; 4] {
+    let f = {
+        let f = direction;
+        let len = f[0] * f[0] + f[1] * f[1] + f[2] * f[2];
+        let len = len.sqrt();
+        [f[0] / len, f[1] / len, f[2] / len]
+    };
+
+    let s = [up[1] * f[2] - up[2] * f[1],
+             up[2] * f[0] - up[0] * f[2],
+             up[0] * f[1] - up[1] * f[0]];
+
+    let s_norm = {
+        let len = s[0] * s[0] + s[1] * s[1] + s[2] * s[2];
+        let len = len.sqrt();
+        [s[0] / len, s[1] / len, s[2] / len]
+    };
+
+    let u = [f[1] * s_norm[2] - f[2] * s_norm[1],
+             f[2] * s_norm[0] - f[0] * s_norm[2],
+             f[0] * s_norm[1] - f[1] * s_norm[0]];
+
+    let p = [-position[0] * s_norm[0] - position[1] * s_norm[1] - position[2] * s_norm[2],
+             -position[0] * u[0] - position[1] * u[1] - position[2] * u[2],
+             -position[0] * f[0] - position[1] * f[1] - position[2] * f[2]];
+
+    [
+        [s_norm[0], u[0], f[0], 0.0],
+        [s_norm[1], u[1], f[1], 0.0],
+        [s_norm[2], u[2], f[2], 0.0],
+        [p[0], p[1], p[2], 1.0],
+    ]
+}
     fn draw_lines(&self, draw_lines : &Vec<Option<DrawLine<Self::V>>>) {
 
         
@@ -79,9 +113,24 @@ pub trait Graphics {
         };
         let mut target = self.get_display().draw();
 
+        let view_matrix = match Self::V::DIM {
+            2 => [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [ 0.0, 0.0, 0.0 , 1.0f32],
+            ],
+            3 => Self::build_view_matrix(
+                &[0.0,0.0,-4.0],
+                &[0.0,0.0,1.0],
+                &[0.0,1.0,0.0]
+                ),
+            _ => panic!("Invalid dimension")
+        };
         let uniforms = uniform! {
             perspective : Self::build_perspective_mat(&target),
-            matrix: [
+            view : view_matrix,
+            model: [
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],

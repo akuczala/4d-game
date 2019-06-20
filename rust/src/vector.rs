@@ -3,7 +3,7 @@ pub mod mat2_tuple2; pub mod mat3_tuple2;
 pub mod mat4_tuple2;
 //pub mod vec4;
 use fmt::Display;
-use std::ops::{Add,Sub,Mul,Div,Index,Neg};
+use std::ops::{Add,Sub,Mul,Div,Index,IndexMut,Neg};
 pub use vec2::Vec2;
 pub use vec3::Vec3;
 pub use vec4::Vec4;
@@ -28,7 +28,7 @@ pub fn scalar_linterp(a : Field, b : Field, t : Field) -> Field {
 pub trait VectorTrait: Copy + Display +
  Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
  Mul<Field,Output=Self> + Div<Field,Output=Self> +
- Index<VecIndex,Output=Field>
+ Index<VecIndex,Output=Field> + IndexMut<VecIndex>
  //+ std::iter::Sum
  {
   type M : MatrixTrait<Self>;
