@@ -16,19 +16,23 @@ mod input;
 //mod text_wrapper;
 
 fn main() {
-    //test_glium_2();
-    buildshapes::build_duoprism_4d([2.0,3.0],[[0,1],[2,3]],[3,4]); 
+    game_3d();
+    //buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[4,4]); 
     //vector::test_vectors();
-    //graphics::graphics3d::test_glium_3d();
 }
 //use crate::vector::{VectorTrait,MatrixTrait};
 use crate::graphics::Graphics;
+//use draw;
 use crate::geometry::{Shape,buildshapes,buildfloor};
+use crate::vector::{Vec3,Vec4,VectorTrait};
 use crate::input::Input;
 use crate::colors::*;
+use crate::draw::Camera;
 
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
+
+use std::time;
 
 fn init_glium() -> (winit::EventsLoop,  glium::Display) {
         let events_loop = glutin::EventsLoop::new();
@@ -42,57 +46,102 @@ fn init_glium() -> (winit::EventsLoop,  glium::Display) {
         (events_loop,display)
     }
 
-use crate::vector::Vec3;
 pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
 
-    let mut cube = buildshapes::build_cube_3d(1.0);
-    let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW];
-    for (face, color) in cube.faces.iter_mut().zip(face_colors) {
-        face.color = color;
-    }
-    let cylinder = buildshapes::build_prism_3d(1.0,1.0,8)
-        .set_pos(&Vec3::new(2.0,0.0,0.0));;
+    //buildshapes::cubeidor_3d()
+    let cube = buildshapes::build_cube_3d(1.0);
+    vec![buildshapes::invert_normals(&cube),cube.set_pos(&Vec3::new(3.0,0.0,0.0))]
+    //vec![cube.clone(),cube.set_pos(&Vec3::new(3.0,0.0,0.0))]
+}
+pub fn build_shapes_4d() -> Vec<Shape<Vec4>> {
+    
+    //buildshapes::build_axes_cubes_4d()
+    buildshapes::cubeidor_4d()
+    //let (m,n) = (4,4);
+    //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
 
-    let prism = buildshapes::build_prism_3d(1.0,1.0,3)
-        .set_pos(&Vec3::new(0.0,0.0,3.0));
-    vec![cube,cylinder,prism]
+     //   .set_pos(&Vec4::new(0.0,0.0,0.0,0.0));
+    
 }
 
-pub fn test_glium_2() {
-    use crate::vector::{Vec3};
-    use crate::draw::Camera;
-
+pub fn color_duocylinder(shape : &mut Shape<Vec4>, m : usize, n : usize) {
+    for (i, face) in itertools::enumerate(shape.faces.iter_mut()) {
+        let iint = i as i32;
+        face.color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);
+    }
+}
+pub fn game_3d() {
+    
     let (events_loop, display) = init_glium();
 
-    let mut input = Input::new(events_loop);
-    let mut graphics =  crate::graphics::Graphics2d::new(display);
+    let input = Input::new(events_loop);
 
-    let mut shapes = build_shapes_3d();
-
+    let graphics = crate::graphics::Graphics2d::new(display);
+    let shapes = build_shapes_3d();
     let mut camera = Camera::new(Vec3::new(2.0,0.0, -10.0));
+
     camera.look_at(shapes[0].get_pos());
+    game(graphics,input,shapes,camera);
+}
+pub fn game_4d() {
+    let (events_loop, display) = init_glium();
 
-    let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
+    let input = Input::new(events_loop);
+    let graphics = crate::graphics::Graphics3d::new(display);
+    let shapes = build_shapes_4d();
+    for v in &shapes[0].verts {
+        println!("{}",v)
+    }
+    let mut camera = Camera::new(Vec4::new(0.0,0.0,0.0, -5.0));
+    camera.look_at(shapes[0].get_pos());
+    game(graphics,input,shapes,camera);
+}
+pub fn game<G,V : VectorTrait>(mut graphics : G, mut input : Input,
+    mut shapes : Vec<Shape<V>>, mut camera : Camera<V>)
+where G : Graphics<V::SubV>
+{
+    // let test_cube = buildshapes::build_cube_3d(1.0)
+    //     .set_pos(&Vec3::new(0.0,0.0,0.0));
+    //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
+    let face_scales = vec![0.5,0.9];
 
-    let mut draw_lines = crate::draw::draw_shapes(&camera,&mut shapes,&face_scales);
-    draw_lines.append(&mut crate::draw::draw_lines_color(
-        &camera, &shapes,
-        buildfloor::build_floor3(5,1.0,-1.0),CYAN));
+    draw::update_shape_visibility(&camera,&mut shapes);
+    let mut draw_lines = draw::transform_draw_lines(
+        draw::calc_shapes_lines(&mut shapes,&face_scales,camera.clipping),
+        &camera);
+    // draw_lines.append(&mut crate::draw::draw_lines_color(
+    //     &camera, &shapes,
+    //     buildfloor::build_floor3(5,1.0,-1.0),CYAN));
+    //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
     let mut cur_lines_length = draw_lines.len();
     
     graphics.new_vertex_buffer_from_lines(&draw_lines);
 
+    let start_instant = time::Instant::now();
+    let mut last_instant = time::Instant::now();
+    let mut game_duration : time::Duration;
+    let mut frame_duration : time::Duration;
     while !input.closed {
 
         if input.update {
-            if input.pressed.being_touched {
-                shapes[1].rotate(1,2,0.001f32);
+            //if input.pressed.being_touched {
+            if false {
+                for shape in &mut shapes {
+                    shape.rotate(0,-1,0.01)
+                }
+                //shapes[0].rotate(-2,-1,0.01f32);
+                //shapes[1].rotate(-2,-1,0.01f32);
+                //hapes[1].rotate(0,1,0.02f32);
             }
 
-            draw_lines = crate::draw::draw_shapes(&camera,&mut shapes,&face_scales);
-            draw_lines.append(&mut crate::draw::draw_lines_color(
-            &camera, &shapes,
-            buildfloor::build_floor3(5,1.0,-1.0),CYAN));
+            draw::update_shape_visibility(&camera,&mut shapes);
+            draw_lines = draw::transform_draw_lines(
+                draw::calc_shapes_lines(&mut shapes,&face_scales,camera.clipping),
+                &camera);
+            //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
+            // draw_wireframe_lines.append(&mut crate::draw::draw_lines_color(
+            // &camera, &shapes,
+            // buildfloor::build_floor3(5,1.0,-1.0),CYAN));
             //make new buffer if the number of lines changes
             if draw_lines.len() != cur_lines_length {
                 graphics.new_vertex_buffer_from_lines(&draw_lines);
@@ -106,10 +155,13 @@ pub fn test_glium_2() {
         }
         
         input.listen_events();
-        input.update_camera(&mut camera);
+        game_duration = time::Instant::now().duration_since(start_instant);
+        frame_duration = time::Instant::now().duration_since(last_instant);
+        last_instant = time::Instant::now();
+        input.update_camera(&mut camera, &frame_duration);
         input.update_shape(&mut shapes[1]);
         
-        input.print_debug(&camera);
+        input.print_debug(&camera,&game_duration,&frame_duration);
 
         
     }

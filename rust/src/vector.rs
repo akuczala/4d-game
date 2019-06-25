@@ -119,8 +119,10 @@ where V : VectorTrait
    Some(angle) => angle.sin()
  };
 
- let w = v - u * u.dot(v);
- let w = w.normalize();
+ let mut w = v - u * u.dot(v);
+ if !V::is_close(w,V::zero()) {
+  w = w.normalize();
+ }
 
  let r1 = u*costh - w*sinth;
  let r2 = u*sinth + w*costh;

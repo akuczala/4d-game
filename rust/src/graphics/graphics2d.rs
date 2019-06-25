@@ -54,9 +54,9 @@ const NO_DRAW : Vertex = Vertex{
     color : [1.0,0.0,0.0,1.0f32]
 };
 
-impl Graphics for Graphics2d {
+impl Graphics<Vec2> for Graphics2d {
     type VertexType = Vertex;
-    type V = Vec2;
+    //type V = Vec2;
 
     const VERTEX_SHADER_SRC  : &'static str = VERTEX_SHADER_SRC;
     const FRAGMENT_SHADER_SRC  : &'static str = FRAGMENT_SHADER_SRC;
@@ -121,7 +121,7 @@ impl Graphics for Graphics2d {
     }
 
     //make this consume its input?
-    fn vert_to_gl(vert: &Option<DrawVertex<Self::V>>) -> Vertex {
+    fn vert_to_gl(vert: &Option<DrawVertex<Vec2>>) -> Vertex {
         match *vert {
             Some(DrawVertex{vertex,color}) => {
                 let arr = *vertex.get_arr() ;
@@ -136,7 +136,7 @@ impl Graphics for Graphics2d {
         
     }
     //make this consume its input?
-    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<Self::V>>>) -> Vec<Vertex> {
+    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<Vec2>>>) -> Vec<Vertex> {
         let mut verts : Vec<Vertex> = Vec::new();
         for opt_line in opt_lines.iter() {
             let (v0,v1) = match opt_line {

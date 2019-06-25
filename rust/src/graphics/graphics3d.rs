@@ -54,9 +54,9 @@ const NO_DRAW : Vertex = Vertex{
     color : [1.0,0.0,0.0,1.0f32]
 };
 
-impl Graphics for Graphics3d {
+impl Graphics<Vec3> for Graphics3d {
     type VertexType = Vertex;
-    type V = Vec3;
+    //type V = Vec3;
 
     const VERTEX_SHADER_SRC  : &'static str = VERTEX_SHADER_SRC;
     const FRAGMENT_SHADER_SRC  : &'static str = FRAGMENT_SHADER_SRC;
@@ -121,7 +121,7 @@ impl Graphics for Graphics3d {
     }
 
     //make this consume its input?
-    fn vert_to_gl(vert: &Option<DrawVertex<Self::V>>) -> Vertex {
+    fn vert_to_gl(vert: &Option<DrawVertex<Vec3>>) -> Vertex {
         match *vert {
             Some(DrawVertex{vertex,color}) => {
                 let arr = *vertex.get_arr() ;
@@ -136,7 +136,7 @@ impl Graphics for Graphics3d {
         
     }
     //make this consume its input?
-    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<Self::V>>>) -> Vec<Vertex> {
+    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<Vec3>>>) -> Vec<Vertex> {
         let mut verts : Vec<Vertex> = Vec::new();
         for opt_line in opt_lines.iter() {
             let (v0,v1) = match opt_line {
@@ -156,18 +156,25 @@ impl Graphics for Graphics3d {
     {
         let (width, height) = target.get_dimensions();
         let aspect_ratio = height as f32 / width as f32;
-        let fov: f32 = 3.141592 / 3.0;
-        let zfar = 1024.0;
+        //let fov: f32 = 3.141592 / 3.0;
+        let fov : f32 = 3.141592 / 8.0;
+        //let zfar = 1024.0;/
+        let zfar = 100.0;
         let znear = 0.1;
 
         let f = 1.0 / (fov / 2.0).tan();
-
         [
             [f*aspect_ratio, 0., 0., 0.],
             [0., f, 0., 0.],
             [0., 0., (zfar+znear)/(zfar-znear), 1.0],
             [0., 0., 0., 1.032f32]
         ]
+        // [
+        //     [f*aspect_ratio, 0., 0., 0.],
+        //     [0., f, 0., 0.],
+        //     [0., 0., 1.0, 0.0],
+        //     [0., 0., 0., 1.032f32]
+        // ]
     }
     
 }

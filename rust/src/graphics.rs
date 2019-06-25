@@ -3,7 +3,7 @@ pub mod graphics3d;
 
 pub use graphics2d::Graphics2d;
 pub use graphics3d::Graphics3d;
-use crate::colors::Color;
+//use crate::colors::Color;
 //use glium::glutin;
 use glium::Surface;
 //use glium::Display;
@@ -12,14 +12,14 @@ use glium::Surface;
 //use glium::glutin::dpi::LogicalSize;
 use glium::vertex::Vertex;
 
-use crate::vector::{VectorTrait, MatrixTrait};
-use crate::geometry::{VertIndex,Line};
+use crate::vector::{VectorTrait};
+use crate::geometry::{VertIndex};
 use crate::draw::{DrawVertex,DrawLine};
 
 
-pub trait Graphics {
+pub trait Graphics<V : VectorTrait> {
 	type VertexType : Vertex;
-	type V : VectorTrait;
+	//type V : VectorTrait;
 
 	const VERTEX_SHADER_SRC : &'static str;
 	const FRAGMENT_SHADER_SRC : &'static str;
@@ -37,7 +37,7 @@ pub trait Graphics {
     fn set_index_buffer(&mut self, index_buffer : glium::IndexBuffer<u16>);
     fn set_program(&mut self, program : glium::Program);
 
-    fn new_vertex_buffer(&mut self, verts : &Vec<Option<DrawVertex<Self::V>>>) {
+    fn new_vertex_buffer(&mut self, verts : &Vec<Option<DrawVertex<V>>>) {
         self.set_vertex_buffer(
             glium::VertexBuffer::dynamic(self.get_display(),
             &Self::verts_to_gl(&verts))
@@ -45,7 +45,7 @@ pub trait Graphics {
             );
     }
 
-    fn new_vertex_buffer_from_lines(&mut self, lines : &Vec<Option<DrawLine<Self::V>>>) {
+    fn new_vertex_buffer_from_lines(&mut self, lines : &Vec<Option<DrawLine<V>>>) {
         let vertexes = Self::opt_lines_to_gl(&lines);
         self.set_vertex_buffer(
             glium::VertexBuffer::dynamic(self.get_display(), &vertexes)
@@ -54,15 +54,15 @@ pub trait Graphics {
     }
     fn new_index_buffer(&mut self, verts : &Vec<VertIndex>);
 
-    fn vert_to_gl(vert : &Option<DrawVertex<Self::V>>) -> Self::VertexType;
-	fn verts_to_gl(verts : &Vec<Option<DrawVertex<Self::V>>>) -> Vec<Self::VertexType> {
+    fn vert_to_gl(vert : &Option<DrawVertex<V>>) -> Self::VertexType;
+	fn verts_to_gl(verts : &Vec<Option<DrawVertex<V>>>) -> Vec<Self::VertexType> {
         verts.iter().map(Self::vert_to_gl)
             .collect()
     }
 	fn vertis_to_gl(vertis : &Vec<VertIndex>) -> Vec<u16> {
     	vertis.iter().map(|v| *v as u16).collect()
 	}
-    fn opt_lines_to_gl(opt_lines : &Vec<Option<DrawLine<Self::V>>>) -> Vec<Self::VertexType>;
+    fn opt_lines_to_gl(opt_lines : &Vec<Option<DrawLine<V>>>) -> Vec<Self::VertexType>;
     
     fn build_perspective_mat<S : Surface>(target : &S) -> [[f32 ; 4] ; 4];
 
@@ -99,7 +99,7 @@ pub trait Graphics {
         [p[0], p[1], p[2], 1.0],
     ]
 }
-    fn draw_lines(&self, draw_lines : &Vec<Option<DrawLine<Self::V>>>) {
+    fn draw_lines(&self, draw_lines : &Vec<Option<DrawLine<V>>>) {
 
         
         //use VertexBufferAny? (use .into() )
@@ -113,7 +113,7 @@ pub trait Graphics {
         };
         let mut target = self.get_display().draw();
 
-        let view_matrix = match Self::V::DIM {
+        let view_matrix = match V::DIM {
             2 => [
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
@@ -121,8 +121,8 @@ pub trait Graphics {
                 [ 0.0, 0.0, 0.0 , 1.0f32],
             ],
             3 => Self::build_view_matrix(
-                &[0.0,0.0,-4.0],
-                &[0.0,0.0,1.0],
+                &[2.0,2.0,-4.0],
+                &[-1.0,-1.0,2.0],
                 &[0.0,1.0,0.0]
                 ),
             _ => panic!("Invalid dimension")

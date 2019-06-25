@@ -1,5 +1,5 @@
 #[derive(Copy,Clone)]
-pub struct Color([f32 ; 4]);
+pub struct Color(pub [f32 ; 4]);
 impl Color {
 	pub fn get_arr(&self) -> &[f32 ; 4] {
 		&self.0
@@ -21,5 +21,7 @@ pub const BLUE : Color = Color([0.0,0.0,1.0,1.0]);
 pub const CYAN : Color = Color([0.0,1.0,1.0,1.0]);
 pub const MAGENTA : Color = Color([1.0,0.0,1.0,1.0]);
 pub const YELLOW : Color = Color([1.0,1.0,0.0,1.0]);
+
+pub const ORANGE : Color = Color([1.0,0.5,0.0,1.0]);
 
 

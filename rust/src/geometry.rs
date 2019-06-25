@@ -6,6 +6,7 @@ use crate::colors::Color;
 use itertools::Itertools;
 use crate::vector;
 use crate::colors::WHITE;
+use std::clone::Clone;
 //use std::ops::Index;
 
 pub struct Line<V : VectorTrait>(pub V,pub V);
@@ -23,6 +24,7 @@ impl<V : VectorTrait> Line<V> {
     Line(f(self.0),f(self.1))
   }
 }
+#[derive(Clone)]
 pub struct Plane<V : VectorTrait> {
   pub normal : V,
   pub threshold : Field
@@ -56,6 +58,7 @@ pub type VertIndex = usize;
 pub type EdgeIndex = usize;
 pub type FaceIndex = usize;
 
+#[derive(Clone)]
 pub struct Edge(pub VertIndex,pub VertIndex);
 impl fmt::Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -133,7 +136,7 @@ impl<V : VectorTrait> fmt::Display for Face<V> {
       write!(f,"{}", out)
     }
 }
-
+#[derive(Clone)]
 pub struct SubFace {
   pub faceis : (FaceIndex,FaceIndex)
 }
@@ -169,6 +172,7 @@ fn count_common_edges<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> us
   total_edges - unique_edges
 
 }
+#[derive(Clone)]
 pub struct Shape<V : VectorTrait> {
   verts_ref : Vec<V>,
   pub verts : Vec<V>,
@@ -245,7 +249,7 @@ impl <V : VectorTrait> Shape<V> {
     self.update();
     self
   }
-  pub fn get_pos(&mut self) -> &V {
+  pub fn get_pos(& self) -> &V {
     &self.pos
   }
   pub fn update_visibility(&mut self, camera_pos : V) {

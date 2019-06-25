@@ -22,8 +22,8 @@ where V : VectorTrait
 impl<V> Camera<V>
 where V : VectorTrait
 {
-	const SPEED : Field = 0.01;
-	const ANG_SPEED : Field = 0.005;
+	const SPEED : Field = 2.0;
+	const ANG_SPEED : Field = 2.0*3.14159/3.0;
 	pub fn new(pos : V) -> Camera<V> {
 		Camera{
 			pos,
@@ -37,20 +37,18 @@ where V : VectorTrait
 	pub fn look_at(&mut self, point : &V) {
 		//self.frame = rotation_matrix(V::one_hot(-1),*point - self.pos,None).transpose();
 		self.frame = rotation_matrix(*point - self.pos, V::one_hot(-1), None);
-		self.update_heading();
-		self.update_plane();
+		self.update();
 	}
-	pub fn slide(&mut self, direction : V) {
-		self.pos = self.pos + direction.normalize()*Self::SPEED;
-		self.update_plane();
+	pub fn slide(&mut self, direction : V, time : Field) {
+		self.pos = self.pos + direction.normalize()*Self::SPEED*time;
+		self.update();
 	}
 	pub fn rotate(&mut self, axis1 : VecIndex, axis2 : VecIndex, speed_mult : Field) {
 		self.frame = self.frame.dot(
 			rotation_matrix(
 			self.frame[axis1], self.frame[axis2],
 			Some(speed_mult*Self::ANG_SPEED)));
-		self.update_heading();
-		self.update_plane();
+		self.update();
 	}
 	pub fn update_plane(&mut self) {
 		self.plane = Plane{
@@ -60,6 +58,10 @@ where V : VectorTrait
 	}
 	pub fn update_heading(&mut self) {
 		self.heading = self.frame[-1];
+	}
+	pub fn update(&mut self) {
+		self.update_heading();
+		self.update_plane();
 	}
 }
 
@@ -201,13 +203,9 @@ where V : VectorTrait {
 	}
 	shape_lines
 }
-pub fn draw_shapes<V>(
+pub fn update_shape_visibility<V : VectorTrait>(
 	camera : &Camera<V>,
-	shapes : &mut Vec<Shape<V>>,
-	face_scale : &Vec<Field>)  -> Vec<Option<DrawLine<V::SubV>>>
-
-where V : VectorTrait
-{
+	shapes : &mut Vec<Shape<V>>) {
 	//update shape visibility and boundaries
 	for shape in shapes.iter_mut() {
 		shape.update_visibility(camera.pos);
@@ -217,6 +215,15 @@ where V : VectorTrait
 				&shape.faces, &shape.subfaces, camera.pos);
 		}
 	}
+
+}
+pub fn calc_shapes_lines<V>(
+	shapes : &mut Vec<Shape<V>>,
+	face_scale : &Vec<Field>, clipping : bool)  -> Vec<Option<DrawLine<V>>>
+
+where V : VectorTrait
+{
+	
 	//probably worth computing / storing number of lines
 	//and using Vec::with_capacity
 	
@@ -230,19 +237,23 @@ where V : VectorTrait
 			shape_lines.append(&mut calc_face_lines(face,&shape,&face_scale));
 		}
 		//clip these lines and append to list
-		let mut clipped_lines = crate::clipping::clip_draw_lines(
-			shape_lines, Some(shape), shapes);
-		lines.append(&mut clipped_lines);
+		if clipping {
+			let mut clipped_lines = crate::clipping::clip_draw_lines(
+				shape_lines, Some(shape), shapes);
+			lines.append(&mut clipped_lines);
+		} else {
+			lines.append(&mut shape_lines);
+		}
+		
 	}
-	transform_draw_lines(lines, &camera)
+	lines
 	
 }
-pub fn draw_lines_color<V : VectorTrait>(
-	camera :&Camera<V>,
+pub fn calc_lines_color<V : VectorTrait>(
 	shapes : &Vec<Shape<V>>,
 	lines : Vec<Line<V>>,
 	color : Color
-	) -> Vec<Option<DrawLine<V::SubV>>> {
+	) -> Vec<Option<DrawLine<V>>> {
 
 	let draw_lines = lines
 		.into_iter()
@@ -252,11 +263,10 @@ pub fn draw_lines_color<V : VectorTrait>(
 	let clipped_lines = crate::clipping::clip_draw_lines(
 			draw_lines, None, shapes);
 
-	transform_draw_lines(clipped_lines, &camera)
+	clipped_lines
 }
 pub fn draw_wireframe<V>(//display : &glium::Display,
-	camera : &Camera<V>,
-	shape : &Shape<V>, color : Color) -> Vec<Option<DrawLine<V::SubV>>>
+	shape : &Shape<V>, color : Color) -> Vec<Option<DrawLine<V>>>
 where V: VectorTrait
 {
 	//concatenate vertex indices from each edge to get list
@@ -273,6 +283,6 @@ where V: VectorTrait
     let draw_lines = lines.into_iter().map(|opt_line| opt_line
     	.map(|line| DrawLine{line,color})).collect();
 
-    transform_draw_lines(draw_lines, camera)
+    draw_lines
 
 }

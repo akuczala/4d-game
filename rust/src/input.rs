@@ -1,8 +1,11 @@
 use glium::glutin;
 use glutin::VirtualKeyCode as VKC;
 use glutin::ElementState::{Pressed,Released};
+
+use std::time::Duration;
+
 use crate::draw::Camera;
-use crate::vector::{VectorTrait,Field};
+use crate::vector::{VectorTrait,MatrixTrait,Field};
 use crate::geometry::Shape;
 
 pub struct ButtonsPressed {
@@ -13,8 +16,12 @@ pub struct ButtonsPressed {
     pub i : bool,
     pub k : bool,
     pub t : bool,
+    pub j : bool,
+    pub l : bool,
+    pub c : bool,
     pub space : bool,
     pub alt : bool,
+    pub shift : bool,
     pub being_touched : bool
 }
 impl ButtonsPressed {
@@ -23,11 +30,17 @@ impl ButtonsPressed {
             w: false, s: false,
             a : false, d : false,
             i : false, k : false,
+            j : false, l : false,
             t : true, //toggle transparency on key up
-            space : false, alt : false,
+            c : true, //toggle clipping on key up
+            space : false, alt : false, shift : false,
             being_touched : false,
         }
     }
+}
+
+fn duration_as_field(duration : &Duration) -> f32 {
+ (duration.as_secs() as Field) + 0.001*(duration.subsec_millis() as Field)
 }
 
 pub struct Input {
@@ -48,58 +61,102 @@ impl Input {
     }
     //const SPEED : Field = 0.01;
 
-    pub fn update_camera<Vec3>(&mut self, camera : &mut Camera<Vec3>)
-    where Vec3 : VectorTrait
+    pub fn update_camera<V : VectorTrait>(&mut self, camera : &mut Camera<V>,
+        frame_duration : &Duration)
     {
+        let frame_time = duration_as_field(frame_duration) as Field;
         //fowards + backwards
         if self.pressed.w {
-            camera.slide(camera.heading);
+            camera.slide(camera.heading,frame_time);
             self.update = true;
         }
         if self.pressed.s {
-            camera.slide(-camera.heading);
+            camera.slide(-camera.heading,frame_time);
             self.update = true;
         }
         if self.pressed.alt {
             //translation
             if self.pressed.d {
-            camera.slide(camera.frame[0]);
+            camera.slide(camera.frame[0],frame_time);
             self.update = true;
             }
             if self.pressed.a {
-            camera.slide(-camera.frame[0]);
+            camera.slide(-camera.frame[0],frame_time);
             self.update = true;
             }
             if self.pressed.i {
-            camera.slide(camera.frame[1]);
+            camera.slide(camera.frame[1],frame_time);
             self.update = true;
             }
             if self.pressed.k {
-            camera.slide(-camera.frame[1]);
+            camera.slide(-camera.frame[1],frame_time);
+            self.update = true;
+            }
+            if self.pressed.j {
+            camera.slide(-camera.frame[2],frame_time);
+            self.update = true;
+            }
+            if self.pressed.l {
+            camera.slide(camera.frame[2],frame_time);
             self.update = true;
             }
         } else {
            //rotation
             if self.pressed.d {
-                camera.rotate(0,-1,1.0);
+                camera.rotate(0,-1,frame_time);
                 self.update = true;
             }
             if self.pressed.a {
-                camera.rotate(0,-1,-1.0);
+                camera.rotate(0,-1,-frame_time);
                 self.update = true;
             }
             if self.pressed.i {
-                camera.rotate(1,-1,1.0);
+                camera.rotate(1,-1,frame_time);
                 self.update = true;
             }
             if self.pressed.k {
-                camera.rotate(1,-1,-1.0);
+                camera.rotate(1,-1,-frame_time);
                 self.update = true;
             }
+            if self.pressed.shift {
+                if self.pressed.j {
+                camera.rotate(0,2,-frame_time);
+                self.update = true;
+                }
+                if self.pressed.l {
+                    camera.rotate(0,2,frame_time);
+                    self.update = true;
+                }
+                //reset orientation
+                if !self.pressed.space {
+                    camera.frame = V::M::id();
+                    camera.update();
+                    self.update = true;
+                    self.pressed.space = true;
+                }
+            } else {
+                if self.pressed.j {
+                camera.rotate(2,-1,-frame_time);
+                self.update = true;
+                }
+                if self.pressed.l {
+                    camera.rotate(2,-1,frame_time);
+                    self.update = true;
+                }
+                
+            }
+            
+        }
+
+        //toggle clipping
+        if !self.pressed.c {
+            camera.clipping = !camera.clipping;
+            println!("clipping={}",camera.clipping);
+            self.pressed.c = true;
+            self.update = true;
         }
     }
-    pub fn update_shape<V>(&mut self, shape : &mut Shape<V>)
-    where V : VectorTrait
+    pub fn update_shape<V : VectorTrait>(&mut self, shape : &mut Shape<V>)
     {
         //toggle transparency
         if !self.pressed.t {
@@ -108,13 +165,16 @@ impl Input {
             self.update = true;
         }
     }
-    pub fn print_debug<V>(&mut self, camera : &Camera<V>)
-    where V : VectorTrait
+    pub fn print_debug<V : VectorTrait>(&mut self, camera : &Camera<V>,
+        game_time : &Duration, frame_time : &Duration)
     {
-        if !self.pressed.space {
+        if !self.pressed.space && !self.pressed.shift {
             println!("camera.pos = {}",camera.pos);
             println!("camera.heading = {}",camera.heading);
             println!("camera.frame = {}",camera.frame);
+            println!("game time elapsed: {}", duration_as_field(game_time));
+            let frame_seconds = duration_as_field(frame_time);
+            println!("frame time: {}, fps: {}", frame_seconds,1.0/frame_seconds);
             self.pressed.space = true;
         }
     }
@@ -146,8 +206,12 @@ impl Input {
                             		Some(VKC::D) => pressed.d = pressed_state,
                                     Some(VKC::I) => pressed.i = pressed_state,
                                     Some(VKC::K) => pressed.k = pressed_state,
+                                    Some(VKC::J) => pressed.j= pressed_state,
+                                    Some(VKC::L) => pressed.l = pressed_state,
                                     Some(VKC::T) => pressed.t = pressed_state,
+                                    Some(VKC::C) => pressed.c = pressed_state,
                                     Some(VKC::LAlt) => pressed.alt = pressed_state,
+                                    Some(VKC::LShift) => pressed.shift = pressed_state,
                             		_ => (),
                                 }
                         	},
