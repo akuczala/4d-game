@@ -170,7 +170,7 @@ where V : VectorTrait
     //k1 and k2 must have opposite signs
     let k1 = n1.dot(origin) - th1;
     let k2 = n2.dot(origin) - th2;
-    assert!(k1*k2 < 0.0,"k1 = {}, k2 = {}",k1,k2);
+    //assert!(k1*k2 < 0.0,"k1 = {}, k2 = {}",k1,k2);
 
     let t = k1/(k1 - k2);
 

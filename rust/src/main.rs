@@ -23,7 +23,7 @@ fn main() {
 //use crate::vector::{VectorTrait,MatrixTrait};
 use crate::graphics::Graphics;
 //use draw;
-use crate::geometry::{Shape,buildshapes,buildfloor};
+use crate::geometry::{Shape,Line,buildshapes,buildfloor};
 use crate::vector::{Vec3,Vec4,VectorTrait};
 use crate::input::Input;
 use crate::colors::*;
@@ -33,6 +33,7 @@ use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 
 use std::time;
+use vector::PI;
 
 fn init_glium() -> (winit::EventsLoop,  glium::Display) {
         let events_loop = glutin::EventsLoop::new();
@@ -49,8 +50,19 @@ fn init_glium() -> (winit::EventsLoop,  glium::Display) {
 pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
 
     //buildshapes::cubeidor_3d()
-    let cube = buildshapes::build_cube_3d(1.0);
-    vec![buildshapes::invert_normals(&cube),cube.set_pos(&Vec3::new(3.0,0.0,0.0))]
+    let mut tube = buildshapes::build_long_cube_3d(4.0,1.0).set_pos(&Vec3::new(0.5,0.0,0.0));
+    let mut tube2 = tube.clone().set_pos(&Vec3::new(3.0,0.0,2.5));
+
+    //let mut tube = buildshapes::invert_normals(&tube);
+    //let mut tube2 = buildshapes::invert_normals(&tube2);
+    tube2.rotate(0,-1,PI/2.0);
+
+    let cube = buildshapes::build_cube_3d(1.0).set_pos(&Vec3::new(0.5,0.0,2.5));
+    //let cube = buildshapes::invert_normals(&cube);
+
+    tube.set_color(RED);
+    tube2.set_color(GREEN);
+    vec![tube,tube2,cube]
     //vec![cube.clone(),cube.set_pos(&Vec3::new(3.0,0.0,0.0))]
 }
 pub fn build_shapes_4d() -> Vec<Shape<Vec4>> {
@@ -78,10 +90,11 @@ pub fn game_3d() {
 
     let graphics = crate::graphics::Graphics2d::new(display);
     let shapes = build_shapes_3d();
+    let extra_lines = buildfloor::build_floor3(5,1.0,-0.51);
     let mut camera = Camera::new(Vec3::new(2.0,0.0, -10.0));
 
     camera.look_at(shapes[0].get_pos());
-    game(graphics,input,shapes,camera);
+    game(graphics,input,shapes,camera,extra_lines);
 }
 pub fn game_4d() {
     let (events_loop, display) = init_glium();
@@ -92,26 +105,29 @@ pub fn game_4d() {
     for v in &shapes[0].verts {
         println!("{}",v)
     }
+    let extra_lines : Vec<Line<Vec4>> = Vec::new();
     let mut camera = Camera::new(Vec4::new(0.0,0.0,0.0, -5.0));
     camera.look_at(shapes[0].get_pos());
-    game(graphics,input,shapes,camera);
+    game(graphics,input,shapes,camera,extra_lines);
 }
 pub fn game<G,V : VectorTrait>(mut graphics : G, mut input : Input,
-    mut shapes : Vec<Shape<V>>, mut camera : Camera<V>)
+    mut shapes : Vec<Shape<V>>, mut camera : Camera<V>, extra_lines : Vec<Line<V>>)
 where G : Graphics<V::SubV>
 {
     // let test_cube = buildshapes::build_cube_3d(1.0)
     //     .set_pos(&Vec3::new(0.0,0.0,0.0));
     //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
-    let face_scales = vec![0.5,0.9];
+    let face_scales = vec![0.3,0.5,0.8,1.0];
 
     draw::update_shape_visibility(&camera,&mut shapes);
     let mut draw_lines = draw::transform_draw_lines(
-        draw::calc_shapes_lines(&mut shapes,&face_scales,camera.clipping),
-        &camera);
-    // draw_lines.append(&mut crate::draw::draw_lines_color(
-    //     &camera, &shapes,
-    //     buildfloor::build_floor3(5,1.0,-1.0),CYAN));
+    {
+        let mut lines = draw::calc_shapes_lines(&mut shapes,&face_scales,camera.clipping);
+        lines.append(&mut crate::draw::calc_lines_color_from_ref(
+            &shapes,
+            &extra_lines,GRAY));
+        lines
+    }, &camera);
     //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
     let mut cur_lines_length = draw_lines.len();
     
@@ -135,13 +151,16 @@ where G : Graphics<V::SubV>
             }
 
             draw::update_shape_visibility(&camera,&mut shapes);
-            draw_lines = draw::transform_draw_lines(
-                draw::calc_shapes_lines(&mut shapes,&face_scales,camera.clipping),
-                &camera);
             //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
-            // draw_wireframe_lines.append(&mut crate::draw::draw_lines_color(
-            // &camera, &shapes,
-            // buildfloor::build_floor3(5,1.0,-1.0),CYAN));
+            draw_lines = draw::transform_draw_lines(
+            {
+                let mut lines = draw::calc_shapes_lines(&mut shapes,&face_scales,camera.clipping);
+                lines.append(&mut crate::draw::calc_lines_color_from_ref(
+                    &shapes,
+                    &extra_lines,CYAN));
+                lines
+            }, &camera);
+
             //make new buffer if the number of lines changes
             if draw_lines.len() != cur_lines_length {
                 graphics.new_vertex_buffer_from_lines(&draw_lines);

@@ -2,7 +2,7 @@ use itertools::Itertools;
 use crate::vector::{VectorTrait,MatrixTrait,VecIndex};
 use crate::vector::{Vec2,Vec3,Vec4,barycenter};
 //use crate::vec2::Vec2;
-use super::{Shape,Face,Edge,EdgeIndex,VertIndex};
+use super::{Shape,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
 use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
@@ -44,10 +44,32 @@ pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 	return Shape::new(verts,edges,faces);
 
 }
+
 pub fn build_cube_3d(length : Field) -> Shape<Vec3> {
 	build_prism_3d(length/(2.0 as Field).sqrt(),length,4)
 }
+pub fn build_long_cube_3d(length : Field, width: Field) -> Shape<Vec3> {
+	build_prism_3d(width/(2.0 as Field).sqrt(),length,4)
+}
+pub fn build_tube_cube_3d(length : Field, width: Field) -> Shape<Vec3> {
+	let rect = build_prism_3d(width/(2.0 as Field).sqrt(),length,4);
+	remove_faces(rect,vec![0,1])
+	
+}
 
+pub fn remove_face<V : VectorTrait>(shape : Shape<V>, face_index : FaceIndex) -> Shape<V> {
+	let verts = shape.verts_ref; let edges = shape.edges; let mut faces = shape.faces;
+	faces.remove(face_index);
+	Shape::new(verts,edges,faces)
+}
+pub fn remove_faces<V : VectorTrait>(shape : Shape<V>, faceis : Vec<FaceIndex>) -> Shape<V> {
+	let verts = shape.verts_ref; let edges = shape.edges; let faces = shape.faces;
+	let new_faces = faces.into_iter().enumerate()
+		.filter(|(i,_face)| !faceis.contains(i))
+		.map(|(_i,face)| face)
+		.collect();
+	Shape::new(verts,edges,new_faces)
+}
 use itertools::multizip;
 
 //builds 4d duoprism

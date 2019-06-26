@@ -265,6 +265,24 @@ pub fn calc_lines_color<V : VectorTrait>(
 
 	clipped_lines
 }
+//ehh. need to clone in here since we're borrowing lines
+pub fn calc_lines_color_from_ref<V : VectorTrait>(
+	shapes : &Vec<Shape<V>>,
+	lines : &Vec<Line<V>>,
+	color : Color
+	) -> Vec<Option<DrawLine<V>>> {
+
+	let draw_lines = lines
+		.iter()
+		.map(|line| Some(DrawLine{line : (*line).clone(),color}))
+		.collect();
+
+	let clipped_lines = crate::clipping::clip_draw_lines(
+			draw_lines, None, shapes);
+
+	clipped_lines
+}
+
 pub fn draw_wireframe<V>(//display : &glium::Display,
 	shape : &Shape<V>, color : Color) -> Vec<Option<DrawLine<V>>>
 where V: VectorTrait

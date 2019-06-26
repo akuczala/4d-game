@@ -9,6 +9,7 @@ use crate::colors::WHITE;
 use std::clone::Clone;
 //use std::ops::Index;
 
+#[derive(Clone)]
 pub struct Line<V : VectorTrait>(pub V,pub V);
 impl<V : VectorTrait> fmt::Display for Line<V> {
     // This trait requires `fmt` with this exact signature.
@@ -261,6 +262,12 @@ impl <V : VectorTrait> Shape<V> {
         face.update_visibility(camera_pos);
       }
     }
+  }
+  pub fn set_color(&mut self, color : Color) {
+    for face in &mut self.faces {
+      face.color = color;
+    }
+    self.update();
   }
 
 }

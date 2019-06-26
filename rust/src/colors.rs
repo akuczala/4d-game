@@ -13,6 +13,7 @@ impl Color {
 
 pub const BLACK : Color = Color([0.0,0.0,0.0,1.0]);
 pub const WHITE : Color = Color([1.0,1.0,1.0,1.0]);
+pub const GRAY : Color = Color([0.5,0.5,0.5,1.0]);
 
 pub const RED : Color = Color([1.0,0.0,0.0,1.0]);
 pub const GREEN : Color = Color([0.0,1.0,0.0,1.0]);
