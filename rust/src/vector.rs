@@ -99,6 +99,9 @@ pub trait MatrixTrait<V>: Display + Copy + Add<Output=Self> + Sub<Output=Self>
   fn outer(v1: V, v2: V) -> Self;
   fn id() -> Self;
   fn dot(self, rhs : Self) -> Self;
+  fn scale(self, rhs : Field) -> Self {
+    self.map_els(|mij| mij*rhs)
+  }
 }
 
 

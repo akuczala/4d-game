@@ -73,7 +73,7 @@ pub struct Face<V : VectorTrait> {
   normal_ref : V,
 
   pub center : V,
-  center_ref : V,
+  pub center_ref : V,
 
   pub threshold : Field,
 
@@ -187,6 +187,7 @@ pub struct Shape<V : VectorTrait> {
   frame : V::M,
   pos : V,
   pub scale : Field,
+  pub radius : Field,
 
   pub transparent : bool
 }
@@ -204,6 +205,7 @@ impl <V : VectorTrait> Shape<V> {
       //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
       face.center = face.center_ref.clone();
     }
+    let radius = verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt();
     let mut shape = Shape{
     verts_ref : verts.clone(),
     verts : verts,
@@ -216,6 +218,7 @@ impl <V : VectorTrait> Shape<V> {
     frame : V::M::id(),
     pos : V::zero(),
     scale : 1.0,
+    radius : radius,
     transparent: false
     };
     shape.update();
@@ -253,6 +256,23 @@ impl <V : VectorTrait> Shape<V> {
   pub fn get_pos(& self) -> &V {
     &self.pos
   }
+  pub fn stretch(&self, scales : &V) -> Self {
+  let mut new_shape = self.clone();
+  let new_verts : Vec<V> = self.verts_ref.iter()
+    .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
+  //need to explicitly update this as it stands
+  //need to have a clear differentiation between
+  //changes to mesh (verts_ref and center_ref) and
+  //changes to position/orientation/scaling of mesh
+
+  for face in &mut new_shape.faces {
+        let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
+    face.center_ref = vector::barycenter(face_verts);
+  }
+  new_shape.verts_ref = new_verts;
+  new_shape.update();
+  new_shape
+}
   pub fn update_visibility(&mut self, camera_pos : V) {
     for face in self.faces.iter_mut() {
       if self.transparent {
@@ -263,11 +283,12 @@ impl <V : VectorTrait> Shape<V> {
       }
     }
   }
-  pub fn set_color(&mut self, color : Color) {
+  pub fn set_color(mut self, color : Color) -> Self {
     for face in &mut self.faces {
       face.color = color;
     }
     self.update();
+    self
   }
 
 }

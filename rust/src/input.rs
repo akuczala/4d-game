@@ -198,7 +198,7 @@ impl Input {
                                     Released => false,
                                 };
                                 match virtual_keycode {
-                            		Some(VKC::Escape) => *closed = true,
+                            		Some(VKC::Escape) => *closed = !pressed_state,
         							Some(VKC::Space) => pressed.space = pressed_state,
                             		Some(VKC::W) => pressed.w = pressed_state,
                             		Some(VKC::S) => pressed.s = pressed_state,

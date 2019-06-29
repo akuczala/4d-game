@@ -179,3 +179,50 @@ where V : VectorTrait
 
     Plane{normal : n3, threshold: th3}
 }
+
+pub enum Separator {
+    Unknown,
+    NoFront,
+    S1Front,
+    S2Front
+}
+//use bounding spheres to find cases where shapes
+//are not in front of others
+//another function basically copied from
+//John McIntosh (urticator.net)
+pub fn dynamic_separate<V : VectorTrait>(
+    shape1 : &Shape<V>,
+    shape2 : &Shape<V>,
+    origin: &V) -> Separator {
+    let normal = *shape1.get_pos() - *shape2.get_pos();
+    let d = normal.norm();
+    let (r1,r2) = (shape1.radius,shape2.radius);
+    if d <= r1 + r2 {
+        return Separator::Unknown
+    }
+
+    let ratio = r1/(r1+r2);
+    let dist1 = d*ratio;
+    let reg1 = *shape1.get_pos() - normal*ratio;
+    let reg1 = *origin - reg1;
+
+    let adj = reg1.dot(normal)/d;
+    let neg = r1 - dist1;
+    let pos = d - r2 - dist1;
+    if adj >= neg && adj <= pos {
+        return Separator::NoFront
+    }
+
+    let hyp2 = reg1.dot(reg1);
+    let adj2 = adj*adj;
+    let opp2 = hyp2 - adj2;
+
+    let rcone = r1/dist1;
+    if opp2 >= hyp2*rcone*rcone {
+        return Separator::NoFront
+    }
+    match adj > 0.0 {
+        true => Separator::S2Front,
+        false => Separator::S1Front
+    }
+}

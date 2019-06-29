@@ -234,6 +234,22 @@ pub fn cubeidor_4d() -> Vec<Shape<Vec4>> {
     shapes
 }
 
+pub fn tube_test_3d() -> Vec<Shape<Vec3>> {
+	//buildshapes::cubeidor_3d()
+    let mut tube = build_long_cube_3d(4.0,1.0).set_pos(&Vec3::new(0.5,0.0,0.0));
+    let mut tube2 = tube.clone().set_pos(&Vec3::new(3.0,0.0,2.5));
+
+    //let mut tube = buildshapes::invert_normals(&tube);
+    //let mut tube2 = buildshapes::invert_normals(&tube2);
+    tube2.rotate(0,-1,PI/2.0);
+
+    let cube = build_cube_3d(1.0).set_pos(&Vec3::new(0.5,0.0,2.5));
+    //let cube = buildshapes::invert_normals(&cube);
+
+    let tube = tube.set_color(RED);
+    let tube2 = tube2.set_color(GREEN);
+    vec![tube,tube2,cube]
+}
 pub fn test_3d() -> Vec<Shape<Vec3>> {
 	let mut cube = build_cube_3d(1.0);
     let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW];

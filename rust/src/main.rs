@@ -13,10 +13,12 @@ mod draw;
 mod colors;
 mod graphics;
 mod input;
+mod build_level;
 //mod text_wrapper;
 
 fn main() {
     game_3d();
+    game_4d();
     //buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[4,4]); 
     //vector::test_vectors();
 }
@@ -28,6 +30,7 @@ use crate::vector::{Vec3,Vec4,VectorTrait};
 use crate::input::Input;
 use crate::colors::*;
 use crate::draw::Camera;
+
 
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
@@ -48,30 +51,27 @@ fn init_glium() -> (winit::EventsLoop,  glium::Display) {
     }
 
 pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
-
-    //buildshapes::cubeidor_3d()
-    let mut tube = buildshapes::build_long_cube_3d(4.0,1.0).set_pos(&Vec3::new(0.5,0.0,0.0));
-    let mut tube2 = tube.clone().set_pos(&Vec3::new(3.0,0.0,2.5));
-
-    //let mut tube = buildshapes::invert_normals(&tube);
-    //let mut tube2 = buildshapes::invert_normals(&tube2);
-    tube2.rotate(0,-1,PI/2.0);
-
-    let cube = buildshapes::build_cube_3d(1.0).set_pos(&Vec3::new(0.5,0.0,2.5));
-    //let cube = buildshapes::invert_normals(&cube);
-
-    tube.set_color(RED);
-    tube2.set_color(GREEN);
-    vec![tube,tube2,cube]
-    //vec![cube.clone(),cube.set_pos(&Vec3::new(3.0,0.0,0.0))]
+    let wall_length = 3.0;
+    let mut shapes = build_level::build_corridor_cross(
+        &buildshapes::color_cube(buildshapes::build_cube_3d(1.0)),wall_length);
+    shapes.push(buildshapes::build_prism_3d(0.1,0.025,6)
+        .set_color(YELLOW)
+        .set_pos(&Vec3::new(wall_length - 0.5,0.0,0.0)));
+    shapes
 }
+
 pub fn build_shapes_4d() -> Vec<Shape<Vec4>> {
-    
+    let wall_length = 3.0;
     //buildshapes::build_axes_cubes_4d()
-    buildshapes::cubeidor_4d()
+    //buildshapes::cubeidor_4d()
+    let mut shapes = build_level::build_corridor_cross(
+        &buildshapes::color_cube(buildshapes::build_cube_4d(1.0)),wall_length);
     //let (m,n) = (4,4);
     //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
-
+    shapes.push(buildshapes::build_duoprism_4d([0.1,0.025],[[0,1],[2,3]],[6,4])
+        .set_color(YELLOW)
+        .set_pos(&Vec4::new(0.0,0.0,wall_length - 0.5,0.0)));
+    shapes
      //   .set_pos(&Vec4::new(0.0,0.0,0.0,0.0));
     
 }
@@ -90,10 +90,12 @@ pub fn game_3d() {
 
     let graphics = crate::graphics::Graphics2d::new(display);
     let shapes = build_shapes_3d();
-    let extra_lines = buildfloor::build_floor3(5,1.0,-0.51);
-    let mut camera = Camera::new(Vec3::new(2.0,0.0, -10.0));
+    //let mut extra_lines = buildfloor::build_floor3(5,1.0,0.0);
+    //extra_lines.append(&mut buildfloor::build_floor3(5,1.0,1.0));
+    let extra_lines : Vec<Line<Vec3>> = Vec::new();
+    let mut camera = Camera::new(Vec3::new(0.0,0.0,0.0));
 
-    camera.look_at(shapes[0].get_pos());
+    //camera.look_at(shapes[0].get_pos());
     game(graphics,input,shapes,camera,extra_lines);
 }
 pub fn game_4d() {
@@ -106,8 +108,8 @@ pub fn game_4d() {
         println!("{}",v)
     }
     let extra_lines : Vec<Line<Vec4>> = Vec::new();
-    let mut camera = Camera::new(Vec4::new(0.0,0.0,0.0, -5.0));
-    camera.look_at(shapes[0].get_pos());
+    let mut camera = Camera::new(Vec4::new(0.0,0.0,0.0,0.0));
+    //camera.look_at(shapes[0].get_pos());
     game(graphics,input,shapes,camera,extra_lines);
 }
 pub fn game<G,V : VectorTrait>(mut graphics : G, mut input : Input,
@@ -117,8 +119,8 @@ where G : Graphics<V::SubV>
     // let test_cube = buildshapes::build_cube_3d(1.0)
     //     .set_pos(&Vec3::new(0.0,0.0,0.0));
     //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
-    let face_scales = vec![0.3,0.5,0.8,1.0];
-
+    //let face_scales = vec![0.3,0.5,0.8,1.0];
+    let face_scales = vec![0.5,0.99];
     draw::update_shape_visibility(&camera,&mut shapes);
     let mut draw_lines = draw::transform_draw_lines(
     {
@@ -141,10 +143,12 @@ where G : Graphics<V::SubV>
 
         if input.update {
             //if input.pressed.being_touched {
-            if false {
-                for shape in &mut shapes {
-                    shape.rotate(0,-1,0.01)
-                }
+            if true {
+                let shapes_len = shapes.len();
+                shapes[shapes_len-1].rotate(0,-1,0.05);
+                // for shape in &mut shapes {
+                //     shape.rotate(0,-1,0.01)
+                // }
                 //shapes[0].rotate(-2,-1,0.01f32);
                 //shapes[1].rotate(-2,-1,0.01f32);
                 //hapes[1].rotate(0,1,0.02f32);
@@ -164,7 +168,7 @@ where G : Graphics<V::SubV>
             //make new buffer if the number of lines changes
             if draw_lines.len() != cur_lines_length {
                 graphics.new_vertex_buffer_from_lines(&draw_lines);
-                println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
+                //println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
                 cur_lines_length = draw_lines.len();
             }
             graphics.draw_lines(&draw_lines);
