@@ -219,7 +219,10 @@ pub fn update_shape_visibility<V : VectorTrait>(
 }
 pub fn calc_shapes_lines<V>(
 	shapes : &mut Vec<Shape<V>>,
-	face_scale : &Vec<Field>, clipping : bool)  -> Vec<Option<DrawLine<V>>>
+	face_scale : &Vec<Field>,
+	clipping : bool,
+	in_front : &Vec<Vec<bool>>
+	)  -> Vec<Option<DrawLine<V>>>
 
 where V : VectorTrait
 {
@@ -230,7 +233,7 @@ where V : VectorTrait
 	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();
 	
 	//compute lines for each shape
-	for shape in shapes.iter() {
+	for (shape,shape_in_front) in shapes.iter().zip(in_front.iter()) {
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
 		for face in &shape.faces {
@@ -239,7 +242,7 @@ where V : VectorTrait
 		//clip these lines and append to list
 		if clipping {
 			let mut clipped_lines = crate::clipping::clip_draw_lines(
-				shape_lines, Some(shape), shapes);
+				shape_lines, shapes, Some(shape_in_front));
 			lines.append(&mut clipped_lines);
 		} else {
 			lines.append(&mut shape_lines);
@@ -261,7 +264,7 @@ pub fn calc_lines_color<V : VectorTrait>(
 		.collect();
 
 	let clipped_lines = crate::clipping::clip_draw_lines(
-			draw_lines, None, shapes);
+			draw_lines, shapes, None);
 
 	clipped_lines
 }
@@ -278,7 +281,7 @@ pub fn calc_lines_color_from_ref<V : VectorTrait>(
 		.collect();
 
 	let clipped_lines = crate::clipping::clip_draw_lines(
-			draw_lines, None, shapes);
+			draw_lines, shapes, None);
 
 	clipped_lines
 }

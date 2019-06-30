@@ -17,7 +17,7 @@ use crate::geometry::{VertIndex};
 use crate::draw::{DrawVertex,DrawLine};
 
 
-pub trait Graphics<V : VectorTrait> {
+pub trait Graphics<'a,V : VectorTrait> {
 	type VertexType : Vertex;
 	//type V : VectorTrait;
 
@@ -25,14 +25,14 @@ pub trait Graphics<V : VectorTrait> {
 	const FRAGMENT_SHADER_SRC : &'static str;
     const LINE_WIDTH : f32 = 2.0;
 
-	fn new(display : glium::Display) -> Self ;
+	fn new(display : &'a glium::Display) -> Self ;
 
-	fn get_display(&self) -> &glium::Display;
+	fn get_display(&self) -> &'a glium::Display;
 	fn get_vertex_buffer(&self) -> &glium::VertexBuffer<Self::VertexType>;
     fn get_index_buffer(&self) -> &glium::IndexBuffer<u16>;
     fn get_program(&self) -> &glium::Program;
 
-    fn set_display(&mut self, display : glium::Display);
+    fn set_display(&mut self, display : &'a glium::Display);
     fn set_vertex_buffer(&mut self, vertex_buffer : glium::VertexBuffer<Self::VertexType>);
     fn set_index_buffer(&mut self, index_buffer : glium::IndexBuffer<u16>);
     fn set_program(&mut self, program : glium::Program);

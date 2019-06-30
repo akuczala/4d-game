@@ -7,7 +7,7 @@ use std::time::Duration;
 use crate::draw::Camera;
 use crate::vector::{VectorTrait,MatrixTrait,Field};
 use crate::geometry::Shape;
-
+use crate::clipping;
 pub struct ButtonsPressed {
     pub w : bool,
     pub s : bool,
@@ -47,6 +47,7 @@ pub struct Input {
     pub pressed : ButtonsPressed,
     pub events_loop : winit::EventsLoop,
     pub closed : bool,
+    pub swap_engine : bool,
     pub update : bool,
 }
 impl Input {
@@ -56,6 +57,7 @@ impl Input {
             pressed : ButtonsPressed::new(),
             events_loop : events_loop,
             closed : false,
+            swap_engine : false,
             update : true
         }
     }
@@ -165,8 +167,10 @@ impl Input {
             self.update = true;
         }
     }
+
     pub fn print_debug<V : VectorTrait>(&mut self, camera : &Camera<V>,
-        game_time : &Duration, frame_time : &Duration)
+        game_time : &Duration, frame_time : &Duration,
+        in_front : &Vec<Vec<bool>>, shapes : &Vec<Shape<V>>)
     {
         if !self.pressed.space && !self.pressed.shift {
             println!("camera.pos = {}",camera.pos);
@@ -175,7 +179,10 @@ impl Input {
             println!("game time elapsed: {}", duration_as_field(game_time));
             let frame_seconds = duration_as_field(frame_time);
             println!("frame time: {}, fps: {}", frame_seconds,1.0/frame_seconds);
+            //clipping::print_in_front(in_front);
+            //clipping::test_dyn_separate(&shapes,&camera.pos);
             self.pressed.space = true;
+
         }
     }
 }
@@ -186,6 +193,7 @@ impl Input {
         let closed = &mut self.closed;
         let pressed = &mut self.pressed;
         let update = &mut self.update;
+        let swap_engine = &mut self.swap_engine;
         events_loop.poll_events(|ev| {
                 match ev {
                     glutin::Event::WindowEvent { event, .. } => match event {
@@ -199,6 +207,10 @@ impl Input {
                                 };
                                 match virtual_keycode {
                             		Some(VKC::Escape) => *closed = !pressed_state,
+                                    Some(VKC::Back) => {
+                                        *swap_engine = !pressed_state;
+                                        
+                                        },
         							Some(VKC::Space) => pressed.space = pressed_state,
                             		Some(VKC::W) => pressed.w = pressed_state,
                             		Some(VKC::S) => pressed.s = pressed_state,

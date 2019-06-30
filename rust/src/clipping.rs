@@ -92,19 +92,25 @@ pub fn clip_line<V : VectorTrait>(
 
 pub fn clip_draw_lines<V : VectorTrait>(
     lines : Vec<Option<DrawLine<V>>>,
-    shape : Option<&Shape<V>>,
-    clipping_shapes: &Vec<Shape<V>>
+    shapes: &Vec<Shape<V>>,
+    shape_in_front : Option<&Vec<bool>>
     ) ->  Vec<Option<DrawLine<V>>>
 {
     let mut clipped_lines = lines;
-    for clipping_shape in clipping_shapes.iter() {
+    let clipping_shapes : Vec<&Shape<V>> = match shape_in_front {
+        Some(in_fronts) => shapes.iter().zip(in_fronts)
+            .filter(|(_shape,&front)| front)
+            .map(|(shape,_front)| shape).collect(),
+        None => shapes.iter().collect()
+    };
+    for clipping_shape in clipping_shapes {
         //compare pointers
-        let same_shape = match shape {
-            Some(shape) => clipping_shape as *const _ == shape as *const _,
-            None => false
-        };
+        // let same_shape = match shape {
+        //     Some(shape) => clipping_shape as *const _ == shape as *const _,
+        //     None => false
+        // };
         //let same_shape = clip_shape_index == shape_index;
-        if !same_shape && !clipping_shape.transparent {
+        if !clipping_shape.transparent {
             //let mut additional_lines : Vec<Option<Line<V>>> = Vec::new();
             let mut new_lines : Vec<Option<DrawLine<V>>> = Vec::new();
             //would like to map in place here, with side effects
@@ -179,7 +185,7 @@ where V : VectorTrait
 
     Plane{normal : n3, threshold: th3}
 }
-
+#[derive(Debug)]
 pub enum Separator {
     Unknown,
     NoFront,
@@ -225,4 +231,59 @@ pub fn dynamic_separate<V : VectorTrait>(
         true => Separator::S2Front,
         false => Separator::S1Front
     }
+}
+pub fn init_in_front<V : VectorTrait>(
+    shapes : &Vec<Shape<V>>) -> Vec<Vec<bool>> {
+    vec![vec![false ; shapes.len()] ; shapes.len()]
+}
+pub fn calc_in_front<V : VectorTrait>(
+    in_front : &mut Vec<Vec<bool>>,
+    shapes : &Vec<Shape<V>>,
+    origin : &V) {
+    for i in 0..shapes.len() {
+        for j in i+1 .. shapes.len() {
+                let sep = dynamic_separate(&shapes[i],&shapes[j],origin);
+                let new_vals = match sep {
+                    Separator::S1Front => (true,false),
+                    Separator::S2Front => (false,true),
+                    Separator::NoFront => (false,false),
+                    Separator::Unknown => (true,true)
+                };
+                in_front[i][j] = new_vals.0;
+                in_front[j][i] = new_vals.1;
+        }
+    }
+}
+pub fn print_in_front(in_front : &Vec<Vec<bool>>) {
+    for row in in_front.iter() {
+        println!("");
+        for val in row.iter() {
+            print!("{}, ",match val {
+                true => "1",
+                false => "0"
+            });
+        }
+    }
+    println!("");
+}
+pub fn test_dyn_separate<V : VectorTrait>(shapes : &Vec<Shape<V>>, origin : &V) {
+    use colored::*;
+    for (i,s1) in shapes.iter().enumerate() {
+        println!("");
+        for (j,s2) in shapes.iter().enumerate() {
+            if i != j {
+                let sep = dynamic_separate(s1,s2,origin);
+                let symb = match sep {
+                    Separator::NoFront => "_".black(),
+                    Separator::Unknown => "U".purple(),
+                    Separator::S2Front => "2".yellow(),
+                    Separator::S1Front => "1".white(),
+                };
+                print!("{}, ",symb)
+            } else {
+                print!("_, ")
+            }
+        }
+    }
+    println!("");
 }

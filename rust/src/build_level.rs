@@ -1,4 +1,6 @@
-use crate::geometry::{Shape};
+use crate::vector::vec3::Vec3;
+use crate::colors::YELLOW;
+use crate::geometry::{Shape,buildshapes};
 use crate::vector::{VectorTrait,Field};
 
 pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<Shape<V>> {
@@ -63,4 +65,15 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     shapes.push(cube.clone().set_pos(&(-V::one_hot(1)*(wall_height + corr_width)/2.0)));
     shapes
     
+}
+
+pub fn build_lvl_1_3d() -> Vec<Shape<Vec3>> {
+    let wall_length = 3.0;
+    let mut shapes = build_corridor_cross(
+        &buildshapes::color_cube(buildshapes::build_cube_3d(1.0)),wall_length);
+    shapes.push(buildshapes::build_prism_3d(0.1,0.025,6)
+        .set_color(YELLOW)
+        .set_pos(&Vec3::new(wall_length - 0.5,0.0,0.0)));
+
+    shapes
 }

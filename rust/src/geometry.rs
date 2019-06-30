@@ -205,7 +205,7 @@ impl <V : VectorTrait> Shape<V> {
       //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
       face.center = face.center_ref.clone();
     }
-    let radius = verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt();
+    let radius = Shape::calc_radius(&verts);
     let mut shape = Shape{
     verts_ref : verts.clone(),
     verts : verts,
@@ -269,6 +269,7 @@ impl <V : VectorTrait> Shape<V> {
         let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
     face.center_ref = vector::barycenter(face_verts);
   }
+  new_shape.radius = Shape::calc_radius(&new_verts);
   new_shape.verts_ref = new_verts;
   new_shape.update();
   new_shape
@@ -289,6 +290,9 @@ impl <V : VectorTrait> Shape<V> {
     }
     self.update();
     self
+  }
+  pub fn calc_radius(verts : &Vec<V>) -> Field {
+    verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
   }
 
 }
