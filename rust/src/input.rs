@@ -8,6 +8,8 @@ use crate::draw::Camera;
 use crate::vector::{VectorTrait,MatrixTrait,Field};
 use crate::geometry::Shape;
 use crate::clipping;
+
+use glutin::{Event,WindowEvent,EventsLoop};
 pub struct ButtonsPressed {
     pub w : bool,
     pub s : bool,
@@ -45,14 +47,14 @@ fn duration_as_field(duration : &Duration) -> f32 {
 
 pub struct Input {
     pub pressed : ButtonsPressed,
-    pub events_loop : winit::EventsLoop,
+    pub events_loop : EventsLoop,
     pub closed : bool,
     pub swap_engine : bool,
     pub update : bool,
 }
 impl Input {
 
-    pub fn new(events_loop : winit::EventsLoop) -> Self {
+    pub fn new(events_loop : EventsLoop) -> Self {
         Input{
             pressed : ButtonsPressed::new(),
             events_loop : events_loop,
@@ -150,13 +152,6 @@ impl Input {
             
         }
 
-        //toggle clipping
-        if !self.pressed.c {
-            camera.clipping = !camera.clipping;
-            println!("clipping={}",camera.clipping);
-            self.pressed.c = true;
-            self.update = true;
-        }
     }
     pub fn update_shape<V : VectorTrait>(&mut self, shape : &mut Shape<V>)
     {
@@ -170,19 +165,27 @@ impl Input {
 
     pub fn print_debug<V : VectorTrait>(&mut self, camera : &Camera<V>,
         game_time : &Duration, frame_time : &Duration,
-        in_front : &Vec<Vec<bool>>, shapes : &Vec<Shape<V>>)
+        clip_state : &mut clipping::ClipState<V>, shapes : &Vec<Shape<V>>)
     {
         if !self.pressed.space && !self.pressed.shift {
-            println!("camera.pos = {}",camera.pos);
-            println!("camera.heading = {}",camera.heading);
-            println!("camera.frame = {}",camera.frame);
+            //println!("camera.pos = {}",camera.pos);
+            //rintln!("camera.heading = {}",camera.heading);
+            //println!("camera.frame = {}",camera.frame);
             println!("game time elapsed: {}", duration_as_field(game_time));
             let frame_seconds = duration_as_field(frame_time);
             println!("frame time: {}, fps: {}", frame_seconds,1.0/frame_seconds);
-            //clipping::print_in_front(in_front);
+            //clipping::print_in_front(&clip_state.in_front);
+            //clip_state.print_debug();
             //clipping::test_dyn_separate(&shapes,&camera.pos);
             self.pressed.space = true;
 
+        }
+        //toggle clipping
+        if !self.pressed.c {
+            clip_state.clipping_enabled = !clip_state.clipping_enabled;
+            println!("clipping={}",clip_state.clipping_enabled);
+            self.pressed.c = true;
+            self.update = true;
         }
     }
 }
@@ -196,10 +199,10 @@ impl Input {
         let swap_engine = &mut self.swap_engine;
         events_loop.poll_events(|ev| {
                 match ev {
-                    glutin::Event::WindowEvent { event, .. } => match event {
-                        glutin::WindowEvent::CloseRequested => *closed = true,
-                        glutin::WindowEvent::Resized(_) => *update = true,
-                        glutin::WindowEvent::KeyboardInput{input, ..} => match input {
+                    Event::WindowEvent { event, .. } => match event {
+                        WindowEvent::CloseRequested => *closed = true,
+                        WindowEvent::Resized(_) => *update = true,
+                        WindowEvent::KeyboardInput{input, ..} => match input {
                         	glutin::KeyboardInput{ virtual_keycode, state, ..} => {
                                 let pressed_state = match state {
                                     Pressed => true,
@@ -228,7 +231,7 @@ impl Input {
                                 }
                         	},
                         },
-                        glutin::WindowEvent::Touch(glutin::Touch{phase, ..}) => match phase {
+                        WindowEvent::Touch(glutin::Touch{phase, ..}) => match phase {
                                 glutin::TouchPhase::Started => pressed.being_touched = true,
                                 glutin::TouchPhase::Ended => pressed.being_touched = false,
                                 _ => (),

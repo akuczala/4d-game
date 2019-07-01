@@ -16,7 +16,47 @@ mod input;
 mod build_level;
 //mod text_wrapper;
 
+// fn test_freetype() {
+//     use freetype::Library;
+
+//     // Init the library
+//     let lib = Library::init().unwrap();
+//     // Load a font face
+//     let face = lib.new_face("arial.ttf", 0).unwrap();
+//     // Set the font size
+//     face.set_char_size(40 * 64, 0, 50, 0).unwrap();
+//     // Load a character
+//     face.load_char('A' as usize, freetype::face::RENDER).unwrap();
+//     // Get the glyph instance
+//     let glyph = face.glyph();
+//     do_something_with_bitmap(glyph.bitmap());
+// }
+//use glium_text_rusttype as glium_text;
+// fn test_glium_text() {
+//     //use glium::Display::backend::Facade;    
+//     let (events_loop, display) = init_glium();
+//     // The `TextSystem` contains the shaders and elements used for text display.
+//     let system = glium_text::TextSystem::new(&display);
+
+//     // Creating a `FontTexture`, which a regular `Texture` which contains the font.
+//     // Note that loading the systems fonts is not covered by this library.
+//     let font = glium_text::FontTexture::new(&display, std::fs::File::open(&std::path::Path::new("arial.ttf")).unwrap(), 24).unwrap();
+
+//     // Creating a `TextDisplay` which contains the elements required to draw a specific sentence.
+//     let text = glium_text::TextDisplay::new(&system, &font, "Hello world!");
+
+//     // Finally, drawing the text is done like this:
+//     let matrix = [[1.0, 0.0, 0.0, 0.0],
+//               [0.0, 1.0, 0.0, 0.0],
+//               [0.0, 0.0, 1.0, 0.0],
+//               [0.0, 0.0, 0.0, 1.0]];
+//     glium_text::draw(&text, &system, &mut display.draw(), matrix, (1.0, 1.0, 0.0, 1.0));
+//     loop{}
+// }
 fn main() {
+
+    //test_glium_text();
+
     let (events_loop, display) = init_glium();
 
     let mut input = Input::new(events_loop);
@@ -48,11 +88,13 @@ use crate::draw::Camera;
 
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
+use glium::Surface;
 
+//use glium_text_rusttype as glium_text;
 use std::time;
 use vector::PI;
 
-fn init_glium() -> (winit::EventsLoop,  glium::Display) {
+fn init_glium() -> (glium::glutin::EventsLoop,  glium::Display) {
         let events_loop = glutin::EventsLoop::new();
         let size = LogicalSize{width : 1024.0,height : 768.0};
         let wb = glutin::WindowBuilder::new()
@@ -68,7 +110,7 @@ fn init_glium() -> (winit::EventsLoop,  glium::Display) {
             let window = window_context.window();
             //display.gl_window().window().set_always_on_top(true);
             window.set_always_on_top(true);
-            window.grab_cursor(false);
+            window.grab_cursor(false).unwrap();
 
             //fullscreen
             //window.set_fullscreen(Some(window.get_current_monitor()));
@@ -81,11 +123,11 @@ pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
     // let cube_2 = cube.clone().set_pos(&Vec3::new(0.0,0.0,3.0)).stretch(&Vec3::new(1.0,8.0,1.0));
     // let cube_3 = cube.clone().set_pos(&Vec3::new(-2.0,0.0,0.0)).stretch(&Vec3::new(2.0,2.0,2.0));
 
-    // let shapes = vec![cube,cube_2,cube_3];
+    // let shapes = vec![cube,cube_2];
     // for shape in &shapes {
     //     println!("radius:{}", shape.radius);
     // }
-    //shapes
+    // shapes
 
     build_level::build_lvl_1_3d()
 }
@@ -101,17 +143,13 @@ pub fn build_shapes_4d() -> Vec<Shape<Vec4>> {
     shapes.push(buildshapes::build_duoprism_4d([0.1,0.1],[[0,1],[2,3]],[6,6])
         .set_color(YELLOW)
         .set_pos(&Vec4::new(0.0,0.0,wall_length - 0.5,0.0)));
+    //let shapes_len = shapes.len();
+    //buildshapes::color_duocylinder(&mut shapes[shapes_len-1],10,10);
     shapes
      //   .set_pos(&Vec4::new(0.0,0.0,0.0,0.0));
     
 }
 
-pub fn color_duocylinder(shape : &mut Shape<Vec4>, m : usize, n : usize) {
-    for (i, face) in itertools::enumerate(shape.faces.iter_mut()) {
-        let iint = i as i32;
-        face.color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);
-    }
-}
 pub fn game_3d(input : &mut Input, display : & glium::Display) {
     
     let graphics = crate::graphics::Graphics2d::new(display);
@@ -119,7 +157,7 @@ pub fn game_3d(input : &mut Input, display : & glium::Display) {
     //let mut extra_lines = buildfloor::build_floor3(5,1.0,0.0);
     //extra_lines.append(&mut buildfloor::build_floor3(5,1.0,1.0));
     let extra_lines : Vec<Line<Vec3>> = Vec::new();
-    let mut camera = Camera::new(Vec3::new(0.0,0.0,0.0));
+    let camera = Camera::new(Vec3::new(0.0,0.0,0.0));
 
     //camera.look_at(shapes[0].get_pos());
     game(graphics,input,shapes,camera,extra_lines);
@@ -130,7 +168,7 @@ pub fn game_4d(input : &mut Input, display : & glium::Display) {
     let shapes = build_shapes_4d();
 
     let extra_lines : Vec<Line<Vec4>> = Vec::new();
-    let mut camera = Camera::new(Vec4::new(0.0,0.0,0.0,0.0));
+    let camera = Camera::new(Vec4::new(0.0,0.0,0.0,0.0));
     //camera.look_at(shapes[0].get_pos());
     game(graphics,input,shapes,camera,extra_lines);
 }
@@ -138,23 +176,35 @@ pub fn game<'a,G,V : VectorTrait>(mut graphics : G,input : &mut Input,
     mut shapes : Vec<Shape<V>>, mut camera : Camera<V>, extra_lines : Vec<Line<V>>)
 where G : Graphics<'a,V::SubV>
 {
-    let mut in_front = clipping::init_in_front(&shapes);
+
+
+    fn draw_stuff<V : VectorTrait>(camera : &Camera<V>,
+        shapes : &mut Vec<Shape<V>>,
+        clip_state : &mut clipping::ClipState<V>,
+        extra_lines : &Vec<Line<V>>
+    ) -> Vec<Option<draw::DrawLine<V::SubV>>> {
+        
+        //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
+        //let face_scales = vec![0.3,0.5,0.8,1.0];
+        let face_scales = vec![0.5,0.99];
+
+        draw::update_shape_visibility(&camera, shapes, clip_state);
+        clip_state.calc_in_front(&shapes,&camera.pos);
+        draw::transform_draw_lines(
+        {
+            let mut lines = draw::calc_shapes_lines(shapes,&face_scales,&clip_state);
+            lines.append(&mut crate::draw::calc_lines_color_from_ref(
+                &shapes,
+                &extra_lines,GRAY));
+            lines
+        }, &camera)
+    }
+    let mut clip_state = clipping::ClipState::new(&shapes);
     // let test_cube = buildshapes::build_cube_3d(1.0)
     //     .set_pos(&Vec3::new(0.0,0.0,0.0));
-    //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
-    //let face_scales = vec![0.3,0.5,0.8,1.0];
-    let face_scales = vec![0.5,0.99];
-    draw::update_shape_visibility(&camera,&mut shapes);
-    clipping::calc_in_front(&mut in_front, &shapes,&camera.pos);
 
-    let mut draw_lines = draw::transform_draw_lines(
-    {
-        let mut lines = draw::calc_shapes_lines(&mut shapes,&face_scales,camera.clipping, &in_front);
-        lines.append(&mut crate::draw::calc_lines_color_from_ref(
-            &shapes,
-            &extra_lines,GRAY));
-        lines
-    }, &camera);
+    
+    let mut draw_lines = draw_stuff(&camera, &mut shapes, &mut clip_state, &extra_lines);
     //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
     let mut cur_lines_length = draw_lines.len();
     
@@ -172,6 +222,7 @@ where G : Graphics<'a,V::SubV>
             if true {
                 let shapes_len = shapes.len();
                 shapes[shapes_len-1].rotate(0,-1,0.05);
+                shapes[shapes_len-1].rotate(2,-1,0.07);
                 // for shape in &mut shapes {
                 //     shape.rotate(0,-1,0.01)
                 // }
@@ -180,17 +231,7 @@ where G : Graphics<'a,V::SubV>
                 //hapes[1].rotate(0,1,0.02f32);
             }
 
-            draw::update_shape_visibility(&camera,&mut shapes);
-            clipping::calc_in_front(&mut in_front, &shapes,&camera.pos);
-            //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
-            draw_lines = draw::transform_draw_lines(
-            {
-                let mut lines = draw::calc_shapes_lines(&mut shapes,&face_scales,camera.clipping, &in_front);
-                lines.append(&mut crate::draw::calc_lines_color_from_ref(
-                    &shapes,
-                    &extra_lines,CYAN));
-                lines
-            }, &camera);
+            draw_lines = draw_stuff(&camera, &mut shapes, &mut clip_state, &extra_lines);
 
             //make new buffer if the number of lines changes
             if draw_lines.len() != cur_lines_length {
@@ -209,9 +250,10 @@ where G : Graphics<'a,V::SubV>
         frame_duration = time::Instant::now().duration_since(last_instant);
         last_instant = time::Instant::now();
         input.update_camera(&mut camera, &frame_duration);
-        input.update_shape(&mut shapes[1]);
+        let shapes_len = shapes.len();
+        input.update_shape(&mut shapes[shapes_len-1]);
         
-        input.print_debug(&camera,&game_duration,&frame_duration,&in_front,&shapes);
+        input.print_debug(&camera,&game_duration,&frame_duration,&mut clip_state,&shapes);
 
         
     }

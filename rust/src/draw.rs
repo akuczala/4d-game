@@ -3,7 +3,7 @@ use crate::geometry::{VertIndex,Shape,Line,Plane,Face};
 //use crate::graphics;
 use crate::clipping::clip_line_plane;
 use crate::colors::Color;
-
+use crate::clipping::ClipState;
 const Z0 : Field = 0.0;
 
 const SMALL_Z : Field = 0.001;
@@ -15,8 +15,6 @@ where V : VectorTrait
 	pub frame : V::M,
 	pub heading : V,
 	pub plane : Plane<V>,
-
-	pub clipping : bool,
 
 }
 impl<V> Camera<V>
@@ -31,7 +29,6 @@ where V : VectorTrait
 			heading : V::one_hot(-1),
 			plane : Plane{normal : V::one_hot(-1), threshold : V::one_hot(-1).dot(pos)},
 
-			clipping : true
 		}
 	}
 	pub fn look_at(&mut self, point : &V) {
@@ -205,12 +202,14 @@ where V : VectorTrait {
 }
 pub fn update_shape_visibility<V : VectorTrait>(
 	camera : &Camera<V>,
-	shapes : &mut Vec<Shape<V>>) {
+	shapes : &mut Vec<Shape<V>>,
+	clip_state : &ClipState<V>
+	) {
 	//update shape visibility and boundaries
 	for shape in shapes.iter_mut() {
 		shape.update_visibility(camera.pos);
 		//calculate boundaries for clipping
-		if camera.clipping {
+		if clip_state.clipping_enabled {
 			shape.boundaries = crate::clipping::calc_boundaries(
 				&shape.faces, &shape.subfaces, camera.pos);
 		}
@@ -220,8 +219,7 @@ pub fn update_shape_visibility<V : VectorTrait>(
 pub fn calc_shapes_lines<V>(
 	shapes : &mut Vec<Shape<V>>,
 	face_scale : &Vec<Field>,
-	clipping : bool,
-	in_front : &Vec<Vec<bool>>
+	clip_state : &ClipState<V>,
 	)  -> Vec<Option<DrawLine<V>>>
 
 where V : VectorTrait
@@ -233,14 +231,14 @@ where V : VectorTrait
 	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();
 	
 	//compute lines for each shape
-	for (shape,shape_in_front) in shapes.iter().zip(in_front.iter()) {
+	for (shape,shape_in_front) in shapes.iter().zip(clip_state.in_front.iter()) {
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
 		for face in &shape.faces {
 			shape_lines.append(&mut calc_face_lines(face,&shape,&face_scale));
 		}
 		//clip these lines and append to list
-		if clipping {
+		if clip_state.clipping_enabled {
 			let mut clipped_lines = crate::clipping::clip_draw_lines(
 				shape_lines, shapes, Some(shape_in_front));
 			lines.append(&mut clipped_lines);

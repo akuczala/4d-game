@@ -272,3 +272,10 @@ pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	new_shape.update();
 	new_shape
 }
+
+pub fn color_duocylinder(shape : &mut Shape<Vec4>, m : usize, n : usize) {
+    for (i, face) in itertools::enumerate(shape.faces.iter_mut()) {
+        let iint = i as i32;
+        face.color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);
+    }
+}

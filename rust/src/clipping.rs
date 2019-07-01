@@ -1,6 +1,80 @@
 use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 use crate::draw::DrawLine;
+
+pub struct ClipState<V : VectorTrait> {
+    pub in_front : Vec<Vec<bool>>,
+    pub separators : Vec<Vec<Separator<V>>>,
+    pub separations_debug : Vec<Vec<Separation>>, //don't need this, but is useful for debug
+    pub clipping_enabled : bool,
+}
+impl<V : VectorTrait> ClipState<V> {
+    pub fn new(shapes : &Vec<Shape<V>>) -> Self {
+        ClipState {
+            in_front : vec![vec![false ; shapes.len()] ; shapes.len()],
+            separations_debug :vec![vec![Separation::Unknown ; shapes.len()] ; shapes.len()],
+            separators : vec![vec![Separator::Unknown ; shapes.len()] ; shapes.len()],
+            clipping_enabled : true,
+        }
+    }
+    pub fn calc_in_front(
+        &mut self,
+        shapes : &Vec<Shape<V>>,
+        origin : &V
+    ) {
+        //loop over unique pairs
+        for i in 0..shapes.len() {
+            for j in i+1 .. shapes.len() {
+                //try dynamic separation
+                let mut sep_state = dynamic_separate(&shapes[i],&shapes[j],origin);
+                let is_unknown = match sep_state {
+                    Separation::Unknown => true,
+                    _ => false
+                };
+                //if that's unsuccessful, try static separation
+                if is_unknown {
+                    let sep = &mut self.separators[i][j];
+                    //compute static separator if it hasn't been computed yet
+                    let needs_value = match sep {
+                        Separator::Unknown => true,
+                        _ => false
+                    };
+                    //right now tries only one static separator
+                    if needs_value {
+                        *sep = separate_between_centers(&shapes[i],&shapes[j]);
+                    }
+                    //determine separation state from separator
+                    sep_state = sep.apply(origin);
+                };
+                let new_vals = match sep_state {
+                    Separation::S1Front => (true,false),
+                    Separation::S2Front => (false,true),
+                    Separation::NoFront => (false,false),
+                    Separation::Unknown => (true,true)
+                };
+                self.in_front[i][j] = new_vals.0;
+                self.in_front[j][i] = new_vals.1;
+
+                //debug
+                self.separations_debug[i][j] = sep_state;
+            }
+        }
+    }
+    pub fn print_debug(&self) {
+        for row in self.separations_debug.iter() {
+            println!("");
+            for val in row.iter() {
+                    print!("{}, ",match val {
+                        Separation::S1Front => "1",
+                        Separation::S2Front => "2",
+                        Separation::NoFront => "_",
+                        Separation::Unknown => "U"
+                    });
+                }
+            }
+            println!("");
+    }
+}
 pub fn clip_line_plane<V>(line : Line<V>, plane : &Plane<V>, small_z : Field) -> Option<Line<V>>
 where V : VectorTrait {
     let Line(p0,p1)= line;
@@ -185,12 +259,47 @@ where V : VectorTrait
 
     Plane{normal : n3, threshold: th3}
 }
-#[derive(Debug)]
-pub enum Separator {
+#[derive(Debug,Clone)]
+pub enum Separation {
     Unknown,
     NoFront,
     S1Front,
     S2Front
+}
+#[derive(Debug,Clone)]
+pub enum Separator<V : VectorTrait> {
+    Unknown,
+    Normal{
+        normal : V,
+        thresh_min : Field, thresh_max : Field,
+        invert : bool
+    }
+}
+impl<V : VectorTrait> Separator<V> {
+    pub fn apply(&self, origin : &V) -> Separation {
+        match *self {
+            Separator::Unknown => Separation::Unknown,
+            Separator::Normal{normal, thresh_min, thresh_max, invert} => {
+                let dot_val = origin.dot(normal);
+                if dot_val < thresh_min {
+                    match invert {
+                        false => Separation::S1Front,
+                        true => Separation::S2Front
+                    }
+                    
+                } else {
+                    if dot_val > thresh_max {
+                        match invert {
+                            false => Separation::S2Front,
+                            true => Separation::S1Front
+                        }
+                    } else {
+                        Separation::NoFront
+                    }
+                }
+            }
+        }
+    }
 }
 //use bounding spheres to find cases where shapes
 //are not in front of others
@@ -199,12 +308,12 @@ pub enum Separator {
 pub fn dynamic_separate<V : VectorTrait>(
     shape1 : &Shape<V>,
     shape2 : &Shape<V>,
-    origin: &V) -> Separator {
+    origin: &V) -> Separation {
     let normal = *shape1.get_pos() - *shape2.get_pos();
     let d = normal.norm();
     let (r1,r2) = (shape1.radius,shape2.radius);
     if d <= r1 + r2 {
-        return Separator::Unknown
+        return Separation::Unknown
     }
 
     let ratio = r1/(r1+r2);
@@ -216,7 +325,7 @@ pub fn dynamic_separate<V : VectorTrait>(
     let neg = r1 - dist1;
     let pos = d - r2 - dist1;
     if adj >= neg && adj <= pos {
-        return Separator::NoFront
+        return Separation::NoFront
     }
 
     let hyp2 = reg1.dot(reg1);
@@ -225,35 +334,57 @@ pub fn dynamic_separate<V : VectorTrait>(
 
     let rcone = r1/dist1;
     if opp2 >= hyp2*rcone*rcone {
-        return Separator::NoFront
+        return Separation::NoFront
     }
     match adj > 0.0 {
-        true => Separator::S2Front,
-        false => Separator::S1Front
+        true => Separation::S2Front,
+        false => Separation::S1Front
     }
 }
-pub fn init_in_front<V : VectorTrait>(
-    shapes : &Vec<Shape<V>>) -> Vec<Vec<bool>> {
-    vec![vec![false ; shapes.len()] ; shapes.len()]
-}
-pub fn calc_in_front<V : VectorTrait>(
-    in_front : &mut Vec<Vec<bool>>,
-    shapes : &Vec<Shape<V>>,
-    origin : &V) {
-    for i in 0..shapes.len() {
-        for j in i+1 .. shapes.len() {
-                let sep = dynamic_separate(&shapes[i],&shapes[j],origin);
-                let new_vals = match sep {
-                    Separator::S1Front => (true,false),
-                    Separator::S2Front => (false,true),
-                    Separator::NoFront => (false,false),
-                    Separator::Unknown => (true,true)
-                };
-                in_front[i][j] = new_vals.0;
-                in_front[j][i] = new_vals.1;
+
+
+pub fn normal_separate<V : VectorTrait>(
+    shape1 : &Shape<V>, shape2 : &Shape<V>, normal : &V
+) -> Separator<V> {
+    const OVERLAP : Field = 1e-6;
+
+    let nmin1 = shape1.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
+    let nmax1 = shape1.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
+    let nmin2 = shape2.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
+    let nmax2 = shape2.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
+
+    if nmin2 - nmax1 >= -OVERLAP {
+        return Separator::Normal{
+            normal : *normal,
+            thresh_min : nmax1, thresh_max : nmin2,
+            invert : true //this is the opposite from source material, but works
         }
     }
+    if nmin1 - nmax2 >= -OVERLAP {
+        return Separator::Normal{
+            normal : *normal,
+            thresh_min : nmax2, thresh_max : nmin1,
+            invert : false //again, opposite from source material
+        }
+    }
+
+
+    return Separator::Unknown
 }
+pub fn separate_between_centers<V : VectorTrait>(
+    shape1 : &Shape<V>, shape2 : &Shape<V>
+    ) -> Separator<V>
+{
+    let normal = *shape2.get_pos() - *shape1.get_pos();
+    const EPSILON : Field = 1e-6;
+    if normal.dot(normal) > EPSILON {
+        normal_separate(shape1, shape2, &normal)
+    } else {
+        Separator::Unknown
+    }
+
+}
+
 pub fn print_in_front(in_front : &Vec<Vec<bool>>) {
     for row in in_front.iter() {
         println!("");
@@ -274,10 +405,10 @@ pub fn test_dyn_separate<V : VectorTrait>(shapes : &Vec<Shape<V>>, origin : &V) 
             if i != j {
                 let sep = dynamic_separate(s1,s2,origin);
                 let symb = match sep {
-                    Separator::NoFront => "_".black(),
-                    Separator::Unknown => "U".purple(),
-                    Separator::S2Front => "2".yellow(),
-                    Separator::S1Front => "1".white(),
+                    Separation::NoFront => "_".black(),
+                    Separation::Unknown => "U".purple(),
+                    Separation::S2Front => "2".yellow(),
+                    Separation::S1Front => "1".white(),
                 };
                 print!("{}, ",symb)
             } else {
