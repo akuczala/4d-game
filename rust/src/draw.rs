@@ -1,13 +1,15 @@
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,rotation_matrix};
-use crate::geometry::{VertIndex,Shape,Line,Plane,Face};
+use crate::geometry::{VertIndex,Shape,Line,Plane,Face,Edge};
 //use crate::graphics;
 use crate::clipping::clip_line_plane;
 use crate::colors::Color;
 use crate::clipping::ClipState;
+
+use itertools:: 	Itertools;
 const Z0 : Field = 0.0;
 
 const SMALL_Z : Field = 0.001;
-const Z_NEAR : Field = 0.5; 
+const Z_NEAR : Field = 0.1; 
 pub struct Camera<V>
 where V : VectorTrait
 {
@@ -97,6 +99,73 @@ impl<V : VectorTrait> DrawLine<V> {
 	}
 }
 
+pub enum Texture<V : VectorTrait> {
+	DefaultLines,
+	DrawLines(Vec<DrawLine<V>>),
+	Lines(Vec<Line<V>>)
+}
+impl<V: VectorTrait> Texture<V> {
+	pub fn make_tile_texture(scales : &Vec<Field>, n_divisions : &Vec<i32>) -> Vec<Line<V>> {
+		if V::DIM != n_divisions.len() as VecIndex {
+			panic!("make_tile_texture: Expected n_divisions.len()={} but got {}", V::DIM, n_divisions.len());
+		}
+
+		let centers= n_divisions.iter().map(|n| (0..*n))
+		.multi_cartesian_product().map(|ivec|
+			ivec.iter().enumerate()
+			.map(|(axis,&i)| V::one_hot(axis as VecIndex)*((i as Field) + 0.5)/((n_divisions[axis]) as Field))
+			.fold(V::zero(),|v,u| v + u)
+			);
+
+		//all this does is convert n_divisions to a vector and divide by 2
+		//but since i haven't bothered putting a Vec<Field> -> V function in the vector library 
+		//i have to do this ridiculous fold
+		//see also the computation of the centers
+		let corner = n_divisions.iter().enumerate()
+			.map(|(ax,&n)| V::one_hot(ax as VecIndex)/(n as Field))
+			.fold(V::zero(),|v,u| v + u)/2.0;
+
+		//an element-wise multiplication by corner would simplify things a bit here
+		//zero-centered lines scaled by subdivision
+
+		//this is wrong
+		// let tile_lines : Vec<Line<V>> = n_divisions.iter().enumerate()
+		// .map(|(ax,&n)| {
+		// 	let frame_vec = V::one_hot(ax as VecIndex)/(n as Field);
+		// 	vec![Line(-corner,-corner + frame_vec),Line(corner - frame_vec,corner)]
+		// })
+		// .flat_map(|lines| lines).collect(); //flat_map instead of flatten because of itertools/iterator conflict
+
+		//grow edges starting from a line
+		let mut tile_lines : Vec<Line<V>> = Vec::new();
+		for (i,&n) in n_divisions.iter().enumerate() {
+			if i == 0 {
+				tile_lines.push(Line(-corner,-corner + V::one_hot(0)/(n as Field)));
+			} else {
+				let new_dir = V::one_hot(i as VecIndex)/(n as Field);
+				let mut new_lines : Vec<Line<V>> = tile_lines.iter()
+					.map(|line| vec![
+						line.map(|v| v + new_dir),
+						Line(line.0,line.0 + new_dir),
+						Line(line.1,line.1 + new_dir)
+						])
+					.flat_map(|lines| lines).collect();
+
+				tile_lines.append(&mut new_lines);
+			}
+		}
+		
+
+		centers.cartesian_product(scales.iter())
+			.map(|(center,&scale)| tile_lines.iter()
+				.map(|line| line.map(|v| v*scale + center))
+				.collect())
+			.flat_map(|lines : Vec<Line<V>>| lines)
+			.collect()
+
+
+	}
+}
 
 fn project<V>(v : V) -> V::SubV
 where V : VectorTrait
@@ -305,3 +374,4 @@ where V: VectorTrait
     draw_lines
 
 }
+
