@@ -1,7 +1,8 @@
 use crate::vector::vec3::Vec3;
 use crate::colors::YELLOW;
-use crate::geometry::{Shape,buildshapes};
+use crate::geometry::{Shape,Face,buildshapes};
 use crate::vector::{VectorTrait,Field};
+use crate::draw;
 
 pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<Shape<V>> {
 
@@ -21,7 +22,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     };
     let mut shapes : Vec<Shape<V>> = Vec::new();
     //corridor walls
-    let walls1 = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
+    let mut walls1 : Vec<Shape<V>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
         .map(|(s1,s2,(ax1,ax2))| cube.clone()
             .set_pos(&(
                 V::one_hot(*ax1)*(*s1)*(corr_width+wall_length)/2.0
@@ -32,8 +33,30 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
                 + V::one_hot(*ax2)*(wall_length - corr_width)
                 + V::ones()*corr_width
                     ))
-            );
-    shapes.append(&mut walls1.collect());
+            ).collect();
+    //test texturing
+    for shape in &mut walls1 {
+            let face = &mut shape.faces[0];
+            //print!("{}",face);
+            let target_face_color = match face.texture {
+                draw::Texture::DefaultLines{color} => color,
+                _ => panic!("build corridor cross expected DefaultLines") //don't bother handling the other cases
+            };
+            face.texture = draw::Texture::make_tile_texture(&vec![0.9],
+            & match V::DIM {
+                3 => vec![3,1],
+                4 => vec![3,1,1],
+                _ => panic!()
+            }).set_color(target_face_color);
+            face.texture_mapping = draw::TextureMapping{origin_verti : 0,
+            frame_vertis : match V::DIM {
+                3 => vec![face.vertis[3],face.vertis[1]],
+                4 => vec![face.vertis[3],face.vertis[1],face.vertis[4]], _ => panic!()}
+            };
+    }
+    
+
+    shapes.append(&mut walls1);
 
     //end walls
     
@@ -75,5 +98,21 @@ pub fn build_lvl_1_3d() -> Vec<Shape<Vec3>> {
         .set_color(YELLOW)
         .set_pos(&Vec3::new(wall_length - 0.5,0.0,0.0)));
 
+    shapes
+}
+
+pub fn build_test_scene_3d() -> Vec<Shape<Vec3>> {
+    let mut cube = buildshapes::build_cube_3d(1.0);
+    let cube_2 = cube.clone().set_pos(&Vec3::new(0.0,0.0,3.0)).stretch(&Vec3::new(1.0,8.0,1.0));
+    let cube_3 = cube.clone().set_pos(&Vec3::new(-2.0,0.0,0.0)).stretch(&Vec3::new(2.0,2.0,2.0));
+
+    //test texture'
+    cube.faces[0].texture = draw::Texture::make_tile_texture(&vec![0.5,0.9],&vec![2,3]);
+    cube.faces[0].texture_mapping = draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]};
+
+    let shapes = vec![cube,cube_3];
+    for shape in &shapes {
+        println!("radius:{}", shape.radius);
+    }
     shapes
 }

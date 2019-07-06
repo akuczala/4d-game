@@ -119,17 +119,9 @@ fn init_glium() -> (glium::glutin::EventsLoop,  glium::Display) {
     }
 
 pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
-    let cube = buildshapes::build_cube_3d(1.0);
-    let cube_2 = cube.clone().set_pos(&Vec3::new(0.0,0.0,3.0)).stretch(&Vec3::new(1.0,8.0,1.0));
-    let cube_3 = cube.clone().set_pos(&Vec3::new(-2.0,0.0,0.0)).stretch(&Vec3::new(2.0,2.0,2.0));
 
-    let shapes = vec![cube,cube_2];
-    for shape in &shapes {
-        println!("radius:{}", shape.radius);
-    }
-    shapes
-
-    //build_level::build_lvl_1_3d()
+    build_level::build_lvl_1_3d()
+    //build_level::build_test_scene_3d()
 }
 
 pub fn build_shapes_4d() -> Vec<Shape<Vec4>> {
@@ -156,8 +148,8 @@ pub fn game_3d(input : &mut Input, display : & glium::Display) {
     let shapes = build_shapes_3d();
     //let mut extra_lines = buildfloor::build_floor3(5,1.0,0.0);
     //extra_lines.append(&mut buildfloor::build_floor3(5,1.0,1.0));
-    //let extra_lines : Vec<Line<Vec3>> = Vec::new();
-    let extra_lines = draw::Texture::make_tile_texture(&vec![0.3,0.8],&vec![3,4,5]);
+    let extra_lines : Vec<Line<Vec3>> = Vec::new();
+    //let extra_lines = draw::Texture::make_tile_texture(&vec![0.3,0.8],&vec![3,4,5]);
     let camera = Camera::new(Vec3::new(0.0,0.0,0.0));
 
     //camera.look_at(shapes[0].get_pos());

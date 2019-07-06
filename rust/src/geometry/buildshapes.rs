@@ -6,7 +6,7 @@ use super::{Shape,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
 use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
-
+use crate::draw::Texture;
 pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 
 	//starting angle causes first edge to be parallel to y axis
@@ -192,8 +192,8 @@ pub fn build_cube_4d(length : Field) -> Shape<Vec4> {
 
 pub fn color_cube< V: VectorTrait>(mut cube : Shape<V>) -> Shape<V> {
 	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
-    for (face, color) in cube.faces.iter_mut().zip(&face_colors) {
-        face.color = *color;
+    for (face, &color) in cube.faces.iter_mut().zip(&face_colors) {
+        face.texture = Texture::DefaultLines{color};
     }
     cube
 }
@@ -254,7 +254,7 @@ pub fn test_3d() -> Vec<Shape<Vec3>> {
 	let mut cube = build_cube_3d(1.0);
     let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW];
     for (face, color) in cube.faces.iter_mut().zip(face_colors) {
-        face.color = color;
+        face.texture = Texture::DefaultLines{color};
     }
     let cylinder = build_prism_3d(1.0,1.0,8)
         .set_pos(&Vec3::new(2.0,0.0,0.0));;
@@ -276,6 +276,7 @@ pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 pub fn color_duocylinder(shape : &mut Shape<Vec4>, m : usize, n : usize) {
     for (i, face) in itertools::enumerate(shape.faces.iter_mut()) {
         let iint = i as i32;
-        face.color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);
+        let color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);
+        face.texture = Texture::DefaultLines{color};
     }
 }

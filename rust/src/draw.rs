@@ -2,7 +2,7 @@ use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,rotation_matrix};
 use crate::geometry::{VertIndex,Shape,Line,Plane,Face,Edge};
 //use crate::graphics;
 use crate::clipping::clip_line_plane;
-use crate::colors::Color;
+use crate::colors::*;
 use crate::clipping::ClipState;
 
 use itertools:: 	Itertools;
@@ -71,6 +71,7 @@ where V: VectorTrait
 	pub color : Color
 }
 
+#[derive(Clone)]
 pub struct DrawLine<V>
 where V : VectorTrait
 {
@@ -98,14 +99,24 @@ impl<V : VectorTrait> DrawLine<V> {
 		})
 	}
 }
-
+#[derive(Clone)]
 pub enum Texture<V : VectorTrait> {
-	DefaultLines,
+	DefaultLines{color : Color},
+	Lines{lines : Vec<Line<V>>, color : Color},
 	DrawLines(Vec<DrawLine<V>>),
-	Lines(Vec<Line<V>>)
 }
+
 impl<V: VectorTrait> Texture<V> {
-	pub fn make_tile_texture(scales : &Vec<Field>, n_divisions : &Vec<i32>) -> Vec<Line<V>> {
+	pub fn set_color(self, color : Color) -> Self {
+		match self {
+			Texture::DefaultLines{..} => Texture::DefaultLines{color},
+			Texture::Lines{lines, ..} => Texture::Lines{lines, color},
+			Texture::DrawLines(draw_lines) => Texture::DrawLines(
+				draw_lines.into_iter().map(|draw_line| DrawLine{line : draw_line.line,color}).collect()
+				),
+		}
+	}
+	pub fn make_tile_texture(scales : &Vec<Field>, n_divisions : &Vec<i32>) -> Texture<V> {
 		if V::DIM != n_divisions.len() as VecIndex {
 			panic!("make_tile_texture: Expected n_divisions.len()={} but got {}", V::DIM, n_divisions.len());
 		}
@@ -124,17 +135,6 @@ impl<V: VectorTrait> Texture<V> {
 		let corner = n_divisions.iter().enumerate()
 			.map(|(ax,&n)| V::one_hot(ax as VecIndex)/(n as Field))
 			.fold(V::zero(),|v,u| v + u)/2.0;
-
-		//an element-wise multiplication by corner would simplify things a bit here
-		//zero-centered lines scaled by subdivision
-
-		//this is wrong
-		// let tile_lines : Vec<Line<V>> = n_divisions.iter().enumerate()
-		// .map(|(ax,&n)| {
-		// 	let frame_vec = V::one_hot(ax as VecIndex)/(n as Field);
-		// 	vec![Line(-corner,-corner + frame_vec),Line(corner - frame_vec,corner)]
-		// })
-		// .flat_map(|lines| lines).collect(); //flat_map instead of flatten because of itertools/iterator conflict
 
 		//grow edges starting from a line
 		let mut tile_lines : Vec<Line<V>> = Vec::new();
@@ -156,14 +156,70 @@ impl<V: VectorTrait> Texture<V> {
 		}
 		
 
-		centers.cartesian_product(scales.iter())
+		let lines = centers.cartesian_product(scales.iter())
 			.map(|(center,&scale)| tile_lines.iter()
 				.map(|line| line.map(|v| v*scale + center))
 				.collect())
 			.flat_map(|lines : Vec<Line<V>>| lines)
-			.collect()
+			.collect();
+		Texture::Lines{lines, color : DEFAULT_COLOR}
 
+	}
+}
 
+#[derive(Clone)]
+pub struct TextureMapping {
+	pub frame_vertis : Vec<VertIndex>,
+	pub origin_verti : VertIndex
+}
+impl TextureMapping {
+	pub fn draw<V : VectorTrait>(&self, face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>
+	) -> Vec<Option<DrawLine<V>>>{
+		if !face.visible && !shape.transparent  {
+			return Vec::new();
+		}
+		match &face.texture {
+			Texture::DefaultLines{color} => self.draw_default_lines(face,shape,*color,face_scales),
+			Texture::Lines{lines,color} => self.draw_lines(shape,lines,*color),
+			Texture::DrawLines(draw_lines) => self.draw_drawlines(draw_lines)
+
+		}
+		
+	}
+	pub fn draw_default_lines<V : VectorTrait>(
+		&self, face : &Face<V>, shape : &Shape<V>,
+		color : Color, face_scales : &Vec<Field>) -> Vec<Option<DrawLine<V>>> {
+		let mut lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
+		for &face_scale in face_scales {
+			let scale_point = |v| V::linterp(face.center,v,face_scale);
+			for edgei in &face.edgeis {
+				let edge = &shape.edges[*edgei];
+				lines.push(
+					Some(DrawLine{
+						line : Line(
+						shape.verts[edge.0],
+						shape.verts[edge.1])
+						.map(scale_point),
+						color : color
+						})
+				);
+			}
+		}
+		lines
+	}
+	pub fn draw_lines<V : VectorTrait>(&self, shape : &Shape<V>,
+		lines : &Vec<Line<V::SubV>>, color : Color) -> Vec<Option<DrawLine<V>>> {
+		let origin = shape.verts[self.origin_verti];
+		let frame_verts : Vec<V> = self.frame_vertis.iter().map(|&vi| shape.verts[vi] - origin).collect();
+		//this is pretty ridiculous. it just matrix multiplies a matrix of frame_verts (as columns) by each vertex
+		//in every line, then adds the origin.
+		lines.iter().map(|line|
+			line.map(|v| (0..V::SubV::DIM).zip(frame_verts.iter()).map(|(i,&f)| f*v[i]).fold(V::zero(),|a,b| a + b) + origin)
+			).map(|line| Some(DrawLine{line,color})).collect()
+	}
+	pub fn draw_drawlines<V : VectorTrait>(&self, draw_lines : &Vec<DrawLine<V::SubV>>) -> Vec<Option<DrawLine<V>>> {
+		Vec::new()
+		//draw_lines.iter().map(|draw_line| Some(draw_line.clone())).collect()
 	}
 }
 
@@ -240,34 +296,47 @@ where V : VectorTrait
     			.map(project))).collect();
     proj_lines
 }
-pub fn calc_face_lines<V>(
+// pub fn calc_face_lines_new<V : VectorTrait>(
+// 	face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>
+// ) -> Vec<Option<DrawLine<V>>> {
+// 	if face.visible || shape.transparent {
+// 		face.
+// 	} else {
+// 		Vec::new()
+// 	}
+
+// }
+//in this implementation, the length of the vec is always
+//the same, and invisible faces are just sequences of None
+//seems to be significantly slower than not padding and just changing the buffer when needed
+//either way, we need to modify the method to write to an existing line buffer rather than allocating new Vecs
+pub fn calc_face_lines_old<V : VectorTrait>(
 	face : &Face<V>,
 	shape : &Shape<V>,
 	face_scales : &Vec<Field>
-	) -> Vec<Option<DrawLine<V>>>
-where V : VectorTrait {
-	let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
-	for &face_scale in face_scales {
-		let scale_point = |v| V::linterp(face.center,v,face_scale);
-		for edgei in &face.edgeis {
-			let edge = &shape.edges[*edgei];
-			//println!("{}",edge);
-			if face.visible || shape.transparent {
-				shape_lines.push(
+) -> Vec<Option<DrawLine<V>>> {
+	if face.visible || shape.transparent {
+		let mut lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
+		for &face_scale in face_scales {
+			let scale_point = |v| V::linterp(face.center,v,face_scale);
+			for edgei in &face.edgeis {
+				let edge = &shape.edges[*edgei];
+				//println!("{}",edge);
+				lines.push(
 					Some(DrawLine{
 						line : Line(
 						shape.verts[edge.0],
 						shape.verts[edge.1])
 						.map(scale_point),
-						color : face.color
+						color : DEFAULT_COLOR
 						})
 				);
-			} else {
-				shape_lines.push(None);
 			}
 		}
+		lines
+	} else {
+		vec![None ; face.edgeis.len()*face_scales.len()]
 	}
-	shape_lines
 }
 pub fn update_shape_visibility<V : VectorTrait>(
 	camera : &Camera<V>,
@@ -304,7 +373,8 @@ where V : VectorTrait
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
 		for face in &shape.faces {
-			shape_lines.append(&mut calc_face_lines(face,&shape,&face_scale));
+			//shape_lines.append(&mut calc_face_lines_old(face,&shape,&face_scale));
+			shape_lines.append(&mut face.texture_mapping.draw(face, &shape, &face_scale))
 		}
 		//clip these lines and append to list
 		if clip_state.clipping_enabled {

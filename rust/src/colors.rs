@@ -25,4 +25,4 @@ pub const YELLOW : Color = Color([1.0,1.0,0.0,1.0]);
 
 pub const ORANGE : Color = Color([1.0,0.5,0.0,1.0]);
 
-
+pub const DEFAULT_COLOR : Color = WHITE;

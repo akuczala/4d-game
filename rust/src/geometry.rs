@@ -7,6 +7,7 @@ use itertools::Itertools;
 use crate::vector;
 use crate::colors::WHITE;
 use std::clone::Clone;
+use crate::draw::{Texture,TextureMapping};
 //use std::ops::Index;
 
 #[derive(Clone)]
@@ -70,18 +71,19 @@ impl fmt::Display for Edge {
 #[derive(Clone)]
 pub struct Face<V : VectorTrait> {
   pub normal : V, 
-  normal_ref : V,
+  pub normal_ref : V,
 
   pub center : V,
   pub center_ref : V,
 
   pub threshold : Field,
 
-  pub color : Color,
+  pub texture : Texture<V::SubV>,
+  pub texture_mapping : TextureMapping,
   pub visible : bool,
 
   pub edgeis : Vec<EdgeIndex>,
-  vertis: Vec<VertIndex>
+  pub vertis: Vec<VertIndex>
 
 }
 
@@ -96,7 +98,8 @@ impl<V : VectorTrait> Face<V> {
 
       threshold : 0.0,
 
-      color: WHITE,
+      texture : Texture::DefaultLines{color : WHITE},
+      texture_mapping : TextureMapping{frame_vertis : Vec::new(), origin_verti : 0}, //this is pretty sloppy
       visible: true,
 
       edgeis : edgeis,
@@ -122,6 +125,9 @@ impl<V : VectorTrait> Face<V> {
   fn update_visibility(&mut self,camera_pos : V)
   {
     self.visible = self.normal.dot(self.center - camera_pos) < 0.0;
+  }
+  fn set_color(&mut self, color : Color) {
+    take_mut::take(&mut self.texture,|tex| tex.set_color(color));
   }
 
 }
@@ -286,9 +292,8 @@ impl <V : VectorTrait> Shape<V> {
   }
   pub fn set_color(mut self, color : Color) -> Self {
     for face in &mut self.faces {
-      face.color = color;
+      face.set_color(color);
     }
-    self.update();
     self
   }
   pub fn calc_radius(verts : &Vec<V>) -> Field {
