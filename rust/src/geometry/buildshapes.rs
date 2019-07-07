@@ -193,7 +193,7 @@ pub fn build_cube_4d(length : Field) -> Shape<Vec4> {
 pub fn color_cube< V: VectorTrait>(mut cube : Shape<V>) -> Shape<V> {
 	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
     for (face, &color) in cube.faces.iter_mut().zip(&face_colors) {
-        face.texture = Texture::DefaultLines{color};
+        face.texture = Texture::DefaultLines{color : color.set_alpha(0.5)};
     }
     cube
 }

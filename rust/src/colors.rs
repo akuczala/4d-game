@@ -4,7 +4,7 @@ impl Color {
 	pub fn get_arr(&self) -> &[f32 ; 4] {
 		&self.0
 	}
-	pub fn with_alpha(self, alpha : f32) -> Color {
+	pub fn set_alpha(self, alpha : f32) -> Color {
 		let mut arr = *self.get_arr();
 		arr[3] = alpha;
 		Color(arr)

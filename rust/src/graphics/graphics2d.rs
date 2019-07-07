@@ -46,13 +46,6 @@ pub struct Graphics2d<'a> {
     program : glium::Program
 }
 
-//vertices are invisible at z = 10.0,
-//so they don't get drawn.
-//was originally using these for debugging
-const NO_DRAW : Vertex = Vertex{
-    position : [0.0,0.0,10.0],
-    color : [1.0,0.0,0.0,1.0f32]
-};
 
 impl<'a> Graphics<'a,Vec2> for Graphics2d<'a> {
     type VertexType = Vertex;
@@ -60,6 +53,14 @@ impl<'a> Graphics<'a,Vec2> for Graphics2d<'a> {
 
     const VERTEX_SHADER_SRC  : &'static str = VERTEX_SHADER_SRC;
     const FRAGMENT_SHADER_SRC  : &'static str = FRAGMENT_SHADER_SRC;
+
+    //vertices are invisible at z = 10.0,
+    //so they don't get drawn.
+    //was originally using these for debugging
+    const NO_DRAW : Vertex = Vertex{
+        position : [0.0,0.0,10.0],
+        color : [1.0,0.0,0.0,1.0f32]
+    };
 
     fn new(display : &'a glium::Display) -> Self {
         
@@ -90,6 +91,9 @@ impl<'a> Graphics<'a,Vec2> for Graphics2d<'a> {
     }
     fn get_vertex_buffer(&self) -> &glium::VertexBuffer<Self::VertexType> {
         &self.vertex_buffer
+    }
+    fn get_vertex_buffer_mut(&mut self) -> &mut glium::VertexBuffer<Self::VertexType> {
+        &mut self.vertex_buffer
     }
     fn get_index_buffer(&self) -> &glium::IndexBuffer<u16> {
         &self.index_buffer
@@ -131,26 +135,11 @@ impl<'a> Graphics<'a,Vec2> for Graphics2d<'a> {
                 }
 
             }
-            None => NO_DRAW
+            None => Self::NO_DRAW
         }
         
     }
-    //make this consume its input?
-    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<Vec2>>>) -> Vec<Vertex> {
-        let mut verts : Vec<Vertex> = Vec::new();
-        for opt_line in opt_lines.iter() {
-            let (v0,v1) = match opt_line {
-                Some(draw_line)
-                    => {
-                        let (v0,v1) = draw_line.get_draw_verts();
-                        (Self::vert_to_gl(&Some(v0)),Self::vert_to_gl(&Some(v1)))
-                    }
-                None => (NO_DRAW,NO_DRAW)
-            };
-            verts.push(v0); verts.push(v1);
-        }
-        verts
-    }
+
     fn build_perspective_mat<S>(target : &S) -> [[f32 ; 4] ; 4]
     where S : Surface
     {

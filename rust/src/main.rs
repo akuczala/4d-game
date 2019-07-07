@@ -53,6 +53,10 @@ mod build_level;
 //     glium_text::draw(&text, &system, &mut display.draw(), matrix, (1.0, 1.0, 0.0, 1.0));
 //     loop{}
 // }
+
+
+//NOTES:
+// include visual indicator of what direction a collision is in
 fn main() {
 
     //test_glium_text();
@@ -179,7 +183,7 @@ where G : Graphics<'a,V::SubV>
         
         //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
         //let face_scales = vec![0.3,0.5,0.8,1.0];
-        let face_scales = vec![0.5,0.99];
+        let face_scales = vec![0.7];
 
         draw::update_shape_visibility(&camera, shapes, clip_state);
         clip_state.calc_in_front(&shapes,&camera.pos);
@@ -212,7 +216,7 @@ where G : Graphics<'a,V::SubV>
 
         if input.update {
             //if input.pressed.being_touched {
-            if true {
+            if false {
                 let shapes_len = shapes.len();
                 shapes[shapes_len-1].rotate(0,-1,0.05);
 

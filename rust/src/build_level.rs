@@ -6,6 +6,21 @@ use crate::draw;
 
 pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<Shape<V>> {
 
+    pub fn apply_texture<V : VectorTrait>(shape : &mut Shape<V>) {
+        for face in shape.faces.iter_mut() {
+            let target_face_color = match face.texture {
+            draw::Texture::DefaultLines{color} => color,
+            _ => panic!("build corridor cross expected DefaultLines") //don't bother handling the other cases
+            };
+            face.texture = draw::Texture::make_tile_texture(&vec![0.4,0.7,1.0],
+            & match V::DIM {
+                3 => vec![3,1],
+                4 => vec![3,1,1],
+                _ => panic!()
+            }).set_color(target_face_color);
+            face.texture_mapping = draw::TextureMapping::calc_cube_vertis(face,&shape.verts,&shape.edges)
+        }
+    }
     let corr_width = 1.0;
     let wall_height = 1.0;
     //let origin = V::zero();
@@ -20,6 +35,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
         4 => (-2..1),
         _ => panic!("Invalid dimension for build_corridor_cross")
     };
+    
     let mut shapes : Vec<Shape<V>> = Vec::new();
     //corridor walls
     let mut walls1 : Vec<Shape<V>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
@@ -34,26 +50,29 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
                 + V::ones()*corr_width
                     ))
             ).collect();
-    //test texturing
     for shape in &mut walls1 {
-            let face = &mut shape.faces[0];
-            //print!("{}",face);
-            let target_face_color = match face.texture {
-                draw::Texture::DefaultLines{color} => color,
-                _ => panic!("build corridor cross expected DefaultLines") //don't bother handling the other cases
-            };
-            face.texture = draw::Texture::make_tile_texture(&vec![0.9],
-            & match V::DIM {
-                3 => vec![3,1],
-                4 => vec![3,1,1],
-                _ => panic!()
-            }).set_color(target_face_color);
-            face.texture_mapping = draw::TextureMapping{origin_verti : 0,
-            frame_vertis : match V::DIM {
-                3 => vec![face.vertis[3],face.vertis[1]],
-                4 => vec![face.vertis[3],face.vertis[1],face.vertis[4]], _ => panic!()}
-            };
+        apply_texture(shape);
     }
+    //test texturing
+    // for shape in &mut walls1 {
+    //         let face = &mut shape.faces[0];
+    //         //print!("{}",face);
+    //         let target_face_color = match face.texture {
+    //             draw::Texture::DefaultLines{color} => color,
+    //             _ => panic!("build corridor cross expected DefaultLines") //don't bother handling the other cases
+    //         };
+    //         face.texture = draw::Texture::make_tile_texture(&vec![0.9],
+    //         & match V::DIM {
+    //             3 => vec![3,1],
+    //             4 => vec![3,1,1],
+    //             _ => panic!()
+    //         }).set_color(target_face_color);
+    //         face.texture_mapping = draw::TextureMapping{origin_verti : 0,
+    //         frame_vertis : match V::DIM {
+    //             3 => vec![face.vertis[3],face.vertis[1]],
+    //             4 => vec![face.vertis[3],face.vertis[1],face.vertis[4]], _ => panic!()}
+    //         };
+    // }
     
 
     shapes.append(&mut walls1);
@@ -82,6 +101,14 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
             *block.get_pos()+V::one_hot(1)*(wall_height+corr_width))
         ))
         .collect();
+
+    for shape in &mut floors_long {
+        apply_texture(shape);
+    }
+    for shape in &mut ceilings_long {
+        apply_texture(shape);
+    }
+
     shapes.append(&mut floors_long);
     shapes.append(&mut ceilings_long);
     //center floor

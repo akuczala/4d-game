@@ -5,7 +5,7 @@ use crate::clipping::clip_line_plane;
 use crate::colors::*;
 use crate::clipping::ClipState;
 
-use itertools:: 	Itertools;
+use itertools::Itertools;
 const Z0 : Field = 0.0;
 
 const SMALL_Z : Field = 0.001;
@@ -63,7 +63,7 @@ where V : VectorTrait
 		self.update_plane();
 	}
 }
-
+#[derive(Clone,Copy)]
 pub struct DrawVertex<V>
 where V: VectorTrait
 {
@@ -88,15 +88,15 @@ impl<V : VectorTrait> DrawLine<V> {
 			color : self.color
 		}
 	}
-	pub fn get_draw_verts(&self) -> (DrawVertex<V>,DrawVertex<V>) {
-		(DrawVertex{
+	pub fn get_draw_verts(&self) -> [DrawVertex<V> ; 2] {
+		[DrawVertex{
 			vertex : self.line.0,
 			color : self.color
 		},
 		DrawVertex{
 			vertex : self.line.1,
 			color : self.color
-		})
+		}]
 	}
 }
 #[derive(Clone)]
@@ -220,6 +220,30 @@ impl TextureMapping {
 	pub fn draw_drawlines<V : VectorTrait>(&self, draw_lines : &Vec<DrawLine<V::SubV>>) -> Vec<Option<DrawLine<V>>> {
 		Vec::new()
 		//draw_lines.iter().map(|draw_line| Some(draw_line.clone())).collect()
+	}
+	//use face edges and reference vertices to determine vertex indices for texture mapping
+	//order by side length, in decreasing order
+	pub fn calc_cube_vertis<V : VectorTrait>(face : &Face<V>, verts : &Vec<V>, edges : &Vec<Edge>) -> Self {
+		let face_vertis = & face.vertis;
+		let origin_verti = face_vertis[0]; //arbitrary
+		//get list of vertis connected by an edge to origin verti
+		let frame_vertis = face.edgeis.iter().map(|&ei| &edges[ei])
+			.filter_map(|edge| {
+				match edge {
+					Edge(v1,v2) if *v1 == origin_verti => Some(*v2),
+					Edge(v1,v2) if *v2 == origin_verti => Some(*v1),
+					_ => None
+				}
+			});
+		let sorted_frame_vertis : Vec<VertIndex> = frame_vertis
+			.map(|vi| (vi,(verts[vi]-verts[origin_verti]).norm()))
+			.sorted_by(|a,b| b.1.partial_cmp(&a.1).unwrap())
+			.map(|(vi,_v)| vi)
+			.collect();
+		// for &vi in &sorted_frame_vertis {
+		// 	println!("{}",(verts[vi]-verts[origin_verti]).norm() );
+		// }
+		TextureMapping{origin_verti,frame_vertis : sorted_frame_vertis}
 	}
 }
 

@@ -18,17 +18,19 @@ use crate::draw::{DrawVertex,DrawLine};
 
 
 pub trait Graphics<'a,V : VectorTrait> {
-	type VertexType : Vertex;
+	type VertexType : Vertex ;
 	//type V : VectorTrait;
 
 	const VERTEX_SHADER_SRC : &'static str;
 	const FRAGMENT_SHADER_SRC : &'static str;
     const LINE_WIDTH : f32 = 2.0;
+    const NO_DRAW : Self::VertexType;
 
 	fn new(display : &'a glium::Display) -> Self ;
 
 	fn get_display(&self) -> &'a glium::Display;
 	fn get_vertex_buffer(&self) -> &glium::VertexBuffer<Self::VertexType>;
+    fn get_vertex_buffer_mut (&mut self) -> &mut glium::VertexBuffer<Self::VertexType>;
     fn get_index_buffer(&self) -> &glium::IndexBuffer<u16>;
     fn get_program(&self) -> &glium::Program;
 
@@ -62,8 +64,42 @@ pub trait Graphics<'a,V : VectorTrait> {
 	fn vertis_to_gl(vertis : &Vec<VertIndex>) -> Vec<u16> {
     	vertis.iter().map(|v| *v as u16).collect()
 	}
-    fn opt_lines_to_gl(opt_lines : &Vec<Option<DrawLine<V>>>) -> Vec<Self::VertexType>;
-    
+
+    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<V>>>) -> Vec<Self::VertexType> {
+        opt_lines.iter()
+            .map(|opt_line| match opt_line {
+                Some(draw_line)
+                    => {
+                        draw_line.get_draw_verts().iter()
+                        .map(|&v| Self::vert_to_gl(&Some(v.clone()))).collect()
+                    }
+                None => vec![Self::NO_DRAW,Self::NO_DRAW]
+            })
+            .flatten().collect()
+
+    }
+    fn write_opt_lines_to_buffer(&mut self, opt_lines : &Vec<Option<DrawLine<V>>>) {
+        let mut write_map = self.get_vertex_buffer_mut().map_write();
+
+        let mut i = 0;
+        for opt_line in opt_lines.iter() {
+            match opt_line {
+                Some(draw_line) => {
+                    for v in draw_line.get_draw_verts().iter() {
+                        write_map.set(i,Self::vert_to_gl(&Some(v.clone())));
+                        i += 1;
+                    }
+                },
+                None => {
+                    write_map.set(i,Self::NO_DRAW);
+                    i += 1;
+                    write_map.set(i,Self::NO_DRAW);
+                    i += 1;
+                }
+            }
+        }
+    }
+
     fn build_perspective_mat<S : Surface>(target : &S) -> [[f32 ; 4] ; 4];
 
     fn build_view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -> [[f32; 4]; 4] {
@@ -99,11 +135,10 @@ pub trait Graphics<'a,V : VectorTrait> {
         [p[0], p[1], p[2], 1.0],
     ]
 }
-    fn draw_lines(&self, draw_lines : &Vec<Option<DrawLine<V>>>) {
+    fn draw_lines(&mut self, draw_lines : &Vec<Option<DrawLine<V>>>) {
 
-        
-        //use VertexBufferAny? (use .into() )
-        self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
+        //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
+        self.write_opt_lines_to_buffer(&draw_lines); //slightly faster than the above (less allocation)
 
         let draw_params = glium::DrawParameters{
             line_width : Some(2.0),
