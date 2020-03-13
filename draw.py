@@ -55,11 +55,14 @@ def init(d, size, focal=6, view_radius=5, view_height = 5, stereo=False, n_fuzz_
 
 
 #project d-dimensional vector to d-1 dimensional vector
-def project(v):
-    if math.isclose(v[-1], z0):
-        z = z0 + small_z
+def project(v,orthographic=False):
+    if orthographic:
+        z = 1;
     else:
-        z = v[-1]
+        if math.isclose(v[-1], z0):
+            z = z0 + small_z
+        else:
+            z = v[-1]
     return this.focal * v[:-1] / (z)
 
 def draw_wireframe(camera,shape,color):

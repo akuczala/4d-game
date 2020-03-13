@@ -33,9 +33,15 @@ def resize(width, height):  # GLsizei for non-negative integer
     # To operate on the Projection matrix
     gl.glLoadIdentity()
     # Reset
+
     # Enable perspective projection with fovy, aspect, zNear and zFar
     glu.gluPerspective(45.0, aspect, 0.1, 100.0)
+    #glu.gluPerspective(5.0, aspect, 0.1, 100.0)
 
+    #ortho proj doesnt seem to work this way
+    #gl.glOrtho(0.0, this.width, 0.0, this.height, 0.0, 1.0)
+    #gl.glMatrixMode(gl.GL_MODELVIEW)
+    #gl.glLoadIdentity()
 
 def initGL():
     print('init GL')
