@@ -1,3 +1,4 @@
 .ipynb_checkpoints/*
 4d.sublime-project
-4.sublime-workspace
+4d.sublime-workspace
+__pycache__/*
