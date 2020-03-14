@@ -1,5 +1,5 @@
 # 4d-game
-First person 4d geometry game engine, written in Rust, inspired by www.urticator.net. Under development.
+First person 4d geometry game engine, written in Rust, inspired by www.urticator.net. Under development; the current version amounts to a demo.
 
 There is a 3d and a 4d mode, toggled with backspace.
 
