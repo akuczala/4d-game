@@ -1,6 +1,6 @@
 use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
-use crate::draw::DrawLine;
+use crate::draw::{DrawLine,Buffer};
 
 pub struct ClipState<V : VectorTrait> {
     pub in_front : Vec<Vec<bool>>,
@@ -164,41 +164,39 @@ pub fn clip_line<V : VectorTrait>(
     ReturnLines::NoLines
 }
 
-pub fn clip_draw_lines<V : VectorTrait>(
-    lines : Vec<Option<DrawLine<V>>>,
-    shapes: &Vec<Shape<V>>,
-    shape_in_front : Option<&Vec<bool>>
-    ) ->  Vec<Option<DrawLine<V>>>
-{
-    let mut clipped_lines = lines;
-    let clipping_shapes : Vec<&Shape<V>> = match shape_in_front {
+pub fn get_clipping_shapes<'a,V: VectorTrait>(
+    shapes : &'a Vec<Shape<V>>,&shape_in_front : &Option<&Vec<bool>>) -> Vec<&'a Shape<V>> {
+    match shape_in_front {
         Some(in_fronts) => shapes.iter().zip(in_fronts)
             .filter(|(_shape,&front)| front)
             .map(|(shape,_front)| shape).collect(),
         None => shapes.iter().collect()
-    };
+    }
+}
+
+pub fn clip_draw_lines<V : VectorTrait>(
+    buffer : &mut  Buffer<Option<DrawLine<V>>>,
+    extra_buffer : &mut Buffer<Option<DrawLine<V>>>,
+    shapes: &Vec<Shape<V>>,
+    shape_in_front : Option<&Vec<bool>>
+    )
+{
+    let clipping_shapes = get_clipping_shapes(shapes,&shape_in_front);
+
     for clipping_shape in clipping_shapes {
-        //compare pointers
-        // let same_shape = match shape {
-        //     Some(shape) => clipping_shape as *const _ == shape as *const _,
-        //     None => false
-        // };
-        //let same_shape = clip_shape_index == shape_index;
+
         if !clipping_shape.transparent {
-            //let mut additional_lines : Vec<Option<Line<V>>> = Vec::new();
-            let mut new_lines : Vec<Option<DrawLine<V>>> = Vec::new();
-            //would like to map in place here, with side effects
-            //(creating additonal lines)
-            //worst case, we could push back and forth between two Vecs
-            //with capacities slightly greater than initial # lines
-            //right now i just push on to a new Vec every time
-            for opt_draw_line in clipped_lines.into_iter() {
-                let new_line = match opt_draw_line {
+            extra_buffer.clear();
+
+            for line_index in 0..buffer.cur_size {
+                let match_line = buffer.get_ref(line_index).clone(); // a crutch for doing matching and destructuring on ref
+                let new_line = match match_line {
                     Some(DrawLine{line,color}) => match clip_line(line, &clipping_shape.boundaries) {
                         ReturnLines::TwoLines(line0,line1) => {
-                            //additional_lines.push(Some(line1)); //push extra lines on to other vector
-                            new_lines.push(Some(DrawLine{line : line1,color}));
+                            extra_buffer.add(Some(DrawLine{line : line1,color}));
                             Some(DrawLine{line : line0,color})
+                            
+                            
                         }
                         ReturnLines::OneLine(line) => Some(DrawLine{line,color}),
                         ReturnLines::NoLines => None
@@ -206,13 +204,13 @@ pub fn clip_draw_lines<V : VectorTrait>(
                     }
                     None => None
                 };
-                new_lines.push(new_line);
+                buffer.set(line_index,new_line);
             }
-            clipped_lines = new_lines;
+            extra_buffer.copy_to_buffer(buffer);
+
             //clipped_lines.append(&mut additional_lines);
         }
     }
-    clipped_lines
 }
 pub fn calc_boundaries<V : VectorTrait>(faces :  &Vec<Face<V>>,
     subfaces : &Vec<SubFace>,

@@ -47,7 +47,7 @@ pub trait Graphics<'a,V : VectorTrait> {
             );
     }
 
-    fn new_vertex_buffer_from_lines(&mut self, lines : &Vec<Option<DrawLine<V>>>) {
+    fn new_vertex_buffer_from_lines(&mut self, lines : &[Option<DrawLine<V>>]) {
         let vertexes = Self::opt_lines_to_gl(&lines);
         self.set_vertex_buffer(
             glium::VertexBuffer::dynamic(self.get_display(), &vertexes)
@@ -65,7 +65,7 @@ pub trait Graphics<'a,V : VectorTrait> {
     	vertis.iter().map(|v| *v as u16).collect()
 	}
 
-    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<V>>>) -> Vec<Self::VertexType> {
+    fn opt_lines_to_gl(opt_lines: &[Option<DrawLine<V>>]) -> Vec<Self::VertexType> {
         opt_lines.iter()
             .map(|opt_line| match opt_line {
                 Some(draw_line)
@@ -78,7 +78,7 @@ pub trait Graphics<'a,V : VectorTrait> {
             .flatten().collect()
 
     }
-    fn write_opt_lines_to_buffer(&mut self, opt_lines : &Vec<Option<DrawLine<V>>>) {
+    fn write_opt_lines_to_buffer(&mut self, opt_lines : &[Option<DrawLine<V>>]) {
         let mut write_map = self.get_vertex_buffer_mut().map_write();
 
         let mut i = 0;
@@ -135,7 +135,7 @@ pub trait Graphics<'a,V : VectorTrait> {
         [p[0], p[1], p[2], 1.0],
     ]
 }
-    fn draw_lines(&mut self, draw_lines : &Vec<Option<DrawLine<V>>>) {
+    fn draw_lines(&mut self, draw_lines : &[Option<DrawLine<V>>]) {
 
         //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
         self.write_opt_lines_to_buffer(&draw_lines); //slightly faster than the above (less allocation)

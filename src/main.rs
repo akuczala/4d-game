@@ -6,6 +6,7 @@ extern crate glium;
 mod vector;
 #[allow(dead_code)]
 mod geometry;
+#[allow(dead_code)]
 mod clipping;
 #[allow(dead_code)]
 mod draw;
@@ -14,6 +15,7 @@ mod colors;
 mod graphics;
 mod input;
 mod build_level;
+
 //mod text_wrapper;
 
 // fn test_freetype() {
@@ -57,6 +59,9 @@ mod build_level;
 
 //NOTES:
 // include visual indicator of what direction a collision is in
+// 'fog' at large distances: fade out in alpha
+// point clouds as textures
+//use itertools method set_from to streamline modifying mutable vecs
 fn main() {
 
     //test_glium_text();
@@ -80,19 +85,18 @@ fn main() {
 
 
 }
-//use crate::vector::{VectorTrait,MatrixTrait};
 use crate::graphics::Graphics;
-//use draw;
+
 use crate::geometry::{Shape,Line,buildshapes};
 use crate::vector::{Vec3,Vec4,VectorTrait};
 use crate::input::Input;
 use crate::colors::*;
-use crate::draw::Camera;
+use crate::draw::{Camera,Buffer,DrawLine};
 
 
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
-use glium::Surface;
+
 
 //use glium_text_rusttype as glium_text;
 use std::time;
@@ -124,7 +128,7 @@ fn init_glium() -> (glium::glutin::EventsLoop,  glium::Display) {
 
 pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
 
-    build_level::build_lvl_1_3d()
+    build_level::build_lvl_1_3d(&vec![0.7,0.9])
     //build_level::build_test_scene_3d()
 }
 
@@ -133,7 +137,7 @@ pub fn build_shapes_4d() -> Vec<Shape<Vec4>> {
     //buildshapes::build_axes_cubes_4d()
     //buildshapes::cubeidor_4d()
     let mut shapes = build_level::build_corridor_cross(
-        &buildshapes::color_cube(buildshapes::build_cube_4d(1.0)),wall_length);
+        &buildshapes::color_cube(buildshapes::build_cube_4d(1.0)),wall_length,&vec![0.7,0.9]);
     //let (m,n) = (4,4);
     //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
     shapes.push(buildshapes::build_duoprism_4d([0.1,0.1],[[0,1],[2,3]],[6,6])
@@ -175,37 +179,59 @@ where G : Graphics<'a,V::SubV>
 {
 
 
-    fn draw_stuff<V : VectorTrait>(camera : &Camera<V>,
+    fn draw_stuff<V : VectorTrait>(
+        line_buffer : &mut Buffer<Option<DrawLine<V>>>,
+        proj_line_buffer : &mut Buffer<Option<DrawLine<V::SubV>>>,
+        shape_buffer : &mut Buffer<Option<DrawLine<V>>>,
+        extra_buffer : &mut Buffer<Option<DrawLine<V>>>,
+        
+        camera : &Camera<V>,
         shapes : &mut Vec<Shape<V>>,
         clip_state : &mut clipping::ClipState<V>,
         extra_lines : &Vec<Line<V>>
-    ) -> Vec<Option<draw::DrawLine<V::SubV>>> {
+    ) {
         
         //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
         //let face_scales = vec![0.3,0.5,0.8,1.0];
-        let face_scales = vec![0.7];
+        let face_scales = vec![0.7,0.9];
 
         draw::update_shape_visibility(&camera, shapes, clip_state);
         clip_state.calc_in_front(&shapes,&camera.pos);
-        draw::transform_draw_lines(
-        {
-            let mut lines = draw::calc_shapes_lines(shapes,&face_scales,&clip_state);
-            lines.append(&mut crate::draw::calc_lines_color_from_ref(
-                &shapes,
-                &extra_lines,CYAN));
-            lines
-        }, &camera)
+
+        shape_buffer.clear();
+        proj_line_buffer.clear();        
+
+        draw::calc_shapes_lines(line_buffer,shape_buffer,extra_buffer,shapes,&face_scales,&clip_state);
+        draw::transform_draw_lines(line_buffer,proj_line_buffer,&camera);
+        // draw::transform_draw_lines(
+        // {
+        //     let mut lines = draw::calc_shapes_lines(shapes,&face_scales,&clip_state);
+        //     lines.append(&mut crate::draw::calc_lines_color_from_ref(
+        //         &shapes,
+        //         &extra_lines,CYAN));
+        //     lines
+        // }, &camera)
     }
+    let mut line_buffer : Buffer<Option<DrawLine<V>>> = Buffer::new();
+    let mut shape_buffer : Buffer<Option<DrawLine<V>>> = Buffer::new();
+    let mut extra_buffer : Buffer<Option<DrawLine<V>>> = Buffer::new();
+    let mut proj_line_buffer : Buffer<Option<DrawLine<V::SubV>>> = Buffer::new();
+
     let mut clip_state = clipping::ClipState::new(&shapes);
     // let test_cube = buildshapes::build_cube_3d(1.0)
     //     .set_pos(&Vec3::new(0.0,0.0,0.0));
 
     
-    let mut draw_lines = draw_stuff(&camera, &mut shapes, &mut clip_state, &extra_lines);
+    draw_stuff(&mut line_buffer, &mut proj_line_buffer, &mut shape_buffer, &mut extra_buffer,
+        &camera, &mut shapes, &mut clip_state, &extra_lines);
     //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
-    let mut cur_lines_length = draw_lines.len();
+    let mut cur_lines_length = proj_line_buffer.cur_size;
     
-    graphics.new_vertex_buffer_from_lines(&draw_lines);
+    println!("{}",line_buffer.cur_size);
+    println!("{}",extra_buffer.cur_size);
+    println!("{}",proj_line_buffer.cur_size);
+
+    graphics.new_vertex_buffer_from_lines(proj_line_buffer.get_slice());
 
     let start_instant = time::Instant::now();
     let mut last_instant = time::Instant::now();
@@ -222,15 +248,17 @@ where G : Graphics<'a,V::SubV>
 
             }
 
-            draw_lines = draw_stuff(&camera, &mut shapes, &mut clip_state, &extra_lines);
+            draw_stuff(&mut line_buffer, &mut proj_line_buffer, &mut shape_buffer, &mut extra_buffer,
+        &camera, &mut shapes, &mut clip_state, &extra_lines);
 
             //make new buffer if the number of lines changes
-            if draw_lines.len() != cur_lines_length {
-                graphics.new_vertex_buffer_from_lines(&draw_lines);
+            if proj_line_buffer.cur_size != cur_lines_length {
+            //if true {
+                graphics.new_vertex_buffer_from_lines(proj_line_buffer.get_slice());
                 //println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
-                cur_lines_length = draw_lines.len();
+                cur_lines_length = proj_line_buffer.cur_size;
             }
-            graphics.draw_lines(&draw_lines);
+            graphics.draw_lines(proj_line_buffer.get_slice());
 
             
             input.update = true; //set to true for constant updating

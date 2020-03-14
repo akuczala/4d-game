@@ -4,15 +4,15 @@ use crate::geometry::{Shape,Face,buildshapes};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 
-pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<Shape<V>> {
+pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field, face_scales : &Vec<Field>) -> Vec<Shape<V>> {
 
-    pub fn apply_texture<V : VectorTrait>(shape : &mut Shape<V>) {
+    pub fn apply_texture<V : VectorTrait>(shape : &mut Shape<V>, face_scales : &Vec<Field>) {
         for face in shape.faces.iter_mut() {
             let target_face_color = match face.texture {
             draw::Texture::DefaultLines{color} => color,
             _ => panic!("build corridor cross expected DefaultLines") //don't bother handling the other cases
             };
-            face.texture = draw::Texture::make_tile_texture(&vec![0.4,0.7,1.0],
+            face.texture = draw::Texture::make_tile_texture(face_scales,
             & match V::DIM {
                 3 => vec![3,1],
                 4 => vec![3,1,1],
@@ -51,7 +51,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
                     ))
             ).collect();
     for shape in &mut walls1 {
-        apply_texture(shape);
+        apply_texture(shape, face_scales);
     }
     //test texturing
     // for shape in &mut walls1 {
@@ -103,10 +103,10 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
         .collect();
 
     for shape in &mut floors_long {
-        apply_texture(shape);
+        apply_texture(shape,face_scales);
     }
     for shape in &mut ceilings_long {
-        apply_texture(shape);
+        apply_texture(shape,face_scales);
     }
 
     shapes.append(&mut floors_long);
@@ -117,10 +117,10 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     
 }
 
-pub fn build_lvl_1_3d() -> Vec<Shape<Vec3>> {
+pub fn build_lvl_1_3d(face_scales : &Vec<Field>) -> Vec<Shape<Vec3>> {
     let wall_length = 3.0;
     let mut shapes = build_corridor_cross(
-        &buildshapes::color_cube(buildshapes::build_cube_3d(1.0)),wall_length);
+        &buildshapes::color_cube(buildshapes::build_cube_3d(1.0)),wall_length,face_scales);
     shapes.push(buildshapes::build_prism_3d(0.1,0.025,6)
         .set_color(YELLOW)
         .set_pos(&Vec3::new(wall_length - 0.5,0.0,0.0)));
