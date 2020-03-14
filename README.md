@@ -20,6 +20,6 @@ Currently uses flying tank controls for movement:
 ## To do:
 - Faster rendering pipeline
 - Collisions
-- Level design
+- Level design and spatial challenges
 
 
