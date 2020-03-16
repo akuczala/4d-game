@@ -1,4 +1,7 @@
 # 4d-game
+
+<img src="https://raw.githubusercontent.com/akuczala/4d-game/master/screenshot-3d.png" width="400"> <img src="https://raw.githubusercontent.com/akuczala/4d-game/master/screenshot-4d.png" width="400">
+
 First person 4d geometry game engine, written in Rust, inspired by www.urticator.net. Under development; the current version amounts to a demo.
 
 There is a 3d and a 4d mode, toggled with backspace.
