@@ -64,13 +64,22 @@ fn main() {
         event_loop::{ControlFlow, EventLoop},
         window::WindowBuilder,
     };
+    use crate::graphics::Graphics;
     //test_glium_text();
 
     let (event_loop, display, window) = init_glium();
 
     let mut input = Input::new();
+    let mut graphics = crate::graphics::Graphics2d::new(&display);
+    let mut game = game::Game::new(game::build_shapes_3d(),&mut graphics);
+    #[derive(Copy, Clone)]
+    struct Vertex {
+        position: [f32; 2],
+    }
 
-    event_loop.run(move |event, _, control_flow| {
+    implement_vertex!(Vertex, position);
+
+    event_loop.run_return(move |event, _, control_flow| {
     // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
     // dispatched any events. This is ideal for games and similar applications.
     *control_flow = ControlFlow::Poll;
@@ -79,6 +88,7 @@ fn main() {
     // This is ideal for non-game applications that only update in response to user
     // input, and uses significantly less power/CPU time than ControlFlow::Poll.
     *control_flow = ControlFlow::Wait;
+
 
     match event {
         Event::WindowEvent {
@@ -100,6 +110,9 @@ fn main() {
             // It's preferrable to render in this event rather than in MainEventsCleared, since
             // rendering in here allows the program to gracefully handle redraws requested
             // by the OS.
+            //let butt  = &graphics;
+            //game.build_shapes();
+            game.draw_update(&mut graphics, &mut input);
         },
         _ => ()
     }
@@ -111,13 +124,15 @@ use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 use glium::Surface;
 use glium::glutin::event_loop::EventLoop;
+use glium::glutin::platform::desktop::EventLoopExtDesktop;
 
 //use glium_text_rusttype as glium_text;
 use std::time;
 use vector::PI;
 
 fn init_glium() -> (EventLoop<()>,  glium::Display, glutin::window::Window) {
-        use glutin::window::WindowBuilder;
+        use glutin::{window::WindowBuilder,ContextBuilder};
+        //use glutin::window::WindowBuilder;
         let event_loop = glutin::event_loop::EventLoop::new();
         let size = LogicalSize{width : 1024.0,height : 768.0};
         let wb = glutin::window::WindowBuilder::new()
