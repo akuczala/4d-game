@@ -71,9 +71,18 @@ where V: VectorTrait
             }, &self.camera)
     }
     pub fn game_update(&mut self, input : &mut Input) {
+        if input.update {
+            //if input.pressed.being_touched {
+            if false {
+                let shapes_len = self.shapes.len();
+                self.shapes[shapes_len-1].rotate(0,-1,0.05);
+
+            }
+            input.update = true; //set to true for constant updating
+        }
 
     }
-    pub fn draw_update<'a,G>(&mut self, graphics : &mut G, input : &mut Input)
+    pub fn draw_update<'a,G>(&mut self, graphics : &mut G)
     where G : Graphics<'a,V::SubV>
     {
 
@@ -87,13 +96,7 @@ where V: VectorTrait
         // if input.closed || input.swap_engine {
         //     return;
         // }
-        if input.update {
-            //if input.pressed.being_touched {
-            if false {
-                let shapes_len = self.shapes.len();
-                self.shapes[shapes_len-1].rotate(0,-1,0.05);
-
-            }
+        
 
             self.draw_lines = self.draw_stuff();
 
@@ -104,10 +107,6 @@ where V: VectorTrait
                 self.cur_lines_length = self.draw_lines.len();
             }
             graphics.draw_lines(&self.draw_lines);
-
-            
-            input.update = true; //set to true for constant updating
-        }
         
         //input.listen_events(event);
 

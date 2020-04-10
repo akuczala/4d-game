@@ -192,7 +192,7 @@ impl Input {
 }
 impl Input {
     // listing the events produced by application and waiting to be received
-    pub fn listen_events(&mut self, ev : Event<()>) {
+    pub fn listen_events(&mut self, ev : &Event<()>) {
         let closed = &mut self.closed;
         let pressed = &mut self.pressed;
         let update = &mut self.update;
