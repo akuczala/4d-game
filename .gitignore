@@ -1,6 +1,7 @@
 .ipynb_checkpoints/*
-4d.sublime-project
-4d.sublime-workspace
+*.sublime-project
+*.sublime-workspace
 python/__pycache__/*
 /target
 **/*.rs.bk
+architecture.txt

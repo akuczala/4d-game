@@ -1,15 +1,17 @@
 use glium::glutin;
-use glutin::VirtualKeyCode as VKC;
-use glutin::ElementState::{Pressed,Released};
+use glutin::event::VirtualKeyCode as VKC;
+use glutin::event::ElementState::{Pressed,Released};
 
 use std::time::Duration;
 
 use crate::draw::Camera;
 use crate::vector::{VectorTrait,MatrixTrait,Field};
 use crate::geometry::Shape;
-use crate::clipping;
+use std::time;
+use crate::game::Game;
 
-use glutin::{Event,WindowEvent,EventsLoop};
+use glutin::event::{Event,WindowEvent};
+
 pub struct ButtonsPressed {
     pub w : bool,
     pub s : bool,
@@ -47,17 +49,17 @@ fn duration_as_field(duration : &Duration) -> f32 {
 
 pub struct Input {
     pub pressed : ButtonsPressed,
-    pub events_loop : EventsLoop,
+    //pub events_loop : EventLoop<()>,
     pub closed : bool,
     pub swap_engine : bool,
     pub update : bool,
 }
 impl Input {
 
-    pub fn new(events_loop : EventsLoop) -> Self {
+    pub fn new() -> Self {
         Input{
             pressed : ButtonsPressed::new(),
-            events_loop : events_loop,
+            //events_loop : events_loop,
             closed : false,
             swap_engine : false,
             update : true
@@ -163,16 +165,14 @@ impl Input {
         }
     }
 
-    pub fn print_debug<V : VectorTrait>(&mut self, camera : &Camera<V>,
-        game_time : &Duration, frame_time : &Duration,
-        clip_state : &mut clipping::ClipState<V>, shapes : &Vec<Shape<V>>)
+    pub fn print_debug<V : VectorTrait>(&mut self, game : &mut Game<V>, frame_len : &time::Duration)
     {
         if !self.pressed.space && !self.pressed.shift {
             //println!("camera.pos = {}",camera.pos);
             //rintln!("camera.heading = {}",camera.heading);
             //println!("camera.frame = {}",camera.frame);
-            println!("game time elapsed: {}", duration_as_field(game_time));
-            let frame_seconds = duration_as_field(frame_time);
+            //println!("game time elapsed: {}", duration_as_field(game_time));
+            let frame_seconds = duration_as_field(frame_len);
             println!("frame time: {}, fps: {}", frame_seconds,1.0/frame_seconds);
             //clipping::print_in_front(&clip_state.in_front);
             //clip_state.print_debug();
@@ -182,66 +182,76 @@ impl Input {
         }
         //toggle clipping
         if !self.pressed.c {
-            clip_state.clipping_enabled = !clip_state.clipping_enabled;
-            println!("clipping={}",clip_state.clipping_enabled);
+            game.clip_state.clipping_enabled = !game.clip_state.clipping_enabled;
+            println!("clipping={}",game.clip_state.clipping_enabled);
             self.pressed.c = true;
             self.update = true;
         }
     }
 }
+macro_rules! match_press {
+    ( $( $x:expr ),* ) => {
+        {
+            $(
+                Some($x) => pressed.$x = pressed_state,
+            )*
+        }
+    };
+}
+
 impl Input {
     // listing the events produced by application and waiting to be received
-    pub fn listen_events(&mut self) {
-        let events_loop = &mut self.events_loop;
+    pub fn listen_events(&mut self, ev : &Event<()>) {
         let closed = &mut self.closed;
         let pressed = &mut self.pressed;
         let update = &mut self.update;
         let swap_engine = &mut self.swap_engine;
-        events_loop.poll_events(|ev| {
-                match ev {
-                    Event::WindowEvent { event, .. } => match event {
-                        WindowEvent::CloseRequested => *closed = true,
-                        WindowEvent::Resized(_) => *update = true,
-                        WindowEvent::KeyboardInput{input, ..} => match input {
-                        	glutin::KeyboardInput{ virtual_keycode, state, ..} => {
-                                let pressed_state = match state {
-                                    Pressed => true,
-                                    Released => false,
-                                };
-                                match virtual_keycode {
-                            		Some(VKC::Escape) => *closed = !pressed_state,
-                                    Some(VKC::Back) => {
-                                        *swap_engine = !pressed_state;
-                                        
-                                        },
-        							Some(VKC::Space) => pressed.space = pressed_state,
-                            		Some(VKC::W) => pressed.w = pressed_state,
-                            		Some(VKC::S) => pressed.s = pressed_state,
-                            		Some(VKC::A) => pressed.a = pressed_state,
-                            		Some(VKC::D) => pressed.d = pressed_state,
-                                    Some(VKC::I) => pressed.i = pressed_state,
-                                    Some(VKC::K) => pressed.k = pressed_state,
-                                    Some(VKC::J) => pressed.j= pressed_state,
-                                    Some(VKC::L) => pressed.l = pressed_state,
-                                    Some(VKC::T) => pressed.t = pressed_state,
-                                    Some(VKC::C) => pressed.c = pressed_state,
-                                    Some(VKC::LAlt) => pressed.alt = pressed_state,
-                                    Some(VKC::LShift) => pressed.shift = pressed_state,
-                            		_ => (),
-                                }
-                        	},
-                        },
-                        WindowEvent::Touch(glutin::Touch{phase, ..}) => match phase {
-                                glutin::TouchPhase::Started => pressed.being_touched = true,
-                                glutin::TouchPhase::Ended => pressed.being_touched = false,
-                                _ => (),
 
-                            }
+        match ev {
+            Event::WindowEvent { event, .. } => match event {
+
+                WindowEvent::CloseRequested => *closed = true,
+                WindowEvent::Resized(_) => *update = true,
+                WindowEvent::KeyboardInput{input, ..} => match input {
+                	glutin::event::KeyboardInput{ virtual_keycode, state, ..} => {
+                        let pressed_state = match state {
+                            Pressed => true,
+                            Released => false,
+                        };
+                        match virtual_keycode {
+                    		Some(VKC::Escape) => *closed = !pressed_state,
+                            Some(VKC::Back) => {
+                                *swap_engine = !pressed_state;
+                                
+                                },
+                            //match_press![W,S,A,D]
+							Some(VKC::Space) => pressed.space = pressed_state,
+                    		Some(VKC::W) => pressed.w = pressed_state,
+                    		Some(VKC::S) => pressed.s = pressed_state,
+                    		Some(VKC::A) => pressed.a = pressed_state,
+                    		Some(VKC::D) => pressed.d = pressed_state,
+                            Some(VKC::I) => pressed.i = pressed_state,
+                            Some(VKC::K) => pressed.k = pressed_state,
+                            Some(VKC::J) => pressed.j= pressed_state,
+                            Some(VKC::L) => pressed.l = pressed_state,
+                            Some(VKC::T) => pressed.t = pressed_state,
+                            Some(VKC::C) => pressed.c = pressed_state,
+                            Some(VKC::LAlt) => pressed.alt = pressed_state,
+                            Some(VKC::LShift) => pressed.shift = pressed_state,
+                    		_ => (),
+                        }
+                	},
+                },
+                WindowEvent::Touch(glutin::event::Touch{phase, ..}) => match phase {
+                        glutin::event::TouchPhase::Started => pressed.being_touched = true,
+                        glutin::event::TouchPhase::Ended => pressed.being_touched = false,
                         _ => (),
-                    },
-                    _ => (),
-                }
-            });
+
+                    }
+                _ => (),
+            },
+            _ => (),
+        }
     }
 
 }

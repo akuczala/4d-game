@@ -6,7 +6,7 @@ pub use graphics3d::Graphics3d;
 //use crate::colors::Color;
 //use glium::glutin;
 use glium::Surface;
-//use glium::Display;
+use glium::Display;
 
 //use glium::Surface;
 //use glium::glutin::dpi::LogicalSize;
@@ -17,44 +17,44 @@ use crate::geometry::{VertIndex};
 use crate::draw::{DrawVertex,DrawLine};
 
 
-pub trait Graphics<'a,V : VectorTrait> {
+pub trait Graphics<V : VectorTrait> {
 	type VertexType : Vertex ;
 	//type V : VectorTrait;
 
 	const VERTEX_SHADER_SRC : &'static str;
 	const FRAGMENT_SHADER_SRC : &'static str;
-    const LINE_WIDTH : f32 = 2.0;
+    const LINE_WIDTH : f32 = 50.0;
     const NO_DRAW : Self::VertexType;
 
-	fn new(display : &'a glium::Display) -> Self ;
+	fn new(display : &Display) -> Self ;
 
-	fn get_display(&self) -> &'a glium::Display;
+	//fn get_display(&self) -> &'a glium::Display;
 	fn get_vertex_buffer(&self) -> &glium::VertexBuffer<Self::VertexType>;
     fn get_vertex_buffer_mut (&mut self) -> &mut glium::VertexBuffer<Self::VertexType>;
     fn get_index_buffer(&self) -> &glium::IndexBuffer<u16>;
     fn get_program(&self) -> &glium::Program;
 
-    fn set_display(&mut self, display : &'a glium::Display);
+    //fn set_display(&mut self, display : &'a glium::Display);
     fn set_vertex_buffer(&mut self, vertex_buffer : glium::VertexBuffer<Self::VertexType>);
     fn set_index_buffer(&mut self, index_buffer : glium::IndexBuffer<u16>);
     fn set_program(&mut self, program : glium::Program);
 
-    fn new_vertex_buffer(&mut self, verts : &Vec<Option<DrawVertex<V>>>) {
+    fn new_vertex_buffer(&mut self, verts : &Vec<Option<DrawVertex<V>>>, display : &Display) {
         self.set_vertex_buffer(
-            glium::VertexBuffer::dynamic(self.get_display(),
+            glium::VertexBuffer::dynamic(display,
             &Self::verts_to_gl(&verts))
             .unwrap()
             );
     }
 
-    fn new_vertex_buffer_from_lines(&mut self, lines : &Vec<Option<DrawLine<V>>>) {
+    fn new_vertex_buffer_from_lines(&mut self, lines : &Vec<Option<DrawLine<V>>>, display : &Display) {
         let vertexes = Self::opt_lines_to_gl(&lines);
         self.set_vertex_buffer(
-            glium::VertexBuffer::dynamic(self.get_display(), &vertexes)
+            glium::VertexBuffer::dynamic(display, &vertexes)
             .unwrap()
             );
     }
-    fn new_index_buffer(&mut self, verts : &Vec<VertIndex>);
+    fn new_index_buffer(&mut self, verts : &Vec<VertIndex>, display : &Display);
 
     fn vert_to_gl(vert : &Option<DrawVertex<V>>) -> Self::VertexType;
 	fn verts_to_gl(verts : &Vec<Option<DrawVertex<V>>>) -> Vec<Self::VertexType> {
@@ -135,7 +135,7 @@ pub trait Graphics<'a,V : VectorTrait> {
         [p[0], p[1], p[2], 1.0],
     ]
 }
-    fn draw_lines(&mut self, draw_lines : &Vec<Option<DrawLine<V>>>) {
+    fn draw_lines(&mut self, draw_lines : &Vec<Option<DrawLine<V>>>, display :  &Display) {
 
         //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
         self.write_opt_lines_to_buffer(&draw_lines); //slightly faster than the above (less allocation)
@@ -146,7 +146,7 @@ pub trait Graphics<'a,V : VectorTrait> {
             blend : glium::Blend::alpha_blending(),
             .. Default::default()
         };
-        let mut target = self.get_display().draw();
+        let mut target = display.draw();
 
         let view_matrix = match V::DIM {
             2 => [
