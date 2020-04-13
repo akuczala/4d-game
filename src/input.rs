@@ -7,10 +7,11 @@ use std::time::Duration;
 use crate::draw::Camera;
 use crate::vector::{VectorTrait,MatrixTrait,Field};
 use crate::geometry::Shape;
-use crate::clipping;
+use std::time;
+use crate::game::Game;
 
 use glutin::event::{Event,WindowEvent};
-use glutin::event_loop::EventLoop;
+
 pub struct ButtonsPressed {
     pub w : bool,
     pub s : bool,
@@ -164,16 +165,14 @@ impl Input {
         }
     }
 
-    pub fn print_debug<V : VectorTrait>(&mut self, camera : &Camera<V>,
-        game_time : &Duration, frame_time : &Duration,
-        clip_state : &mut clipping::ClipState<V>, shapes : &Vec<Shape<V>>)
+    pub fn print_debug<V : VectorTrait>(&mut self, game : &mut Game<V>, frame_len : &time::Duration)
     {
         if !self.pressed.space && !self.pressed.shift {
             //println!("camera.pos = {}",camera.pos);
             //rintln!("camera.heading = {}",camera.heading);
             //println!("camera.frame = {}",camera.frame);
-            println!("game time elapsed: {}", duration_as_field(game_time));
-            let frame_seconds = duration_as_field(frame_time);
+            //println!("game time elapsed: {}", duration_as_field(game_time));
+            let frame_seconds = duration_as_field(frame_len);
             println!("frame time: {}, fps: {}", frame_seconds,1.0/frame_seconds);
             //clipping::print_in_front(&clip_state.in_front);
             //clip_state.print_debug();
@@ -183,13 +182,23 @@ impl Input {
         }
         //toggle clipping
         if !self.pressed.c {
-            clip_state.clipping_enabled = !clip_state.clipping_enabled;
-            println!("clipping={}",clip_state.clipping_enabled);
+            game.clip_state.clipping_enabled = !game.clip_state.clipping_enabled;
+            println!("clipping={}",game.clip_state.clipping_enabled);
             self.pressed.c = true;
             self.update = true;
         }
     }
 }
+macro_rules! match_press {
+    ( $( $x:expr ),* ) => {
+        {
+            $(
+                Some($x) => pressed.$x = pressed_state,
+            )*
+        }
+    };
+}
+
 impl Input {
     // listing the events produced by application and waiting to be received
     pub fn listen_events(&mut self, ev : &Event<()>) {
@@ -215,6 +224,7 @@ impl Input {
                                 *swap_engine = !pressed_state;
                                 
                                 },
+                            //match_press![W,S,A,D]
 							Some(VKC::Space) => pressed.space = pressed_state,
                     		Some(VKC::W) => pressed.w = pressed_state,
                     		Some(VKC::S) => pressed.s = pressed_state,

@@ -3,7 +3,7 @@ use crate::vector::{VectorTrait};
 use crate::geometry::{VertIndex};
 use super::Graphics;
 use crate::vector::{Vec3};
-use glium::Surface;
+use glium::{Surface,Display};
 use crate::draw::{DrawVertex,DrawLine};
 
 
@@ -39,15 +39,15 @@ pub const FRAGMENT_SHADER_SRC : &str = r#"
         color = vec4(in_color);
     }
     "#;
-pub struct Graphics3d<'a> {
-    display : &'a glium::Display,
+pub struct Graphics3d {
+    //display : &'a glium::Display,
     vertex_buffer : glium::VertexBuffer<Vertex>,
     index_buffer : glium::IndexBuffer<u16>, //can we change this to VertIndex=usize?
     program : glium::Program
 }
 
 
-impl<'a> Graphics<'a,Vec3> for Graphics3d<'a> {
+impl Graphics<Vec3> for Graphics3d {
     type VertexType = Vertex;
     //type V = Vec3;
 
@@ -62,7 +62,7 @@ impl<'a> Graphics<'a,Vec3> for Graphics3d<'a> {
         color : [1.0,0.0,0.0,1.0f32]
     };
 
-    fn new(display : &'a glium::Display) -> Self {
+    fn new(display : &Display) -> Self {
         
         let program = glium::Program::from_source(display,
             VERTEX_SHADER_SRC,
@@ -79,16 +79,16 @@ impl<'a> Graphics<'a,Vec3> for Graphics3d<'a> {
             .unwrap();
 
         Self{
-            display,
+            //display,
             vertex_buffer,
             index_buffer,
             program
         }
     }
 
-    fn get_display(&self) -> &'a glium::Display {
-        &self.display
-    }
+    // fn get_display(&self) -> &'a glium::Display {
+    //     &self.display
+    // }
     fn get_vertex_buffer(&self) -> &glium::VertexBuffer<Self::VertexType> {
         &self.vertex_buffer
     }
@@ -102,9 +102,9 @@ impl<'a> Graphics<'a,Vec3> for Graphics3d<'a> {
         &self.program
     }
 
-    fn set_display(&mut self, display : &'a glium::Display) {
-        self.display = display;
-    }
+    // fn set_display(&mut self, display : &'a glium::Display) {
+    //     self.display = display;
+    //}
     fn set_vertex_buffer(&mut self, vertex_buffer : glium::VertexBuffer<Self::VertexType>) {
         self.vertex_buffer = vertex_buffer;
     }
@@ -115,9 +115,9 @@ impl<'a> Graphics<'a,Vec3> for Graphics3d<'a> {
         self.program = program;
     }
 
-    fn new_index_buffer(&mut self, vertis : &Vec<VertIndex>) {
+    fn new_index_buffer(&mut self, vertis : &Vec<VertIndex>, display : &Display) {
         self.index_buffer = glium::IndexBuffer::dynamic(
-                self.display,
+                display,
                 glium::index::PrimitiveType::LinesList
                 ,&&Self::vertis_to_gl(&vertis)
             )

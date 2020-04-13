@@ -12,76 +12,76 @@ mod draw;
 mod colors;
 mod graphics;
 mod game;
+mod engine;
 mod input;
 mod build_level;
 
 
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
-use glium::Surface;
-use glium::glutin::event_loop::EventLoop;
-//use glium::glutin::platform::desktop::EventLoopExtDesktop;
 
-//use glium_text_rusttype as glium_text;
+use glium::glutin::event_loop::EventLoop;
+use glium::Display;
+
 use std::time;
-use vector::PI;
 
 //NOTES:
 // include visual indicator of what direction a collision is in
-use crate::graphics::Graphics;
+
+use crate::input::Input;
+use engine::Engine;
+
+
 //threading imports
-use std::thread;
-use std::sync::mpsc;
-use std::sync::{Mutex, Arc};
+//use std::thread;
+//use std::sync::mpsc;
+//use std::sync::{Mutex, Arc};
+
 fn main() {
-    use crate::input::Input;
+    
     use glutin::{
         event::{Event, WindowEvent},
-        event_loop::{ControlFlow, EventLoop},
-        window::WindowBuilder,
+        event_loop::ControlFlow,
     };
-    //test_glium_text();
+
     let (event_loop, display) = init_glium();
-
-    //more window settings
-    //let window_context = display.gl_window();
-    //let window = window_context.window();
-    //display.gl_window().window().set_always_on_top(true);
-    //window.set_always_on_top(true);
-    //window.set_cursor_grab(false).unwrap();
-
     let mut input = Input::new();
-    //let (tx, rx) = mpsc::channel();
 
-    thread::spawn(move || {
-        //game.draw_update(&mut graphics);
-        //     for received in rx {
-        //         println!("Got: {}", received);
-        // }
-        let mut graphics = crate::graphics::Graphics2d::new(&display);
-        let mut game = game::Game::new(game::build_shapes_3d(),&mut graphics);
-    });
-    //let val = String::from("hi");
-    //tx.send(val).unwrap();
+    let mut dim = 3;
+    let mut engine = Engine::init(dim,&display);
+
+    let start_instant = time::Instant::now();
+    let mut last_instant = time::Instant::now();
+    let mut game_duration = time::Instant::now().duration_since(start_instant);
+    let mut frame_duration = time::Instant::now().duration_since(last_instant);
+
+    input.closed = false;
+    
+    //POINT OF NO RETURN. Thanks winit
     event_loop.run(move |event, _, control_flow| {
-
         
         // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
         // dispatched any events. This is ideal for games and similar applications.
         *control_flow = ControlFlow::Poll;
 
-        // ControlFlow::Wait pauses the event loop if no events are available to process.
-        // This is ideal for non-game applications that only update in response to user
-        // input, and uses significantly less power/CPU time than ControlFlow::Poll.
-        *control_flow = ControlFlow::Wait;
+        //could use for menus??
+        //*control_flow = ControlFlow::Wait;
 
+        //swap / reset engine
+        if input.swap_engine {
+            dim = match dim {
+                3 => Ok(4), 4 => Ok(3), _ => Err("Invalid dimension") 
+            }.unwrap();
+            engine = Engine::init(dim,&display);
+            input.swap_engine = false;
+        }
+        //input events
         input.listen_events(&event);
-        
-        // if input.pressed.w {
-        //     let val = String::from("hi");
-        //     tx.send(val).unwrap();
-        // }
-        
+        if input.closed {
+            println!("Escape button pressed; exiting.");
+            *control_flow = ControlFlow::Exit;
+        }
+        //window / game / redraw events
         match event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -92,40 +92,48 @@ fn main() {
             },
             Event::MainEventsCleared => {
                 // Application update code.
-
+                game_duration = time::Instant::now().duration_since(start_instant);
+                frame_duration = time::Instant::now().duration_since(last_instant);
+                last_instant = time::Instant::now();
                 // Queue a RedrawRequested event.
-                //window.request_redraw();
+                engine.game_update(&mut input, &frame_duration);
+                if input.update {
+                    display.gl_window().window().request_redraw();
+                }
             },
             Event::RedrawRequested(_) => {
                 // Redraw the application.
-                //
-                // It's preferrable to render in this event rather than in MainEventsCleared, since
-                // rendering in here allows the program to gracefully handle redraws requested
-                // by the OS.
-                
+                engine.draw(&display);
+                engine.print_debug(&mut input, &frame_duration); 
             },
             _ => ()
         }
     });
-
 }
 
 fn init_glium() -> (EventLoop<()>,  glium::Display) {
-        use glutin::{window::WindowBuilder};
-        //use glutin::window::WindowBuilder;
-        let event_loop = glutin::event_loop::EventLoop::new();
-        let size = LogicalSize{width : 1024.0,height : 768.0};
-        let wb = glutin::window::WindowBuilder::new()
-            .with_inner_size(size)
-            .with_title("dim4");
 
-        let cb = glutin::ContextBuilder::new();
-        let display = glium::Display::new(wb, cb, &event_loop).unwrap();
+    let event_loop = glutin::event_loop::EventLoop::new();
+    let size = LogicalSize{width : 1024.0,height : 768.0};
+    let wb = glutin::window::WindowBuilder::new()
+        .with_inner_size(size)
+        .with_title("dim4");
 
-            //fullscreen
-            //window.set_fullscreen(Some(window.get_current_monitor()));
-        //let window = WindowBuilder::new().build(&event_loop).unwrap();
-        (event_loop,display)
-    }
+    let cb = glutin::ContextBuilder::new();
+    let display = glium::Display::new(wb, cb, &event_loop).unwrap();
+    
+    //borrow issues here
+    //more window settings
+    //let window_context = display.gl_window();
+    // let window = display.gl_window().window();
+    // display.gl_window().window().set_always_on_top(true);
+    // window.set_always_on_top(true);
+    //window.set_cursor_grab(false).unwrap();
+    //fullscreen
+    //window.set_fullscreen(Some(window.get_current_monitor()));
+    //let window = WindowBuilder::new().build(&event_loop).unwrap();
+
+    (event_loop,display)
+}
 
 

@@ -1,3 +1,4 @@
+use glium::Display;
 use crate::geometry::{Shape,Line};
 use crate::geometry::buildshapes;
 use crate::vector::{VectorTrait,Vec3,Vec4};
@@ -8,6 +9,7 @@ use crate::clipping::ClipState;
 use crate::input::Input;
 use crate::graphics::Graphics;
 use crate::draw;
+use crate::time;
 
 pub struct Game<V : VectorTrait> {
     pub shapes : Vec<Shape<V>>,
@@ -21,8 +23,7 @@ pub struct Game<V : VectorTrait> {
 impl<V> Game<V>
 where V: VectorTrait
 {
-    pub fn new<'a,G>(shapes : Vec<Shape<V>>, graphics : &mut G) -> Self
-    where G: Graphics<'a,V::SubV>
+    pub fn new(shapes : Vec<Shape<V>>) -> Self
     {
         //let graphics = crate::graphics::Graphics3d::new(display);
         
@@ -42,8 +43,6 @@ where V: VectorTrait
         new_game.draw_lines = new_game.draw_stuff();
         //new_game.draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
         new_game.cur_lines_length = new_game.draw_lines.len();
-
-        graphics.new_vertex_buffer_from_lines(&new_game.draw_lines);
 
         new_game
     }
@@ -70,7 +69,7 @@ where V: VectorTrait
                 lines
             }, &self.camera)
     }
-    pub fn game_update(&mut self, input : &mut Input) {
+    pub fn game_update(&mut self, input : &mut Input, frame_len : &time::Duration ) {
         if input.update {
             //if input.pressed.being_touched {
             if false {
@@ -78,46 +77,28 @@ where V: VectorTrait
                 self.shapes[shapes_len-1].rotate(0,-1,0.05);
 
             }
+            input.update_camera(&mut self.camera, frame_len);
+
+        let shapes_len = self.shapes.len();
+        input.update_shape(&mut self.shapes[shapes_len-1]);
+        
+        //input.print_debug(&self.camera,&game_duration,&frame_duration,&mut clip_state,&shapes);
             input.update = true; //set to true for constant updating
         }
 
     }
-    pub fn draw_update<'a,G>(&mut self, graphics : &mut G)
-    where G : Graphics<'a,V::SubV>
+    pub fn draw_update<G>(&mut self, graphics : &mut G, display : &Display)
+    where G : Graphics<V::SubV>
     {
+        self.draw_lines = self.draw_stuff();
 
-        // let start_instant = time::Instant::now();
-        // let mut last_instant = time::Instant::now();
-        // let mut game_duration : time::Duration;
-        // let mut frame_duration : time::Duration;
-        // input.closed = false;
-
-        //while !input.closed && !input.swap_engine {
-        // if input.closed || input.swap_engine {
-        //     return;
-        // }
-        
-
-            self.draw_lines = self.draw_stuff();
-
-            //make new buffer if the number of lines changes
-            if self.draw_lines.len() != self.cur_lines_length {
-                graphics.new_vertex_buffer_from_lines(&self.draw_lines);
-                //println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
-                self.cur_lines_length = self.draw_lines.len();
-            }
-            graphics.draw_lines(&self.draw_lines);
-        
-        //input.listen_events(event);
-
-        //game_duration = time::Instant::now().duration_since(start_instant);
-        //frame_duration = time::Instant::now().duration_since(last_instant);
-        //last_instant = time::Instant::now();
-        //input.update_camera(&mut self.camera, &frame_duration);
-        //let shapes_len = shapes.len();
-        //input.update_shape(&mut self.shapes[shapes_len-1]);
-        
-        //input.print_debug(&camera,&game_duration,&frame_duration,&mut clip_state,&shapes);
+        //make new buffer if the number of lines changes
+        if self.draw_lines.len() != self.cur_lines_length {
+            graphics.new_vertex_buffer_from_lines(&self.draw_lines,display);
+            //println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
+            self.cur_lines_length = self.draw_lines.len();
+        }
+        graphics.draw_lines(&self.draw_lines,display);
     }
 }
 
