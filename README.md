@@ -21,7 +21,6 @@ Currently uses flying tank controls for movement:
 - <kbd>C</kbd> Toggles clipping
 
 ## To do:
-- update to newest version of winit
 - Faster rendering pipeline
 - Collisions
 - Level design and spatial challenges
