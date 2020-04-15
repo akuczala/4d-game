@@ -98,6 +98,7 @@ impl<V : VectorTrait> Face<V> {
 
       threshold : 0.0,
 
+      //change texture to reference
       texture : Texture::DefaultLines{color : WHITE},
       texture_mapping : TextureMapping{frame_vertis : Vec::new(), origin_verti : 0}, //this is pretty sloppy
       visible: true,

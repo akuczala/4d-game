@@ -9,12 +9,14 @@ mod clipping;
 #[allow(dead_code)]
 mod draw;
 #[allow(dead_code)]
+mod camera;
 mod colors;
 mod graphics;
 mod game;
 mod engine;
 mod input;
 mod build_level;
+mod object;
 
 
 use glium::glutin;

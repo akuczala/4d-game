@@ -4,7 +4,7 @@ use crate::geometry::buildshapes;
 use crate::vector::{VectorTrait,Vec3,Vec4};
 use crate::colors::*;
 use crate::build_level;
-use crate::draw::Camera;
+use crate::camera::Camera;
 use crate::clipping::ClipState;
 use crate::input::Input;
 use crate::graphics::Graphics;

@@ -105,8 +105,31 @@ pub trait MatrixTrait<V>: Display + Copy + Add<Output=Self> + Sub<Output=Self>
 }
 
 
-
-
+pub trait Translatable<V : VectorTrait> {
+  fn get_pos(&self) -> V;
+  fn set_pos(&mut self, new_pos : V);
+  fn set_pos_into(mut self, new_pos : V) -> Self
+  where Self: std::marker::Sized  {
+    self.set_pos(new_pos);
+    self
+  }
+  fn translate(&mut self, dpos  : V) {
+    self.set_pos(self.get_pos() + dpos);
+  }
+}
+pub trait Rotatable<V : VectorTrait> {
+  fn get_frame(&self) -> V::M;
+  fn set_frame(&mut self, new_frame : V::M);
+  fn set_frame_into(mut self, new_frame : V::M) -> Self
+  where Self: std::marker::Sized  {
+    self.set_frame(new_frame);
+    self
+  }
+  fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) {
+      let rot_mat = rotation_matrix(self.get_frame()[axis1],self.get_frame()[axis2],Some(angle));
+      self.set_frame(self.get_frame().dot(rot_mat));
+  }
+}
 
 pub fn rotation_matrix<V>(v1 : V, v2: V, th : Option<Field>)-> V::M
 where V : VectorTrait

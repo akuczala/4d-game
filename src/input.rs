@@ -4,7 +4,7 @@ use glutin::event::ElementState::{Pressed,Released};
 
 use std::time::Duration;
 
-use crate::draw::Camera;
+use crate::camera::Camera;
 use crate::vector::{VectorTrait,MatrixTrait,Field};
 use crate::geometry::Shape;
 use std::time;
@@ -109,28 +109,28 @@ impl Input {
         } else {
            //rotation
             if self.pressed.d {
-                camera.rotate(0,-1,frame_time);
+                camera.spin(0,-1,frame_time);
                 self.update = true;
             }
             if self.pressed.a {
-                camera.rotate(0,-1,-frame_time);
+                camera.spin(0,-1,-frame_time);
                 self.update = true;
             }
             if self.pressed.i {
-                camera.rotate(1,-1,frame_time);
+                camera.spin(1,-1,frame_time);
                 self.update = true;
             }
             if self.pressed.k {
-                camera.rotate(1,-1,-frame_time);
+                camera.spin(1,-1,-frame_time);
                 self.update = true;
             }
             if self.pressed.shift {
                 if self.pressed.j {
-                camera.rotate(0,2,-frame_time);
+                camera.spin(0,2,-frame_time);
                 self.update = true;
                 }
                 if self.pressed.l {
-                    camera.rotate(0,2,frame_time);
+                    camera.spin(0,2,frame_time);
                     self.update = true;
                 }
                 //reset orientation
@@ -142,11 +142,11 @@ impl Input {
                 }
             } else {
                 if self.pressed.j {
-                camera.rotate(2,-1,-frame_time);
+                camera.spin(2,-1,-frame_time);
                 self.update = true;
                 }
                 if self.pressed.l {
-                    camera.rotate(2,-1,frame_time);
+                    camera.spin(2,-1,frame_time);
                     self.update = true;
                 }
                 
@@ -225,6 +225,11 @@ impl Input {
                                 
                                 },
                             //match_press![W,S,A,D]
+                            // use VKC{Space,W,S,A,D,I,K,J,L,T,C,LAlt,LShift};
+                            // for k in vec![Space,W,S,A,D,I,K,J,L,T,C,LAlt,LShift]
+                            // {
+                            //     Some(k) => 
+                            // }
 							Some(VKC::Space) => pressed.space = pressed_state,
                     		Some(VKC::W) => pressed.w = pressed_state,
                     		Some(VKC::S) => pressed.s = pressed_state,
