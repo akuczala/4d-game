@@ -16,7 +16,7 @@ mod game;
 mod engine;
 mod input;
 mod build_level;
-//mod object;
+mod object;
 
 
 use glium::glutin;

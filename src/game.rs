@@ -1,5 +1,6 @@
 use glium::Display;
-use crate::geometry::{Shape,Line};
+use crate::geometry::{Line};
+use crate::object::Object;
 use crate::geometry::buildshapes;
 use crate::vector::{VectorTrait,Vec3,Vec4};
 use crate::colors::*;
@@ -12,7 +13,7 @@ use crate::draw;
 use crate::time;
 
 pub struct Game<V : VectorTrait> {
-    pub shapes : Vec<Shape<V>>,
+    pub shapes : Vec<Object<V>>,
     pub extra_lines : Vec<Line<V>>,
     pub camera : Camera<V>,
     pub clip_state : ClipState<V>,
