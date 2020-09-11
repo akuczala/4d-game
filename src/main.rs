@@ -16,6 +16,7 @@ mod game;
 mod engine;
 mod input;
 mod build_level;
+mod fps;
 //mod object;
 
 
@@ -25,19 +26,19 @@ use glium::glutin::dpi::LogicalSize;
 use glium::glutin::event_loop::EventLoop;
 use glium::Display;
 
-use std::time;
 
 //NOTES:
 // include visual indicator of what direction a collision is in
 
 use crate::input::Input;
 use engine::Engine;
-
-
+use fps::FPSTimer;
+//use spin_sleep::{LoopHelper};
 //threading imports
 //use std::thread;
 //use std::sync::mpsc;
 //use std::sync::{Mutex, Arc};
+
 
 fn main() {
     
@@ -52,17 +53,20 @@ fn main() {
     let mut dim = 3;
     let mut engine = Engine::init(dim,&display);
 
-    let start_instant = time::Instant::now();
-    let mut last_instant = time::Instant::now();
-    let mut game_duration = time::Instant::now().duration_since(start_instant);
-    let mut frame_duration = time::Instant::now().duration_since(last_instant);
+    //let start_instant = time::Instant::now();
+    //let mut last_instant = time::Instant::now();
+    //let mut game_duration = time::Instant::now().duration_since(start_instant);
+    //let mut frame_duration = time::Instant::now().duration_since(last_instant);
 
     input.closed = false;
     
+    let mut fps_timer = FPSTimer::new();
+
     //POINT OF NO RETURN. Thanks winit
     event_loop.run(move |event, _, control_flow| {
-        
-        // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
+
+        fps_timer.start();
+        //ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
         // dispatched any events. This is ideal for games and similar applications.
         *control_flow = ControlFlow::Poll;
 
@@ -94,11 +98,12 @@ fn main() {
             },
             Event::MainEventsCleared => {
                 // Application update code.
-                game_duration = time::Instant::now().duration_since(start_instant);
-                frame_duration = time::Instant::now().duration_since(last_instant);
-                last_instant = time::Instant::now();
+               //game_duration = time::Instant::now().duration_since(start_instant);
+                
                 // Queue a RedrawRequested event.
-                engine.game_update(&mut input, &frame_duration);
+                
+                engine.game_update(&mut input, fps_timer.get_frame_length());
+
                 if input.update {
                     display.gl_window().window().request_redraw();
                 }
@@ -106,10 +111,16 @@ fn main() {
             Event::RedrawRequested(_) => {
                 // Redraw the application.
                 engine.draw(&display);
-                engine.print_debug(&mut input, &frame_duration); 
+                engine.print_debug(&mut input, fps_timer.get_frame_length()); 
+                
             },
             _ => ()
         }
+
+        *control_flow = match *control_flow {
+            ControlFlow::Exit => ControlFlow::Exit,
+            _ => ControlFlow::WaitUntil(fps_timer.end())
+        };
     });
 }
 

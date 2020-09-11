@@ -347,7 +347,6 @@ where V : VectorTrait
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
 		for face in &shape.faces {
-			//shape_lines.append(&mut calc_face_lines_old(face,&shape,&face_scale));
 			shape_lines.append(&mut face.texture_mapping.draw(face, &shape, &face_scale))
 		}
 		//clip these lines and append to list

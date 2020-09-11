@@ -7,7 +7,9 @@ use std::time::Duration;
 use crate::camera::Camera;
 use crate::vector::{VectorTrait,MatrixTrait,Field};
 use crate::geometry::Shape;
-use std::time;
+
+use crate::fps::FPSFloat;
+
 use crate::game::Game;
 
 use glutin::event::{Event,WindowEvent};
@@ -68,9 +70,10 @@ impl Input {
     //const SPEED : Field = 0.01;
 
     pub fn update_camera<V : VectorTrait>(&mut self, camera : &mut Camera<V>,
-        frame_duration : &Duration)
+        frame_duration : FPSFloat)
     {
-        let frame_time = duration_as_field(frame_duration) as Field;
+        //let frame_time = duration_as_field(frame_duration) as Field;
+        let frame_time = frame_duration as Field;
         //fowards + backwards
         if self.pressed.w {
             camera.slide(camera.heading,frame_time);
@@ -165,14 +168,14 @@ impl Input {
         }
     }
 
-    pub fn print_debug<V : VectorTrait>(&mut self, game : &mut Game<V>, frame_len : &time::Duration)
+    pub fn print_debug<V : VectorTrait>(&mut self, game : &mut Game<V>, frame_seconds : FPSFloat)
     {
         if !self.pressed.space && !self.pressed.shift {
             //println!("camera.pos = {}",camera.pos);
             //rintln!("camera.heading = {}",camera.heading);
             //println!("camera.frame = {}",camera.frame);
             //println!("game time elapsed: {}", duration_as_field(game_time));
-            let frame_seconds = duration_as_field(frame_len);
+            //let frame_seconds = duration_as_field(frame_len);
             println!("frame time: {}, fps: {}", frame_seconds,1.0/frame_seconds);
             //clipping::print_in_front(&clip_state.in_front);
             //clip_state.print_debug();

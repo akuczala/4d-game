@@ -9,7 +9,8 @@ use crate::clipping::ClipState;
 use crate::input::Input;
 use crate::graphics::Graphics;
 use crate::draw;
-use crate::time;
+
+use crate::fps::FPSFloat;
 
 pub struct Game<V : VectorTrait> {
     pub shapes : Vec<Shape<V>>,
@@ -56,10 +57,17 @@ where V: VectorTrait
             //let extra_lines = self.extra_lines;
             //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
             //let face_scales = vec![0.3,0.5,0.8,1.0];
-            let face_scales = vec![0.7];
 
+            //for each shape, update clipping boundaries and face visibility
             draw::update_shape_visibility(&self.camera, &mut self.shapes, &self.clip_state);
+
+            //determine what shapes are in front of other shapes
             self.clip_state.calc_in_front(&mut self.shapes,& self.camera.pos);
+
+            //draw lines
+            //let face_scales = vec![0.2,0.5,0.7,0.9];
+            let face_scales = vec![0.8,0.9];
+
             draw::transform_draw_lines(
             {
                 let mut lines = draw::calc_shapes_lines(&mut self.shapes,&face_scales,&self.clip_state);
@@ -69,10 +77,12 @@ where V: VectorTrait
                 lines
             }, &self.camera)
     }
-    pub fn game_update(&mut self, input : &mut Input, frame_len : &time::Duration ) {
+    pub fn game_update(&mut self, input : &mut Input, frame_len : FPSFloat ) {
+        
+
         if input.update {
             //if input.pressed.being_touched {
-            if false {
+            if true {
                 let shapes_len = self.shapes.len();
                 self.shapes[shapes_len-1].rotate(0,-1,0.05);
 
@@ -102,9 +112,6 @@ where V: VectorTrait
     }
 }
 
-impl Game<Vec3> {
-
-}
 pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
 
     build_level::build_lvl_1_3d()

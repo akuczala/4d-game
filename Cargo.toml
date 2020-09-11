@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 itertools = "0.8.0"
-glium = "*"
+glium = "0.27.0"
 #glium_text = "0.14.0"
 #glium_text_rusttype = "0.3.2"
 freetype = "0.4.1"
@@ -14,3 +14,4 @@ cgmath = "0.17.0"
 colored = "1.8"
 take_mut = "0.2.2"
 map_in_place = "0.1.0"
+spin_sleep = "1.0.0"

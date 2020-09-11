@@ -12,7 +12,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
             draw::Texture::DefaultLines{color} => color,
             _ => panic!("build corridor cross expected DefaultLines") //don't bother handling the other cases
             };
-            face.texture = draw::Texture::make_tile_texture(&vec![0.4,0.7,1.0],
+            face.texture = draw::Texture::make_tile_texture(&vec![0.8,0.9],
             & match V::DIM {
                 3 => vec![3,1],
                 4 => vec![3,1,1],

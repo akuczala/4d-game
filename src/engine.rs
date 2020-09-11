@@ -3,8 +3,6 @@
 
 use glium::Display;
 
-use std::time;
-
 //NOTES:
 // include visual indicator of what direction a collision is in
 
@@ -13,6 +11,7 @@ use crate::game::Game;
 use crate::game;
 use crate::graphics::{Graphics,Graphics2d,Graphics3d};
 use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait};
+use crate::fps::FPSFloat;
 
 pub struct EngineD<V : VectorTrait,G : Graphics<V::SubV>> {
     game : Game<V>,
@@ -20,14 +19,14 @@ pub struct EngineD<V : VectorTrait,G : Graphics<V::SubV>> {
 }
 impl<V,G> EngineD<V,G>
 where V : VectorTrait, G : Graphics<V::SubV> {
-    fn game_update(&mut self, input : &mut Input, frame_len : &time::Duration) {
+    fn game_update(&mut self, input : &mut Input, frame_len : FPSFloat) {
         self.game.game_update(input, frame_len);
     }
     fn draw(&mut self, display : &Display) {
         self.game.draw_update(&mut self.graphics,display);
     }
-    fn print_debug(&mut self, input : &mut Input, frame_len : &time::Duration) {
-       input.print_debug(&mut self.game, &frame_len);
+    fn print_debug(&mut self, input : &mut Input, frame_len : FPSFloat) {
+       input.print_debug(&mut self.game, frame_len);
     }
 }
 impl EngineD<Vec3,Graphics2d> {
@@ -64,7 +63,7 @@ impl Engine {
             _ => Err("Invalid dimension for game engine")
         }.unwrap()
     }
-    pub fn game_update(&mut self, input : &mut Input, frame_len : &time::Duration) {
+    pub fn game_update(&mut self, input : &mut Input, frame_len : FPSFloat) {
         match self {
                     Engine::Three(e) => e.game_update(input, frame_len),
                     Engine::Four(e) => e.game_update(input, frame_len),
@@ -76,7 +75,7 @@ impl Engine {
             Engine::Four(e) => e.draw(display)
         };
     }
-    pub fn print_debug(&mut self, input : &mut Input, frame_len : &time::Duration) {
+    pub fn print_debug(&mut self, input : &mut Input, frame_len : FPSFloat) {
         match self {
             Engine::Three(e) => e.print_debug(input, frame_len),
             Engine::Four(e) => e.print_debug(input, frame_len)

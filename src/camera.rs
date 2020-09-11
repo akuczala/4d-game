@@ -15,8 +15,8 @@ where V : VectorTrait
 impl<V> Camera<V>
 where V : VectorTrait
 {
-	const SPEED : Field = 2.0;
-	const ANG_SPEED : Field = 2.0*3.14159/3.0;
+	const SPEED : Field = 1.5;
+	const ANG_SPEED : Field = 1.5*3.14159/3.0;
 
 	pub fn new(pos : V) -> Camera<V> {
 		Camera{
