@@ -2,26 +2,36 @@ use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 use crate::draw::DrawLine;
 
+use specs::{Component,System,VecStorage, WriteStorage,Read,Write,ReadStorage,Join};
+
+#[derive(Component)]
+#[storage(VecStorage)]
 pub struct ClipState<V : VectorTrait> {
     pub in_front : Vec<Vec<bool>>,
     pub separators : Vec<Vec<Separator<V>>>,
     pub separations_debug : Vec<Vec<Separation>>, //don't need this, but is useful for debug
     pub clipping_enabled : bool,
 }
+impl<V : VectorTrait> Default for ClipState<V> {
+    fn default() -> Self {ClipState::new(0)}
+}
 impl<V : VectorTrait> ClipState<V> {
-    pub fn new(shapes : &Vec<Shape<V>>) -> Self {
+    pub fn new(shapes_len : usize) -> Self {
+        //let shapes : Vec<&Shape<V>> = (&read_shapes).join().collect();
         ClipState {
-            in_front : vec![vec![false ; shapes.len()] ; shapes.len()],
-            separations_debug :vec![vec![Separation::Unknown ; shapes.len()] ; shapes.len()],
-            separators : vec![vec![Separator::Unknown ; shapes.len()] ; shapes.len()],
+            in_front : vec![vec![false ; shapes_len] ; shapes_len],
+            separations_debug :vec![vec![Separation::Unknown ; shapes_len] ; shapes_len],
+            separators : vec![vec![Separator::Unknown ; shapes_len] ; shapes_len],
             clipping_enabled : true,
         }
     }
     pub fn calc_in_front(
         &mut self,
-        shapes : &Vec<Shape<V>>,
+        read_shapes : ReadStorage<Shape<V>>,
         origin : &V
     ) {
+        //collect a vec of references to shapes
+        let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
         //loop over unique pairs
         for i in 0..shapes.len() {
             for j in i+1 .. shapes.len() {
@@ -166,7 +176,7 @@ pub fn clip_line<V : VectorTrait>(
 
 pub fn clip_draw_lines<V : VectorTrait>(
     lines : Vec<Option<DrawLine<V>>>,
-    shapes: &Vec<Shape<V>>,
+    shapes: &[Shape<V>],
     shape_in_front : Option<&Vec<bool>>
     ) ->  Vec<Option<DrawLine<V>>>
 {

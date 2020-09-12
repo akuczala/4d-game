@@ -12,8 +12,11 @@ use crate::draw;
 
 use crate::fps::FPSFloat;
 
+use specs::prelude::*;
+
 pub struct Game<V : VectorTrait> {
-    pub shapes : Vec<Shape<V>>,
+    pub world : World,
+    //pub shapes : Vec<Shape<V>>,
     pub extra_lines : Vec<Line<V>>,
     pub camera : Camera<V>,
     pub clip_state : ClipState<V>,
@@ -26,29 +29,41 @@ where V: VectorTrait
 {
     pub fn new(shapes : Vec<Shape<V>>) -> Self
     {
-        //let graphics = crate::graphics::Graphics3d::new(display);
-        
-        //let shapes : Vec<Shape<V>> = vec![];
+        let mut world = World::new();
+        world.register::<Shape<V>>();
+
+        //change to into_iter, remove cloning
+        for shape in shapes.into_iter() {
+            world.create_entity().with(shape).build();
+        }
 
         let extra_lines : Vec<Line<V>> = Vec::new();
         let camera = Camera::new(V::zero());
         let mut new_game = Game {
-                shapes,
+                world,
                 extra_lines,
                 camera,
-                clip_state : ClipState::new(&vec![]),
+                clip_state : ClipState::new(0),
                 draw_lines : vec![],
                 cur_lines_length : 0
             };
-        new_game.clip_state = ClipState::new(&new_game.shapes);
+        let shapes_len = new_game.get_shapes().as_slice().len();
+        new_game.clip_state = ClipState::new(shapes_len);
         new_game.draw_lines = new_game.draw_stuff();
         //new_game.draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
         new_game.cur_lines_length = new_game.draw_lines.len();
 
         new_game
     }
-    pub fn build_shapes(&self) -> Vec<Shape<V>> {
-        vec![]
+
+    //temporary functions to accomodate non-ecs code
+    //required changing function arguments from Vec to slice
+    pub fn get_shapes<'a>(&'a self) -> ReadStorage<'a,Shape<V>> {
+        //let data : ReadStorage<Shape<V>> = self.world.system_data();
+        return self.world.system_data()
+    }
+    pub fn get_mut_shapes(&mut self) -> WriteStorage<Shape<V>> {
+       self.world.system_data()
     }
     pub fn draw_stuff(&mut self) -> Vec<Option<draw::DrawLine<V::SubV>>> {
             //let mut shapes = self.shapes;
@@ -59,10 +74,19 @@ where V: VectorTrait
             //let face_scales = vec![0.3,0.5,0.8,1.0];
 
             //for each shape, update clipping boundaries and face visibility
-            draw::update_shape_visibility(&self.camera, &mut self.shapes, &self.clip_state);
+            let mut dispatcher = DispatcherBuilder::new()
+                //.with(DrawSystem,"draw",&[])
+                .with(draw::VisibilitySystem(V::zero()),"visibility",&[])
+                //.with(MeshUpdateSystem,"update_mesh",&[])
+                //.with(DrawSystem,"draw_updated",&["update_mesh"])
+                .build();
+
+            dispatcher.dispatch(&mut self.world);
+
+            //draw::update_shape_visibility(&self.camera, &mut self.shapes, &self.clip_state);
 
             //determine what shapes are in front of other shapes
-            self.clip_state.calc_in_front(&mut self.shapes,& self.camera.pos);
+            self.clip_state.calc_in_front(self.get_shapes(),& self.camera.pos);
 
             //draw lines
             //let face_scales = vec![0.2,0.5,0.7,0.9];
@@ -70,9 +94,9 @@ where V: VectorTrait
 
             draw::transform_draw_lines(
             {
-                let mut lines = draw::calc_shapes_lines(&mut self.shapes,&face_scales,&self.clip_state);
+                let mut lines = draw::calc_shapes_lines(self.get_mut_shapes(),&face_scales,&self.clip_state);
                 lines.append(&mut crate::draw::calc_lines_color_from_ref(
-                    &self.shapes,
+                    self.get_shapes().as_slice(),
                     &self.extra_lines,CYAN));
                 lines
             }, &self.camera)
@@ -83,14 +107,14 @@ where V: VectorTrait
         if input.update {
             //if input.pressed.being_touched {
             if true {
-                let shapes_len = self.shapes.len();
-                self.shapes[shapes_len-1].rotate(0,-1,0.05);
+                let shapes_len = self.get_shapes().as_slice().len();
+                self.get_shapes().as_slice()[shapes_len-1].rotate(0,-1,0.05);
 
             }
             input.update_camera(&mut self.camera, frame_len);
 
-        let shapes_len = self.shapes.len();
-        input.update_shape(&mut self.shapes[shapes_len-1]);
+        let shapes_len = self.get_shapes().as_slice().len();
+        input.update_shape(&mut self.get_mut_shapes().as_mut_slice()[shapes_len-1]);
         
         //input.print_debug(&self.camera,&game_duration,&frame_duration,&mut clip_state,&shapes);
             input.update = true; //set to true for constant updating

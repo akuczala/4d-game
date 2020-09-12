@@ -25,7 +25,10 @@ pub fn scalar_linterp(a : Field, b : Field, t : Field) -> Field {
 }
 //consider using #![feature(associated_consts)]
 //to define vector dimension (might not need to explicity use feature?)
-pub trait VectorTrait: Copy + Display +
+
+//the 'static lifetime here tells the compiler that any type with the vector trait
+//does not hold any references that might require lifetimes
+pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
  Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
  Mul<Field,Output=Self> + Div<Field,Output=Self> +
  Index<VecIndex,Output=Field> + IndexMut<VecIndex>
@@ -85,7 +88,8 @@ where V : VectorTrait
   viter.fold(V::zero(),|sum,val| sum + *val)/(viter.len() as Field)
 }
 
-pub trait MatrixTrait<V>: Display + Copy + Add<Output=Self> + Sub<Output=Self> 
+pub trait MatrixTrait<V>: Display + Copy + Sync + Send + 'static +
+  Add<Output=Self> + Sub<Output=Self> 
 //+ Mul<Field,Output=Self> + Mul<Self,Output=Self>
  + Mul<V,Output=V> //weirdly only the last Mul is remembered
  + Index<VecIndex,Output=V>

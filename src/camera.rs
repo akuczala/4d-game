@@ -1,8 +1,12 @@
+use specs::{Component,
+            System, VecStorage, WriteStorage};
 
 use crate::vector::{VectorTrait,MatrixTrait,Field,
 	VecIndex,rotation_matrix,Rotatable,Translatable};
 use crate::geometry::{Plane};
 
+#[derive(Component)]
+#[storage(VecStorage)]
 pub struct Camera<V>
 where V : VectorTrait
 {

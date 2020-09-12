@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate glium;
+#[macro_use] extern crate glium;
 #[macro_use] extern crate itertools;
 #[allow(dead_code)]
 mod vector;
@@ -15,6 +14,7 @@ mod graphics;
 mod game;
 mod engine;
 mod input;
+#[allow(dead_code)]
 mod build_level;
 mod fps;
 //mod object;
@@ -24,7 +24,7 @@ use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 
 use glium::glutin::event_loop::EventLoop;
-use glium::Display;
+
 
 
 //NOTES:
@@ -52,11 +52,6 @@ fn main() {
 
     let mut dim = 3;
     let mut engine = Engine::init(dim,&display);
-
-    //let start_instant = time::Instant::now();
-    //let mut last_instant = time::Instant::now();
-    //let mut game_duration = time::Instant::now().duration_since(start_instant);
-    //let mut frame_duration = time::Instant::now().duration_since(last_instant);
 
     input.closed = false;
     
