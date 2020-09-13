@@ -31,18 +31,20 @@ where V : VectorTrait, G : Graphics<V::SubV> {
 }
 impl EngineD<Vec3,Graphics2d> {
     fn init(display : &Display) -> Self {
+        println!("Starting 3d engine");
         let game = Game::new(game::build_shapes_3d());
         let mut graphics = Graphics2d::new(display);
-        graphics.new_vertex_buffer_from_lines(&game.draw_lines,display);
+        graphics.new_vertex_buffer_from_lines(&vec![],display);
 
         Self{game, graphics}
     }
 }
 impl EngineD<Vec4,Graphics3d> {
     fn init(display : &Display) -> Self {
+        println!("Starting 4d engine");
         let game = Game::new(game::build_shapes_4d());
         let mut graphics = Graphics3d::new(display);
-        graphics.new_vertex_buffer_from_lines(&game.draw_lines,display);
+        graphics.new_vertex_buffer_from_lines(&vec![],display);
 
         Self{game, graphics}
     }

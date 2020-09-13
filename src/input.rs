@@ -185,8 +185,9 @@ impl Input {
         }
         //toggle clipping
         if !self.pressed.c {
-            game.clip_state.clipping_enabled = !game.clip_state.clipping_enabled;
-            println!("clipping={}",game.clip_state.clipping_enabled);
+            //TEMPORARILY DISABLED
+            //game.clip_state.clipping_enabled = !game.clip_state.clipping_enabled;
+            //println!("clipping={}",game.clip_state.clipping_enabled);
             self.pressed.c = true;
             self.update = true;
         }

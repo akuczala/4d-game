@@ -8,9 +8,9 @@ use crate::camera::Camera;
 
 pub struct InFrontSystem<V : VectorTrait>(pub V);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
-    type SystemData = (Read<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,ReadExpect<'a,Camera<V>>);
+    type SystemData = (Write<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,ReadExpect<'a,Camera<V>>);
 
-    fn run(&mut self, (clip_state,shape_data,camera) : Self::SystemData) {
+    fn run(&mut self, (mut clip_state,shape_data,camera) : Self::SystemData) {
         calc_in_front(&mut clip_state,shape_data.as_slice(),&camera.pos);
     }
 }
@@ -187,16 +187,16 @@ pub fn clip_line<V : VectorTrait>(
 
 pub fn clip_draw_lines<V : VectorTrait>(
     lines : Vec<Option<DrawLine<V>>>,
-    shapes: ReadStorage<Shape<V>>,
+    shapes: &ReadStorage<Shape<V>>,
     shape_in_front : Option<&Vec<bool>>
     ) ->  Vec<Option<DrawLine<V>>>
 {
     let mut clipped_lines = lines;
     let clipping_shapes : Vec<&Shape<V>> = match shape_in_front {
-        Some(in_fronts) => (&shapes).join().zip(in_fronts)
+        Some(in_fronts) => shapes.join().zip(in_fronts)
             .filter(|(_shape,&front)| front)
             .map(|(shape,_front)| shape).collect(),
-        None => (&shapes).join().collect()
+        None => shapes.join().collect()
     };
     for clipping_shape in clipping_shapes {
         //compare pointers

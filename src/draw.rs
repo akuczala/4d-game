@@ -1,4 +1,8 @@
 mod texture;
+use specs::{ReadStorage,WriteStorage,ReadExpect,WriteExpect,Read,System,Join};
+extern crate map_in_place;
+use map_in_place::MapVecInPlace;
+
 pub use texture::Texture;
 pub use texture::TextureMapping;
 
@@ -86,26 +90,40 @@ where V : VectorTrait
 	proj_line
 }
 
+pub struct DrawLineList<V : VectorTrait>(pub Vec<Option<DrawLine<V>>>);
+impl<V : VectorTrait> DrawLineList<V> {
+	pub fn len(&self) -> usize {
+		self.0.len()
+	}
+	pub fn map<F,U>(&self, f : F) -> DrawLineList<U>
+	where U : VectorTrait,
+	F : Fn(Option<DrawLine<V>>) -> Option<DrawLine<U>>
+	{
+		DrawLineList(self.0.iter().map(|l| f(l.clone())).collect()) //another questionable clone
+	}
+}
 
-pub struct TransformDrawLinesSystem<V : VectorTrait>(V);
+//would be nicer to move lines out of read_in_lines rather than clone them
+pub struct TransformDrawLinesSystem<V : VectorTrait>(pub V);
 impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
-    type SystemData = (ReadStorage<'a,LineBuffer<V>>,ReadExpect<'a,Camera<V>>);
+    type SystemData = (ReadExpect<'a,DrawLineList<V>>,WriteExpect<'a,DrawLineList<V::SubV>>,ReadExpect<'a,Camera<V>>);
 
-    fn run(&mut self, (clip_state,shape_data,camera) : Self::SystemData) {
-        //(&mut clip_state,shape_data.as_slice(),&camera.pos);
+    fn run(&mut self, (read_in_lines, mut write_out_lines,camera) : Self::SystemData) {
+    	//write new vec of draw lines to DrawLineList
+    	write_out_lines.0 = read_in_lines.0.iter()
+    	.map(|line| transform_draw_line(line.clone(),&camera))
+    	.collect();
+
     }
 }
 //apply transform line to the lines in draw_lines
 //need to do nontrivial destructuring and reconstructing
 //in order to properly handle Option
 //would probably benefit from something monad-like
-pub fn transform_draw_lines<V>(
-	draw_lines : Vec<Option<DrawLine<V>>>,
-	camera : &Camera<V>) -> Vec<Option<DrawLine<V::SubV>>>
-where V : VectorTrait
-{
-	draw_lines.into_iter()
-		.map(|opt_draw_line| match opt_draw_line {
+pub fn transform_draw_line<V : VectorTrait>(
+	option_draw_line : Option<DrawLine<V>>,
+	camera : &Camera<V>) -> Option<DrawLine<V::SubV>> {
+	match option_draw_line {
 			Some(draw_line) => {
 				let transformed_line = transform_line(Some(draw_line.line),&camera);
 				match transformed_line {
@@ -114,8 +132,7 @@ where V : VectorTrait
 				}
 			}
 			None => None
-		})
-		.collect()
+		}
 }
 
 // pub fn transform_lines<V>(lines : Vec<Option<Line<V>>>,
@@ -156,8 +173,6 @@ where V : VectorTrait
 //either way, we need to modify the method to write to an existing line buffer rather than allocating new Vecs
 
 
-use specs::{ReadStorage,WriteStorage,ReadExpect,Read,System,Join};
-
 pub struct VisibilitySystem<V : VectorTrait>(pub V);
 
 impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
@@ -189,8 +204,20 @@ pub fn update_shape_visibility<V : VectorTrait>(
 	}
 
 }
+
+pub struct CalcShapesLinesSystem<V : VectorTrait>(pub V);
+
+impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
+	type SystemData = (ReadStorage<'a,Shape<V>>,ReadExpect<'a,Vec<Field>>,ReadExpect<'a,ClipState<V>>,WriteExpect<'a,DrawLineList<V>>);
+
+	fn run(&mut self, (shapes, face_scale, clip_state, mut lines) : Self::SystemData) {
+			lines.0 = calc_shapes_lines(shapes, &face_scale, &clip_state);
+		}
+
+}
+
 pub fn calc_shapes_lines<V>(
-	shapes : ReadStorage<Shape<V>>,
+	shapes_storage : ReadStorage<Shape<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
 	)  -> Vec<Option<DrawLine<V>>>
@@ -198,9 +225,10 @@ pub fn calc_shapes_lines<V>(
 where V : VectorTrait
 {
 	
+	let shapes = &shapes_storage;
+
 	//probably worth computing / storing number of lines
 	//and using Vec::with_capacity
-	
 	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();
 	
 	//compute lines for each shape
@@ -213,7 +241,7 @@ where V : VectorTrait
 		//clip these lines and append to list
 		if clip_state.clipping_enabled {
 			let mut clipped_lines = crate::clipping::clip_draw_lines(
-				shape_lines, shapes, Some(shape_in_front));
+				shape_lines,&shapes_storage, Some(shape_in_front));
 			lines.append(&mut clipped_lines);
 		} else {
 			lines.append(&mut shape_lines);
@@ -235,7 +263,7 @@ pub fn calc_lines_color<V : VectorTrait>(
 		.collect();
 
 	let clipped_lines = crate::clipping::clip_draw_lines(
-			draw_lines, shapes, None);
+			draw_lines, &shapes, None);
 
 	clipped_lines
 }
@@ -252,7 +280,7 @@ pub fn calc_lines_color_from_ref<V : VectorTrait>(
 		.collect();
 
 	let clipped_lines = crate::clipping::clip_draw_lines(
-			draw_lines, shapes, None);
+			draw_lines, &shapes, None);
 
 	clipped_lines
 }
