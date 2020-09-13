@@ -5,7 +5,7 @@ mod vector;
 #[allow(dead_code)]
 mod geometry;
 mod clipping;
-#[allow(dead_code)]
+//#[allow(dead_code)]
 mod draw;
 #[allow(dead_code)]
 mod camera;

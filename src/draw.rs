@@ -72,18 +72,28 @@ where V : VectorTrait
 {
 	camera.frame * (point - camera.pos)
 }
-//this takes a line and returns Option<Line>
-pub fn transform_line<V>(line : Line<V>, camera : &Camera<V>) -> Option<Line<V::SubV>>
+//this takes a Option<Line> and returns Option<Line>
+pub fn transform_line<V>(line : Option<Line<V>>, camera : &Camera<V>) -> Option<Line<V::SubV>>
 where V : VectorTrait
 {
-	let clipped_line = clip_line_plane(line,&camera.plane,Z_NEAR);
+	let clipped_line : Option<Line<V>> = match line {Some(l) => clip_line_plane(l,&camera.plane,Z_NEAR), None => None};
 	let view_line = clipped_line
-		.map(|line| line
+		.map(|l| l
 		.map(|v| view_transform(&camera,v)));
 	let proj_line = view_line
-		.map(|line| line
+		.map(|l| l
 		.map(project));
 	proj_line
+}
+
+
+pub struct TransformDrawLinesSystem<V : VectorTrait>(V);
+impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
+    type SystemData = (ReadStorage<'a,LineBuffer<V>>,ReadExpect<'a,Camera<V>>);
+
+    fn run(&mut self, (clip_state,shape_data,camera) : Self::SystemData) {
+        //(&mut clip_state,shape_data.as_slice(),&camera.pos);
+    }
 }
 //apply transform line to the lines in draw_lines
 //need to do nontrivial destructuring and reconstructing
@@ -97,7 +107,7 @@ where V : VectorTrait
 	draw_lines.into_iter()
 		.map(|opt_draw_line| match opt_draw_line {
 			Some(draw_line) => {
-				let transformed_line = transform_line(draw_line.line,&camera);
+				let transformed_line = transform_line(Some(draw_line.line),&camera);
 				match transformed_line {
 					Some(line) => Some(DrawLine{line, color : draw_line.color}),
 					None => None
@@ -107,27 +117,29 @@ where V : VectorTrait
 		})
 		.collect()
 }
-pub fn transform_lines<V>(lines : Vec<Option<Line<V>>>,
-	camera : &Camera<V>) -> Vec<Option<Line<V::SubV>>>
-where V : VectorTrait
-{
-	let clipped_lines = lines
-	.into_iter()
-	.map(|maybe_line| match maybe_line {
-		Some(line) => clip_line_plane(line,&camera.plane,Z_NEAR),
-		None => None
-	});
-    //let clipped_lines = lines.map(|line| Some(line)); //no clipping
-    let view_lines = clipped_lines
-    	.map(|maybe_line| maybe_line
-    		.map(|line| line
-    			.map(|v| view_transform(&camera,v))));
-    let proj_lines = view_lines
-    	.map(|maybe_line| maybe_line
-    		.map(|line| line
-    			.map(project))).collect();
-    proj_lines
-}
+
+// pub fn transform_lines<V>(lines : Vec<Option<Line<V>>>,
+// 	camera : ReadExpect<Camera>) -> Vec<Option<Line<V::SubV>>>
+// where V : VectorTrait
+// {
+// 	lines.into_iter().map(|line| transform_line(line,camera)).collect()
+	// let clipped_lines = lines
+	// .into_iter()
+	// .map(|maybe_line| match maybe_line {
+	// 	Some(line) => clip_line_plane(line,&camera.plane,Z_NEAR),
+	// 	None => None
+	// });
+ //    //let clipped_lines = lines.map(|line| Some(line)); //no clipping
+ //    let view_lines = clipped_lines
+ //    	.map(|maybe_line| maybe_line
+ //    		.map(|line| line
+ //    			.map(|v| view_transform(&camera,v))));
+ //    let proj_lines = view_lines
+ //    	.map(|maybe_line| maybe_line
+ //    		.map(|line| line
+ //    			.map(project))).collect();
+ //    proj_lines
+//}
 // pub fn calc_face_lines_new<V : VectorTrait>(
 // 	face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>
 // ) -> Vec<Option<DrawLine<V>>> {
@@ -142,34 +154,7 @@ where V : VectorTrait
 //the same, and invisible faces are just sequences of None
 //seems to be significantly slower than not padding and just changing the buffer when needed
 //either way, we need to modify the method to write to an existing line buffer rather than allocating new Vecs
-pub fn calc_face_lines_old<V : VectorTrait>(
-	face : &Face<V>,
-	shape : &Shape<V>,
-	face_scales : &Vec<Field>
-) -> Vec<Option<DrawLine<V>>> {
-	if face.visible || shape.transparent {
-		let mut lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
-		for &face_scale in face_scales {
-			let scale_point = |v| V::linterp(face.center,v,face_scale);
-			for edgei in &face.edgeis {
-				let edge = &shape.edges[*edgei];
-				//println!("{}",edge);
-				lines.push(
-					Some(DrawLine{
-						line : Line(
-						shape.verts[edge.0],
-						shape.verts[edge.1])
-						.map(scale_point),
-						color : DEFAULT_COLOR
-						})
-				);
-			}
-		}
-		lines
-	} else {
-		vec![None ; face.edgeis.len()*face_scales.len()]
-	}
-}
+
 
 use specs::{ReadStorage,WriteStorage,ReadExpect,Read,System,Join};
 
@@ -205,7 +190,7 @@ pub fn update_shape_visibility<V : VectorTrait>(
 
 }
 pub fn calc_shapes_lines<V>(
-	shapes : &mut [Shape<V>],
+	shapes : ReadStorage<Shape<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
 	)  -> Vec<Option<DrawLine<V>>>
@@ -219,7 +204,7 @@ where V : VectorTrait
 	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();
 	
 	//compute lines for each shape
-	for (shape,shape_in_front) in shapes.iter().zip(clip_state.in_front.iter()) {
+	for (shape,shape_in_front) in (&shapes).join().zip(clip_state.in_front.iter()) {
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
 		for face in &shape.faces {
@@ -239,7 +224,7 @@ where V : VectorTrait
 	
 }
 pub fn calc_lines_color<V : VectorTrait>(
-	shapes : &[Shape<V>],
+	shapes : ReadStorage<Shape<V>>,
 	lines : Vec<Line<V>>,
 	color : Color
 	) -> Vec<Option<DrawLine<V>>> {
@@ -256,7 +241,7 @@ pub fn calc_lines_color<V : VectorTrait>(
 }
 //ehh. need to clone in here since we're borrowing lines
 pub fn calc_lines_color_from_ref<V : VectorTrait>(
-	shapes : &[Shape<V>],
+	shapes : ReadStorage<Shape<V>>,
 	lines : &Vec<Line<V>>,
 	color : Color
 	) -> Vec<Option<DrawLine<V>>> {

@@ -18,7 +18,7 @@ pub struct Game<V : VectorTrait> {
     pub world : World,
     //pub shapes : Vec<Shape<V>>,
     pub extra_lines : Vec<Line<V>>,
-    pub camera : Camera<V>,
+    //pub camera : Camera<V>,
     pub clip_state : ClipState<V>,
     pub draw_lines : Vec<Option<draw::DrawLine<V::SubV>>>,
     pub cur_lines_length : usize
@@ -42,11 +42,14 @@ where V: VectorTrait
         let mut new_game = Game {
                 world,
                 extra_lines,
-                camera,
+                //camera,
                 clip_state : ClipState::new(0),
                 draw_lines : vec![],
                 cur_lines_length : 0
             };
+
+        world.insert(camera);
+
         let shapes_len = new_game.get_shapes().as_slice().len();
         new_game.clip_state = ClipState::new(shapes_len);
         new_game.draw_lines = new_game.draw_stuff();
@@ -73,33 +76,32 @@ where V: VectorTrait
             //let face_scales = vec![0.1,0.3,0.5,0.7,1.0];
             //let face_scales = vec![0.3,0.5,0.8,1.0];
 
-            //for each shape, update clipping boundaries and face visibility
+            
             let mut dispatcher = DispatcherBuilder::new()
-                //.with(DrawSystem,"draw",&[])
+                //for each shape, update clipping boundaries and face visibility
                 .with(draw::VisibilitySystem(V::zero()),"visibility",&[])
-                //.with(MeshUpdateSystem,"update_mesh",&[])
-                //.with(DrawSystem,"draw_updated",&["update_mesh"])
+                //determine what shapes are in front of other shapes
+                .with(crate::clipping::InFrontSystem(V::zero()),"in_front",&["visibility"])
                 .build();
 
             dispatcher.dispatch(&mut self.world);
 
             //draw::update_shape_visibility(&self.camera, &mut self.shapes, &self.clip_state);
-
-            //determine what shapes are in front of other shapes
-            self.clip_state.calc_in_front(self.get_shapes(),& self.camera.pos);
+            //self.clip_state.calc_in_front(self.get_shapes(),& self.camera.pos);
 
             //draw lines
             //let face_scales = vec![0.2,0.5,0.7,0.9];
             let face_scales = vec![0.8,0.9];
 
+            //make this a system or two or three
             draw::transform_draw_lines(
             {
-                let mut lines = draw::calc_shapes_lines(self.get_mut_shapes(),&face_scales,&self.clip_state);
+                let mut lines = draw::calc_shapes_lines(self.get_shapes(),&face_scales,&self.clip_state);
                 lines.append(&mut crate::draw::calc_lines_color_from_ref(
-                    self.get_shapes().as_slice(),
+                    self.get_shapes(),
                     &self.extra_lines,CYAN));
                 lines
-            }, &self.camera)
+            }, &self.world.system_data())
     }
     pub fn game_update(&mut self, input : &mut Input, frame_len : FPSFloat ) {
         

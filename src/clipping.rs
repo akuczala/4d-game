@@ -2,36 +2,26 @@ use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 use crate::draw::DrawLine;
 
-use specs::{Component,System,VecStorage, WriteStorage,Read,Write,ReadStorage,Join};
+use specs::{Component,System,VecStorage, WriteStorage,ReadExpect,Read,Write,ReadStorage,Join};
 
-#[derive(Component)]
-#[storage(VecStorage)]
-pub struct ClipState<V : VectorTrait> {
-    pub in_front : Vec<Vec<bool>>,
-    pub separators : Vec<Vec<Separator<V>>>,
-    pub separations_debug : Vec<Vec<Separation>>, //don't need this, but is useful for debug
-    pub clipping_enabled : bool,
-}
-impl<V : VectorTrait> Default for ClipState<V> {
-    fn default() -> Self {ClipState::new(0)}
-}
-impl<V : VectorTrait> ClipState<V> {
-    pub fn new(shapes_len : usize) -> Self {
-        //let shapes : Vec<&Shape<V>> = (&read_shapes).join().collect();
-        ClipState {
-            in_front : vec![vec![false ; shapes_len] ; shapes_len],
-            separations_debug :vec![vec![Separation::Unknown ; shapes_len] ; shapes_len],
-            separators : vec![vec![Separator::Unknown ; shapes_len] ; shapes_len],
-            clipping_enabled : true,
-        }
+use crate::camera::Camera;
+
+pub struct InFrontSystem<V : VectorTrait>(pub V);
+impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
+    type SystemData = (Read<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,ReadExpect<'a,Camera<V>>);
+
+    fn run(&mut self, (clip_state,shape_data,camera) : Self::SystemData) {
+        calc_in_front(&mut clip_state,shape_data.as_slice(),&camera.pos);
     }
-    pub fn calc_in_front(
-        &mut self,
-        read_shapes : ReadStorage<Shape<V>>,
+}
+pub fn calc_in_front<V : VectorTrait>(
+        clip_state : &mut ClipState<V>,
+        //read_shapes : ReadStorage<Shape<V>>,
+        shapes : &[Shape<V>],
         origin : &V
     ) {
         //collect a vec of references to shapes
-        let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
+        //let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
         //loop over unique pairs
         for i in 0..shapes.len() {
             for j in i+1 .. shapes.len() {
@@ -43,7 +33,7 @@ impl<V : VectorTrait> ClipState<V> {
                 };
                 //if that's unsuccessful, try static separation
                 if is_unknown {
-                    let sep = &mut self.separators[i][j];
+                    let sep = &mut clip_state.separators[i][j];
                     //compute static separator if it hasn't been computed yet
                     let needs_value = match sep {
                         Separator::Unknown => true,
@@ -62,12 +52,33 @@ impl<V : VectorTrait> ClipState<V> {
                     Separation::NoFront => (false,false),
                     Separation::Unknown => (true,true)
                 };
-                self.in_front[i][j] = new_vals.0;
-                self.in_front[j][i] = new_vals.1;
+                clip_state.in_front[i][j] = new_vals.0;
+                clip_state.in_front[j][i] = new_vals.1;
 
                 //debug
-                self.separations_debug[i][j] = sep_state;
+                clip_state.separations_debug[i][j] = sep_state;
             }
+        }
+    }
+
+pub struct ClipState<V : VectorTrait> {
+    pub in_front : Vec<Vec<bool>>,
+    pub separators : Vec<Vec<Separator<V>>>,
+    pub separations_debug : Vec<Vec<Separation>>, //don't need this, but is useful for debug
+    pub clipping_enabled : bool,
+}
+impl<V : VectorTrait> Default for ClipState<V> {
+    fn default() -> Self {ClipState::new(0)}
+}
+
+impl<V : VectorTrait> ClipState<V> {
+    pub fn new(shapes_len : usize) -> Self {
+        //let shapes : Vec<&Shape<V>> = (&read_shapes).join().collect();
+        ClipState {
+            in_front : vec![vec![false ; shapes_len] ; shapes_len],
+            separations_debug :vec![vec![Separation::Unknown ; shapes_len] ; shapes_len],
+            separators : vec![vec![Separator::Unknown ; shapes_len] ; shapes_len],
+            clipping_enabled : true,
         }
     }
     pub fn print_debug(&self) {
@@ -176,16 +187,16 @@ pub fn clip_line<V : VectorTrait>(
 
 pub fn clip_draw_lines<V : VectorTrait>(
     lines : Vec<Option<DrawLine<V>>>,
-    shapes: &[Shape<V>],
+    shapes: ReadStorage<Shape<V>>,
     shape_in_front : Option<&Vec<bool>>
     ) ->  Vec<Option<DrawLine<V>>>
 {
     let mut clipped_lines = lines;
     let clipping_shapes : Vec<&Shape<V>> = match shape_in_front {
-        Some(in_fronts) => shapes.iter().zip(in_fronts)
+        Some(in_fronts) => (&shapes).join().zip(in_fronts)
             .filter(|(_shape,&front)| front)
             .map(|(shape,_front)| shape).collect(),
-        None => shapes.iter().collect()
+        None => (&shapes).join().collect()
     };
     for clipping_shape in clipping_shapes {
         //compare pointers
