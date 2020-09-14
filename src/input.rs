@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;
 use glutin::event::ElementState::{Pressed,Released};
@@ -9,7 +11,7 @@ use std::time::Duration;
 use crate::camera::Camera;
 use crate::vector::{VectorTrait,MatrixTrait,Field};
 use crate::geometry::Shape;
-
+use crate::clipping::ClipState;
 use crate::fps::FPSFloat;
 
 //use crate::game::Game;
@@ -78,7 +80,7 @@ impl Input {
     }
 }
 
-pub struct UpdateCameraSystem<V : VectorTrait>(pub V);
+pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
     type SystemData = (Write<'a,Input>,WriteExpect<'a,Camera<V>>);
     fn run(&mut self, (mut input, mut camera) : Self::SystemData) {
@@ -184,7 +186,17 @@ pub fn update_shape<V : VectorTrait>(input : &mut Input, shape : &mut Shape<V>)
     }
 }
 
-pub fn print_debug<V : VectorTrait>(input : &mut Input)
+pub struct PrintDebugSystem<V : VectorTrait>(pub PhantomData<V>);
+impl <'a,V : VectorTrait> System<'a> for PrintDebugSystem<V> {
+
+    type SystemData = (Write<'a,Input>,Write<'a,ClipState<V>>);
+
+    fn run(&mut self, (mut input, mut clip_state) : Self::SystemData) {
+        print_debug::<V>(&mut input,&mut clip_state);
+    }
+}
+
+pub fn print_debug<V : VectorTrait>(input : &mut Input,clip_state : &mut ClipState<V>)
 {
     if !input.pressed.space && !input.pressed.shift {
         //println!("camera.pos = {}",camera.pos);
@@ -202,25 +214,25 @@ pub fn print_debug<V : VectorTrait>(input : &mut Input)
     //toggle clipping
     if !input.pressed.c {
         //TEMPORARILY DISABLED
-        //game.clip_state.clipping_enabled = !game.clip_state.clipping_enabled;
-        //println!("clipping={}",game.clip_state.clipping_enabled);
+        clip_state.clipping_enabled = !clip_state.clipping_enabled;
+        println!("clipping={}",clip_state.clipping_enabled);
         input.pressed.c = true;
         input.update = true;
     }
 }
-macro_rules! match_press {
-    ( $( $x:expr ),* ) => {
-        {
-            $(
-                Some($x) => pressed.$x = pressed_state,
-            )*
-        }
-    };
-}
+// macro_rules! match_press {
+//     ( $( $x:expr ),* ) => {
+//         {
+//             $(
+//                 Some($x) => pressed.$x = pressed_state,
+//             )*
+//         }
+//     };
+// }
 
 impl Input {
     // listing the events produced by application and waiting to be received
-    pub fn listen_events(&mut self, ev : &Event<()>) {
+    pub fn listen_events<E>(&mut self, ev : &Event<E>) {
         let closed = &mut self.closed;
         let pressed = &mut self.pressed;
         let update = &mut self.update;

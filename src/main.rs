@@ -17,15 +17,16 @@ mod engine;
 mod input;
 #[allow(dead_code)]
 mod build_level;
+mod coin;
 mod fps;
 //mod object;
 
-
+use specs::prelude::*;
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 
 use glium::glutin::event_loop::EventLoop;
-
+use winit_input_helper::WinitInputHelper;
 
 
 //NOTES:
@@ -44,12 +45,14 @@ fn main() {
     };
 
     let (event_loop, display) = init_glium();
-    let mut input = Input::new();
+    //let mut input = WinitInputHelper::new();
+    //let mut input = Input::new();
 
     let mut dim = 3;
     let mut engine = Engine::init(dim,&display);
-
-    input.closed = false;
+    //let input_storage : ReadExpect<Input> = engine.world.system_data();
+    //let input = &input_storage;
+    //input.closed = false;
     
     let mut fps_timer = FPSTimer::new();
 
@@ -64,57 +67,23 @@ fn main() {
         //could use for menus??
         //*control_flow = ControlFlow::Wait;
 
-        //swap / reset engine
-        if input.swap_engine {
+        let swap = engine.update(&event,control_flow,&display,fps_timer.get_frame_length());
+
+        if swap {
             dim = match dim {
                 3 => Ok(4), 4 => Ok(3), _ => Err("Invalid dimension") 
             }.unwrap();
             engine = Engine::init(dim,&display);
-            input.swap_engine = false;
-        }
-        //input events
-        input.listen_events(&event);
-        if input.closed {
-            println!("Escape button pressed; exiting.");
-            *control_flow = ControlFlow::Exit;
-        }
-        //window / game / redraw events
-        match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => {
-                println!("The close button was pressed; stopping");
-                *control_flow = ControlFlow::Exit
-            },
-            Event::MainEventsCleared => {
-                // Application update code.
-               //game_duration = time::Instant::now().duration_since(start_instant);
-                
-                // Queue a RedrawRequested event.
-                
-                engine.game_update(&mut input);
-
-                if input.update {
-                    display.gl_window().window().request_redraw();
-                }
-            },
-            Event::RedrawRequested(_) => {
-                // Redraw the application.
-                engine.draw(&display);
-                engine.print_debug(&mut input); 
-                
-            },
-            _ => ()
+            //input.swap_engine = false;
         }
 
-        input.frame_duration = fps_timer.get_frame_length();
-
+        //wait long enough to reach target frame rate
         *control_flow = match *control_flow {
             ControlFlow::Exit => ControlFlow::Exit,
             _ => ControlFlow::WaitUntil(fps_timer.end())
         };
-    });
+    }); //end of event loop
+
 }
 
 fn init_glium() -> (EventLoop<()>,  glium::Display) {

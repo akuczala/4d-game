@@ -3,10 +3,11 @@ use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 use crate::draw::DrawLine;
 
 use specs::{Component,System,VecStorage, WriteStorage,ReadExpect,Read,Write,ReadStorage,Join};
+use std::marker::PhantomData;
 
 use crate::camera::Camera;
 
-pub struct InFrontSystem<V : VectorTrait>(pub V);
+pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
     type SystemData = (Write<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,ReadExpect<'a,Camera<V>>);
 

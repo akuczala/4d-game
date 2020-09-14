@@ -1,5 +1,7 @@
 mod texture;
 use specs::{ReadStorage,WriteStorage,ReadExpect,WriteExpect,Read,System,Join};
+use std::marker::PhantomData;
+
 extern crate map_in_place;
 use map_in_place::MapVecInPlace;
 
@@ -104,7 +106,7 @@ impl<V : VectorTrait> DrawLineList<V> {
 }
 
 //would be nicer to move lines out of read_in_lines rather than clone them
-pub struct TransformDrawLinesSystem<V : VectorTrait>(pub V);
+pub struct TransformDrawLinesSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
     type SystemData = (ReadExpect<'a,DrawLineList<V>>,WriteExpect<'a,DrawLineList<V::SubV>>,ReadExpect<'a,Camera<V>>);
 
@@ -173,7 +175,7 @@ pub fn transform_draw_line<V : VectorTrait>(
 //either way, we need to modify the method to write to an existing line buffer rather than allocating new Vecs
 
 
-pub struct VisibilitySystem<V : VectorTrait>(pub V);
+pub struct VisibilitySystem<V : VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 	type SystemData = (WriteStorage<'a,Shape<V>>,ReadExpect<'a,Camera<V>>,ReadExpect<'a,ClipState<V>>);
@@ -205,7 +207,7 @@ pub fn update_shape_visibility<V : VectorTrait>(
 
 }
 
-pub struct CalcShapesLinesSystem<V : VectorTrait>(pub V);
+pub struct CalcShapesLinesSystem<V : VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
 	type SystemData = (ReadStorage<'a,Shape<V>>,ReadExpect<'a,Vec<Field>>,ReadExpect<'a,ClipState<V>>,WriteExpect<'a,DrawLineList<V>>);

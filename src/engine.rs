@@ -1,10 +1,14 @@
-//can probably merge with Game?
-//or mix and match responsibilities
+use crate::coin::Coin;
 use specs::prelude::*;
 use glium::Display;
 use std::marker::PhantomData;
 
-use crate::geometry::{Shape,Line};
+use glium::glutin::{
+        event::{Event, WindowEvent},
+        event_loop::ControlFlow,
+    };
+
+use crate::geometry::{Shape};
 
 use crate::camera::Camera;
 use crate::clipping::ClipState;
@@ -13,31 +17,39 @@ use crate::draw;
 // include visual indicator of what direction a collision is in
 
 use crate::input::Input;
-//use crate::game::Game;
-//use crate::game;
+
 use crate::graphics::{Graphics,Graphics2d,Graphics3d};
 use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait};
 use crate::fps::FPSFloat;
 
-pub struct EngineD<V : VectorTrait,G : Graphics<V::SubV>> {
+pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
     pub world : World,
     //pub extra_lines : Vec<Line<V>>,
     pub cur_lines_length : usize,
     graphics : G,
+    //Forces EngineD to take V as a parameter
     dummy : PhantomData<V>,
 }
-impl<V,G> EngineD<V,G>
-where V : VectorTrait, G : Graphics<V::SubV> {
-    pub fn new(shapes : Vec<Shape<V>>, graphics : G) -> Self
+impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
+{
+    pub fn new(mut shapes : Vec<Shape<V>>, graphics : G) -> Self
     {
         let mut world = World::new();
         world.register::<Shape<V>>();
+        world.register::<crate::coin::Coin>();
+
+        world.insert(Input::new());
 
         //change to into_iter, remove cloning
         let shapes_len = shapes.len();
+        let coin_shape = shapes.pop();
         for shape in shapes.into_iter() {
             world.create_entity().with(shape).build();
         }
+        world.create_entity()
+            .with(coin_shape.unwrap())
+            .with(Coin)
+            .build();
 
         //let extra_lines : Vec<Line<V>> = Vec::new();
         let camera = Camera::new(V::zero()-V::one_hot(-1)*0.);
@@ -72,32 +84,85 @@ where V : VectorTrait, G : Graphics<V::SubV> {
     pub fn get_mut_shapes(&mut self) -> WriteStorage<Shape<V>> {
        self.world.system_data()
     }
-    //game update every frame
-    fn game_update(&mut self, input : &mut Input) {
-        //self.game.game_update(input);
 
-
-        if input.update {
-            //if input.pressed.being_touched {
-            if true {
-                let shapes_len = self.get_shapes().as_slice().len();
-                //currently rotates the coin (happens to be the last entity with Shape)
-                self.get_mut_shapes().as_mut_slice()[shapes_len-1].rotate(0,-1,0.05);
-
+    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, frame_duration : FPSFloat) -> bool {
+        {
+            self.world.write_resource::<Input>().frame_duration = frame_duration;
+        }
+        {
+            let mut input = self.world.write_resource::<Input>();
+            //swap / reset engine
+            if input.swap_engine {
+                return true;
             }
-            //let mut dispatcher = DispatcherBuilder::new()
-            //    .with(crate::input::UpdateCameraSystem(V::zero()),"update_camera",&[])
-            //    .build();
+            //input events
+            input.listen_events(event);
+            if input.closed {
+                println!("Escape button pressed; exiting.");
+                *control_flow = ControlFlow::Exit;
+            }
+            //window / game / redraw events
+            match event {
+                Event::WindowEvent {
+                    event: WindowEvent::CloseRequested,
+                    ..
+                } => {
+                    println!("The close button was pressed; stopping");
+                    *control_flow = ControlFlow::Exit
+                },
+                Event::MainEventsCleared => {
+                    // Application update code.
+                    
+                    //self.game_update(&mut input);
 
-            //dispatcher.dispatch(&mut self.world);
+                    if input.update {
+                        display.gl_window().window().request_redraw();
+                    }
+                },
+                _ => (),
+            };
+        }
+        match event {
+            Event::MainEventsCleared => {self.game_update()},
+            Event::RedrawRequested(_) => {
+                // Redraw the application.
+                self.draw(&display);
+                //self.print_debug(&mut input); 
+                
+            },
+            _ => ()
+        };
+        false
+    }
+
+    //game update every frame
+    fn game_update(&mut self) {
+        //self.game.game_update(input);
+        //let mut input = self.world.write_resource::<Input>();
+
+        // if input.update {
+        //     //if input.pressed.being_touched {
+        //     if true {
+        //         let shapes_len = self.get_shapes().as_slice().len();
+        //         //currently rotates the coin (happens to be the last entity with Shape)
+        //         self.get_mut_shapes().as_mut_slice()[shapes_len-1].rotate(0,-1,0.05);
+
+        //     }
+            let mut dispatcher = DispatcherBuilder::new()
+               .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
+               .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
+               .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
+               .build();
+
+            dispatcher.dispatch(&mut self.world);
             //update_camera(input, &mut self.camera, frame_len);
 
-        let shapes_len = self.get_shapes().as_slice().len();
-        crate::input::update_shape(input, &mut self.get_mut_shapes().as_mut_slice()[shapes_len-1]);
+        //let shapes_len = self.get_shapes().as_slice().len();
+        //crate::input::update_shape(input, &mut self.get_mut_shapes().as_mut_slice()[shapes_len-1]);
         
         //input.print_debug(&self.camera,&game_duration,&frame_duration,&mut clip_state,&shapes);
-            input.update = true; //set to true for constant updating
-        }
+            //input.update = true; //set to true for constant updating
+       // }
 
     }
 
@@ -105,18 +170,16 @@ where V : VectorTrait, G : Graphics<V::SubV> {
         //self.game.draw_update(&mut self.graphics,display);
         //self.draw_lines = self.draw_stuff();
 
-        //V::zero() tells the system what dimension it's working in.
-        //would like to do this with phantom data or something
         //would ideally define dispatcher on init
         let mut dispatcher = DispatcherBuilder::new()
                 //for each shape, update clipping boundaries and face visibility
-                .with(draw::VisibilitySystem(V::zero()),"visibility",&[])
+                .with(draw::VisibilitySystem(PhantomData::<V>),"visibility",&[])
                 //determine what shapes are in front of other shapes
-                .with(crate::clipping::InFrontSystem(V::zero()),"in_front",&["visibility"])
+                .with(crate::clipping::InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
                 //calculate and clip lines for each shape
-                .with(draw::CalcShapesLinesSystem(V::zero()),"calc_shapes_lines",&["visibility","in_front"])
+                .with(draw::CalcShapesLinesSystem(PhantomData::<V>),"calc_shapes_lines",&["in_front"])
                 //project lines
-                .with(draw::TransformDrawLinesSystem(V::zero()),"transform_draw_lines",&["visibility","in_front","calc_shapes_lines"])
+                .with(draw::TransformDrawLinesSystem(PhantomData::<V>),"transform_draw_lines",&["calc_shapes_lines"])
                 .build();
 
         dispatcher.dispatch(&mut self.world);
@@ -132,13 +195,15 @@ where V : VectorTrait, G : Graphics<V::SubV> {
         self.graphics.draw_lines(&draw_lines,display);
     }
 
-    fn print_debug(&mut self, input : &mut Input) {
-       crate::input::print_debug::<V>(input);
-    }
-    
+    // fn print_debug(&mut self, input : &mut Input) {
+    //    crate::input::print_debug::<V>(input);
+    // }
 }
+
+
+
 impl EngineD<Vec3,Graphics2d> {
-    fn init(display : &Display) -> Self {
+    fn init(display : &Display,) -> Self {
         println!("Starting 3d engine");
         //let game = Game::new(game::build_shapes_3d());
         let mut graphics = Graphics2d::new(display);
@@ -168,29 +233,35 @@ pub enum Engine {
 impl Engine {
     pub fn init(dim : VecIndex, display : &Display) -> Engine {
         match dim {
-            3 => Ok(Engine::Three(EngineD::<Vec3,Graphics2d>::init(&display))),
-            4 => Ok(Engine::Four(EngineD::<Vec4,Graphics3d>::init(&display))),
+            3 => Ok(Engine::Three(EngineD::<Vec3,Graphics2d>::init(display))),
+            4 => Ok(Engine::Four(EngineD::<Vec4,Graphics3d>::init(display))),
             _ => Err("Invalid dimension for game engine")
         }.unwrap()
     }
-    pub fn game_update(&mut self, input : &mut Input) {
+    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, frame_duration : FPSFloat) -> bool{
         match self {
-                    Engine::Three(e) => e.game_update(input),
-                    Engine::Four(e) => e.game_update(input),
+                    Engine::Three(e) => e.update(event,control_flow,display,frame_duration),
+                    Engine::Four(e) => e.update(event,control_flow,display,frame_duration),
                 }
     }
-    pub fn draw(&mut self, display : &Display) {
-        match self {
-            Engine::Three(e) => e.draw(display),
-            Engine::Four(e) => e.draw(display)
-        };
-    }
-    pub fn print_debug(&mut self, input : &mut Input) {
-        match self {
-            Engine::Three(e) => e.print_debug(input),
-            Engine::Four(e) => e.print_debug(input)
-        };
-    }
+    // pub fn game_update(&mut self, input : &mut Input) {
+    //     match self {
+    //                 Engine::Three(e) => e.game_update(input),
+    //                 Engine::Four(e) => e.game_update(input),
+    //             }
+    // }
+    // pub fn draw(&mut self, display : &Display) {
+    //     match self {
+    //         Engine::Three(e) => e.draw(display),
+    //         Engine::Four(e) => e.draw(display)
+    //     };
+    // }
+    // pub fn print_debug(&mut self, input : &mut Input) {
+    //     match self {
+    //         Engine::Three(e) => e.print_debug(input),
+    //         Engine::Four(e) => e.print_debug(input)
+    //     };
+    // }
 
 }
 
