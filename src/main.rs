@@ -9,9 +9,10 @@ mod clipping;
 mod draw;
 #[allow(dead_code)]
 mod camera;
+#[allow(dead_code)]
 mod colors;
 mod graphics;
-mod game;
+//mod game;
 mod engine;
 mod input;
 #[allow(dead_code)]
@@ -33,11 +34,6 @@ use glium::glutin::event_loop::EventLoop;
 use crate::input::Input;
 use engine::Engine;
 use fps::FPSTimer;
-//use spin_sleep::{LoopHelper};
-//threading imports
-//use std::thread;
-//use std::sync::mpsc;
-//use std::sync::{Mutex, Arc};
 
 
 fn main() {
@@ -97,7 +93,7 @@ fn main() {
                 
                 // Queue a RedrawRequested event.
                 
-                engine.game_update(&mut input, fps_timer.get_frame_length());
+                engine.game_update(&mut input);
 
                 if input.update {
                     display.gl_window().window().request_redraw();
@@ -106,11 +102,13 @@ fn main() {
             Event::RedrawRequested(_) => {
                 // Redraw the application.
                 engine.draw(&display);
-                engine.print_debug(&mut input, fps_timer.get_frame_length()); 
+                engine.print_debug(&mut input); 
                 
             },
             _ => ()
         }
+
+        input.frame_duration = fps_timer.get_frame_length();
 
         *control_flow = match *control_flow {
             ControlFlow::Exit => ControlFlow::Exit,

@@ -97,7 +97,7 @@ impl VectorTrait for Vec4 {
     Vec4::new(f(self[0],rhs[0]),f(self[1],rhs[1]),f(self[2],rhs[2]),f(self[3],rhs[3]))
   }
   fn dot(self, rhs: Vec4) -> Field {
-    (self[0]*rhs[0] + self[1]*rhs[1] + self[2]*rhs[2] + self[3]*rhs[3])
+    self[0]*rhs[0] + self[1]*rhs[1] + self[2]*rhs[2] + self[3]*rhs[3]
   }
   fn constant(a : Field) -> Vec4{
     Vec4::new(a,a,a,a)

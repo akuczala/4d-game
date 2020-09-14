@@ -185,6 +185,7 @@ pub fn clip_line<V : VectorTrait>(
     ReturnLines::NoLines
 }
 
+//consider using parallel joins here
 pub fn clip_draw_lines<V : VectorTrait>(
     lines : Vec<Option<DrawLine<V>>>,
     shapes: &ReadStorage<Shape<V>>,

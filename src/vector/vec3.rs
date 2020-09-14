@@ -96,7 +96,7 @@ impl VectorTrait for Vec3 {
     Vec3::new(f(self[0],rhs[0]),f(self[1],rhs[1]),f(self[2],rhs[2]))
   }
   fn dot(self, rhs: Vec3) -> Field {
-    (self[0]*rhs[0] + self[1]*rhs[1] + self[2]*rhs[2])
+    self[0]*rhs[0] + self[1]*rhs[1] + self[2]*rhs[2]
   }
   fn constant(a : Field) -> Vec3{
     Vec3::new(a,a,a)

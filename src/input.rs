@@ -2,6 +2,8 @@ use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;
 use glutin::event::ElementState::{Pressed,Released};
 
+use specs::{ReadStorage,WriteStorage,ReadExpect,WriteExpect,Read,Write,System,Join};
+
 use std::time::Duration;
 
 use crate::camera::Camera;
@@ -10,7 +12,7 @@ use crate::geometry::Shape;
 
 use crate::fps::FPSFloat;
 
-use crate::game::Game;
+//use crate::game::Game;
 
 use glutin::event::{Event,WindowEvent};
 
@@ -55,6 +57,12 @@ pub struct Input {
     pub closed : bool,
     pub swap_engine : bool,
     pub update : bool,
+    pub frame_duration : crate::fps::FPSFloat
+}
+impl Default for Input {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 impl Input {
 
@@ -64,133 +72,140 @@ impl Input {
             //events_loop : events_loop,
             closed : false,
             swap_engine : false,
-            update : true
+            update : true,
+            frame_duration : crate::fps::TARGET_FPS,
         }
     }
-    //const SPEED : Field = 0.01;
+}
 
-    pub fn update_camera<V : VectorTrait>(&mut self, camera : &mut Camera<V>,
-        frame_duration : FPSFloat)
-    {
-        //let frame_time = duration_as_field(frame_duration) as Field;
-        let frame_time = frame_duration as Field;
-        //fowards + backwards
-        if self.pressed.w {
-            camera.slide(camera.heading,frame_time);
-            self.update = true;
+pub struct UpdateCameraSystem<V : VectorTrait>(pub V);
+impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
+    type SystemData = (Write<'a,Input>,WriteExpect<'a,Camera<V>>);
+    fn run(&mut self, (mut input, mut camera) : Self::SystemData) {
+        update_camera(&mut input, &mut camera);
+    }
+}
+
+pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V>)
+{
+    //let frame_time = duration_as_field(frame_duration) as Field;
+    let frame_time = input.frame_duration as Field;
+    //fowards + backwards
+    if input.pressed.w {
+        camera.slide(camera.heading,frame_time);
+        input.update = true;
+    }
+    if input.pressed.s {
+        camera.slide(-camera.heading,frame_time);
+        input.update = true;
+    }
+    if input.pressed.alt {
+        //translation
+        if input.pressed.d {
+        camera.slide(camera.frame[0],frame_time);
+        input.update = true;
         }
-        if self.pressed.s {
-            camera.slide(-camera.heading,frame_time);
-            self.update = true;
+        if input.pressed.a {
+        camera.slide(-camera.frame[0],frame_time);
+        input.update = true;
         }
-        if self.pressed.alt {
-            //translation
-            if self.pressed.d {
-            camera.slide(camera.frame[0],frame_time);
-            self.update = true;
+        if input.pressed.i {
+        camera.slide(camera.frame[1],frame_time);
+        input.update = true;
+        }
+        if input.pressed.k {
+        camera.slide(-camera.frame[1],frame_time);
+        input.update = true;
+        }
+        if input.pressed.j {
+        camera.slide(-camera.frame[2],frame_time);
+        input.update = true;
+        }
+        if input.pressed.l {
+        camera.slide(camera.frame[2],frame_time);
+        input.update = true;
+        }
+    } else {
+       //rotation
+        if input.pressed.d {
+            camera.spin(0,-1,frame_time);
+            input.update = true;
+        }
+        if input.pressed.a {
+            camera.spin(0,-1,-frame_time);
+            input.update = true;
+        }
+        if input.pressed.i {
+            camera.spin(1,-1,frame_time);
+            input.update = true;
+        }
+        if input.pressed.k {
+            camera.spin(1,-1,-frame_time);
+            input.update = true;
+        }
+        if input.pressed.shift {
+            if input.pressed.j {
+            camera.spin(0,2,-frame_time);
+            input.update = true;
             }
-            if self.pressed.a {
-            camera.slide(-camera.frame[0],frame_time);
-            self.update = true;
+            if input.pressed.l {
+                camera.spin(0,2,frame_time);
+                input.update = true;
             }
-            if self.pressed.i {
-            camera.slide(camera.frame[1],frame_time);
-            self.update = true;
-            }
-            if self.pressed.k {
-            camera.slide(-camera.frame[1],frame_time);
-            self.update = true;
-            }
-            if self.pressed.j {
-            camera.slide(-camera.frame[2],frame_time);
-            self.update = true;
-            }
-            if self.pressed.l {
-            camera.slide(camera.frame[2],frame_time);
-            self.update = true;
+            //reset orientation
+            if !input.pressed.space {
+                camera.frame = V::M::id();
+                camera.update();
+                input.update = true;
+                input.pressed.space = true;
             }
         } else {
-           //rotation
-            if self.pressed.d {
-                camera.spin(0,-1,frame_time);
-                self.update = true;
+            if input.pressed.j {
+            camera.spin(2,-1,-frame_time);
+            input.update = true;
             }
-            if self.pressed.a {
-                camera.spin(0,-1,-frame_time);
-                self.update = true;
-            }
-            if self.pressed.i {
-                camera.spin(1,-1,frame_time);
-                self.update = true;
-            }
-            if self.pressed.k {
-                camera.spin(1,-1,-frame_time);
-                self.update = true;
-            }
-            if self.pressed.shift {
-                if self.pressed.j {
-                camera.spin(0,2,-frame_time);
-                self.update = true;
-                }
-                if self.pressed.l {
-                    camera.spin(0,2,frame_time);
-                    self.update = true;
-                }
-                //reset orientation
-                if !self.pressed.space {
-                    camera.frame = V::M::id();
-                    camera.update();
-                    self.update = true;
-                    self.pressed.space = true;
-                }
-            } else {
-                if self.pressed.j {
-                camera.spin(2,-1,-frame_time);
-                self.update = true;
-                }
-                if self.pressed.l {
-                    camera.spin(2,-1,frame_time);
-                    self.update = true;
-                }
-                
+            if input.pressed.l {
+                camera.spin(2,-1,frame_time);
+                input.update = true;
             }
             
         }
-
-    }
-    pub fn update_shape<V : VectorTrait>(&mut self, shape : &mut Shape<V>)
-    {
-        //toggle transparency
-        if !self.pressed.t {
-            shape.transparent = !shape.transparent;
-            self.pressed.t = true;
-            self.update = true;
-        }
+        
     }
 
-    pub fn print_debug<V : VectorTrait>(&mut self, game : &mut Game<V>, frame_seconds : FPSFloat)
-    {
-        if !self.pressed.space && !self.pressed.shift {
-            //println!("camera.pos = {}",camera.pos);
-            //rintln!("camera.heading = {}",camera.heading);
-            //println!("camera.frame = {}",camera.frame);
-            //println!("game time elapsed: {}", duration_as_field(game_time));
-            //let frame_seconds = duration_as_field(frame_len);
-            println!("frame time: {}, fps: {}", frame_seconds,1.0/frame_seconds);
-            //clipping::print_in_front(&clip_state.in_front);
-            //clip_state.print_debug();
-            //clipping::test_dyn_separate(&shapes,&camera.pos);
-            self.pressed.space = true;
+}
+pub fn update_shape<V : VectorTrait>(input : &mut Input, shape : &mut Shape<V>)
+{
+    //toggle transparency
+    if !input.pressed.t {
+        shape.transparent = !shape.transparent;
+        input.pressed.t = true;
+        input.update = true;
+    }
+}
 
-        }
-        //toggle clipping
-        if !self.pressed.c {
-            //TEMPORARILY DISABLED
-            //game.clip_state.clipping_enabled = !game.clip_state.clipping_enabled;
-            //println!("clipping={}",game.clip_state.clipping_enabled);
-            self.pressed.c = true;
-            self.update = true;
-        }
+pub fn print_debug<V : VectorTrait>(input : &mut Input)
+{
+    if !input.pressed.space && !input.pressed.shift {
+        //println!("camera.pos = {}",camera.pos);
+        //rintln!("camera.heading = {}",camera.heading);
+        //println!("camera.frame = {}",camera.frame);
+        //println!("game time elapsed: {}", duration_as_field(game_time));
+        //let frame_seconds = duration_as_field(frame_len);
+        println!("frame time: {}, fps: {}", input.frame_duration,1.0/input.frame_duration);
+        //clipping::print_in_front(&clip_state.in_front);
+        //clip_state.print_debug();
+        //clipping::test_dyn_separate(&shapes,&camera.pos);
+        input.pressed.space = true;
+
+    }
+    //toggle clipping
+    if !input.pressed.c {
+        //TEMPORARILY DISABLED
+        //game.clip_state.clipping_enabled = !game.clip_state.clipping_enabled;
+        //println!("clipping={}",game.clip_state.clipping_enabled);
+        input.pressed.c = true;
+        input.update = true;
     }
 }
 macro_rules! match_press {

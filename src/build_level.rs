@@ -1,8 +1,32 @@
-use crate::vector::vec3::Vec3;
+use crate::vector::{Vec3,Vec4};
+use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d};
 use crate::colors::YELLOW;
 use crate::geometry::{Shape,Face,buildshapes};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
+
+pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
+
+    build_lvl_1_3d()
+    //build_level::build_test_scene_3d()
+}
+pub fn build_shapes_4d() -> Vec<Shape<Vec4>> {
+    let wall_length = 3.0;
+    //buildshapes::build_axes_cubes_4d()
+    //buildshapes::cubeidor_4d()
+    let mut shapes = build_corridor_cross(
+        &color_cube(build_cube_4d(1.0)),wall_length);
+    //let (m,n) = (4,4);
+    //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
+    shapes.push(build_duoprism_4d([0.1,0.1],[[0,1],[2,3]],[6,6])
+        .set_color(YELLOW)
+        .set_pos(&Vec4::new(0.0,0.0,wall_length - 0.5,0.0)));
+    //let shapes_len = shapes.len();
+    //buildshapes::color_duocylinder(&mut shapes[shapes_len-1],10,10);
+    shapes
+     //   .set_pos(&Vec4::new(0.0,0.0,0.0,0.0));
+    
+}
 
 pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<Shape<V>> {
 

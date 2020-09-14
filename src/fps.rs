@@ -1,7 +1,7 @@
 //thanks to https://stackoverflow.com/a/61547339
 
 pub type FPSFloat = f64;
-const TARGET_FPS : FPSFloat = 60.0;
+pub const TARGET_FPS : FPSFloat = 60.0;
 
 use std::time::{Instant};
 

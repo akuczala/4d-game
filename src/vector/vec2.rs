@@ -99,7 +99,7 @@ impl VectorTrait for Vec2 {
     Vec2::new(f(self[0],rhs[0]),f(self[1],rhs[1]))
   }
   fn dot(self, rhs: Vec2) -> Field {
-    (self[0]*rhs[0] + self[1]*rhs[1])
+    self[0]*rhs[0] + self[1]*rhs[1]
   }
 
   fn constant(a : Field) -> Vec2 {

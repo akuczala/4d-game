@@ -7,6 +7,7 @@ use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
 use crate::draw::Texture;
+
 pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 
 	//starting angle causes first edge to be parallel to y axis
