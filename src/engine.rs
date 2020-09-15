@@ -52,7 +52,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             .build();
 
         //let extra_lines : Vec<Line<V>> = Vec::new();
-        let camera = Camera::new(V::zero()-V::one_hot(-1)*0.);
+        let camera = Camera::new(V::zero());
         //use crate::vector::Rotatable;
         //camera.rotate(-2,-1,3.14159/2.);
         
@@ -63,11 +63,11 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let cur_lines_length = draw_lines.len();
         let face_scales : Vec<crate::vector::Field> = vec![0.8,0.9];
 
-        world.insert(clip_state);
-        world.insert(draw_lines);
+        world.insert(clip_state); // decompose into single entity properties
+        world.insert(draw_lines); // unclear if this would be better as entities
         world.insert(proj_lines);
         world.insert(face_scales);
-        world.insert(camera);
+        world.insert(camera); //decompose and use components
         EngineD {
             world,
             cur_lines_length,

@@ -95,6 +95,13 @@ impl VectorTrait for Vec3 {
   fn zip_map<F : Fn(Field, Field) -> Field>(self, rhs : Self, f : F) -> Self {
     Vec3::new(f(self[0],rhs[0]),f(self[1],rhs[1]),f(self[2],rhs[2]))
   }
+  fn fold<F : Fn(Field, Field) -> Field>(self, init : Option<Field>, f : F) -> Field {
+    let val0 = match init {
+      Some(ival) => f(ival,self[0]),
+      None => self[0],
+    };
+    f(f(val0,self[1]),self[2])
+  }
   fn dot(self, rhs: Vec3) -> Field {
     self[0]*rhs[0] + self[1]*rhs[1] + self[2]*rhs[2]
   }

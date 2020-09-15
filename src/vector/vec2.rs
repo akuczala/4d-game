@@ -3,7 +3,7 @@ use std::fmt;
 use crate::vector::{VecIndex,VectorTrait,Field};
 use super::Mat2;
 
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Vec2{pub arr : [Field ; 2]}
 impl Vec2 {
   pub fn new(v0 : Field, v1 : Field) -> Vec2
@@ -97,6 +97,13 @@ impl VectorTrait for Vec2 {
   }
   fn zip_map<F : Fn(Field, Field) -> Field>(self, rhs : Self, f : F) -> Self {
     Vec2::new(f(self[0],rhs[0]),f(self[1],rhs[1]))
+  }
+  fn fold<F : Fn(Field, Field) -> Field>(self, init : Option<Field>, f : F) -> Field {
+    let val0 = match init {
+      Some(ival) => f(ival,self[0]),
+      None => self[0],
+    };
+    f(val0,self[1])
   }
   fn dot(self, rhs: Vec2) -> Field {
     self[0]*rhs[0] + self[1]*rhs[1]

@@ -12,8 +12,8 @@ mod camera;
 #[allow(dead_code)]
 mod colors;
 mod graphics;
-//mod game;
 mod engine;
+mod collide;
 mod input;
 #[allow(dead_code)]
 mod build_level;

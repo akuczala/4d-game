@@ -2,18 +2,18 @@ use std::marker::PhantomData;
 
 use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;
-use glutin::event::ElementState::{Pressed,Released};
+
 use winit_input_helper::WinitInputHelper;
 
-use specs::{ReadStorage,WriteStorage,ReadExpect,WriteExpect,Read,Write,System,Join};
+use specs::prelude::*;
 
 use std::time::Duration;
 
 use crate::camera::Camera;
-use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex};
+use crate::vector::{VectorTrait,Field,VecIndex};
 use crate::geometry::Shape;
 use crate::clipping::ClipState;
-use crate::fps::FPSFloat;
+
 
 //use crate::game::Game;
 
@@ -58,15 +58,6 @@ impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
     }
 }
 
-enum MovementType {
-    Translation,
-    Rotation,
-}
-enum MovementDirection {
-    Plus,
-    Minus,
-}
-
 //(- key, + key, axis)
 const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
     (VKC::A, VKC::D, 0),
@@ -78,6 +69,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
 {
     //let frame_time = duration_as_field(frame_duration) as Field;
     let frame_time = input.frame_duration as Field;
+
     //fowards + backwards
     if input.helper.key_held(VKC::W) {
         camera.slide(camera.heading,frame_time);
@@ -89,7 +81,6 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     }
 
     //sliding,turning
-
     for &(key_minus, key_plus, axis) in MOVE_KEYMAP.iter() {
 
         let movement_sign = 

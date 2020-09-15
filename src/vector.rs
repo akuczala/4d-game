@@ -43,6 +43,7 @@ pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
   fn get_arr(&self) -> &Self::Arr;
   fn map<F : Fn(Field) -> Field>(self, f : F) -> Self;
   fn zip_map<F : Fn(Field,Field) -> Field>(self, rhs : Self, f : F) -> Self;
+  fn fold<F : Fn(Field, Field) -> Field>(self, init : Option<Field>, f : F) -> Field;
 
   fn dot(self, rhs: Self) -> Field;
   fn norm_sq(self) -> Field {
