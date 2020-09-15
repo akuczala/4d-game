@@ -40,7 +40,11 @@ pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
 
   const DIM : VecIndex;
 
+  fn from_arr(arr : &Self::Arr) -> Self;
   fn get_arr(&self) -> &Self::Arr;
+  //ideally, I'd be able to implement this here by constrainting Arr to be iterable
+  //could we use IntoIterator?
+  fn iter<'a>(&'a self) -> std::slice::Iter<'a,Field>;
   fn map<F : Fn(Field) -> Field>(self, f : F) -> Self;
   fn zip_map<F : Fn(Field,Field) -> Field>(self, rhs : Self, f : F) -> Self;
   fn fold<F : Fn(Field, Field) -> Field>(self, init : Option<Field>, f : F) -> Field;

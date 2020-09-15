@@ -10,10 +10,6 @@ impl Vec2 {
   {
     Vec2{arr : [v0,v1]}
   }
-  pub fn from_arr(arr : &[Field ; 2]) -> Vec2
-  {
-    Vec2{arr : *arr}
-  }
 
 }
 impl Index<VecIndex> for Vec2 {
@@ -89,8 +85,15 @@ impl VectorTrait for Vec2 {
 
   const DIM : VecIndex = 2;
   
+  fn from_arr(arr : &Self::Arr) -> Self
+  {
+    Self{arr : *arr}
+  }
   fn get_arr(&self) -> &[Field ; 2]{
     &self.arr
+  }
+  fn iter<'a>(&'a self) -> std::slice::Iter<'a,Field> {
+    self.get_arr().iter()
   }
   fn map<F : Fn(Field) -> Field>(self, f : F) -> Self {
     Vec2::new(f(self[0]),f(self[1]))
