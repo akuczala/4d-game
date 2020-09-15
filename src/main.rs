@@ -21,18 +21,16 @@ mod coin;
 mod fps;
 //mod object;
 
-use specs::prelude::*;
+//use specs::prelude::*;
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 
 use glium::glutin::event_loop::EventLoop;
-use winit_input_helper::WinitInputHelper;
 
 
 //NOTES:
 // include visual indicator of what direction a collision is in
 
-use crate::input::Input;
 use engine::Engine;
 use fps::FPSTimer;
 
@@ -40,7 +38,7 @@ use fps::FPSTimer;
 fn main() {
     
     use glutin::{
-        event::{Event, WindowEvent},
+        //event::{Event, WindowEvent},
         event_loop::ControlFlow,
     };
 

@@ -75,20 +75,14 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             dummy : PhantomData
         }
     }
-    //temporary functions to accomodate non-ecs code
-    //required changing function arguments from Vec to slice
-    pub fn get_shapes<'a>(&'a self) -> ReadStorage<'a,Shape<V>> {
-        //let data : ReadStorage<Shape<V>> = self.world.system_data();
-        return self.world.system_data()
-    }
-    pub fn get_mut_shapes(&mut self) -> WriteStorage<Shape<V>> {
-       self.world.system_data()
-    }
 
+    //currently returns bool that tells main whether to swap engines
     pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, frame_duration : FPSFloat) -> bool {
         {
             self.world.write_resource::<Input>().frame_duration = frame_duration;
         }
+        //brackets here used to prevent borrowing issues between input + self
+        //would probably be sensible to move this into its own function
         {
             let mut input = self.world.write_resource::<Input>();
             //swap / reset engine
@@ -112,9 +106,6 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
                 },
                 Event::MainEventsCleared => {
                     // Application update code.
-                    
-                    //self.game_update(&mut input);
-
                     if input.update {
                         display.gl_window().window().request_redraw();
                     }
@@ -122,53 +113,33 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
                 _ => (),
             };
         }
+        //game update and draw
         match event {
             Event::MainEventsCleared => {self.game_update()},
             Event::RedrawRequested(_) => {
                 // Redraw the application.
                 self.draw(&display);
-                //self.print_debug(&mut input); 
                 
             },
             _ => ()
         };
-        false
+
+        false //don't switch engines
     }
 
     //game update every frame
     fn game_update(&mut self) {
-        //self.game.game_update(input);
-        //let mut input = self.world.write_resource::<Input>();
 
-        // if input.update {
-        //     //if input.pressed.being_touched {
-        //     if true {
-        //         let shapes_len = self.get_shapes().as_slice().len();
-        //         //currently rotates the coin (happens to be the last entity with Shape)
-        //         self.get_mut_shapes().as_mut_slice()[shapes_len-1].rotate(0,-1,0.05);
+        let mut dispatcher = DispatcherBuilder::new()
+           .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
+           .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
+           .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
+           .build();
 
-        //     }
-            let mut dispatcher = DispatcherBuilder::new()
-               .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
-               .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
-               .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
-               .build();
-
-            dispatcher.dispatch(&mut self.world);
-            //update_camera(input, &mut self.camera, frame_len);
-
-        //let shapes_len = self.get_shapes().as_slice().len();
-        //crate::input::update_shape(input, &mut self.get_mut_shapes().as_mut_slice()[shapes_len-1]);
-        
-        //input.print_debug(&self.camera,&game_duration,&frame_duration,&mut clip_state,&shapes);
-            //input.update = true; //set to true for constant updating
-       // }
-
+        dispatcher.dispatch(&mut self.world);
     }
 
     fn draw(&mut self, display : &Display) {
-        //self.game.draw_update(&mut self.graphics,display);
-        //self.draw_lines = self.draw_stuff();
 
         //would ideally define dispatcher on init
         let mut dispatcher = DispatcherBuilder::new()
@@ -195,12 +166,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         self.graphics.draw_lines(&draw_lines,display);
     }
 
-    // fn print_debug(&mut self, input : &mut Input) {
-    //    crate::input::print_debug::<V>(input);
-    // }
 }
-
-
 
 impl EngineD<Vec3,Graphics2d> {
     fn init(display : &Display,) -> Self {
@@ -244,24 +210,6 @@ impl Engine {
                     Engine::Four(e) => e.update(event,control_flow,display,frame_duration),
                 }
     }
-    // pub fn game_update(&mut self, input : &mut Input) {
-    //     match self {
-    //                 Engine::Three(e) => e.game_update(input),
-    //                 Engine::Four(e) => e.game_update(input),
-    //             }
-    // }
-    // pub fn draw(&mut self, display : &Display) {
-    //     match self {
-    //         Engine::Three(e) => e.draw(display),
-    //         Engine::Four(e) => e.draw(display)
-    //     };
-    // }
-    // pub fn print_debug(&mut self, input : &mut Input) {
-    //     match self {
-    //         Engine::Three(e) => e.print_debug(input),
-    //         Engine::Four(e) => e.print_debug(input)
-    //     };
-    // }
 
 }
 

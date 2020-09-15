@@ -32,7 +32,7 @@ impl FPSTimer {
 
         self.update_fps(elapsed_time, wait_millis);
 
-        //self.debug(elapsed_time, wait_millis);
+        self.debug(elapsed_time, wait_millis);
 
         let new_inst = self.start + std::time::Duration::from_millis(wait_millis);
         new_inst
