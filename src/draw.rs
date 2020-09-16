@@ -1,4 +1,5 @@
 mod texture;
+use crate::engine::Player;
 use specs::{ReadStorage,WriteStorage,ReadExpect,WriteExpect,Read,System,Join};
 use std::marker::PhantomData;
 
@@ -108,12 +109,12 @@ impl<V : VectorTrait> DrawLineList<V> {
 //would be nicer to move lines out of read_in_lines rather than clone them
 pub struct TransformDrawLinesSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
-    type SystemData = (ReadExpect<'a,DrawLineList<V>>,WriteExpect<'a,DrawLineList<V::SubV>>,ReadExpect<'a,Camera<V>>);
+    type SystemData = (ReadExpect<'a,DrawLineList<V>>,WriteExpect<'a,DrawLineList<V::SubV>>,ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
 
-    fn run(&mut self, (read_in_lines, mut write_out_lines,camera) : Self::SystemData) {
+    fn run(&mut self, (read_in_lines, mut write_out_lines, camera, player) : Self::SystemData) {
     	//write new vec of draw lines to DrawLineList
     	write_out_lines.0 = read_in_lines.0.iter()
-    	.map(|line| transform_draw_line(line.clone(),&camera))
+    	.map(|line| transform_draw_line(line.clone(),&camera.get(player.0).unwrap()))
     	.collect();
 
     }
@@ -178,13 +179,13 @@ pub fn transform_draw_line<V : VectorTrait>(
 pub struct VisibilitySystem<V : VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
-	type SystemData = (WriteStorage<'a,Shape<V>>,ReadExpect<'a,Camera<V>>,ReadExpect<'a,ClipState<V>>);
+	type SystemData = (WriteStorage<'a,Shape<V>>,ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>,ReadExpect<'a,ClipState<V>>);
 
-	fn run(&mut self, (mut shapes, camera, clip_state) : Self::SystemData) {
+	fn run(&mut self, (mut shapes, camera, player, clip_state) : Self::SystemData) {
 
 		for shape in (&mut shapes).join() {
 
-			update_shape_visibility(&camera, shape, &clip_state)
+			update_shape_visibility(&camera.get(player.0).unwrap(), shape, &clip_state)
 		}
 	}
 

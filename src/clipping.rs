@@ -1,3 +1,5 @@
+
+use crate::engine::Player;
 use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 use crate::draw::DrawLine;
@@ -9,10 +11,10 @@ use crate::camera::Camera;
 
 pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
-    type SystemData = (Write<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,ReadExpect<'a,Camera<V>>);
+    type SystemData = (Write<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
 
-    fn run(&mut self, (mut clip_state,shape_data,camera) : Self::SystemData) {
-        calc_in_front(&mut clip_state,shape_data.as_slice(),&camera.pos);
+    fn run(&mut self, (mut clip_state,shape_data,camera,player) : Self::SystemData) {
+        calc_in_front(&mut clip_state,shape_data.as_slice(),&camera.get(player.0).unwrap().pos);
     }
 }
 pub fn calc_in_front<V : VectorTrait>(

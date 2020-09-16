@@ -1,4 +1,6 @@
+use crate::spatial_hash::SpatialHashSet;
 use crate::coin::Coin;
+use crate::collide;
 use specs::prelude::*;
 use glium::Display;
 use std::marker::PhantomData;
@@ -19,8 +21,10 @@ use crate::draw;
 use crate::input::Input;
 
 use crate::graphics::{Graphics,Graphics2d,Graphics3d};
-use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait};
+use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait,Field};
 use crate::fps::FPSFloat;
+
+pub struct Player(pub Entity); //specifies entity of the player?
 
 pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
     pub world : World,
@@ -37,15 +41,38 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let mut world = World::new();
         world.register::<Shape<V>>();
         world.register::<crate::coin::Coin>();
+        world.register::<Camera<V>>();
+        world.register::<BBox<V>>();
+        world.register::<collide::Collider>();
 
         world.insert(Input::new());
 
-        //change to into_iter, remove cloning
+        //add shape entities and intialize spatial hash set
         let shapes_len = shapes.len();
         let coin_shape = shapes.pop();
+        let (mut max, mut min) = (V::zero(), V::zero());
+        let mut max_lengths = V::zero();
+
         for shape in shapes.into_iter() {
-            world.create_entity().with(shape).build();
+            let bbox = collide::calc_bbox(&shape);
+            min = min.zip_map(bbox.min,Field::min); 
+            max = max.zip_map(bbox.max,Field::max);
+            max_lengths = max_lengths.zip_map(bbox.max - bbox.min,Field::max);
+            world.create_entity()
+            .with(bbox)
+            .with(shape)
+            .with(collide::Collider)
+            .build();
         }
+        println!("Min/max: {},{}",min,max);
+        println!("Longest sides {}",max_lengths);
+        world.insert(
+            SpatialHashSet::<V,Entity>::new(
+                min*1.5, //make bounds slightly larger than farthest points
+                max*1.5,
+                max_lengths*1.1 //make cell size slightly larger than largest shape dimensions
+            )
+        );
         world.create_entity()
             .with(coin_shape.unwrap())
             .with(Coin)
@@ -53,6 +80,8 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
         //let extra_lines : Vec<Line<V>> = Vec::new();
         let camera = Camera::new(V::zero());
+
+
         //use crate::vector::Rotatable;
         //camera.rotate(-2,-1,3.14159/2.);
         
@@ -63,11 +92,18 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let cur_lines_length = draw_lines.len();
         let face_scales : Vec<crate::vector::Field> = vec![0.8,0.9];
 
+        use crate::collide::BBox;
+        let player_entity = world.create_entity()
+            .with(camera) //decompose
+            .with(BBox{min : V::ones()*(-0.1), max : V::ones()*(0.1)})
+            .build(); 
+
+        world.insert(Player(player_entity));
         world.insert(clip_state); // decompose into single entity properties
         world.insert(draw_lines); // unclear if this would be better as entities
         world.insert(proj_lines);
         world.insert(face_scales);
-        world.insert(camera); //decompose and use components
+        
         EngineD {
             world,
             cur_lines_length,

@@ -1,3 +1,4 @@
+use crate::engine::Player;
 use std::marker::PhantomData;
 
 use glium::glutin;
@@ -52,9 +53,9 @@ impl Input {
 
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
-    type SystemData = (Write<'a,Input>,WriteExpect<'a,Camera<V>>);
-    fn run(&mut self, (mut input, mut camera) : Self::SystemData) {
-        update_camera(&mut input, &mut camera);
+    type SystemData = (Write<'a,Input>,WriteStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
+    fn run(&mut self, (mut input, mut camera, player) : Self::SystemData) {
+        update_camera(&mut input, &mut camera.get_mut(player.0).unwrap());
     }
 }
 

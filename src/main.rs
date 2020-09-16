@@ -14,6 +14,7 @@ mod colors;
 mod graphics;
 mod engine;
 mod collide;
+mod spatial_hash;
 mod input;
 #[allow(dead_code)]
 mod build_level;
