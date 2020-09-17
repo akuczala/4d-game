@@ -1,6 +1,6 @@
 use std::ops::{Add,Sub,Neg,Mul,Div,Index,IndexMut};
 use std::fmt;
-use crate::vector::{VecIndex,VectorTrait,Field,Vec3};
+use crate::vector::{VecIndex,VectorTrait,Field,Vec3,rig::Rig};
 use super::Mat4;
 
 #[derive(Copy,Clone)]
@@ -76,10 +76,10 @@ impl Div<Field> for Vec4 {
 }
 
 
-impl VectorTrait for Vec4 {
-  type M = Mat4;
-  type SubV = Vec3;
+impl Rig<Field> for Vec4 {
+  
   type Arr = [Field ; 4];
+  type SubR = Vec3;
 
   const DIM : VecIndex = 4;
 
@@ -112,9 +112,17 @@ impl VectorTrait for Vec4 {
   fn constant(a : Field) -> Vec4{
     Vec4::new(a,a,a,a)
   }
-  fn project(&self) -> Self::SubV {
-    Self::SubV::new(self[0],self[1],self[2])
+  fn project(&self) -> Self::SubR {
+    Self::SubR::new(self[0],self[1],self[2])
   }
+}
+impl VectorTrait for Vec4 {
+  type M = Mat4;
+  type SubV = Vec3;
+
+  // fn project(&self) -> Self::SubV {
+  //   Self::SubV::new(self[0],self[1],self[2])
+  // }
 }
 
 impl fmt::Display for Vec4 {

@@ -1,6 +1,6 @@
 use std::ops::{Add,Sub,Neg,Mul,Div,Index,IndexMut};
 use std::fmt;
-use crate::vector::{VecIndex,VectorTrait,Field};
+use crate::vector::{VecIndex,VectorTrait,Field,rig::Rig};
 use super::Mat2;
 
 #[derive(Copy,Clone,Debug)]
@@ -74,13 +74,9 @@ impl Div<Field> for Vec2 {
     self*(1.0/rhs)
   }
 }
-impl VectorTrait for Vec2 {
-  type M = Mat2;
 
-  //this should be Field but we have to implement VectorTrait
-  //for Field
-  type SubV = Vec2; 
-
+impl Rig<Field> for Vec2 {
+  type SubR = Vec2;
   type Arr = [Field ; 2];
 
   const DIM : VecIndex = 2;
@@ -117,6 +113,16 @@ impl VectorTrait for Vec2 {
   }
   //should really return Field
   //I instead just throw away the second component
+  fn project(&self) -> Vec2 {
+    Vec2::new(self[0],0.0)
+  }
+}
+impl VectorTrait for Vec2 {
+  type M = Mat2;
+
+  //this should be Field but we have to implement VectorTrait
+  //for Field
+  type SubV = Vec2; 
   fn project(&self) -> Vec2 {
     Vec2::new(self[0],0.0)
   }

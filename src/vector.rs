@@ -1,6 +1,9 @@
+pub mod rig;
 pub mod vec2; pub mod vec3; pub mod vec4;
 pub mod mat2_tuple2; pub mod mat3_tuple2;
 pub mod mat4_tuple2;
+
+use rig::{Rig,RigField};
 //pub mod vec4;
 use fmt::Display;
 use std::ops::{Add,Sub,Mul,Div,Index,IndexMut,Neg};
@@ -14,6 +17,10 @@ use std::fmt;
 //use alga::linear::FiniteDimInnerSpace;
 pub type VecIndex = i8; //i8
 pub type Field = f32;
+impl RigField for Field {
+  fn zero() -> Self {0.0}
+  fn one() -> Self {1.0}
+}
 
 const EPSILON : Field = 0.0001;
 pub use std::f32::consts::PI;
@@ -28,28 +35,30 @@ pub fn scalar_linterp(a : Field, b : Field, t : Field) -> Field {
 
 //the 'static lifetime here tells the compiler that any type with the vector trait
 //does not hold any references that might require lifetimes
-pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
- Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
- Mul<Field,Output=Self> + Div<Field,Output=Self> +
- Index<VecIndex,Output=Field> + IndexMut<VecIndex>
+
+// pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
+//  Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
+//  Mul<Field,Output=Self> + Div<Field,Output=Self> +
+//  Index<VecIndex,Output=Field> + IndexMut<VecIndex>
+pub trait VectorTrait: Rig<Field> + Sub<Output=Self> + Neg<Output=Self> + Div<Field,Output=Self>
  //+ std::iter::Sum
  {
   type M : MatrixTrait<Self>;
   type SubV: VectorTrait;
-  type Arr;
+  //type Arr;
 
-  const DIM : VecIndex;
+  //const DIM : VecIndex;
 
-  fn from_arr(arr : &Self::Arr) -> Self;
-  fn get_arr(&self) -> &Self::Arr;
+  //fn from_arr(arr : &Self::Arr) -> Self;
+  //fn get_arr(&self) -> &Self::Arr;
   //ideally, I'd be able to implement this here by constrainting Arr to be iterable
   //could we use IntoIterator?
-  fn iter<'a>(&'a self) -> std::slice::Iter<'a,Field>;
-  fn map<F : Fn(Field) -> Field>(self, f : F) -> Self;
-  fn zip_map<F : Fn(Field,Field) -> Field>(self, rhs : Self, f : F) -> Self;
-  fn fold<F : Fn(Field, Field) -> Field>(self, init : Option<Field>, f : F) -> Field;
+  //fn iter<'a>(&'a self) -> std::slice::Iter<'a,Field>;
+  //fn map<F : Fn(Field) -> Field>(self, f : F) -> Self;
+  //fn zip_map<F : Fn(Field,Field) -> Field>(self, rhs : Self, f : F) -> Self;
+  //fn fold<F : Fn(Field, Field) -> Field>(self, init : Option<Field>, f : F) -> Field;
 
-  fn dot(self, rhs: Self) -> Field;
+  //fn dot(self, rhs: Self) -> Field;
   fn norm_sq(self) -> Field {
     self.dot(self)
   }
@@ -62,17 +71,17 @@ pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
   fn is_close(v1: Self, v2: Self) -> bool {
     (v1-v2).norm_sq() < EPSILON*EPSILON
   }
-  fn zero() -> Self {
-    Self::constant(0.0)
-  }
-  fn ones() -> Self {
-    Self::constant(1.0)
-  }
-  fn constant(a : Field) -> Self;
+  // fn zero() -> Self {
+  //   Self::constant(0.0)
+  // }
+  // fn ones() -> Self {
+  //   Self::constant(1.0)
+  // }
+  // fn constant(a : Field) -> Self;
   fn one_hot(i: VecIndex) -> Self{
     Self::M::id()[i]
   }
-  fn project(&self) -> Self::SubV;
+  fn project(&self) -> <Self as VectorTrait>::SubV;
   fn linterp(v1: Self, v2: Self,x : Field) -> Self {
     v1*(1.-x) + v2*x
   }

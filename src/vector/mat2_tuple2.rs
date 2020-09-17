@@ -1,5 +1,5 @@
 use super::Vec2;
-use crate::vector::{VectorTrait,MatrixTrait,VecIndex,Field};
+use crate::vector::{VectorTrait,rig::Rig,MatrixTrait,VecIndex,Field};
 use std::ops::{Add,Sub,Mul,Index};
 use std::fmt;
 

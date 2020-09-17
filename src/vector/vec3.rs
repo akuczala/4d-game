@@ -1,6 +1,6 @@
 use std::ops::{Add,Sub,Neg,Mul,Div,Index,IndexMut};
 use std::fmt;
-use crate::vector::{VecIndex,VectorTrait,Field,Vec2};
+use crate::vector::{VecIndex,VectorTrait,Field,Vec2,rig::Rig};
 use super::Mat3;
 
 #[derive(Copy,Clone)]
@@ -75,9 +75,8 @@ impl Div<Field> for Vec3 {
 }
 
 
-impl VectorTrait for Vec3 {
-  type M = Mat3;
-  type SubV = Vec2;
+impl Rig<Field> for Vec3 {
+  type SubR = Vec2;
   type Arr = [Field ; 3];
 
   const DIM : VecIndex = 3;
@@ -115,7 +114,13 @@ impl VectorTrait for Vec3 {
     Vec2::new(self[0],self[1])
   }
 }
-
+impl VectorTrait for Vec3 {
+  type M = Mat3;
+  type SubV = Vec2;
+  fn project(&self) -> Vec2 {
+    Vec2::new(self[0],self[1])
+  }
+}
 impl fmt::Display for Vec3 {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
