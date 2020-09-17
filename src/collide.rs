@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 
 #[derive(Component)]
 #[storage(VecStorage)]
-pub struct Collider;
+pub struct StaticCollider;
 
 //axis-aligned bounding box
 #[derive(Component)]
@@ -48,11 +48,14 @@ pub fn calc_bbox<V : VectorTrait>(shape : &Shape<V>) -> BBox<V> {
 
 // }
 
+//enter each statically colliding entity into every cell containing its bbox volume (either 1, 2, 4 ... up to 2^d cells)
+//assuming that cells are large enough that all bboxes can fit in a cell
+//for static objects, it is cheap to hash the volume since we need only do it once
 pub struct BBoxHashingSystem<V>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for BBoxHashingSystem<V> {
 
-	type SystemData = (ReadStorage<'a,Collider>,ReadStorage<'a,BBox<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
+	type SystemData = (ReadStorage<'a,StaticCollider>,ReadStorage<'a,BBox<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
 
 	fn run(&mut self, (read_collider, read_bbox, entities, mut write_hash) : Self::SystemData) {
 		let hash = &mut write_hash;
@@ -77,7 +80,7 @@ pub struct CollisionTestSystem<V>(pub PhantomData<V>);
 // 	}
 // }
 
-//for simplicity, let's assume that every colliding entity has a bbox small enough that it can occupy 1, 2 or at most 4 cells.
+//for simplicity, let's assume that every colliding entity has a bbox small enough that it can occupy up to 2^d cells.
 //this means that we should have the cell sizes larger than the longest object, for each axis
 //this may be problematic if we want to consider entities with size comparable to the scene size - then the hash map is useless
 

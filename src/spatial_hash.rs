@@ -211,12 +211,12 @@ fn test_hash2() {
 fn test_shape_hash() {
 	use specs::prelude::*;
 	use crate::vector::Vec3;
-	use crate::collide::Collider;
+	use crate::collide::StaticCollider;
 	type V = Vec3;
 
 	let mut world = World::new();
 	world.register::<Shape<V>>();
-	world.register::<Collider>();
+	world.register::<StaticCollider>();
 	world.register::<BBox<V>>();
 
     let shapes = crate::build_level::build_shapes_3d();
@@ -233,7 +233,7 @@ fn test_shape_hash() {
         world.create_entity()
         .with(bbox)
         .with(shape)
-        .with(Collider)
+        .with(StaticCollider)
         .build();
     }
     println!("Min/max: {},{}",min,max);

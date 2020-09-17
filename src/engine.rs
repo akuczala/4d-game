@@ -43,7 +43,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         world.register::<crate::coin::Coin>();
         world.register::<Camera<V>>();
         world.register::<BBox<V>>();
-        world.register::<collide::Collider>();
+        world.register::<collide::StaticCollider>();
 
         world.insert(Input::new());
 
@@ -61,7 +61,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             world.create_entity()
             .with(bbox)
             .with(shape)
-            .with(collide::Collider)
+            .with(collide::StaticCollider)
             .build();
         }
         println!("Min/max: {},{}",min,max);
@@ -73,6 +73,9 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
                 max_lengths*1.1 //make cell size slightly larger than largest shape dimensions
             )
         );
+        //enter shapes into hash set
+        collide::BBoxHashingSystem(PhantomData::<V>).run_now(&world);
+
         world.create_entity()
             .with(coin_shape.unwrap())
             .with(Coin)
@@ -94,8 +97,9 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
         use crate::collide::BBox;
         let player_entity = world.create_entity()
+            .with(BBox{min : V::ones()*(-0.1) + camera.pos, max : V::ones()*(0.1) + camera.pos})
             .with(camera) //decompose
-            .with(BBox{min : V::ones()*(-0.1), max : V::ones()*(0.1)})
+            
             .build(); 
 
         world.insert(Player(player_entity));
