@@ -1,5 +1,6 @@
 pub mod graphics2d;
 pub mod graphics3d;
+mod simple_vertex;
 
 pub use graphics2d::Graphics2d;
 pub use graphics3d::Graphics3d;
@@ -16,9 +17,16 @@ use crate::vector::{VectorTrait};
 use crate::geometry::{VertIndex};
 use crate::draw::{DrawVertex,DrawLine};
 
+pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/simple-shader.vert");
+pub const FRAGMENT_SHADER_SRC : &str = include_str!("graphics/simple-shader.frag");
 
+pub trait VertexTrait : Vertex {
+    const NO_DRAW : Self;
+    fn vert_to_gl<V : VectorTrait>(vert: &Option<DrawVertex<V>>) -> Self;
+    fn line_to_gl<V : VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Vec<Self>;
+}
 pub trait Graphics<V : VectorTrait> {
-	type VertexType : Vertex ;
+	type VertexType : VertexTrait ;
 	//type V : VectorTrait;
 
 	const VERTEX_SHADER_SRC : &'static str;
@@ -56,25 +64,18 @@ pub trait Graphics<V : VectorTrait> {
     }
     fn new_index_buffer(&mut self, verts : &Vec<VertIndex>, display : &Display);
 
-    fn vert_to_gl(vert : &Option<DrawVertex<V>>) -> Self::VertexType;
+    // fn vert_to_gl(vert : &Option<DrawVertex<V>>) -> Self::VertexType {
+    // };
 	fn verts_to_gl(verts : &Vec<Option<DrawVertex<V>>>) -> Vec<Self::VertexType> {
-        verts.iter().map(Self::vert_to_gl)
+        verts.iter().map(Self::VertexType::vert_to_gl)
             .collect()
     }
 	fn vertis_to_gl(vertis : &Vec<VertIndex>) -> Vec<u16> {
     	vertis.iter().map(|v| *v as u16).collect()
 	}
-
     fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<V>>>) -> Vec<Self::VertexType> {
         opt_lines.iter()
-            .map(|opt_line| match opt_line {
-                Some(draw_line)
-                    => {
-                        draw_line.get_draw_verts().iter()
-                        .map(|&v| Self::vert_to_gl(&Some(v.clone()))).collect()
-                    }
-                None => vec![Self::NO_DRAW,Self::NO_DRAW]
-            })
+            .map(Self::VertexType::line_to_gl)
             .flatten().collect()
 
     }
@@ -83,19 +84,9 @@ pub trait Graphics<V : VectorTrait> {
 
         let mut i = 0;
         for opt_line in opt_lines.iter() {
-            match opt_line {
-                Some(draw_line) => {
-                    for v in draw_line.get_draw_verts().iter() {
-                        write_map.set(i,Self::vert_to_gl(&Some(v.clone())));
-                        i += 1;
-                    }
-                },
-                None => {
-                    write_map.set(i,Self::NO_DRAW);
-                    i += 1;
-                    write_map.set(i,Self::NO_DRAW);
-                    i += 1;
-                }
+            for &v in Self::VertexType::line_to_gl(&opt_line).iter() {
+                write_map.set(i,v);
+                i += 1;
             }
         }
     }
@@ -141,9 +132,10 @@ pub trait Graphics<V : VectorTrait> {
         self.write_opt_lines_to_buffer(&draw_lines); //slightly faster than the above (less allocation)
 
         let draw_params = glium::DrawParameters{
-            line_width : Some(2.0),
-            smooth : Some(glium::draw_parameters::Smooth::Nicest),
-            blend : glium::Blend::alpha_blending(),
+            line_width : Some(Self::LINE_WIDTH), //why doesn't this work???
+            //point_size : Some(10.0), when i switch to points, this works...
+            //smooth : Some(glium::draw_parameters::Smooth::Nicest),
+            //blend : glium::Blend::alpha_blending(), //lines are a lot darker 
             .. Default::default()
         };
         let mut target = display.draw();

@@ -1,44 +1,14 @@
 
 use crate::vector::{VectorTrait};
 use crate::geometry::{VertIndex};
-use super::Graphics;
+use super::{Graphics,VertexTrait};
 use crate::vector::{Vec3};
 use glium::{Surface,Display};
 use crate::draw::{DrawVertex,DrawLine};
+use super::{VERTEX_SHADER_SRC,FRAGMENT_SHADER_SRC,simple_vertex::SimpleVertex};
 
+type Vertex = SimpleVertex;
 
-#[derive(Copy, Clone)]
-pub struct Vertex {
-    pub position: [f32; 3],
-    pub color : [f32 ; 4]
-}
-implement_vertex!(Vertex, position, color);
-
-pub const VERTEX_SHADER_SRC : &str = r#"
-    #version 140
-
-    in vec3 position;
-    in vec4 color;
-    out vec4 in_color;
-    uniform mat4 perspective;
-    uniform mat4 view;
-    uniform mat4 model;
-
-    void main() {
-        in_color = color;
-        gl_Position = perspective * view * model * vec4(position, 1.0);
-    }
-    "#;
-pub const FRAGMENT_SHADER_SRC : &str = r#"
-    #version 140
-
-    in vec4 in_color;
-    out vec4 color;
-
-    void main() {
-        color = vec4(in_color);
-    }
-    "#;
 pub struct Graphics3d {
     //display : &'a glium::Display,
     vertex_buffer : glium::VertexBuffer<Vertex>,
@@ -57,10 +27,7 @@ impl Graphics<Vec3> for Graphics3d {
     //vertices are invisible at z = 10.0,
     //so they don't get drawn.
     //was originally using these for debugging
-    const NO_DRAW : Vertex = Vertex{
-        position : [0.0,0.0,10.0],
-        color : [1.0,0.0,0.0,1.0f32]
-    };
+    const NO_DRAW : Self::VertexType = Self::VertexType::NO_DRAW;
 
     fn new(display : &Display) -> Self {
         
@@ -68,7 +35,7 @@ impl Graphics<Vec3> for Graphics3d {
             VERTEX_SHADER_SRC,
             FRAGMENT_SHADER_SRC, None)
             .unwrap();
-        let vertices : Vec<Vertex> = Vec::new();
+        let vertices : Vec<Self::VertexType> = Vec::new();
         let indices : Vec<u16> = Vec::new();
         let vertex_buffer = glium::VertexBuffer::dynamic(display, &vertices).unwrap();
         let index_buffer = glium::IndexBuffer::dynamic(
@@ -125,20 +92,20 @@ impl Graphics<Vec3> for Graphics3d {
     }
 
     //make this consume its input?
-    fn vert_to_gl(vert: &Option<DrawVertex<Vec3>>) -> Vertex {
-        match *vert {
-            Some(DrawVertex{vertex,color}) => {
-                let arr = *vertex.get_arr() ;
-                Vertex{
-                    position : [arr[0],arr[1],arr[2]] as [f32 ; 3],
-                    color : *color.get_arr()
-                }
+    // fn vert_to_gl(vert: &Option<DrawVertex<Vec3>>) -> Vertex {
+    //     match *vert {
+    //         Some(DrawVertex{vertex,color}) => {
+    //             let arr = *vertex.get_arr() ;
+    //             Vertex{
+    //                 position : [arr[0],arr[1],arr[2]] as [f32 ; 3],
+    //                 color : *color.get_arr()
+    //             }
 
-            }
-            None => Self::NO_DRAW
-        }
+    //         }
+    //         None => Self::NO_DRAW
+    //     }
         
-    }
+    // }
 
     fn build_perspective_mat<S>(target : &S) -> [[f32 ; 4] ; 4]
     where S : Surface
