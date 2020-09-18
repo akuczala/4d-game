@@ -5,7 +5,7 @@ use std::collections::{HashMap,HashSet};
 use std::hash::Hash;
 use crate::vector::{VectorTrait,Field};
 
-type HashInt = u32;
+pub type HashInt = u32;
 
 //NOTE: V here is "VALUE" not vector
 pub struct SpatialHash<K : VectorTrait, V> {
@@ -15,7 +15,7 @@ pub struct SpatialHash<K : VectorTrait, V> {
 	length : K,
 	//cell_size : K, //not strictly necessary
 	n_cells : Vec<HashInt>, //size K::DIM
-	multiplier : Vec<HashInt> //size K::DIM
+	pub multiplier : Vec<HashInt> //size K::DIM
 }
 impl<K : VectorTrait, V> SpatialHash<K, V> {
 
@@ -47,6 +47,13 @@ impl<K : VectorTrait, V> SpatialHash<K, V> {
 		.sum()
 
 	}
+	//almost the same as above
+	fn get_cell_coords(&self, &point : &K) -> Vec<HashInt> {
+		(point - self.min).zip_map(self.length,|p,l| p/l).iter()
+		.zip(self.n_cells.iter())
+		.map(|(f,&n)| (f*(n as Field)) as HashInt)
+		.collect()
+	}
 	fn get(&self, point : &K) -> Option<&V> {
 		self.get_from_cell(self.hash(point))
 	}
@@ -61,10 +68,16 @@ impl<K : VectorTrait, V> SpatialHash<K, V> {
 		self.map.get_mut(&cell)
 	}
 	fn insert(&mut self, point : &K, value : V) -> Option<V> {
-		self.map.insert(self.hash(point),value)
+		self.insert_at_cell(self.hash(point),value)
+	}
+	fn insert_at_cell(&mut self, cell : HashInt, value : V) -> Option<V> {
+		self.map.insert(cell,value)
 	}
 	fn remove(&mut self, point: &K) -> Option<V> {
-		self.map.remove(&self.hash(point))
+		self.remove_at_cell(self.hash(point))
+	}
+	fn remove_at_cell(&mut self, cell: HashInt) -> Option<V> {
+		self.map.remove(&cell)
 	}
 }
 impl<K : VectorTrait, V : std::fmt::Display> std::fmt::Display for SpatialHash<K, V> {
@@ -91,23 +104,34 @@ impl <K : VectorTrait, T> SpatialHashSet<K, T>
 	pub fn hash(&self, point : &K) -> HashInt {
 		self.0.hash(point)
 	}
+	pub fn get_cell_coords(&self, point : &K) -> Vec<HashInt> {
+		self.0.get_cell_coords(point)
+	}
 	pub fn get(&self, point : &K) -> Option<&HashSet<T>> {
 		self.0.get(point)
 	}
 	pub fn get_from_cell(&self, cell : HashInt) -> Option<&HashSet<T>> {
 		self.0.get_from_cell(cell)
 	}
+	pub fn get_mut_from_cell(&mut self, cell : HashInt) -> Option<&mut HashSet<T>> {
+		self.0.get_mut_from_cell(cell)
+	}
 	//create new set in bin or append to existing set
-	pub fn insert(&mut self, point : &K, item : T) {
-		let maybe_set = self.0.get_mut(point);
+	pub fn insert_at_cell(&mut self, cell : HashInt, item : T) {
+	let maybe_set = self.get_mut_from_cell(cell);
 		match maybe_set {
 			Some(set) => {set.insert(item);},
 			None => {
 				let mut new_set = HashSet::new();
 				new_set.insert(item);
-				self.0.insert(&point,new_set);
+				self.0.insert_at_cell(cell,new_set);
 			},
 		};
+
+	}
+	//create new set in bin or append to existing set
+	pub fn insert(&mut self, point : &K, item : T) {
+		self.insert_at_cell(self.hash(&point),item)
 
 	}
 	pub fn remove(&mut self, point : &K, item : &T) -> bool {
@@ -238,6 +262,8 @@ fn test_shape_hash() {
     }
     println!("Min/max: {},{}",min,max);
     println!("Longest sides {}",max_lengths);
+    max[1] = 10.0; min[1] = -10.0; //let's use only one cell vertically for the sake of testing
+    max_lengths[1] = (max[1] - min[1])/2.0;
     world.insert(
 		SpatialHashSet::<Vec3,Entity>::new(
 			min*1.5, //make bounds slightly larger than farthest points
@@ -259,6 +285,7 @@ fn test_shape_hash() {
     for n in hash.0.n_cells.iter() {
     	println!("cells: {}",n);
     }
+
 
 
 }

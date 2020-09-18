@@ -172,8 +172,10 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
         let mut dispatcher = DispatcherBuilder::new()
            .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
+           .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["update_camera"])
            .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
            .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
+           .with(crate::collide::CollisionTestSystem(PhantomData::<V>),"collision_test",&["update_player_bbox"])
            .build();
 
         dispatcher.dispatch(&mut self.world);
