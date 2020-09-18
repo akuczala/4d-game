@@ -130,5 +130,56 @@ impl <V : VectorTrait> Shape<V> {
   pub fn calc_radius(verts : &Vec<V>) -> Field {
     verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
   }
+  pub fn point_signed_distance(&self, point : V) -> Field {
+    self.faces.iter().map(|f| f.normal.dot(point) - f.threshold).fold(f32::NEG_INFINITY,|a,b| match a > b {true => a, false => b})
+  }
+  pub fn point_within(&self, point : V, distance : Field) -> bool {
+    self.faces.iter().all(|f| f.normal.dot(point) - f.threshold < distance)
+  }
+}
 
+
+#[test]
+fn test_point_within() {
+  use vector::Vec3;
+  let point = Vec3::new(1.2,1.2,1.2);
+  let shape = crate::geometry::buildshapes::build_prism_3d(1.0, 1.0, 5);
+  for v in shape.faces.iter().map(|f| f.normal.dot(point) - f.threshold) {
+    println!("{}",v);
+  }
+  assert!(!shape.point_within(point,0.))
+}
+
+fn linspace(min : Field, max : Field, n : usize) -> impl Iterator<Item=Field> {
+  (0..n).map(move |i| (i as Field)/((n-1) as Field)).map(move |f| (1.-f)*min + f*max)
+}
+#[test]
+fn test_linspace() {
+  use crate::vector::is_close;
+  assert!(linspace(-2.5,2.5,9).zip(vec![-2.5  , -1.875, -1.25 , -0.625,  0.   ,  0.625,  1.25 ,  1.875,
+        2.5  ]).all(|(a,b)| is_close(a,b)))
+}
+
+//prints points at different distances from prism
+#[test]
+fn test_point_within2() {
+  use vector::Vec3;
+  let shape = crate::geometry::buildshapes::build_prism_3d(1.0, 1.0, 5);
+  for x in linspace(-2.,2.,40) {
+    let mut line = "".to_string();
+    for y in linspace(-2.,2.,40) {
+      let point = Vec3::new(x,y,0.);
+      // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
+      //   true => "+", false => "_"
+      // };
+      let dist = shape.point_signed_distance(point);
+      //println!("{}",dist);
+      let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
+      line = format!("{} {}",line,newstr);
+      
+    }
+    println!("{}",line);
+  }
+  //assert!(false); //forces cargo test to print this
+  //assert!(!shape.point_within(point,0.))
 }

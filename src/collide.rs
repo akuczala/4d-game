@@ -92,16 +92,23 @@ pub struct CollisionTestSystem<V>(pub PhantomData<V>);
 
 impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 
-	type SystemData = (ReadExpect<'a,Input>,ReadExpect<'a,Player>,ReadStorage<'a,BBox<V>>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
+	type SystemData = (ReadExpect<'a,Input>,ReadExpect<'a,Player>,ReadStorage<'a,Camera<V>>,ReadStorage<'a,Shape<V>>,ReadStorage<'a,BBox<V>>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
 
-	fn run(&mut self, (input, player, bbox, hash) : Self::SystemData) {
+	fn run(&mut self, (input, player, camera, shape, bbox, hash) : Self::SystemData) {
 		use glium::glutin::event::VirtualKeyCode as VKC;
 		if input.helper.key_released(VKC::Space) {
 			let mut out_string = "Entities: ".to_string();
-			for e in get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash) {
-				out_string = format!("{} {},", out_string, e.id())
-			}
-			println!("{}", out_string);
+			let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
+			let player_pos = camera.get(player.0).unwrap().pos;
+			if entities_in_bbox.iter().any(|&e| shape.get(e).unwrap().point_within(player_pos,0.)) {
+				println!("in thing")
+			} else {
+				println!("not in thing")
+			};
+			// for e in entities_in_bbox {
+			// 	out_string = format!("{} {},", out_string, e.id())
+			// }
+			// println!("{}", out_string);
 		}
 
 	}

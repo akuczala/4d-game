@@ -42,6 +42,9 @@ impl<V : VectorTrait> fmt::Display for Plane<V> {
     }
 }
 
+pub fn point_plane_normal_axis<V : VectorTrait>(point : &V, plane : &Plane<V>) -> Field {
+  return plane.threshold - point.dot(plane.normal)
+}
 pub fn line_plane_intersect<V>(line : Line<V>, plane : Plane<V>) -> Option<V>
 where V : VectorTrait
 {
