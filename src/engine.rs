@@ -44,6 +44,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         world.register::<Camera<V>>();
         world.register::<BBox<V>>();
         world.register::<collide::StaticCollider>();
+        world.register::<collide::MoveNext<V>>();
 
         world.insert(Input::new());
 
@@ -64,8 +65,8 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             .with(collide::StaticCollider)
             .build();
         }
-        println!("Min/max: {},{}",min,max);
-        println!("Longest sides {}",max_lengths);
+        //println!("Min/max: {},{}",min,max);
+        //println!("Longest sides {}",max_lengths);
         world.insert(
             SpatialHashSet::<V,Entity>::new(
                 min*1.5, //make bounds slightly larger than farthest points
@@ -99,7 +100,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let player_entity = world.create_entity()
             .with(BBox{min : V::ones()*(-0.1) + camera.pos, max : V::ones()*(0.1) + camera.pos})
             .with(camera) //decompose
-            
+            .with(collide::MoveNext::<V>::default())
             .build(); 
 
         world.insert(Player(player_entity));
@@ -172,10 +173,12 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
         let mut dispatcher = DispatcherBuilder::new()
            .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
-           .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["update_camera"])
+           .with(crate::collide::PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision",&["update_camera"])
+           .with(crate::collide::MovePlayerSystem(PhantomData::<V>),"move_player",&["player_collision"])
+           .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
            .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
            .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
-           .with(crate::collide::CollisionTestSystem(PhantomData::<V>),"collision_test",&["update_player_bbox"])
+           //.with(crate::collide::CollisionTestSystem(PhantomData::<V>),"collision_test",&["update_player_bbox"])
            .build();
 
         dispatcher.dispatch(&mut self.world);

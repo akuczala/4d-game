@@ -3,7 +3,7 @@ use crate::camera::Camera;
 use crate::engine::Player;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
 use crate::geometry::Shape;
-use crate::vector::{VectorTrait,Field};
+use crate::vector::{VectorTrait,Field,Translatable};
 use specs::prelude::*;
 use specs::{Component};
 use std::marker::PhantomData;
@@ -20,6 +20,34 @@ pub struct StaticCollider;
 pub struct BBox<V : VectorTrait> {
 	pub min : V,
 	pub max : V,
+}
+
+#[derive(Component)]
+#[storage(VecStorage)]
+pub struct MoveNext<V : VectorTrait>{pub next_pos : Option<V>, pub can_move : Option<bool>}
+impl<V : VectorTrait> Default for MoveNext<V> {
+	fn default() -> Self {
+		Self{next_pos : None, can_move : None}
+	}
+}
+//print entities in the same cell as the player's bbox
+pub struct MovePlayerSystem<V>(pub PhantomData<V>);
+
+impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
+
+	type SystemData = (ReadExpect<'a,Player>, WriteStorage<'a,MoveNext<V>>, WriteStorage<'a,Camera<V>>);
+
+	fn run(&mut self, (player, mut write_move_next, mut camera) : Self::SystemData) {
+		let move_next = write_move_next.get_mut(player.0).unwrap(); 
+		match move_next {
+			MoveNext{next_pos : Some(next_pos), can_move : Some(true)} => {
+				camera.get_mut(player.0).unwrap().set_pos(*next_pos);
+			},
+			_ => (),
+		};
+		*move_next = MoveNext::default(); //clear movement
+
+	}
 }
 
 pub struct UpdateBBoxSystem<V>(pub PhantomData<V>);
@@ -100,7 +128,7 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 			let mut out_string = "Entities: ".to_string();
 			let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
 			let player_pos = camera.get(player.0).unwrap().pos;
-			if entities_in_bbox.iter().any(|&e| shape.get(e).unwrap().point_within(player_pos,0.)) {
+			if entities_in_bbox.iter().any(|&e| shape.get(e).unwrap().point_within(player_pos,0.1)) {
 				println!("in thing")
 			} else {
 				println!("not in thing")
@@ -110,6 +138,33 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 			// }
 			// println!("{}", out_string);
 		}
+
+	}
+}
+//stop movement through entites indexed in spatial hash set
+//need to improve this by projecting out disallowed component of movement rather than stopping movement
+pub struct PlayerCollisionDetectionSystem<V>(pub PhantomData<V>);
+
+impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
+
+	type SystemData = (ReadExpect<'a,Player>, WriteStorage<'a,MoveNext<V>>,
+		ReadStorage<'a,Shape<V>>,ReadStorage<'a,BBox<V>>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
+
+	fn run(&mut self, (player, mut write_move_next, shape, bbox, hash) : Self::SystemData) {
+		let move_next = write_move_next.get_mut(player.0).unwrap(); 
+		match move_next {
+			MoveNext{next_pos : Some(next_pos), can_move : Some(true)} => {
+				//maybe we should use the anticipated player bbox here
+				let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
+				//let next_pos = move_next.next_pos.unwrap();
+				let collides = entities_in_bbox.iter().any(|&e| shape.get(e).unwrap().point_within(*next_pos,0.1));
+				if collides {
+					move_next.can_move = Some(false);
+				}
+			},
+			_ => (),
+		};
+		
 
 	}
 }

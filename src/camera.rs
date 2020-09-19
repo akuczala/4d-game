@@ -37,7 +37,10 @@ where V : VectorTrait
 		self.update();
 	}
 	pub fn slide(&mut self, direction : V, time : Field) {
-		self.translate(direction.normalize()*Self::SPEED*time);
+		self.translate(self.get_slide_dpos(direction, time));
+	}
+	pub fn get_slide_dpos(&self, direction : V, time : Field) -> V {
+		direction.normalize()*Self::SPEED*time
 	}
 	pub fn spin(&mut self, axis1 : VecIndex, axis2 : VecIndex, speed_mult : Field) {
 		self.rotate(axis1,axis2,speed_mult*Self::ANG_SPEED);

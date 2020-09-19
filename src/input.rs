@@ -14,7 +14,7 @@ use crate::camera::Camera;
 use crate::vector::{VectorTrait,Field,VecIndex};
 use crate::geometry::Shape;
 use crate::clipping::ClipState;
-
+use crate::collide::MoveNext;
 
 //use crate::game::Game;
 
@@ -53,9 +53,9 @@ impl Input {
 
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
-    type SystemData = (Write<'a,Input>,WriteStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
-    fn run(&mut self, (mut input, mut camera, player) : Self::SystemData) {
-        update_camera(&mut input, &mut camera.get_mut(player.0).unwrap());
+    type SystemData = (Write<'a,Input>,WriteStorage<'a,Camera<V>>,WriteStorage<'a,MoveNext<V>>,ReadExpect<'a,Player>);
+    fn run(&mut self, (mut input, mut camera, mut move_next, player) : Self::SystemData) {
+        update_camera(&mut input, &mut camera.get_mut(player.0).unwrap(), move_next.get_mut(player.0).unwrap());
     }
 }
 
@@ -66,18 +66,25 @@ const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
     (VKC::J, VKC::L, 2),
 ];
 
-pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V>)
+pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
 {
     //let frame_time = duration_as_field(frame_duration) as Field;
     let frame_time = input.frame_duration as Field;
 
     //fowards + backwards
     if input.helper.key_held(VKC::W) {
-        camera.slide(camera.heading,frame_time);
+        *move_next = MoveNext{
+            next_pos : Some(camera.get_slide_dpos(camera.heading,frame_time) + camera.pos),
+            can_move : Some(true)
+        };
+        //camera.slide(camera.heading,frame_time);
         input.update = true;
     }
     if input.helper.key_held(VKC::S) {
-        camera.slide(-camera.heading,frame_time);
+        *move_next = MoveNext{
+            next_pos : Some(camera.get_slide_dpos(-camera.heading,frame_time) + camera.pos),
+            can_move : Some(true)
+        };
         input.update = true;
     }
 
@@ -92,7 +99,11 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
         if movement_sign != 0. {
             //sliding
             if input.helper.held_alt() {
-                camera.slide(camera.frame[axis]*movement_sign,frame_time)
+                *move_next = MoveNext{
+                    next_pos : Some(camera.get_slide_dpos(camera.frame[axis]*movement_sign,frame_time) + camera.pos),
+                    can_move : Some(true)
+                };
+                //camera.slide(camera.frame[axis]*movement_sign,frame_time)
             //rotations
             } else { 
                 //special case : (0,2) rotation
