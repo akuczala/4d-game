@@ -71,6 +71,8 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     //let frame_time = duration_as_field(frame_duration) as Field;
     let frame_time = input.frame_duration as Field;
 
+    
+
     //fowards + backwards
     if input.helper.key_held(VKC::W) {
         *move_next = MoveNext{
@@ -89,6 +91,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     }
 
     //sliding,turning
+    let mut any_slide_turn = false;
     for &(key_minus, key_plus, axis) in MOVE_KEYMAP.iter() {
 
         let movement_sign = 
@@ -97,6 +100,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
         let movement_sign = movement_sign as f32;
 
         if movement_sign != 0. {
+            any_slide_turn = true;
             //sliding
             if input.helper.held_alt() {
                 *move_next = MoveNext{
@@ -117,6 +121,10 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
             }
         };
 
+    }
+    //spin unless turning or sliding
+    if V::DIM == 4 && any_slide_turn == false {
+        camera.spin(0,2,0.05*frame_time);
     }
     //         //reset orientation
     //         if !input.pressed.space {
