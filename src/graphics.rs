@@ -1,6 +1,7 @@
 pub mod graphics2d;
 pub mod graphics3d;
 mod simple_vertex;
+mod proj_line_vertex;
 
 pub use graphics2d::Graphics2d;
 pub use graphics3d::Graphics3d;
@@ -17,7 +18,8 @@ use crate::vector::{VectorTrait};
 use crate::geometry::{VertIndex};
 use crate::draw::{DrawVertex,DrawLine};
 
-pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/simple-shader.vert");
+//pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/test-shader.vert");
+pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/test-shader.vert");
 pub const FRAGMENT_SHADER_SRC : &str = include_str!("graphics/simple-shader.frag");
 
 pub trait VertexTrait : Vertex {
@@ -64,8 +66,6 @@ pub trait Graphics<V : VectorTrait> {
     }
     fn new_index_buffer(&mut self, verts : &Vec<VertIndex>, display : &Display);
 
-    // fn vert_to_gl(vert : &Option<DrawVertex<V>>) -> Self::VertexType {
-    // };
 	fn verts_to_gl(verts : &Vec<Option<DrawVertex<V>>>) -> Vec<Self::VertexType> {
         verts.iter().map(Self::VertexType::vert_to_gl)
             .collect()
@@ -132,14 +132,12 @@ pub trait Graphics<V : VectorTrait> {
         self.write_opt_lines_to_buffer(&draw_lines); //slightly faster than the above (less allocation)
 
         let draw_params = glium::DrawParameters{
-            line_width : Some(Self::LINE_WIDTH), //why doesn't this work???
-            //point_size : Some(10.0), when i switch to points, this works...
-            //smooth : Some(glium::draw_parameters::Smooth::Nicest),
-            //blend : glium::Blend::alpha_blending(), //lines are a lot darker 
+            smooth : Some(glium::draw_parameters::Smooth::Nicest),
+            blend : glium::Blend::alpha_blending(), //lines are a lot darker 
             .. Default::default()
         };
         let mut target = display.draw();
-
+        let (width,height) = target.get_dimensions();
         let view_matrix = match V::DIM {
             2 => [
                 [1.0, 0.0, 0.0, 0.0],
@@ -162,11 +160,18 @@ pub trait Graphics<V : VectorTrait> {
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
                 [ 0.0, 0.0, 0.0 , 1.0f32],
-            ]
+            ],
+            aspect : (width as f32)/(height as f32),
+            thickness : match V::DIM {
+                2 =>0.01, 3 => 0.04,
+                _ => panic!("Invalid dimension")} as f32,
+            miter : 1,
         };
-        target.clear_color(0.0,0.0,0.0,1.0);
+        //target.clear_color(0.0,0.0,0.0,1.0);
+        let gray = 0.01;
+        target.clear_color(gray,gray,gray,1.0);
         target.draw(self.get_vertex_buffer(),
-            &glium::index::NoIndices(glium::index::PrimitiveType::LinesList),
+            &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
             self.get_program(),
             &uniforms,
             &draw_params).unwrap();

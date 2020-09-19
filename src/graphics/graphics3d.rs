@@ -5,9 +5,9 @@ use super::{Graphics,VertexTrait};
 use crate::vector::{Vec3};
 use glium::{Surface,Display};
 use crate::draw::{DrawVertex,DrawLine};
-use super::{VERTEX_SHADER_SRC,FRAGMENT_SHADER_SRC,simple_vertex::SimpleVertex};
+use super::{VERTEX_SHADER_SRC,FRAGMENT_SHADER_SRC,simple_vertex::SimpleVertex,proj_line_vertex::NewVertex};
 
-type Vertex = SimpleVertex;
+type Vertex = NewVertex;
 
 pub struct Graphics3d {
     //display : &'a glium::Display,

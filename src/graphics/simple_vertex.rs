@@ -19,7 +19,7 @@ impl VertexTrait for SimpleVertex {
     fn vert_to_gl<V : VectorTrait>(vert: &Option<DrawVertex<V>>) -> Self {
         match *vert {
             Some(DrawVertex{vertex,color}) => {
-                SimpleVertex{
+                Self{
                     position :match V::DIM {
                         2 => [vertex[0],vertex[1],0.0],
                         3 => [vertex[0],vertex[1],vertex[2]],

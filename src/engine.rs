@@ -93,7 +93,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let proj_lines = draw_lines.map(|l| draw::transform_draw_line(l,&camera));
          //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
         let cur_lines_length = draw_lines.len();
-        let face_scales : Vec<crate::vector::Field> = vec![0.8,0.9];
+        let face_scales : Vec<crate::vector::Field> = vec![0.9];
 
         use crate::collide::BBox;
         let player_entity = world.create_entity()

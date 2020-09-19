@@ -1,3 +1,7 @@
+//from https://github.com/mattdesl/webgl-lines
+
+#version 140
+
 in vec3 position;
 in vec4 color;
 in float direction; 

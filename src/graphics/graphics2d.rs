@@ -1,6 +1,7 @@
 
 use crate::graphics::VertexTrait;
 use super::simple_vertex::SimpleVertex;
+use super::proj_line_vertex::NewVertex;
 use crate::vector::{VectorTrait};
 use crate::geometry::{VertIndex};
 use super::Graphics;
@@ -9,29 +10,8 @@ use crate::vector::{Vec2};
 use glium::{Surface,Display};
 use crate::draw::{DrawVertex,DrawLine};
 
-#[derive(Copy, Clone)]
-pub struct NewVertex {
-    pub position: [f32; 3],
-    pub color : [f32 ; 4],
-    pub direction : f32,
-    pub next : [f32 ; 3],
-    pub previous : [f32 ; 3],
-}
-impl Default for NewVertex {
-    fn default() -> Self {
-        Self{
-            position : [0.,0.,0.],
-            color : [0.,0.,0.,0.],
-            direction : 0.,
-            next : [0.,0.,0.],
-            previous : [0.,0.,0.],
-        }
-    }
-}
 
-implement_vertex!(NewVertex, position, color, direction, next, previous);
-
-type Vertex = SimpleVertex;
+type Vertex = NewVertex;
 pub struct Graphics2d {
     //display : &'a glium::Display,
     vertex_buffer : glium::VertexBuffer<Vertex>,
