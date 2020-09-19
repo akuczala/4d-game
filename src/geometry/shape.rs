@@ -133,6 +133,16 @@ impl <V : VectorTrait> Shape<V> {
   pub fn point_signed_distance(&self, point : V) -> Field {
     self.faces.iter().map(|f| f.normal.dot(point) - f.threshold).fold(f32::NEG_INFINITY,|a,b| match a > b {true => a, false => b})
   }
+  //returns distance and normal of closest face
+  pub fn point_normal_distance(&self, point : V) -> (V, Field) {
+     self.faces.iter().map(|f| (f.normal, f.normal.dot(point) - f.threshold))
+      .fold((V::zero(),f32::NEG_INFINITY),|(n1,a),(n2,b)| match a > b {true => (n1,a), false => (n2,b)})
+  }
+  //returns distance and normal of closest face
+  pub fn point_facei_distance(&self, point : V) -> (usize, Field) {
+     self.faces.iter().enumerate().map(|(i,f)| (i, f.normal.dot(point) - f.threshold))
+      .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
+  }
   pub fn point_within(&self, point : V, distance : Field) -> bool {
     self.faces.iter().all(|f| f.normal.dot(point) - f.threshold < distance)
   }
@@ -163,8 +173,9 @@ fn test_linspace() {
 //prints points at different distances from prism
 #[test]
 fn test_point_within2() {
+  use colored::*;
   use vector::Vec3;
-  let shape = crate::geometry::buildshapes::build_prism_3d(1.0, 1.0, 5);
+  let shape = crate::geometry::buildshapes::build_prism_3d(1.0, 1.0, 4);
   for x in linspace(-2.,2.,40) {
     let mut line = "".to_string();
     for y in linspace(-2.,2.,40) {
@@ -172,14 +183,18 @@ fn test_point_within2() {
       // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
       //   true => "+", false => "_"
       // };
-      let dist = shape.point_signed_distance(point);
+      let (i,dist) = shape.point_facei_distance(point);
       //println!("{}",dist);
-      let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
+      //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
+      let mut newstr = match i {1 => "1".blue(), 2 => "2".yellow(), 3 => "3".cyan(), 4 => "4".green(), _ => "_".red()};
+      if dist > 1. {
+        newstr = "+".to_string().white();
+      }
       line = format!("{} {}",line,newstr);
       
     }
     println!("{}",line);
   }
-  //assert!(false); //forces cargo test to print this
+  assert!(false); //forces cargo test to print this
   //assert!(!shape.point_within(point,0.))
 }

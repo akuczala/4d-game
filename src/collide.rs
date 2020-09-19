@@ -24,10 +24,10 @@ pub struct BBox<V : VectorTrait> {
 
 #[derive(Component)]
 #[storage(VecStorage)]
-pub struct MoveNext<V : VectorTrait>{pub next_pos : Option<V>, pub can_move : Option<bool>}
+pub struct MoveNext<V : VectorTrait>{pub next_dpos : Option<V>, pub can_move : Option<bool>}
 impl<V : VectorTrait> Default for MoveNext<V> {
 	fn default() -> Self {
-		Self{next_pos : None, can_move : None}
+		Self{next_dpos : None, can_move : None}
 	}
 }
 //print entities in the same cell as the player's bbox
@@ -40,8 +40,8 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 	fn run(&mut self, (player, mut write_move_next, mut camera) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap(); 
 		match move_next {
-			MoveNext{next_pos : Some(next_pos), can_move : Some(true)} => {
-				camera.get_mut(player.0).unwrap().set_pos(*next_pos);
+			MoveNext{next_dpos : Some(next_dpos), can_move : Some(true)} => {
+				camera.get_mut(player.0).unwrap().translate(*next_dpos);
 			},
 			_ => (),
 		};
@@ -111,8 +111,8 @@ impl<'a, V : VectorTrait> System<'a> for UpdatePlayerBBox<V> {
 	fn run(&mut self, (player, mut write_bbox, camera) : Self::SystemData) {
 		let pos = camera.get(player.0).unwrap().pos;
 		let mut bbox = write_bbox.get_mut(player.0).unwrap();
-		bbox.min = pos - V::constant(0.1);
-		bbox.max = pos + V::constant(-0.1);
+		bbox.min = pos - V::constant(0.2);
+		bbox.max = pos + V::constant(-0.2);
 	}
 }
 //print entities in the same cell as the player's bbox
@@ -125,7 +125,7 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 	fn run(&mut self, (input, player, camera, shape, bbox, hash) : Self::SystemData) {
 		use glium::glutin::event::VirtualKeyCode as VKC;
 		if input.helper.key_released(VKC::Space) {
-			let mut out_string = "Entities: ".to_string();
+			//let mut out_string = "Entities: ".to_string();
 			let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
 			let player_pos = camera.get(player.0).unwrap().pos;
 			if entities_in_bbox.iter().any(|&e| shape.get(e).unwrap().point_within(player_pos,0.1)) {
@@ -142,25 +142,36 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 	}
 }
 //stop movement through entites indexed in spatial hash set
-//need to improve this by projecting out disallowed component of movement rather than stopping movement
 pub struct PlayerCollisionDetectionSystem<V>(pub PhantomData<V>);
 
 impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 
-	type SystemData = (ReadExpect<'a,Player>, WriteStorage<'a,MoveNext<V>>,
+	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>, WriteStorage<'a,MoveNext<V>>,
 		ReadStorage<'a,Shape<V>>,ReadStorage<'a,BBox<V>>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
 
-	fn run(&mut self, (player, mut write_move_next, shape, bbox, hash) : Self::SystemData) {
-		let move_next = write_move_next.get_mut(player.0).unwrap(); 
+	fn run(&mut self, (player, camera, mut write_move_next, shape, bbox, hash) : Self::SystemData) {
+		let move_next = write_move_next.get_mut(player.0).unwrap();
 		match move_next {
-			MoveNext{next_pos : Some(next_pos), can_move : Some(true)} => {
+			MoveNext{next_dpos : Some(_next_dpos), can_move : Some(true)} => {
 				//maybe we should use the anticipated player bbox here
+				let pos = camera.get(player.0).unwrap().pos;
 				let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
-				//let next_pos = move_next.next_pos.unwrap();
-				let collides = entities_in_bbox.iter().any(|&e| shape.get(e).unwrap().point_within(*next_pos,0.1));
-				if collides {
-					move_next.can_move = Some(false);
+
+				for &e in entities_in_bbox.iter() {
+					let shape = shape.get(e).unwrap();
+					let next_dpos = move_next.next_dpos.unwrap();
+					let (normal, dist) = shape.point_normal_distance(pos);
+					
+					if dist < 0.2 {
+						//push player away along normal of nearest face (projects out -normal)
+						//but i use abs here to guarantee the face always repels the player
+						let new_dpos = next_dpos + (normal)*(normal.dot(next_dpos).abs());
+
+						move_next.next_dpos = Some(new_dpos);
+						//println!("{}",normal);
+					}
 				}
+				
 			},
 			_ => (),
 		};

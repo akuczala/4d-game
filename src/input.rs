@@ -74,7 +74,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     //fowards + backwards
     if input.helper.key_held(VKC::W) {
         *move_next = MoveNext{
-            next_pos : Some(camera.get_slide_dpos(camera.heading,frame_time) + camera.pos),
+            next_dpos : Some(camera.get_slide_dpos(camera.heading,frame_time)),
             can_move : Some(true)
         };
         //camera.slide(camera.heading,frame_time);
@@ -82,7 +82,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     }
     if input.helper.key_held(VKC::S) {
         *move_next = MoveNext{
-            next_pos : Some(camera.get_slide_dpos(-camera.heading,frame_time) + camera.pos),
+            next_dpos : Some(camera.get_slide_dpos(-camera.heading,frame_time)),
             can_move : Some(true)
         };
         input.update = true;
@@ -100,7 +100,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
             //sliding
             if input.helper.held_alt() {
                 *move_next = MoveNext{
-                    next_pos : Some(camera.get_slide_dpos(camera.frame[axis]*movement_sign,frame_time) + camera.pos),
+                    next_dpos : Some(camera.get_slide_dpos(camera.frame[axis]*movement_sign,frame_time)),
                     can_move : Some(true)
                 };
                 //camera.slide(camera.frame[axis]*movement_sign,frame_time)

@@ -97,8 +97,8 @@ pub struct Face<V : VectorTrait> {
 impl<V : VectorTrait> Face<V> {
   pub fn new(edgeis : Vec<EdgeIndex>, normal : V) -> Face<V> {
     let face = Face{
-      normal : normal,
-      normal_ref : normal.clone(),
+      normal : normal.normalize(), //let's make 100% these are normalized
+      normal_ref : normal.normalize(),
 
       center : V::zero(),
       center_ref : V::zero(),

@@ -16,7 +16,7 @@ pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 	let cap_coords : Vec<Vec3> = angles.map(|angle| Vec3::new(angle.cos(),angle.sin(),0.0)*r).collect();
 	
 	let n_angles = (0..n).map(|i| 2.0*PI*(i as Field)/(n as Field));
-	let normals = n_angles.map(|angle| Vec3::new(angle.cos(),angle.sin(),0.0)*r);
+	let normals = n_angles.map(|angle| Vec3::new(angle.cos(),angle.sin(),0.0));
 
 	//build verts
 	let top_verts = cap_coords.iter().map(|v| *v + Vec3::new(0.0,0.0,h/2.0));

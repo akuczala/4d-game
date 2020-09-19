@@ -38,6 +38,13 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 {
     pub fn new(mut shapes : Vec<Shape<V>>, graphics : G) -> Self
     {
+        //
+        // for shape in shapes.iter() {
+        //     for face in shape.faces.iter() {
+        //         println!("{}",face.normal);
+        //     }
+        // }
+        //
         let mut world = World::new();
         world.register::<Shape<V>>();
         world.register::<crate::coin::Coin>();
@@ -80,6 +87,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         world.create_entity()
             .with(coin_shape.unwrap())
             .with(Coin)
+            //.with(collide::StaticCollider)
             .build();
 
         //let extra_lines : Vec<Line<V>> = Vec::new();
