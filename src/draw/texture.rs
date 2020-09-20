@@ -127,7 +127,7 @@ impl TextureMapping {
 			).map(|line| Some(DrawLine{line,color})).collect()
 	}
 	pub fn draw_drawlines<V : VectorTrait>(&self, draw_lines : &Vec<DrawLine<V::SubV>>) -> Vec<Option<DrawLine<V>>> {
-		Vec::new()
+		unimplemented!()
 		//draw_lines.iter().map(|draw_line| Some(draw_line.clone())).collect()
 	}
 	//use face edges and reference vertices to determine vertex indices for texture mapping

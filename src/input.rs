@@ -32,7 +32,7 @@ pub struct Input {
     pub update : bool,
     pub frame_duration : crate::fps::FPSFloat,
     pub mouse_dpos : (f32,f32),
-    pub mouse_enabled : bool,
+    pub movement_mode : MovementMode,
 }
 impl Default for Input {
     fn default() -> Self {
@@ -50,7 +50,7 @@ impl Input {
             update : true,
             frame_duration : crate::fps::TARGET_FPS,
             mouse_dpos : (0.,0.),
-            mouse_enabled : false,
+            movement_mode : MovementMode::Mouse,
         }
     }
 }
@@ -63,11 +63,13 @@ impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
     }
 }
 
+pub enum MovementMode{Tank, Mouse} //add flying tank mode, maybe flying mouse mode
+
 //(- key, + key, axis)
 const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
     (VKC::A, VKC::D, 0),
     (VKC::K, VKC::I, 1),
-    (VKC::J, VKC::L, 2),
+    (VKC::Q, VKC::E, 2),
 ];
 
 const MOUSE_SENSITIVITY : Field = 0.2;
@@ -78,22 +80,39 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     let mut any_slide_turn = false;
 
     //mouse
-    if input.mouse_enabled {
-        let mouse_pos = input.helper.mouse();
-        let (mx, my) = match mouse_pos {
-            Some((x,y)) => (x-100.,y-100.),
-            None => (0.,0.)
+    match input.movement_mode {
+        MovementMode::Mouse => {
+            let mouse_pos = input.helper.mouse();
+            let (mx, my) = match mouse_pos {
+                Some((x,y)) => (x-100.,y-100.),
+                None => (0.,0.)
 
-        };
-        let (dmx, dmy) = input.helper.mouse_diff();
-        if dmx.abs() != 0. {
-            camera.spin(0,-1,mx*frame_time*MOUSE_SENSITIVITY);
-            any_slide_turn = true;
-        }
-        if dmy.abs() != 0. {
-            camera.spin(match V::DIM {3 => 1, 4 => 2, _ => panic!("Invalid dimension")},-1,-my*frame_time*MOUSE_SENSITIVITY);
-            any_slide_turn = true;
-        }
+            };
+            //x mouse movement
+            let (dmx, dmy) = input.helper.mouse_diff();
+            if dmx.abs() != 0. {
+                if input.helper.held_shift() {
+                    camera.turn(0,2, mx*frame_time*MOUSE_SENSITIVITY);
+                } else {
+                    camera.turn(0,-1,mx*frame_time*MOUSE_SENSITIVITY);
+                }
+                
+                //camera.spin(0,-1,mx*frame_time*MOUSE_SENSITIVITY);
+                any_slide_turn = true;
+            }
+            //y mouse movement
+            if dmy.abs() != 0. {
+
+                match (V::DIM, input.helper.held_shift()) {
+                    (3, _) | (4, true) => camera.tilt(1,-1,-my*frame_time*MOUSE_SENSITIVITY),
+                    (4, false) => camera.turn(2,-1,-my*frame_time*MOUSE_SENSITIVITY),
+                    (_, _) => panic!("Invalid dimension"),
+                };
+                //camera.spin(axis,-1,-my*frame_time*MOUSE_SENSITIVITY);
+                any_slide_turn = true;
+            }
+        },
+        MovementMode::Tank => (),
     }
 
     //keyboard
@@ -101,7 +120,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     //fowards + backwards
     if input.helper.key_held(VKC::W) {
         *move_next = MoveNext{
-            next_dpos : Some(camera.get_slide_dpos(camera.heading,frame_time)),
+            next_dpos : Some(camera.get_slide_dpos(camera.heading[-1],frame_time)),
             can_move : Some(true)
         };
         //camera.slide(camera.heading,frame_time);
@@ -109,7 +128,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     }
     if input.helper.key_held(VKC::S) {
         *move_next = MoveNext{
-            next_dpos : Some(camera.get_slide_dpos(-camera.heading,frame_time)),
+            next_dpos : Some(camera.get_slide_dpos(-camera.heading[-1],frame_time)),
             can_move : Some(true)
         };
         input.update = true;
@@ -126,9 +145,9 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
         if movement_sign != 0. {
             any_slide_turn = true;
             //sliding
-            if input.helper.held_alt() {
+            if input.helper.held_alt() ^ match input.movement_mode {MovementMode::Mouse => true, _ => false} {
                 *move_next = MoveNext{
-                    next_dpos : Some(camera.get_slide_dpos(camera.frame[axis]*movement_sign,frame_time)),
+                    next_dpos : Some(camera.get_slide_dpos(camera.heading[axis]*movement_sign,frame_time)),
                     can_move : Some(true)
                 };
                 //camera.slide(camera.frame[axis]*movement_sign,frame_time)
@@ -139,7 +158,13 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
                     camera.spin(0,2,movement_sign*frame_time)
                 //turning: rotation along (axis,-1)
                 } else {
-                    camera.spin(axis,-1,movement_sign*frame_time)
+                    if axis == 1 {
+                        camera.tilt(axis,-1,movement_sign*frame_time);
+                    } else {
+                        camera.turn(axis,-1,movement_sign*frame_time);
+                    }
+                    
+                    //camera.spin(axis,-1,movement_sign*frame_time)
                 }
                 
             }
@@ -212,7 +237,10 @@ impl Input {
             self.swap_engine = true
         }
         if self.helper.key_released(VKC::M) {
-            self.mouse_enabled = !self.mouse_enabled
+            self.movement_mode = match self.movement_mode {
+                MovementMode::Mouse => MovementMode::Tank,
+                MovementMode::Tank => MovementMode::Mouse,
+            }
         }
     }
     // listing the events produced by application and waiting to be received

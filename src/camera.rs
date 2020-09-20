@@ -1,5 +1,4 @@
-use specs::{Component,
-            System, VecStorage, WriteStorage};
+use specs::{Component, VecStorage};
 
 use crate::vector::{VectorTrait,MatrixTrait,Field,
 	VecIndex,rotation_matrix,Rotatable,Translatable};
@@ -12,7 +11,7 @@ where V : VectorTrait
 {
 	pub pos : V,
 	pub frame : V::M,
-	pub heading : V,
+	pub heading : V::M,
 	pub plane : Plane<V>,
 
 }
@@ -21,12 +20,13 @@ where V : VectorTrait
 {
 	const SPEED : Field = 1.5;
 	const ANG_SPEED : Field = 1.5*3.14159/3.0;
+	const MAX_TILT : Field = 0.99;
 
 	pub fn new(pos : V) -> Camera<V> {
 		Camera{
 			pos,
 			frame : V::M::id(),
-			heading : V::one_hot(-1),
+			heading : V::M::id(),
 			plane : Plane{normal : V::one_hot(-1), threshold : V::one_hot(-1).dot(pos)},
 
 		}
@@ -43,7 +43,31 @@ where V : VectorTrait
 		direction.normalize()*Self::SPEED*time
 	}
 	pub fn spin(&mut self, axis1 : VecIndex, axis2 : VecIndex, speed_mult : Field) {
-		self.rotate(axis1,axis2,speed_mult*Self::ANG_SPEED);
+		let rot = rotation_matrix(self.frame[axis1],self.frame[axis2],Some(speed_mult*Self::ANG_SPEED));
+		self.frame = self.frame.dot(rot);
+		self.heading = self.heading.dot(rot);
+		self.update();
+	}
+	//heading-based rotation affecting both frame and heading
+	pub fn turn(&mut self, axis1 : VecIndex, axis2 : VecIndex, speed_mult : Field) {
+		let rot = rotation_matrix(self.heading[axis1],self.heading[axis2],Some(speed_mult*Self::ANG_SPEED));
+		self.frame = self.frame.dot(rot);
+		self.heading = self.heading.dot(rot);
+		self.update();
+	}
+	//heading-based rotation affecting only frame
+	pub fn tilt(&mut self, axis1 : VecIndex, axis2 : VecIndex, speed_mult : Field) {
+		
+		let dot = self.heading[axis1].dot(self.frame[axis2]); // get projection of frame axis along heading axis
+
+		if dot*speed_mult < 0. ||  dot.abs() < Self::MAX_TILT { //rotate if tilting direction is opposite projection or if < max tilt
+		//if true {
+			let rot = rotation_matrix(self.frame[axis1],self.frame[axis2],Some(speed_mult*Self::ANG_SPEED));
+			self.frame = self.frame.dot(rot);
+
+			self.update();
+		}
+		
 	}
 	pub fn update_plane(&mut self) {
 		self.plane = Plane{
@@ -51,11 +75,11 @@ where V : VectorTrait
 			threshold : self.frame[-1].dot(self.pos)
 		}
 	}
-	pub fn update_heading(&mut self) {
-		self.heading = self.frame[-1];
-	}
+	// pub fn update_heading(&mut self) {
+	// 	self.heading = self.frame;
+	// }
 	pub fn update(&mut self) {
-		self.update_heading();
+		//self.update_heading();
 		self.update_plane();
 	}
 }

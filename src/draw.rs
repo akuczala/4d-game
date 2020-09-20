@@ -1,23 +1,21 @@
+#[allow(dead_code)]
 mod texture;
 use crate::engine::Player;
-use specs::{ReadStorage,WriteStorage,ReadExpect,WriteExpect,Read,System,Join};
+use specs::prelude::*;
 use std::marker::PhantomData;
 
 extern crate map_in_place;
-use map_in_place::MapVecInPlace;
 
 pub use texture::Texture;
 pub use texture::TextureMapping;
 
 use crate::camera::{Camera};
-use crate::vector::{VectorTrait,Field,VecIndex};
-use crate::geometry::{VertIndex,Shape,Line,Face,Edge};
+use crate::vector::{VectorTrait,Field};
+use crate::geometry::{VertIndex,Shape,Line};
 //use crate::graphics;
 use crate::clipping::clip_line_plane;
 use crate::colors::*;
 use crate::clipping::ClipState;
-
-use itertools::Itertools;
 
 const Z0 : Field = 0.0;
 
@@ -138,38 +136,6 @@ pub fn transform_draw_line<V : VectorTrait>(
 		}
 }
 
-// pub fn transform_lines<V>(lines : Vec<Option<Line<V>>>,
-// 	camera : ReadExpect<Camera>) -> Vec<Option<Line<V::SubV>>>
-// where V : VectorTrait
-// {
-// 	lines.into_iter().map(|line| transform_line(line,camera)).collect()
-	// let clipped_lines = lines
-	// .into_iter()
-	// .map(|maybe_line| match maybe_line {
-	// 	Some(line) => clip_line_plane(line,&camera.plane,Z_NEAR),
-	// 	None => None
-	// });
- //    //let clipped_lines = lines.map(|line| Some(line)); //no clipping
- //    let view_lines = clipped_lines
- //    	.map(|maybe_line| maybe_line
- //    		.map(|line| line
- //    			.map(|v| view_transform(&camera,v))));
- //    let proj_lines = view_lines
- //    	.map(|maybe_line| maybe_line
- //    		.map(|line| line
- //    			.map(project))).collect();
- //    proj_lines
-//}
-// pub fn calc_face_lines_new<V : VectorTrait>(
-// 	face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>
-// ) -> Vec<Option<DrawLine<V>>> {
-// 	if face.visible || shape.transparent {
-// 		face.
-// 	} else {
-// 		Vec::new()
-// 	}
-
-// }
 //in this implementation, the length of the vec is always
 //the same, and invisible faces are just sequences of None
 //seems to be significantly slower than not padding and just changing the buffer when needed
@@ -254,40 +220,8 @@ where V : VectorTrait
 	lines
 	
 }
-pub fn calc_lines_color<V : VectorTrait>(
-	shapes : ReadStorage<Shape<V>>,
-	lines : Vec<Line<V>>,
-	color : Color
-	) -> Vec<Option<DrawLine<V>>> {
 
-	let draw_lines = lines
-		.into_iter()
-		.map(|line| Some(DrawLine{line : line,color}))
-		.collect();
-
-	let clipped_lines = crate::clipping::clip_draw_lines(
-			draw_lines, &shapes, None);
-
-	clipped_lines
-}
-//ehh. need to clone in here since we're borrowing lines
-pub fn calc_lines_color_from_ref<V : VectorTrait>(
-	shapes : ReadStorage<Shape<V>>,
-	lines : &Vec<Line<V>>,
-	color : Color
-	) -> Vec<Option<DrawLine<V>>> {
-
-	let draw_lines = lines
-		.iter()
-		.map(|line| Some(DrawLine{line : (*line).clone(),color}))
-		.collect();
-
-	let clipped_lines = crate::clipping::clip_draw_lines(
-			draw_lines, &shapes, None);
-
-	clipped_lines
-}
-
+#[allow(dead_code)]
 pub fn draw_wireframe<V>(//display : &glium::Display,
 	shape : &Shape<V>, color : Color) -> Vec<Option<DrawLine<V>>>
 where V: VectorTrait

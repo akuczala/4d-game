@@ -19,7 +19,7 @@ use crate::gui::UIArgs;
 //NOTES:
 // include visual indicator of what direction a collision is in
 
-use crate::input::Input;
+use crate::input::{Input,MovementMode};
 
 use crate::graphics::{Graphics,Graphics2d,Graphics3d};
 use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait,Field};
@@ -146,7 +146,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //input events
             input.listen_events(event);
             ui_args = UIArgs::Test{frame_duration, mouse_diff : input.helper.mouse_diff(), mouse_pos : input.helper.mouse()};
-            if input.mouse_enabled {
+            if let MovementMode::Mouse = input.movement_mode {
                 display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
             }
             if input.closed {
@@ -269,10 +269,11 @@ pub enum Engine {
 }
 impl Engine {
     pub fn init(dim : VecIndex, display : &Display) -> Engine {
-        let gui = crate::gui::init(&"test",&display);
+        //let gui = Some(crate::gui::init(&"test",&display));
+        let gui = None;
         match dim {
-            3 => Ok(Engine::Three(EngineD::<Vec3,Graphics2d>::init(display,Some(gui)))),
-            4 => Ok(Engine::Four(EngineD::<Vec4,Graphics3d>::init(display,Some(gui)))),
+            3 => Ok(Engine::Three(EngineD::<Vec3,Graphics2d>::init(display,gui))),
+            4 => Ok(Engine::Four(EngineD::<Vec4,Graphics3d>::init(display,gui))),
             _ => Err("Invalid dimension for game engine")
         }.unwrap()
     }

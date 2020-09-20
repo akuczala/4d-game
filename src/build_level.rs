@@ -1,7 +1,7 @@
 use crate::vector::{Vec3,Vec4};
 use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d};
 use crate::colors::YELLOW;
-use crate::geometry::{Shape,Face,buildshapes};
+use crate::geometry::{Shape,buildshapes};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 
@@ -154,7 +154,7 @@ pub fn build_lvl_1_3d() -> Vec<Shape<Vec3>> {
 
 pub fn build_test_scene_3d() -> Vec<Shape<Vec3>> {
     let mut cube = buildshapes::build_cube_3d(1.0);
-    let cube_2 = cube.clone().set_pos(&Vec3::new(0.0,0.0,3.0)).stretch(&Vec3::new(1.0,8.0,1.0));
+    //let cube_2 = cube.clone().set_pos(&Vec3::new(0.0,0.0,3.0)).stretch(&Vec3::new(1.0,8.0,1.0));
     let cube_3 = cube.clone().set_pos(&Vec3::new(-2.0,0.0,0.0)).stretch(&Vec3::new(2.0,2.0,2.0));
 
     //test texture'

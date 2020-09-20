@@ -4,7 +4,7 @@ use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 use crate::draw::DrawLine;
 
-use specs::{Component,System,VecStorage, WriteStorage,ReadExpect,Read,Write,ReadStorage,Join};
+use specs::prelude::*;
 use std::marker::PhantomData;
 
 use crate::camera::Camera;
@@ -84,6 +84,7 @@ impl<V : VectorTrait> ClipState<V> {
             clipping_enabled : true,
         }
     }
+    #[allow(dead_code)]
     pub fn print_debug(&self) {
         for row in self.separations_debug.iter() {
             println!("");
@@ -409,7 +410,7 @@ pub fn separate_between_centers<V : VectorTrait>(
     }
 
 }
-
+#[allow(dead_code)]
 pub fn print_in_front(in_front : &Vec<Vec<bool>>) {
     for row in in_front.iter() {
         println!("");
