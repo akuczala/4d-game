@@ -8,12 +8,16 @@ There is a 3d and a 4d mode, toggled with backspace.
 
 ## Controls
 
-Currently uses flying tank controls for movement:
+Your choice of FPS-like controls or tank controls, toggled with <kbd>M</kbd>
+### FPS controls
+Move with <kbd>WASD</kbd> in 3d and <kbd>QWEASD</kbd> in 4d. Mouse controls will be familiar in 3d. In 4d, moving the mouse will turn the player along the two lateral axes. When holding <kbd>SHIFT</kbd>, moving the mouse will spin the lateral axes and allow the player to look up and down.
+
+### Tank controls
 - <kbd>W</kbd>/<kbd>S</kbd> : Move forward/back
 - <kbd>A</kbd>/<kbd>D</kbd> : Turn left/right (yaw)
-- <kbd>I</kbd>/<kbd>K</kbd> : Turn up/down (pitch)
-- <kbd>J</kbd>/<kbd>K</kbd> : (In 4d) turn other left/right
-- <kbd>SHIFT</kbd>+<kbd>J</kbd>/<kbd>K</kbd> : Rolls player in 3d, rotates lateral axes in 4d
+- <kbd>I</kbd>/<kbd>K</kbd> : Look up/down (pitch)
+- <kbd>Q</kbd>/<kbd>E</kbd> : (In 4d) turn other left/right
+- <kbd>SHIFT</kbd>+<kbd>Q</kbd>/<kbd>E</kbd> : Rotates lateral axes in 4d
 
 - Holding down <kbd>ALT</kbd> causes the player to slide along an axis instead of rotate.
 
