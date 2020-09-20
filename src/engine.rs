@@ -15,6 +15,7 @@ use crate::geometry::{Shape};
 use crate::camera::Camera;
 use crate::clipping::ClipState;
 use crate::draw;
+use crate::gui::UIArgs;
 //NOTES:
 // include visual indicator of what direction a collision is in
 
@@ -31,12 +32,13 @@ pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
     //pub extra_lines : Vec<Line<V>>,
     pub cur_lines_length : usize,
     graphics : G,
+    gui : Option<crate::gui::System>,
     //Forces EngineD to take V as a parameter
     dummy : PhantomData<V>,
 }
 impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 {
-    pub fn new(mut shapes : Vec<Shape<V>>, graphics : G) -> Self
+    pub fn new(mut shapes : Vec<Shape<V>>, graphics : G, display : &Display, maybe_gui : Option<crate::gui::System>) -> Self
     {
         //
         // for shape in shapes.iter() {
@@ -121,15 +123,18 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             world,
             cur_lines_length,
             graphics,
-            dummy : PhantomData
+            gui : maybe_gui,
+            dummy : PhantomData,
         }
     }
 
     //currently returns bool that tells main whether to swap engines
-    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, frame_duration : FPSFloat) -> bool {
+    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display,
+        frame_duration : FPSFloat, last_time : &mut std::time::Instant) -> bool {
         {
             self.world.write_resource::<Input>().frame_duration = frame_duration;
         }
+        let mut ui_args = UIArgs::None;
         //brackets here used to prevent borrowing issues between input + self
         //would probably be sensible to move this into its own function
         {
@@ -140,6 +145,10 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             }
             //input events
             input.listen_events(event);
+            ui_args = UIArgs::Test{frame_duration, mouse_diff : input.helper.mouse_diff(), mouse_pos : input.helper.mouse()};
+            if input.mouse_enabled {
+                display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
+            }
             if input.closed {
                 println!("Escape button pressed; exiting.");
                 *control_flow = ControlFlow::Exit;
@@ -162,13 +171,16 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
                 _ => (),
             };
         }
+        //gui update (all frames)
+        if let Some(ref mut gui) = &mut self.gui {
+            gui.update(&display, last_time, &event, control_flow, ui_args)
+        };
         //game update and draw
         match event {
             Event::MainEventsCleared => {self.game_update()},
             Event::RedrawRequested(_) => {
                 // Redraw the application.
                 self.draw(&display);
-                
             },
             _ => ()
         };
@@ -193,7 +205,8 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
     }
 
     fn draw(&mut self, display : &Display) {
-
+        let mut target = display.draw();
+        
         //would ideally define dispatcher on init
         let mut dispatcher = DispatcherBuilder::new()
                 //for each shape, update clipping boundaries and face visibility
@@ -216,29 +229,34 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
             self.cur_lines_length = draw_lines.len();
         }
-        self.graphics.draw_lines(&draw_lines,display);
+        target = self.graphics.draw_lines(&draw_lines,target);
+
+        //draw gui
+        if let Some(ref mut gui) = &mut self.gui {
+            gui.draw(&display, &mut target);
+        }
+        target.finish().unwrap();
     }
 
 }
 
 impl EngineD<Vec3,Graphics2d> {
-    fn init(display : &Display,) -> Self {
+    fn init(display : &Display, gui : Option<crate::gui::System>) -> Self {
         println!("Starting 3d engine");
         //let game = Game::new(game::build_shapes_3d());
         let mut graphics = Graphics2d::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
 
-        Self::new(crate::build_level::build_shapes_3d(),graphics)
+        Self::new(crate::build_level::build_shapes_3d(),graphics,display,gui)
     }
 }
 impl EngineD<Vec4,Graphics3d> {
-    fn init(display : &Display) -> Self {
+    fn init(display : &Display, gui : Option<crate::gui::System>) -> Self {
         println!("Starting 4d engine");
         //let game = Game::new(game::build_shapes_4d());
         let mut graphics = Graphics3d::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
-
-        Self::new(crate::build_level::build_shapes_4d(),graphics)
+        Self::new(crate::build_level::build_shapes_4d(),graphics,display,gui)
     }
 }
 
@@ -251,16 +269,28 @@ pub enum Engine {
 }
 impl Engine {
     pub fn init(dim : VecIndex, display : &Display) -> Engine {
+        let gui = crate::gui::init(&"test",&display);
         match dim {
-            3 => Ok(Engine::Three(EngineD::<Vec3,Graphics2d>::init(display))),
-            4 => Ok(Engine::Four(EngineD::<Vec4,Graphics3d>::init(display))),
+            3 => Ok(Engine::Three(EngineD::<Vec3,Graphics2d>::init(display,Some(gui)))),
+            4 => Ok(Engine::Four(EngineD::<Vec4,Graphics3d>::init(display,Some(gui)))),
             _ => Err("Invalid dimension for game engine")
         }.unwrap()
     }
-    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, frame_duration : FPSFloat) -> bool{
+    pub fn swap_dim(&mut self, dim : VecIndex, display : &Display) -> Engine {
+        let mut gui : Option<crate::gui::System> = None;
         match self {
-                    Engine::Three(e) => e.update(event,control_flow,display,frame_duration),
-                    Engine::Four(e) => e.update(event,control_flow,display,frame_duration),
+            Engine::Four(engined) => std::mem::swap(&mut gui, &mut engined.gui),
+            Engine::Three(engined) => std::mem::swap(&mut gui, &mut engined.gui)
+        }
+        match self {
+            Engine::Four(_engined) => Engine::Three(EngineD::<Vec3,Graphics2d>::init(display,gui)),
+            Engine::Three(_engined) => Engine::Four(EngineD::<Vec4,Graphics3d>::init(display,gui)),
+        }
+    }
+    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, frame_duration : FPSFloat, last_time : &mut std::time::Instant) -> bool{
+        match self {
+                    Engine::Three(e) => e.update(event,control_flow,display,frame_duration,last_time),
+                    Engine::Four(e) => e.update(event,control_flow,display,frame_duration,last_time),
                 }
     }
 

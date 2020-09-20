@@ -1,5 +1,7 @@
 #[macro_use] extern crate glium;
 #[macro_use] extern crate itertools;
+//extern crate imgui;
+//extern crate imgui_glium_renderer;
 #[allow(dead_code)]
 mod vector;
 #[allow(dead_code)]
@@ -13,6 +15,7 @@ mod camera;
 mod colors;
 
 mod graphics;
+mod gui;
 mod engine;
 mod collide;
 mod spatial_hash;
@@ -56,6 +59,8 @@ fn main() {
     
     let mut fps_timer = FPSTimer::new();
 
+
+    let mut last_time = std::time::Instant::now();
     //POINT OF NO RETURN. Thanks winit
     event_loop.run(move |event, _, control_flow| {
 
@@ -66,14 +71,14 @@ fn main() {
 
         //could use for menus??
         //*control_flow = ControlFlow::Wait;
-
-        let swap = engine.update(&event,control_flow,&display,fps_timer.get_frame_length());
+        
+        let swap = engine.update(&event,control_flow,&display,fps_timer.get_frame_length(),&mut last_time);
 
         if swap {
             dim = match dim {
                 3 => Ok(4), 4 => Ok(3), _ => Err("Invalid dimension") 
             }.unwrap();
-            engine = Engine::init(dim,&display);
+            engine = engine.swap_dim(dim,&display);
             //input.swap_engine = false;
         }
 

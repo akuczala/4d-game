@@ -30,7 +30,9 @@ pub struct Input {
     pub closed : bool,
     pub swap_engine : bool,
     pub update : bool,
-    pub frame_duration : crate::fps::FPSFloat
+    pub frame_duration : crate::fps::FPSFloat,
+    pub mouse_dpos : (f32,f32),
+    pub mouse_enabled : bool,
 }
 impl Default for Input {
     fn default() -> Self {
@@ -47,6 +49,8 @@ impl Input {
             swap_engine : false,
             update : true,
             frame_duration : crate::fps::TARGET_FPS,
+            mouse_dpos : (0.,0.),
+            mouse_enabled : false,
         }
     }
 }
@@ -66,12 +70,33 @@ const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
     (VKC::J, VKC::L, 2),
 ];
 
+const MOUSE_SENSITIVITY : Field = 0.2;
 pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
 {
     //let frame_time = duration_as_field(frame_duration) as Field;
     let frame_time = input.frame_duration as Field;
+    let mut any_slide_turn = false;
 
-    
+    //mouse
+    if input.mouse_enabled {
+        let mouse_pos = input.helper.mouse();
+        let (mx, my) = match mouse_pos {
+            Some((x,y)) => (x-100.,y-100.),
+            None => (0.,0.)
+
+        };
+        let (dmx, dmy) = input.helper.mouse_diff();
+        if dmx.abs() != 0. {
+            camera.spin(0,-1,mx*frame_time*MOUSE_SENSITIVITY);
+            any_slide_turn = true;
+        }
+        if dmy.abs() != 0. {
+            camera.spin(match V::DIM {3 => 1, 4 => 2, _ => panic!("Invalid dimension")},-1,-my*frame_time*MOUSE_SENSITIVITY);
+            any_slide_turn = true;
+        }
+    }
+
+    //keyboard
 
     //fowards + backwards
     if input.helper.key_held(VKC::W) {
@@ -91,7 +116,6 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     }
 
     //sliding,turning
-    let mut any_slide_turn = false;
     for &(key_minus, key_plus, axis) in MOVE_KEYMAP.iter() {
 
         let movement_sign = 
@@ -111,7 +135,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
             //rotations
             } else { 
                 //special case : (0,2) rotation
-                if input.helper.held_shift() && axis == 2 {
+                if V::DIM == 4 && input.helper.held_shift() && axis == 2 {
                     camera.spin(0,2,movement_sign*frame_time)
                 //turning: rotation along (axis,-1)
                 } else {
@@ -186,6 +210,9 @@ impl Input {
         }
         if self.helper.key_released(VKC::Back) {
             self.swap_engine = true
+        }
+        if self.helper.key_released(VKC::M) {
+            self.mouse_enabled = !self.mouse_enabled
         }
     }
     // listing the events produced by application and waiting to be received

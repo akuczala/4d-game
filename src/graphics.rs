@@ -126,7 +126,7 @@ pub trait Graphics<V : VectorTrait> {
         [p[0], p[1], p[2], 1.0],
     ]
 }
-    fn draw_lines(&mut self, draw_lines : &Vec<Option<DrawLine<V>>>, display :  &Display) {
+    fn draw_lines(&mut self, draw_lines : &Vec<Option<DrawLine<V>>>, mut target : glium::Frame) -> glium::Frame {
 
         //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
         self.write_opt_lines_to_buffer(&draw_lines); //slightly faster than the above (less allocation)
@@ -136,7 +136,7 @@ pub trait Graphics<V : VectorTrait> {
             blend : glium::Blend::alpha_blending(), //lines are a lot darker 
             .. Default::default()
         };
-        let mut target = display.draw();
+        //let mut target = display.draw();
         let (width,height) = target.get_dimensions();
         let view_matrix = match V::DIM {
             2 => [
@@ -153,7 +153,7 @@ pub trait Graphics<V : VectorTrait> {
             _ => panic!("Invalid dimension")
         };
         let uniforms = uniform! {
-            perspective : Self::build_perspective_mat(&target),
+            perspective : Self::build_perspective_mat(&mut target),
             view : view_matrix,
             model: [
                 [1.0, 0.0, 0.0, 0.0],
@@ -176,8 +176,7 @@ pub trait Graphics<V : VectorTrait> {
             &uniforms,
             &draw_params).unwrap();
 
-        target.finish().unwrap();
-
+        target
     }
 }
 
