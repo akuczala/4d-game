@@ -1,5 +1,6 @@
 #[allow(dead_code)]
 mod texture;
+use crate::clipping::clip_line_sphere;
 use crate::engine::Player;
 use specs::prelude::*;
 use std::marker::PhantomData;
@@ -22,6 +23,7 @@ const Z0 : Field = 0.0;
 const SMALL_Z : Field = 0.001;
 const Z_NEAR : Field = 0.1; 
 
+const CLIP_SPHERE_RADIUS : Field = 0.75;
 #[derive(Clone,Copy)]
 pub struct DrawVertex<V>
 where V: VectorTrait
@@ -81,14 +83,16 @@ where V : VectorTrait
 pub fn transform_line<V>(line : Option<Line<V>>, camera : &Camera<V>) -> Option<Line<V::SubV>>
 where V : VectorTrait
 {
-	let clipped_line : Option<Line<V>> = match line {Some(l) => clip_line_plane(l,&camera.plane,Z_NEAR), None => None};
+	let clipped_line = match line {Some(l) => clip_line_plane(l,&camera.plane,Z_NEAR), None => None};
+
 	let view_line = clipped_line
 		.map(|l| l
 		.map(|v| view_transform(&camera,v)));
 	let proj_line = view_line
 		.map(|l| l
 		.map(project));
-	proj_line
+	let clip_proj_line = match proj_line {Some(l) => clip_line_sphere(l,CLIP_SPHERE_RADIUS), None => None};
+	clip_proj_line
 }
 
 pub struct DrawLineList<V : VectorTrait>(pub Vec<Option<DrawLine<V>>>);

@@ -48,22 +48,17 @@ fn main() {
     };
 
     let (event_loop, display) = init_glium();
-    //let mut input = WinitInputHelper::new();
-    //let mut input = Input::new();
 
     let mut dim = 3;
     let mut engine = Engine::init(dim,&display);
-    //let input_storage : ReadExpect<Input> = engine.world.system_data();
-    //let input = &input_storage;
-    //input.closed = false;
-    
+
     let mut fps_timer = FPSTimer::new();
 
 
     let mut last_time = std::time::Instant::now();
     //POINT OF NO RETURN. Thanks winit
     event_loop.run(move |event, _, control_flow| {
-
+        //let mut engine = tengine.take_mut().unwrap();
         fps_timer.start();
         //ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
         // dispatched any events. This is ideal for games and similar applications.

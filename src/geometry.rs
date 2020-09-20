@@ -62,6 +62,48 @@ where V : VectorTrait
   }
   Some(V::linterp(p0,p1,t))
 }
+pub struct Sphere<V : VectorTrait>{pos : V, radius : Field}
+
+
+//returns either none or pair of intersecting points
+//note that tm and p are NOT bound between 0 and 1
+pub fn sphere_line_intersect<V : VectorTrait>(line : Line<V>, r : Field) -> Option<Line<V>> {
+
+    let v0 = line.0;
+    let v1 = line.1;
+    let dv = v1 - v0;
+    let dv_norm = dv.norm();
+    let dv = dv / dv_norm;
+
+    //in our case, sphere center is the origin
+    let v0_rel = v0;  // - sphere_center
+    let v0r_dv = v0_rel.dot(dv);
+
+    let discr = (v0r_dv)*(v0r_dv) - v0_rel.dot(v0_rel) + r * r;
+
+    //print('discr',discr)
+    //no intersection with line
+    if discr < 0. {
+      return None;
+    }
+        
+
+    let sqrt_discr = discr.sqrt();
+    let tm = -v0r_dv - sqrt_discr;
+    let tp = -v0r_dv + sqrt_discr;
+
+    //print('tm,tp',tm,tp)
+    //no intersection with line segment
+    if tm > dv_norm && tp > dv_norm {
+      return None;
+    }
+    if tm < 0. && tp < 0. {
+      return None;
+    }
+    let intersect_points = Line(v0 + dv*tm, v0 + dv*tp);
+    
+    Some(intersect_points)
+}
 
 pub type VertIndex = usize;
 pub type EdgeIndex = usize;

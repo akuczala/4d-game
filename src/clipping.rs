@@ -126,6 +126,32 @@ where V : VectorTrait {
     }
 
 }
+pub fn clip_line_sphere<V :VectorTrait>(line : Line<V>, r : Field) -> Option<Line<V>> {
+    let v0 = line.0;
+    let v1 = line.1;
+
+    let v0_in_sphere = v0.dot(v0) < r * r;
+    let v1_in_sphere = v1.dot(v1) < r * r;
+
+    if v0_in_sphere && v1_in_sphere {
+        return Some(line);
+    }
+
+    let intersect = crate::geometry::sphere_line_intersect(line, r);
+    match &intersect {
+        None => None,
+        Some(ref iline) => {
+            if !v0_in_sphere && !v1_in_sphere {
+                intersect
+            } else if !v0_in_sphere && v1_in_sphere {
+                Some(Line(iline.0, v1))
+            } else {
+                Some(Line(v0, iline.1))
+            }
+        }
+    }
+    
+}
 pub enum ReturnLines<V : VectorTrait>
 {
     TwoLines(Line<V>,Line<V>),
