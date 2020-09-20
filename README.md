@@ -21,8 +21,6 @@ Currently uses flying tank controls for movement:
 - <kbd>C</kbd> Toggles clipping
 
 ## To do:
-- Faster rendering pipeline
-- Collisions
 - Level design and spatial challenges
 
 
