@@ -82,11 +82,11 @@ pub struct BBoxHashingSystem<V>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for BBoxHashingSystem<V> {
 
-	type SystemData = (ReadStorage<'a,StaticCollider>,ReadStorage<'a,BBox<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
+	type SystemData = (ReadStorage<'a,BBox<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
 
-	fn run(&mut self, (read_collider, read_bbox, entities, mut write_hash) : Self::SystemData) {
+	fn run(&mut self, (read_bbox, entities, mut write_hash) : Self::SystemData) {
 		let hash = &mut write_hash;
-		for (_, bbox, entity) in (&read_collider,&read_bbox,&*entities).join() {
+		for (bbox, entity) in (&read_bbox,&*entities).join() {
 			for cell in get_bbox_cells(&bbox,hash).into_iter() {
 				hash.insert_at_cell(cell,entity);
 			}
@@ -147,9 +147,9 @@ pub struct PlayerCollisionDetectionSystem<V>(pub PhantomData<V>);
 impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 
 	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>, WriteStorage<'a,MoveNext<V>>,
-		ReadStorage<'a,Shape<V>>,ReadStorage<'a,BBox<V>>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
+		ReadStorage<'a,Shape<V>>,ReadStorage<'a,BBox<V>>,ReadStorage<'a,StaticCollider>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
 
-	fn run(&mut self, (player, camera, mut write_move_next, shape, bbox, hash) : Self::SystemData) {
+	fn run(&mut self, (player, camera, mut write_move_next, shape, bbox, static_collider, hash) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap();
 		match move_next {
 			MoveNext{next_dpos : Some(_next_dpos), can_move : Some(true)} => {
@@ -157,7 +157,7 @@ impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 				let pos = camera.get(player.0).unwrap().pos;
 				let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
 
-				for &e in entities_in_bbox.iter() {
+				for &e in entities_in_bbox.iter().filter(|&&e| static_collider.contains(e)) {
 					let shape = shape.get(e).unwrap();
 					let next_dpos = move_next.next_dpos.unwrap();
 					let (normal, dist) = shape.point_normal_distance(pos);

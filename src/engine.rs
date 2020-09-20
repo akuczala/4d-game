@@ -33,6 +33,8 @@ pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
     pub cur_lines_length : usize,
     graphics : G,
     gui : Option<crate::gui::System>,
+    game_dispatcher : Dispatcher<'static,'static>, //dispatcher contains no references
+    draw_dispatcher : Dispatcher<'static,'static>,
     //Forces EngineD to take V as a parameter
     dummy : PhantomData<V>,
 }
@@ -40,26 +42,39 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 {
     pub fn new(mut shapes : Vec<Shape<V>>, graphics : G, display : &Display, maybe_gui : Option<crate::gui::System>) -> Self
     {
-        //
-        // for shape in shapes.iter() {
-        //     for face in shape.faces.iter() {
-        //         println!("{}",face.normal);
-        //     }
-        // }
-        //
+
         let mut world = World::new();
-        world.register::<Shape<V>>();
-        world.register::<crate::coin::Coin>();
-        world.register::<Camera<V>>();
-        world.register::<BBox<V>>();
-        world.register::<collide::StaticCollider>();
-        world.register::<collide::MoveNext<V>>();
+
+        let mut game_dispatcher = DispatcherBuilder::new()
+           .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
+           .with(crate::collide::PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision",&["update_camera"])
+           .with(crate::collide::MovePlayerSystem(PhantomData::<V>),"move_player",&["player_collision"])
+           .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
+           .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
+           .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
+           //.with(crate::collide::CollisionTestSystem(PhantomData::<V>),"collision_test",&["update_player_bbox"])
+           .build();
+
+        //would ideally define dispatcher on init
+        let mut draw_dispatcher = DispatcherBuilder::new()
+            //for each shape, update clipping boundaries and face visibility
+            .with(draw::VisibilitySystem(PhantomData::<V>),"visibility",&[])
+            //determine what shapes are in front of other shapes
+            .with(crate::clipping::InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
+            //calculate and clip lines for each shape
+            .with(draw::CalcShapesLinesSystem(PhantomData::<V>),"calc_shapes_lines",&["in_front"])
+            //project lines
+            .with(draw::TransformDrawLinesSystem(PhantomData::<V>),"transform_draw_lines",&["calc_shapes_lines"])
+            .build();
+
+        game_dispatcher.setup(&mut world);
+        draw_dispatcher.setup(&mut world);
 
         world.insert(Input::new());
 
         //add shape entities and intialize spatial hash set
         let shapes_len = shapes.len();
-        let coin_shape = shapes.pop();
+        let coin_shape = shapes.pop().unwrap();
         let (mut max, mut min) = (V::zero(), V::zero());
         let mut max_lengths = V::zero();
 
@@ -74,6 +89,12 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             .with(collide::StaticCollider)
             .build();
         }
+
+        world.create_entity()
+            .with(collide::calc_bbox(&coin_shape))
+            .with(coin_shape)
+            .with(Coin)
+            .build();
         //println!("Min/max: {},{}",min,max);
         //println!("Longest sides {}",max_lengths);
         world.insert(
@@ -85,12 +106,6 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         );
         //enter shapes into hash set
         collide::BBoxHashingSystem(PhantomData::<V>).run_now(&world);
-
-        world.create_entity()
-            .with(coin_shape.unwrap())
-            .with(Coin)
-            //.with(collide::StaticCollider)
-            .build();
 
         //let extra_lines : Vec<Line<V>> = Vec::new();
         let camera = Camera::new(V::zero());
@@ -121,6 +136,8 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         
         EngineD {
             world,
+            game_dispatcher,
+            draw_dispatcher,
             cur_lines_length,
             graphics,
             gui : maybe_gui,
@@ -191,35 +208,13 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
     //game update every frame
     fn game_update(&mut self) {
 
-        let mut dispatcher = DispatcherBuilder::new()
-           .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
-           .with(crate::collide::PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision",&["update_camera"])
-           .with(crate::collide::MovePlayerSystem(PhantomData::<V>),"move_player",&["player_collision"])
-           .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
-           .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
-           .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
-           //.with(crate::collide::CollisionTestSystem(PhantomData::<V>),"collision_test",&["update_player_bbox"])
-           .build();
-
-        dispatcher.dispatch(&mut self.world);
+        self.game_dispatcher.dispatch(&mut self.world);
     }
 
     fn draw(&mut self, display : &Display) {
-        let mut target = display.draw();
         
-        //would ideally define dispatcher on init
-        let mut dispatcher = DispatcherBuilder::new()
-                //for each shape, update clipping boundaries and face visibility
-                .with(draw::VisibilitySystem(PhantomData::<V>),"visibility",&[])
-                //determine what shapes are in front of other shapes
-                .with(crate::clipping::InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
-                //calculate and clip lines for each shape
-                .with(draw::CalcShapesLinesSystem(PhantomData::<V>),"calc_shapes_lines",&["in_front"])
-                //project lines
-                .with(draw::TransformDrawLinesSystem(PhantomData::<V>),"transform_draw_lines",&["calc_shapes_lines"])
-                .build();
 
-        dispatcher.dispatch(&mut self.world);
+        self.draw_dispatcher.dispatch(&mut self.world);
 
         let draw_lines_data : ReadExpect<draw::DrawLineList<V::SubV>> = self.world.system_data();
         let draw_lines = &(&draw_lines_data).0;
@@ -229,8 +224,9 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
             self.cur_lines_length = draw_lines.len();
         }
-        target = self.graphics.draw_lines(&draw_lines,target);
 
+        let mut target = display.draw();
+        target = self.graphics.draw_lines(&draw_lines,target);
         //draw gui
         if let Some(ref mut gui) = &mut self.gui {
             gui.draw(&display, &mut target);
@@ -268,9 +264,9 @@ pub enum Engine {
     Four(EngineD<Vec4,Graphics3d>)
 }
 impl Engine {
-    pub fn init(dim : VecIndex, display : &Display) -> Engine {
-        //let gui = Some(crate::gui::init(&"test",&display));
-        let gui = None;
+    pub fn init(dim : VecIndex, display : & Display) -> Engine {
+        let gui = Some(crate::gui::init(&"test",&display));
+        //let gui = None;
         match dim {
             3 => Ok(Engine::Three(EngineD::<Vec3,Graphics2d>::init(display,gui))),
             4 => Ok(Engine::Four(EngineD::<Vec4,Graphics3d>::init(display,gui))),
