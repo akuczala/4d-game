@@ -85,19 +85,27 @@ pub fn init(title: &str, display : &Display) -> System {
     }
 }
 #[derive(Copy,Clone)]
-pub enum UIArgs{None, Test{frame_duration : FPSFloat, mouse_diff : (f32,f32), mouse_pos : Option<(f32,f32)>}}
+pub enum UIArgs{
+    None,
+    Test{
+        frame_duration : FPSFloat,
+        elapsed_time : u64,
+        mouse_diff : (f32,f32),
+        mouse_pos : Option<(f32,f32)>,
+    },
+}
 
 
 fn hello_world(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
         use imgui::{Window,im_str,Condition};
-        Window::new(im_str!("Hello world"))
+        Window::new(im_str!("Debug info"))
             .size([300.0, 110.0], Condition::FirstUseEver)
             .build(ui, || {
-                ui.text(im_str!("Hello world!"));
                 match ui_args {
                     UIArgs::None => (),
-                    UIArgs::Test{ref frame_duration, ref mouse_diff, ref mouse_pos} => {
+                    UIArgs::Test{ref frame_duration, ref elapsed_time, ref mouse_diff, ref mouse_pos} => {
                         ui.text(format!("FPS: {}",1./frame_duration));
+                        ui.text(format!("elapsed_time (ms): {}",elapsed_time));
                         ui.text(format!("dmouse: {:?}",mouse_diff));
                         ui.text(format!("mouse_pos: {:?}",mouse_pos));
                     }

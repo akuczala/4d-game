@@ -160,12 +160,9 @@ fn test_point_within() {
   assert!(!shape.point_within(point,0.))
 }
 
-fn linspace(min : Field, max : Field, n : usize) -> impl Iterator<Item=Field> {
-  (0..n).map(move |i| (i as Field)/((n-1) as Field)).map(move |f| (1.-f)*min + f*max)
-}
 #[test]
 fn test_linspace() {
-  use crate::vector::is_close;
+  use crate::vector::{is_close,linspace};
   assert!(linspace(-2.5,2.5,9).zip(vec![-2.5  , -1.875, -1.25 , -0.625,  0.   ,  0.625,  1.25 ,  1.875,
         2.5  ]).all(|(a,b)| is_close(a,b)))
 }
@@ -174,7 +171,7 @@ fn test_linspace() {
 #[test]
 fn test_point_within2() {
   use colored::*;
-  use vector::Vec3;
+  use vector::{Vec3,linspace};
   let shape = crate::geometry::buildshapes::build_prism_3d(1.0, 1.0, 4);
   for x in linspace(-2.,2.,40) {
     let mut line = "".to_string();

@@ -23,6 +23,10 @@ pub fn is_close(a : Field, b : Field) -> bool {
 pub fn scalar_linterp(a : Field, b : Field, t : Field) -> Field {
   a*(1.0-t) + b*t
 }
+pub fn linspace(min : Field, max : Field, n : usize) -> impl Iterator<Item=Field> {
+  (0..n).map(move |i| (i as Field)/((n-1) as Field)).map(move |f| (1.-f)*min + f*max)
+}
+
 //consider using #![feature(associated_consts)]
 //to define vector dimension (might not need to explicity use feature?)
 

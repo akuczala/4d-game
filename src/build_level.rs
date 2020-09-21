@@ -1,4 +1,4 @@
-use crate::vector::{Vec3,Vec4};
+use crate::vector::{Vec3,Vec4,linspace};
 use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d};
 use crate::colors::YELLOW;
 use crate::geometry::{Shape,buildshapes};
@@ -36,7 +36,9 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
             draw::Texture::DefaultLines{color} => color,
             _ => panic!("build corridor cross expected DefaultLines") //don't bother handling the other cases
             };
-            face.texture = draw::Texture::make_tile_texture(&vec![0.8],
+            let face_scales = linspace(0.1,0.9,5).collect();
+            //let face_scales = vec![0.9];
+            face.texture = draw::Texture::make_tile_texture(&face_scales,
             & match V::DIM {
                 3 => vec![3,1],
                 4 => vec![3,1,1],

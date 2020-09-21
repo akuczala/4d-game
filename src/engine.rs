@@ -1,3 +1,6 @@
+
+use std::time::{Duration,Instant};
+use crate::FPSTimer;
 use crate::spatial_hash::SpatialHashSet;
 use crate::coin::Coin;
 use crate::collide;
@@ -33,10 +36,8 @@ pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
     pub cur_lines_length : usize,
     graphics : G,
     gui : Option<crate::gui::System>,
-    game_dispatcher : Dispatcher<'static,'static>, //dispatcher contains no references
-    draw_dispatcher : Dispatcher<'static,'static>,
-    //Forces EngineD to take V as a parameter
-    dummy : PhantomData<V>,
+    dispatcher : Dispatcher<'static,'static>,
+    dummy : PhantomData<V>, //Forces EngineD to take V as a parameter
 }
 impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 {
@@ -45,20 +46,16 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
         let mut world = World::new();
 
-        let mut game_dispatcher = DispatcherBuilder::new()
-           .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
-           .with(crate::collide::PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision",&["update_camera"])
-           .with(crate::collide::MovePlayerSystem(PhantomData::<V>),"move_player",&["player_collision"])
-           .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
-           .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
-           .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
-           //.with(crate::collide::CollisionTestSystem(PhantomData::<V>),"collision_test",&["update_player_bbox"])
-           .build();
-
-        //would ideally define dispatcher on init
-        let mut draw_dispatcher = DispatcherBuilder::new()
+        let mut dispatcher = DispatcherBuilder::new()
+            .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
+            .with(crate::collide::PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision",&["update_camera"])
+            .with(crate::collide::MovePlayerSystem(PhantomData::<V>),"move_player",&["player_collision"])
+            .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
+            .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
+            .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
+            //start drawing phase
             //for each shape, update clipping boundaries and face visibility
-            .with(draw::VisibilitySystem(PhantomData::<V>),"visibility",&[])
+            .with(draw::VisibilitySystem(PhantomData::<V>),"visibility",&["coin_spinning","move_player"])
             //determine what shapes are in front of other shapes
             .with(crate::clipping::InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
             //calculate and clip lines for each shape
@@ -67,8 +64,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             .with(draw::TransformDrawLinesSystem(PhantomData::<V>),"transform_draw_lines",&["calc_shapes_lines"])
             .build();
 
-        game_dispatcher.setup(&mut world);
-        draw_dispatcher.setup(&mut world);
+        dispatcher.setup(&mut world);
 
         world.insert(Input::new());
 
@@ -136,8 +132,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         
         EngineD {
             world,
-            game_dispatcher,
-            draw_dispatcher,
+            dispatcher,
             cur_lines_length,
             graphics,
             gui : maybe_gui,
@@ -146,11 +141,9 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
     }
 
     //currently returns bool that tells main whether to swap engines
-    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display,
-        frame_duration : FPSFloat, last_time : &mut std::time::Instant) -> bool {
-        {
-            self.world.write_resource::<Input>().frame_duration = frame_duration;
-        }
+    //runs for each event
+    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, fps_timer : &mut FPSTimer) -> bool {
+        let frame_duration = fps_timer.get_frame_length();
         let mut ui_args = UIArgs::None;
         //brackets here used to prevent borrowing issues between input + self
         //would probably be sensible to move this into its own function
@@ -162,10 +155,15 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             }
             //input events
             input.listen_events(event);
-            ui_args = UIArgs::Test{frame_duration, mouse_diff : input.helper.mouse_diff(), mouse_pos : input.helper.mouse()};
-            if let MovementMode::Mouse = input.movement_mode {
-                display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
-            }
+
+            //values to be passed to UI
+            ui_args = UIArgs::Test{
+                frame_duration,
+                elapsed_time : fps_timer.elapsed_time,
+                mouse_diff : input.mouse_dpos,
+                mouse_pos : input.helper.mouse()
+            };
+
             if input.closed {
                 println!("Escape button pressed; exiting.");
                 *control_flow = ControlFlow::Exit;
@@ -181,23 +179,47 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
                 },
                 Event::MainEventsCleared => {
                     // Application update code.
+                    display.gl_window().window().request_redraw();
                     if input.update {
-                        display.gl_window().window().request_redraw();
+                        
+                        
                     }
                 },
                 _ => (),
             };
         }
-        //gui update (all frames)
+        //gui update (all events)
         if let Some(ref mut gui) = &mut self.gui {
-            gui.update(&display, last_time, &event, control_flow, ui_args)
+            gui.update(&display, &mut fps_timer.gui_last_time, &event, control_flow, ui_args)
         };
         //game update and draw
         match event {
-            Event::MainEventsCleared => {self.game_update()},
+            Event::MainEventsCleared => {},
+            //frame update
             Event::RedrawRequested(_) => {
                 // Redraw the application.
-                self.draw(&display);
+                if Instant::now() > fps_timer.start + Duration::from_millis(16) {
+                    fps_timer.end();
+                    {
+                        self.world.write_resource::<Input>().frame_duration = fps_timer.get_frame_length();
+                    }
+                    fps_timer.start();
+
+                    self.dispatcher.dispatch(&mut self.world);
+                    self.draw(&display);
+
+                    {
+                        let mut input = self.world.write_resource::<Input>();
+                        if let MovementMode::Mouse = input.movement_mode {
+                            display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
+                            display.gl_window().window().set_cursor_visible(false);
+                            input.mouse_dpos = (0.,0.);
+                        } else {
+                            display.gl_window().window().set_cursor_visible(true);
+                        }
+                    }
+
+                }
             },
             _ => ()
         };
@@ -205,17 +227,8 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         false //don't switch engines
     }
 
-    //game update every frame
-    fn game_update(&mut self) {
-
-        self.game_dispatcher.dispatch(&mut self.world);
-    }
-
     fn draw(&mut self, display : &Display) {
         
-
-        self.draw_dispatcher.dispatch(&mut self.world);
-
         let draw_lines_data : ReadExpect<draw::DrawLineList<V::SubV>> = self.world.system_data();
         let draw_lines = &(&draw_lines_data).0;
         //make new buffer if the number of lines changes
@@ -284,10 +297,10 @@ impl Engine {
             Engine::Three(_engined) => Engine::Four(EngineD::<Vec4,Graphics3d>::init(display,gui)),
         }
     }
-    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, frame_duration : FPSFloat, last_time : &mut std::time::Instant) -> bool{
+    pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, fps_timer : &mut FPSTimer) -> bool{
         match self {
-                    Engine::Three(e) => e.update(event,control_flow,display,frame_duration,last_time),
-                    Engine::Four(e) => e.update(event,control_flow,display,frame_duration,last_time),
+                    Engine::Three(e) => e.update(event,control_flow,display,fps_timer),
+                    Engine::Four(e) => e.update(event,control_flow,display,fps_timer),
                 }
     }
 

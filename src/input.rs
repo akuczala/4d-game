@@ -20,9 +20,16 @@ use crate::collide::MoveNext;
 
 use glutin::event::{Event,WindowEvent};
 
-fn duration_as_field(duration : &Duration) -> f32 {
- (duration.as_secs() as Field) + 0.001*(duration.subsec_millis() as Field)
-}
+// fn duration_as_field(duration : &Duration) -> f32 {
+//  (duration.as_secs() as Field) + 0.001*(duration.subsec_millis() as Field)
+// }
+
+//maximum allowed time step (player movement slows down at around 20 FPS)
+//this prevents the player from jumping through walls
+//we could be a little more careful with the nearest face detection
+//right now, if the player ends up inside a wall, the nearest face is misidentified, because it's a signed distance
+//see shape.rs
+const MAX_DT : Field = 1000./20.; 
 
 pub struct Input {
     pub helper : WinitInputHelper,
@@ -73,42 +80,45 @@ const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
 ];
 
 const MOUSE_SENSITIVITY : Field = 0.2;
+const MOUSE_STICK_POINT : [f32 ; 2] = [100.,100.];
 pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
 {
-    //let frame_time = duration_as_field(frame_duration) as Field;
-    let frame_time = input.frame_duration as Field;
+    //limit max dt
+    let dt = (input.frame_duration as Field).min(MAX_DT);
+
     let mut any_slide_turn = false;
 
     //mouse
     match input.movement_mode {
         MovementMode::Mouse => {
-            let mouse_pos = input.helper.mouse();
-            let (mx, my) = match mouse_pos {
-                Some((x,y)) => (x-100.,y-100.),
-                None => (0.,0.)
+            // let mouse_pos = input.helper.mouse();
+            // let (mx, my) = match mouse_pos {
+            //     Some((x,y)) => (x-100.,y-100.),
+            //     None => (0.,0.)
 
-            };
+            // };
             //x mouse movement
-            let (dmx, dmy) = input.helper.mouse_diff();
+            //let (dmx, dmy) = input.helper.mouse_diff();
+            let (dmx, dmy) = input.mouse_dpos;
             if dmx.abs() != 0. {
                 if input.helper.held_shift() {
-                    camera.turn(0,2, mx*frame_time*MOUSE_SENSITIVITY);
+                    camera.turn(0,2, dmx*dt*MOUSE_SENSITIVITY);
                 } else {
-                    camera.turn(0,-1,mx*frame_time*MOUSE_SENSITIVITY);
+                    camera.turn(0,-1,dmx*dt*MOUSE_SENSITIVITY);
                 }
                 
-                //camera.spin(0,-1,mx*frame_time*MOUSE_SENSITIVITY);
+                //camera.spin(0,-1,mx*dt*MOUSE_SENSITIVITY);
                 any_slide_turn = true;
             }
             //y mouse movement
             if dmy.abs() != 0. {
 
                 match (V::DIM, input.helper.held_shift()) {
-                    (3, _) | (4, true) => camera.tilt(1,-1,-my*frame_time*MOUSE_SENSITIVITY),
-                    (4, false) => camera.turn(2,-1,-my*frame_time*MOUSE_SENSITIVITY),
+                    (3, _) | (4, true) => camera.tilt(1,-1,-dmy*dt*MOUSE_SENSITIVITY),
+                    (4, false) => camera.turn(2,-1,-dmy*dt*MOUSE_SENSITIVITY),
                     (_, _) => panic!("Invalid dimension"),
                 };
-                //camera.spin(axis,-1,-my*frame_time*MOUSE_SENSITIVITY);
+                //camera.spin(axis,-1,-my*dt*MOUSE_SENSITIVITY);
                 any_slide_turn = true;
             }
         },
@@ -120,15 +130,15 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     //fowards + backwards
     if input.helper.key_held(VKC::W) {
         *move_next = MoveNext{
-            next_dpos : Some(camera.get_slide_dpos(camera.heading[-1],frame_time)),
+            next_dpos : Some(camera.get_slide_dpos(camera.heading[-1],dt)),
             can_move : Some(true)
         };
-        //camera.slide(camera.heading,frame_time);
+        //camera.slide(camera.heading,dt);
         input.update = true;
     }
     if input.helper.key_held(VKC::S) {
         *move_next = MoveNext{
-            next_dpos : Some(camera.get_slide_dpos(-camera.heading[-1],frame_time)),
+            next_dpos : Some(camera.get_slide_dpos(-camera.heading[-1],dt)),
             can_move : Some(true)
         };
         input.update = true;
@@ -147,24 +157,24 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
             //sliding
             if input.helper.held_alt() ^ match input.movement_mode {MovementMode::Mouse => true, _ => false} {
                 *move_next = MoveNext{
-                    next_dpos : Some(camera.get_slide_dpos(camera.heading[axis]*movement_sign,frame_time)),
+                    next_dpos : Some(camera.get_slide_dpos(camera.heading[axis]*movement_sign,dt)),
                     can_move : Some(true)
                 };
-                //camera.slide(camera.frame[axis]*movement_sign,frame_time)
+                //camera.slide(camera.frame[axis]*movement_sign,dt)
             //rotations
             } else { 
                 //special case : (0,2) rotation
                 if V::DIM == 4 && input.helper.held_shift() && axis == 2 {
-                    camera.spin(0,2,movement_sign*frame_time)
+                    camera.spin(0,2,movement_sign*dt)
                 //turning: rotation along (axis,-1)
                 } else {
                     if axis == 1 {
-                        camera.tilt(axis,-1,movement_sign*frame_time);
+                        camera.tilt(axis,-1,movement_sign*dt);
                     } else {
-                        camera.turn(axis,-1,movement_sign*frame_time);
+                        camera.turn(axis,-1,movement_sign*dt);
                     }
                     
-                    //camera.spin(axis,-1,movement_sign*frame_time)
+                    //camera.spin(axis,-1,movement_sign*dt)
                 }
                 
             }
@@ -173,7 +183,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     }
     //spin unless turning or sliding
     if V::DIM == 4 && any_slide_turn == false {
-        camera.spin(0,2,0.05*frame_time);
+        camera.spin(0,2,0.05*dt);
     }
     //         //reset orientation
     //         if !input.pressed.space {
@@ -254,7 +264,11 @@ impl Input {
 
                 WindowEvent::CloseRequested => *closed = true,
                 WindowEvent::Resized(_) => *update = true,
-                
+                WindowEvent::CursorMoved{position,..} => {
+                    self.mouse_dpos.0 = position.x as f32;
+                    self.mouse_dpos.1 = position.y as f32;
+                    self.mouse_dpos.0 -= MOUSE_STICK_POINT[0]; self.mouse_dpos.1 -= MOUSE_STICK_POINT[1];
+                },
                 WindowEvent::Touch(glutin::event::Touch{phase, ..}) => match phase {
                         glutin::event::TouchPhase::Started => (),
                         glutin::event::TouchPhase::Ended => (),
@@ -267,6 +281,7 @@ impl Input {
         }
         if self.helper.update(&ev) {
             self.listen_inputs();
+            
         }
 
 

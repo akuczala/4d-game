@@ -27,11 +27,15 @@ mod fps;
 //mod object;
 
 //use specs::prelude::*;
+use std::time::{Duration,Instant};
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 
 use glium::glutin::event_loop::EventLoop;
-
+use glium::glutin::{
+        event::{Event, WindowEvent},
+        event_loop::ControlFlow,
+    };
 
 //NOTES:
 // include visual indicator of what direction a collision is in
@@ -54,12 +58,10 @@ fn main() {
 
     let mut fps_timer = FPSTimer::new();
 
-
-    let mut last_time = std::time::Instant::now();
     //POINT OF NO RETURN. Thanks winit
     event_loop.run(move |event, _, control_flow| {
         //let mut engine = tengine.take_mut().unwrap();
-        fps_timer.start();
+        
         //ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
         // dispatched any events. This is ideal for games and similar applications.
         *control_flow = ControlFlow::Poll;
@@ -67,7 +69,7 @@ fn main() {
         //could use for menus??
         //*control_flow = ControlFlow::Wait;
         
-        let swap = engine.update(&event,control_flow,&display,fps_timer.get_frame_length(),&mut last_time);
+        let swap = engine.update(&event,control_flow,&display, &mut fps_timer);
 
         if swap {
             dim = match dim {
@@ -78,10 +80,23 @@ fn main() {
         }
 
         //wait long enough to reach target frame rate
-        *control_flow = match *control_flow {
-            ControlFlow::Exit => ControlFlow::Exit,
-            _ => ControlFlow::WaitUntil(fps_timer.end())
-        };
+        //reset frame timer after redraw
+        // if fps_timer.start > Instant::now() + Duration::from_millis(16) {
+        //     fps_timer.end();
+        // }
+        //this waits either until the given instant OR until we get a new event
+        //so it doesn't really do what we want
+        // match event {
+        //     Event::RedrawRequested(_) => {
+
+        //         *control_flow = match *control_flow {
+        //             ControlFlow::Exit => ControlFlow::Exit,
+        //             _ => ControlFlow::WaitUntil(fps_timer.end()),
+        // };
+        // fps_timer.start();},
+        //     _ => (),
+        // };
+        
     }); //end of event loop
 
 }

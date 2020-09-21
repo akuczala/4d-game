@@ -126,6 +126,23 @@ where V : VectorTrait {
     }
 
 }
+pub fn clip_line_cube<V : VectorTrait>(line : Line<V>, r : Field) -> Option<Line<V>> {
+    //construct the d cube planes, normals facing in
+    let planes_iter = (0..V::DIM).map(
+        move |i| ([-1., 1.]).iter()
+            .map(move |&sign| Plane{normal : V::one_hot(i)*sign, threshold : -r})
+        )
+        .flatten();
+    //successively clip on each plane
+    let mut clip_line = Some(line);
+    for plane in planes_iter {
+        clip_line = match clip_line {
+            Some(line) => clip_line_plane(line,&plane,0.),
+            None => None,
+        }
+    }
+    clip_line
+}
 pub fn clip_line_sphere<V :VectorTrait>(line : Line<V>, r : Field) -> Option<Line<V>> {
     let v0 = line.0;
     let v1 = line.1;

@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 mod texture;
-use crate::clipping::clip_line_sphere;
+
 use crate::engine::Player;
 use specs::prelude::*;
 use std::marker::PhantomData;
@@ -14,7 +14,7 @@ use crate::camera::{Camera};
 use crate::vector::{VectorTrait,Field};
 use crate::geometry::{VertIndex,Shape,Line};
 //use crate::graphics;
-use crate::clipping::clip_line_plane;
+use crate::clipping::{clip_line_plane,clip_line_sphere,clip_line_cube};
 use crate::colors::*;
 use crate::clipping::ClipState;
 
@@ -23,7 +23,7 @@ const Z0 : Field = 0.0;
 const SMALL_Z : Field = 0.001;
 const Z_NEAR : Field = 0.1; 
 
-const CLIP_SPHERE_RADIUS : Field = 0.75;
+const CLIP_SPHERE_RADIUS : Field = 0.5;
 #[derive(Clone,Copy)]
 pub struct DrawVertex<V>
 where V: VectorTrait
@@ -91,7 +91,7 @@ where V : VectorTrait
 	let proj_line = view_line
 		.map(|l| l
 		.map(project));
-	let clip_proj_line = match proj_line {Some(l) => clip_line_sphere(l,CLIP_SPHERE_RADIUS), None => None};
+	let clip_proj_line = match proj_line {Some(l) => clip_line_cube(l,CLIP_SPHERE_RADIUS), None => None};
 	clip_proj_line
 }
 
