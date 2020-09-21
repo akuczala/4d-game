@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 mod texture;
 
-use crate::engine::Player;
+use crate::player::Player;
 use specs::prelude::*;
 use std::marker::PhantomData;
 

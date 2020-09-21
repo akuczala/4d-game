@@ -28,11 +28,10 @@ use crate::graphics::{Graphics,Graphics2d,Graphics3d};
 use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait,Field};
 use crate::fps::FPSFloat;
 
-pub struct Player(pub Entity); //specifies entity of the player?
+
 
 pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
     pub world : World,
-    //pub extra_lines : Vec<Line<V>>,
     pub cur_lines_length : usize,
     graphics : G,
     gui : Option<crate::gui::System>,
@@ -41,15 +40,16 @@ pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
 }
 impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 {
-    pub fn new(mut shapes : Vec<Shape<V>>, graphics : G, display : &Display, maybe_gui : Option<crate::gui::System>) -> Self
-    {
+    pub fn new<F : Fn(&mut World)>(build_scene : F, graphics : G, display : &Display, maybe_gui : Option<crate::gui::System>) -> Self {
 
         let mut world = World::new();
 
         let mut dispatcher = DispatcherBuilder::new()
             .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
-            .with(crate::collide::PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision",&["update_camera"])
-            .with(crate::collide::MovePlayerSystem(PhantomData::<V>),"move_player",&["player_collision"])
+            .with(crate::collide::PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision_detect",&["update_camera"]) 
+            .with(crate::collide::PlayerStaticCollisionSystem(PhantomData::<V>),"player_static_collision",&["player_collision_detect"])
+            .with(crate::collide::PlayerCoinCollisionSystem(PhantomData::<V>),"player_coin_collision",&["player_collision_detect","player_static_collision"])
+            .with(crate::collide::MovePlayerSystem(PhantomData::<V>),"move_player",&["player_static_collision","player_coin_collision"])
             .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
             .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
             .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
@@ -68,43 +68,10 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
         world.insert(Input::new());
 
-        //add shape entities and intialize spatial hash set
-        let shapes_len = shapes.len();
-        let coin_shape = shapes.pop().unwrap();
-        let (mut max, mut min) = (V::zero(), V::zero());
-        let mut max_lengths = V::zero();
+        build_scene(&mut world);
+        let shapes_len = world.read_component::<Shape<V>>().count();
 
-        for shape in shapes.into_iter() {
-            let bbox = collide::calc_bbox(&shape);
-            min = min.zip_map(bbox.min,Field::min); 
-            max = max.zip_map(bbox.max,Field::max);
-            max_lengths = max_lengths.zip_map(bbox.max - bbox.min,Field::max);
-            world.create_entity()
-            .with(bbox)
-            .with(shape)
-            .with(collide::StaticCollider)
-            .build();
-        }
-
-        world.create_entity()
-            .with(collide::calc_bbox(&coin_shape))
-            .with(coin_shape)
-            .with(Coin)
-            .build();
-        //println!("Min/max: {},{}",min,max);
-        //println!("Longest sides {}",max_lengths);
-        world.insert(
-            SpatialHashSet::<V,Entity>::new(
-                min*1.5, //make bounds slightly larger than farthest points
-                max*1.5,
-                max_lengths*1.1 //make cell size slightly larger than largest shape dimensions
-            )
-        );
-        //enter shapes into hash set
-        collide::BBoxHashingSystem(PhantomData::<V>).run_now(&world);
-
-        //let extra_lines : Vec<Line<V>> = Vec::new();
-        let camera = Camera::new(V::zero());
+        collide::create_spatial_hash::<V>(&mut world);
 
 
         //use crate::vector::Rotatable;
@@ -112,19 +79,18 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         
         let clip_state = ClipState::<V>::new(shapes_len);
         let draw_lines = draw::DrawLineList::<V>(vec![]);
-        let proj_lines = draw_lines.map(|l| draw::transform_draw_line(l,&camera));
+        let proj_lines = draw_lines.map(|l| draw::transform_draw_line(l,&Camera::new(V::zero()))); // <-- dummy camera
          //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
         let cur_lines_length = draw_lines.len();
         let face_scales : Vec<crate::vector::Field> = vec![0.9];
 
-        use crate::collide::BBox;
-        let player_entity = world.create_entity()
-            .with(BBox{min : V::ones()*(-0.1) + camera.pos, max : V::ones()*(0.1) + camera.pos})
-            .with(camera) //decompose
-            .with(collide::MoveNext::<V>::default())
-            .build(); 
+        
+        //DEBUG
+        // {
+        // let entities = world.read_resource::<Entities>();
+        // entities.delete(entities.entity(20)).unwrap();
+        // }
 
-        world.insert(Player(player_entity));
         world.insert(clip_state); // decompose into single entity properties
         world.insert(draw_lines); // unclear if this would be better as entities
         world.insert(proj_lines);
@@ -206,6 +172,8 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
                     fps_timer.start();
 
                     self.dispatcher.dispatch(&mut self.world);
+                    self.world.maintain();
+
                     self.draw(&display);
 
                     {
@@ -256,7 +224,7 @@ impl EngineD<Vec3,Graphics2d> {
         let mut graphics = Graphics2d::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
 
-        Self::new(crate::build_level::build_shapes_3d(),graphics,display,gui)
+        Self::new(crate::build_level::build_shapes_3d,graphics,display,gui)
     }
 }
 impl EngineD<Vec4,Graphics3d> {
@@ -265,7 +233,7 @@ impl EngineD<Vec4,Graphics3d> {
         //let game = Game::new(game::build_shapes_4d());
         let mut graphics = Graphics3d::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
-        Self::new(crate::build_level::build_shapes_4d(),graphics,display,gui)
+        Self::new(crate::build_level::build_shapes_4d,graphics,display,gui)
     }
 }
 

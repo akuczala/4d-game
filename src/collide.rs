@@ -1,6 +1,7 @@
+use crate::coin::Coin;
 use crate::input::Input;
 use crate::camera::Camera;
-use crate::engine::Player;
+use crate::player::Player;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
 use crate::geometry::Shape;
 use crate::vector::{VectorTrait,Field,Translatable};
@@ -13,6 +14,10 @@ use itertools::Itertools;
 #[derive(Component)]
 #[storage(VecStorage)]
 pub struct StaticCollider;
+
+#[derive(Component)]
+#[storage(HashMapStorage)]
+pub struct InPlayerCell;
 
 //axis-aligned bounding box
 #[derive(Component)]
@@ -73,6 +78,28 @@ pub fn calc_bbox<V : VectorTrait>(shape : &Shape<V>) -> BBox<V> {
 		max = max.zip_map(v,Field::max);
 	}
 	BBox{min,max}
+}
+
+pub fn create_spatial_hash<V : VectorTrait>(world : &mut World) {
+	//add shape entities and intialize spatial hash set
+    let (mut max, mut min) = (V::zero(), V::zero());
+    let mut max_lengths = V::zero();
+    for bbox in (&world.read_component::<BBox<V>>()).join() {
+        min = min.zip_map(bbox.min,Field::min); 
+        max = max.zip_map(bbox.max,Field::max);
+        max_lengths = max_lengths.zip_map(bbox.max - bbox.min,Field::max);
+    }
+    //println!("Min/max: {},{}",min,max);
+    //println!("Longest sides {}",max_lengths);
+    world.insert(
+        SpatialHashSet::<V,Entity>::new(
+            min*1.5, //make bounds slightly larger than farthest points
+            max*1.5,
+            max_lengths*1.1 //make cell size slightly larger than largest shape dimensions
+        )
+    );
+    //enter shapes into hash set
+    BBoxHashingSystem(PhantomData::<V>).run_now(&world);
 }
 
 //enter each statically colliding entity into every cell containing its bbox volume (either 1, 2, 4 ... up to 2^d cells)
@@ -142,23 +169,36 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 	}
 }
 //stop movement through entites indexed in spatial hash set
+//need only run these systems when the player is moving
 pub struct PlayerCollisionDetectionSystem<V>(pub PhantomData<V>);
 
 impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 
-	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>, WriteStorage<'a,MoveNext<V>>,
-		ReadStorage<'a,Shape<V>>,ReadStorage<'a,BBox<V>>,ReadStorage<'a,StaticCollider>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
+	type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,BBox<V>>,WriteStorage<'a,InPlayerCell>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
 
-	fn run(&mut self, (player, camera, mut write_move_next, shape, bbox, static_collider, hash) : Self::SystemData) {
+	fn run(&mut self, (player, bbox, mut in_cell, hash) : Self::SystemData) {
+		in_cell.clear(); //clear previously marked
+		//maybe we should use the anticipated player bbox here
+		let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
+		for &e in entities_in_bbox.iter() {
+			in_cell.insert(e, InPlayerCell).unwrap();
+		}
+	}
+}
+
+pub struct PlayerStaticCollisionSystem<V :VectorTrait>(pub PhantomData<V>);
+impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
+
+	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>, WriteStorage<'a,MoveNext<V>>,
+		ReadStorage<'a,Shape<V>>,ReadStorage<'a,StaticCollider>,ReadStorage<'a,InPlayerCell>);
+
+	fn run(&mut self, (player, camera, mut write_move_next, shape, static_collider, in_cell) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap();
 		match move_next {
 			MoveNext{next_dpos : Some(_next_dpos), can_move : Some(true)} => {
-				//maybe we should use the anticipated player bbox here
 				let pos = camera.get(player.0).unwrap().pos;
-				let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
+				for (shape, _, _) in (&shape, &static_collider, &in_cell).join() {
 
-				for &e in entities_in_bbox.iter().filter(|&&e| static_collider.contains(e)) {
-					let shape = shape.get(e).unwrap();
 					let next_dpos = move_next.next_dpos.unwrap();
 					let (normal, dist) = shape.point_normal_distance(pos);
 					
@@ -174,8 +214,29 @@ impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 				
 			},
 			_ => (),
-		};
-		
+		}
+	}
+}
+
+pub struct PlayerCoinCollisionSystem<V : VectorTrait>(pub PhantomData<V>);
+impl<'a, V : VectorTrait> System<'a> for PlayerCoinCollisionSystem<V> {
+	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>,
+		ReadStorage<'a,Coin>,ReadStorage<'a,InPlayerCell>,ReadStorage<'a,Shape<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
+
+	fn run(&mut self, (player, camera, coin, in_cell, shapes, entities, mut hash) : Self::SystemData) {
+		let pos = camera.get(player.0).unwrap().pos;
+
+		for (_, _, shape, e) in (&coin, &in_cell, &shapes, &entities).join() {
+			if shape.point_signed_distance(pos) < 0.1 {
+
+				//this is a little slow since we need to check all cells, but we don't expect this to occur often
+				hash.remove_from_all(&e); //remove from spatial hash
+				entities.delete(e).unwrap(); //delete
+				//println!("deleted {}",e.id());
+			}
+
+		}
+
 
 	}
 }

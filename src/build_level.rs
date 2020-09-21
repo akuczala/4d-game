@@ -1,30 +1,35 @@
+use crate::camera::Camera;
+use crate::coin::Coin;
+use specs::prelude::*;
 use crate::vector::{Vec3,Vec4,linspace};
-use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d};
-use crate::colors::YELLOW;
+use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d,ShapeBuilder};
+
 use crate::geometry::{Shape,buildshapes};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
+use crate::collide::{StaticCollider,calc_bbox};
 
-pub fn build_shapes_3d() -> Vec<Shape<Vec3>> {
-
-    build_lvl_1_3d()
-    //build_level::build_test_scene_3d()
+pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
+    let bbox = calc_bbox(&shape);
+    world.create_entity()
+        .with(bbox)
+        .with(shape)
+        .with(StaticCollider)
+        .build();
 }
-pub fn build_shapes_4d() -> Vec<Shape<Vec4>> {
-    let wall_length = 3.0;
-    //buildshapes::build_axes_cubes_4d()
-    //buildshapes::cubeidor_4d()
-    let mut shapes = build_corridor_cross(
-        &color_cube(build_cube_4d(1.0)),wall_length);
-    //let (m,n) = (4,4);
-    //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
-    shapes.push(build_duoprism_4d([0.1,0.1],[[0,1],[2,3]],[6,6])
-        .set_color(YELLOW)
-        .set_pos(&Vec4::new(0.0,0.0,wall_length - 0.5,0.0)));
-    //let shapes_len = shapes.len();
-    //buildshapes::color_duocylinder(&mut shapes[shapes_len-1],10,10);
-    shapes
-     //   .set_pos(&Vec4::new(0.0,0.0,0.0,0.0));
+pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
+    world.create_entity()
+        .with(calc_bbox(&shape))
+        .with(shape)
+        .with(Coin)
+        .build();
+}
+pub fn build_shapes_3d(world : &mut World) {
+
+    build_lvl_1_3d(world);
+}
+pub fn build_shapes_4d(world : &mut World) {
+    build_lvl_1_4d(world);
     
 }
 
@@ -143,15 +148,34 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     
 }
 
-pub fn build_lvl_1_3d() -> Vec<Shape<Vec3>> {
-    let wall_length = 3.0;
-    let mut shapes = build_corridor_cross(
-        &buildshapes::color_cube(buildshapes::build_cube_3d(1.0)),wall_length);
-    shapes.push(buildshapes::build_prism_3d(0.1,0.025,6)
-        .set_color(YELLOW)
-        .set_pos(&Vec3::new(wall_length - 0.5,0.0,0.0)));
+pub fn build_lvl_1_3d(world : &mut World) {
+    build_lvl_1(world,ShapeBuilder::<Vec3>::build_cube(1.0),ShapeBuilder::<Vec3>::build_coin());
+}
+pub fn build_lvl_1_4d(world : &mut World) {
+    build_lvl_1(world,ShapeBuilder::<Vec4>::build_cube(1.0),ShapeBuilder::<Vec4>::build_coin());
+}
 
-    shapes
+pub fn build_lvl_1<V : VectorTrait>(world : &mut World, cube : Shape<V>, coin : Shape<V>) {
+    let wall_length = 3.0;
+    //buildshapes::build_axes_cubes_4d()
+    //buildshapes::cubeidor_4d()
+    let walls : Vec<Shape<V>> = build_corridor_cross(
+        &color_cube(cube),wall_length);
+
+    for wall in walls.into_iter() {
+        insert_wall(world,wall)
+    }
+    //let (m,n) = (4,4);
+    //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
+    for (axis,dir) in iproduct!(match V::DIM {3 => vec![0,2], 4 => vec![0,2,3], _ => panic!("Invalid dimension")},vec![-1.,1.]) {
+        insert_coin(world,
+            coin.clone()
+                .set_pos(&(V::one_hot(axis)*dir*(wall_length - 0.5)))
+        );
+    }
+    let camera = Camera::new(V::zero());
+    crate::player::build_player(world, camera);
+
 }
 
 pub fn build_test_scene_3d() -> Vec<Shape<Vec3>> {

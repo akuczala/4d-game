@@ -141,6 +141,11 @@ impl <K : VectorTrait, T> SpatialHashSet<K, T>
 			None => false,
 		}
 	}
+	pub fn remove_from_all(&mut self, item : &T) {
+		for (_,set) in self.0.map.iter_mut() {
+			set.remove(item);
+		}
+	}
 	pub fn clear_cell(&mut self, point : &K) -> Option<HashSet<T>> {
 		self.0.remove(&point)
 	}
@@ -243,22 +248,17 @@ fn test_shape_hash() {
 	world.register::<StaticCollider>();
 	world.register::<BBox<V>>();
 
-    let shapes = crate::build_level::build_shapes_3d();
+	crate::build_level::build_shapes_3d(&mut world);
 
     //let shapes_len = shapes.len();
     //let coin_shape = shapes.pop();
+    //add shape entities and intialize spatial hash set
     let (mut max, mut min) = (V::zero(), V::zero());
     let mut max_lengths = V::zero();
-    for shape in shapes.into_iter() {
-    	let bbox = calc_bbox(&shape);
-    	min = min.zip_map(bbox.min,Field::min); 
-		max = max.zip_map(bbox.max,Field::max);
-		max_lengths = max_lengths.zip_map(bbox.max - bbox.min,Field::max);
-        world.create_entity()
-        .with(bbox)
-        .with(shape)
-        .with(StaticCollider)
-        .build();
+    for bbox in (&world.read_component::<BBox<V>>()).join() {
+        min = min.zip_map(bbox.min,Field::min); 
+        max = max.zip_map(bbox.max,Field::max);
+        max_lengths = max_lengths.zip_map(bbox.max - bbox.min,Field::max);
     }
     println!("Min/max: {},{}",min,max);
     println!("Longest sides {}",max_lengths);

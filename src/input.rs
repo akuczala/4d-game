@@ -1,4 +1,4 @@
-use crate::engine::Player;
+use crate::player::Player;
 use std::marker::PhantomData;
 
 use glium::glutin;

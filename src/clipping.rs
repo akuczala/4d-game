@@ -1,5 +1,5 @@
 
-use crate::engine::Player;
+use crate::player::Player;
 use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 use crate::draw::DrawLine;
@@ -70,6 +70,11 @@ pub struct ClipState<V : VectorTrait> {
     pub separations_debug : Vec<Vec<Separation>>, //don't need this, but is useful for debug
     pub clipping_enabled : bool,
 }
+struct ShapeClipState<V : VectorTrait> {
+    in_front : bool,
+    separators : Vec<Separator<V>>,
+}
+
 impl<V : VectorTrait> Default for ClipState<V> {
     fn default() -> Self {ClipState::new(0)}
 }
@@ -240,6 +245,8 @@ pub fn clip_draw_lines<V : VectorTrait>(
     ) ->  Vec<Option<DrawLine<V>>>
 {
     let mut clipped_lines = lines;
+
+
     let clipping_shapes : Vec<&Shape<V>> = match shape_in_front {
         Some(in_fronts) => shapes.join().zip(in_fronts)
             .filter(|(_shape,&front)| front)

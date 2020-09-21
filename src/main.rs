@@ -24,6 +24,7 @@ mod input;
 mod build_level;
 mod coin;
 mod fps;
+mod player;
 //mod object;
 
 //use specs::prelude::*;

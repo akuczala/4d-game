@@ -7,6 +7,27 @@ use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
 use crate::draw::Texture;
+use std::marker::PhantomData;
+
+pub struct ShapeBuilder<V : VectorTrait>(PhantomData<V>);
+impl ShapeBuilder<Vec3> {
+	pub fn build_cube(length : Field) -> Shape<Vec3> {
+		build_cube_3d(length)
+	}
+	pub fn build_coin() -> Shape<Vec3> {
+		build_prism_3d(0.1,0.025,10)
+            .set_color(YELLOW)
+	}
+}
+impl ShapeBuilder<Vec4> {
+	pub fn build_cube(length : Field) -> Shape<Vec4> {
+		build_cube_4d(length)
+	}
+	pub fn build_coin() -> Shape<Vec4> {
+		build_duoprism_4d([0.1,0.1],[[0,1],[2,3]],[10,10])
+            .set_color(YELLOW)
+	}
+}
 
 pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 
@@ -45,7 +66,6 @@ pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 	return Shape::new(verts,edges,faces);
 
 }
-
 pub fn build_cube_3d(length : Field) -> Shape<Vec3> {
 	build_prism_3d(length/(2.0 as Field).sqrt(),length,4)
 }
