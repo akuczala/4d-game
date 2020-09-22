@@ -25,18 +25,16 @@ mod build_level;
 mod coin;
 mod fps;
 mod player;
+mod cleanup;
+mod systems;
 //mod object;
 
 //use specs::prelude::*;
-use std::time::{Duration,Instant};
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 
 use glium::glutin::event_loop::EventLoop;
-use glium::glutin::{
-        event::{Event, WindowEvent},
-        event_loop::ControlFlow,
-    };
+
 
 //NOTES:
 // include visual indicator of what direction a collision is in
@@ -59,6 +57,8 @@ fn main() {
 
     let mut fps_timer = FPSTimer::new();
 
+    display.gl_window().window().set_cursor_visible(false);
+    
     //POINT OF NO RETURN. Thanks winit
     event_loop.run(move |event, _, control_flow| {
         //let mut engine = tengine.take_mut().unwrap();
@@ -77,27 +77,8 @@ fn main() {
                 3 => Ok(4), 4 => Ok(3), _ => Err("Invalid dimension") 
             }.unwrap();
             engine = engine.swap_dim(dim,&display);
-            //input.swap_engine = false;
         }
 
-        //wait long enough to reach target frame rate
-        //reset frame timer after redraw
-        // if fps_timer.start > Instant::now() + Duration::from_millis(16) {
-        //     fps_timer.end();
-        // }
-        //this waits either until the given instant OR until we get a new event
-        //so it doesn't really do what we want
-        // match event {
-        //     Event::RedrawRequested(_) => {
-
-        //         *control_flow = match *control_flow {
-        //             ControlFlow::Exit => ControlFlow::Exit,
-        //             _ => ControlFlow::WaitUntil(fps_timer.end()),
-        // };
-        // fps_timer.start();},
-        //     _ => (),
-        // };
-        
     }); //end of event loop
 
 }

@@ -24,11 +24,11 @@ pub struct ClipState<V : VectorTrait> {
 
 
 impl<V : VectorTrait> Default for ClipState<V> {
-    fn default() -> Self {ClipState::new(0)}
+    fn default() -> Self {ClipState::new()}
 }
 
 impl<V : VectorTrait> ClipState<V> {
-    pub fn new(shapes_len : usize) -> Self {
+    pub fn new() -> Self {
         //let shapes : Vec<&Shape<V>> = (&read_shapes).join().collect();
         ClipState {
             //in_front : HashSet::new(),
@@ -57,11 +57,11 @@ impl<V : VectorTrait> ClipState<V> {
 
 pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
-    type SystemData = (Write<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
+    type SystemData = (ReadStorage<'a,Shape<V>>,WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
         ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
 
-    fn run(&mut self, (mut clip_state,shape_data,mut shape_clip_state,entities,camera,player) : Self::SystemData) {
-        calc_in_front(&mut clip_state,&shape_data,&mut shape_clip_state,&entities,&camera.get(player.0).unwrap().pos);
+    fn run(&mut self, (shape_data,mut shape_clip_state,entities,camera,player) : Self::SystemData) {
+        calc_in_front(&shape_data,&mut shape_clip_state,&entities,&camera.get(player.0).unwrap().pos);
     }
 }
 
@@ -71,7 +71,6 @@ impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
 //and that we have to iterate over all entities with the Shape component, instead of just those with both Shape and ShapeClipState
 //but for now, every shape has a ShapeClipState.
 pub fn calc_in_front<V : VectorTrait>(
-        clip_state : &mut ClipState<V>,
         read_shapes : & ReadStorage<Shape<V>>,
         shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
         entities : &Entities,
@@ -85,7 +84,6 @@ pub fn calc_in_front<V : VectorTrait>(
             calc_in_front_pair(
                 InFrontArg{shape : &shape1, entity : e1},
                 InFrontArg{shape : &shape2, entity : e2},
-                clip_state,
                 shape_clip_states,
                 origin
                 )
@@ -166,6 +164,12 @@ impl<V : VectorTrait> Default for ShapeClipState<V> {
         }
     }
 }
+impl<V : VectorTrait> ShapeClipState<V> {
+    pub fn remove(&mut self, e : &Entity) {
+        self.in_front.remove(e);
+        self.separators.remove(e);
+    }
+}
 
 pub struct InFrontArg<'a, V : VectorTrait>{
     shape : &'a Shape<V>,
@@ -173,7 +177,7 @@ pub struct InFrontArg<'a, V : VectorTrait>{
     entity : Entity,
 }
 pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontArg<'a,V>,
-    clip_state : &mut ClipState<V>, shape_clip_states : &mut WriteStorage<ShapeClipState<V>>, origin : &V) {
+    shape_clip_states : &mut WriteStorage<ShapeClipState<V>>, origin : &V) {
 
     //try dynamic separation
     let mut sep_state = dynamic_separate(a.shape,b.shape,origin);
@@ -357,7 +361,6 @@ pub fn clip_line<V : VectorTrait>(
 //consider using parallel joins here
 pub fn clip_draw_lines<'a, V : VectorTrait,I : std::iter::Iterator<Item=&'a Shape<V>>>(
     lines : Vec<Option<DrawLine<V>>>,
-    shapes: &ReadStorage<Shape<V>>,
     shapes_in_front : I
     ) ->  Vec<Option<DrawLine<V>>>
 {

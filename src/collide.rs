@@ -1,3 +1,4 @@
+use crate::cleanup::DeletedEntities;
 use crate::coin::Coin;
 use crate::input::Input;
 use crate::camera::Camera;
@@ -181,7 +182,7 @@ impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 		//maybe we should use the anticipated player bbox here
 		let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
 		for &e in entities_in_bbox.iter() {
-			in_cell.insert(e, InPlayerCell).unwrap();
+			in_cell.insert(e, InPlayerCell).expect("PlayerCollisionDetectionSystem: entity in spatial hash doesn't exist");
 		}
 	}
 }
@@ -215,29 +216,6 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 			},
 			_ => (),
 		}
-	}
-}
-
-pub struct PlayerCoinCollisionSystem<V : VectorTrait>(pub PhantomData<V>);
-impl<'a, V : VectorTrait> System<'a> for PlayerCoinCollisionSystem<V> {
-	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>,
-		ReadStorage<'a,Coin>,ReadStorage<'a,InPlayerCell>,ReadStorage<'a,Shape<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
-
-	fn run(&mut self, (player, camera, coin, in_cell, shapes, entities, mut hash) : Self::SystemData) {
-		let pos = camera.get(player.0).unwrap().pos;
-
-		for (_, _, shape, e) in (&coin, &in_cell, &shapes, &entities).join() {
-			if shape.point_signed_distance(pos) < 0.1 {
-
-				//this is a little slow since we need to check all cells, but we don't expect this to occur often
-				hash.remove_from_all(&e); //remove from spatial hash
-				entities.delete(e).unwrap(); //delete
-				//println!("deleted {}",e.id());
-			}
-
-		}
-
-
 	}
 }
 

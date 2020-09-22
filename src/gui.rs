@@ -4,7 +4,7 @@ use glium::glutin::event::{Event, WindowEvent};
 use glium::glutin::event_loop::{ControlFlow};
 use glium::glutin::window::WindowBuilder;
 use glium::{Display, Surface};
-use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui};
+use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui, ProgressBar};
 use imgui_glium_renderer::Renderer;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 use std::time::Instant;
@@ -93,22 +93,28 @@ pub enum UIArgs{
         mouse_diff : (f32,f32),
         mouse_pos : Option<(f32,f32)>,
     },
+    Simple{
+        frame_duration : FPSFloat,
+        coins_collected : u32,
+        coins_left : u32,
+    }
 }
 
 
 fn hello_world(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
         use imgui::{Window,im_str,Condition};
         Window::new(im_str!("Debug info"))
+            .position([20.0, 20.0], Condition::Appearing)
             .size([300.0, 110.0], Condition::FirstUseEver)
             .build(ui, || {
                 match ui_args {
-                    UIArgs::None => (),
                     UIArgs::Test{ref frame_duration, ref elapsed_time, ref mouse_diff, ref mouse_pos} => {
                         ui.text(format!("FPS: {}",1./frame_duration));
                         ui.text(format!("elapsed_time (ms): {}",elapsed_time));
                         ui.text(format!("dmouse: {:?}",mouse_diff));
                         ui.text(format!("mouse_pos: {:?}",mouse_pos));
                     }
+                    _ => ()
                 };
                 ui.separator();
                 let mouse_pos = ui.io().mouse_pos;
@@ -119,6 +125,42 @@ fn hello_world(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
             });
         
     }
+fn simple_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
+        use imgui::{Window,im_str,Condition};
+        Window::new(im_str!("Press M to toggle mouse control"))
+            .position([0.,0.], Condition::Appearing)
+            .size([190.0, 110.0], Condition::FirstUseEver)
+            .bg_alpha(0.75)
+            .title_bar(false)
+            .resizable(false)
+            .scroll_bar(false)
+            .menu_bar(false)
+            .build(ui, || {
+                match ui_args {
+                    UIArgs::None => (),
+                    UIArgs::Test{ref frame_duration, ref elapsed_time, ref mouse_diff, ref mouse_pos} => {
+                        ui.text(format!("FPS: {0:0}",1./frame_duration));
+                        ui.text(format!("elapsed_time (ms): {}",elapsed_time));
+                        ui.text(format!("dmouse: {:?}",mouse_diff));
+                        ui.text(format!("mouse_pos: {:?}",mouse_pos));
+                    }
+                    UIArgs::Simple{ref frame_duration, ref coins_collected, ref coins_left} => {
+                        let total_coins = coins_left + coins_collected;
+                        let coin_text = format!("Coins: {}/{}",coins_collected,total_coins);
+                        ui.text(format!("FPS: {:0.0}",1./frame_duration));
+                        ui.text(coin_text);
+                        ProgressBar::new(
+                            (*coins_collected as f32)/(total_coins as f32))
+                        //.size([200.0, 20.0])
+                        .build(ui);
+                        ui.text("Press M to toggle mouse");
+                        ui.text("Backspace toggles 3D/4D");
+                    }
+                };
+            });
+        
+    }
+
 impl System {
     pub fn update<E>(&mut self, display : &Display, last_frame : &mut Instant, event : &Event<E>, control_flow : &mut ControlFlow, ui_args : UIArgs) {
         let imgui = &mut self.imgui;
@@ -154,7 +196,7 @@ impl System {
         //let font_size = self.font_size;
         let mut ui = imgui.frame();
         let mut run = true;
-        hello_world(&mut run, &mut ui, &mut self.ui_args);
+        simple_ui(&mut run, &mut ui, &mut self.ui_args);
         if !run {
             //*control_flow = ControlFlow::Exit;
             panic!("Would exit here because ui didn't run");

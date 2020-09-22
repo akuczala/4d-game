@@ -199,7 +199,7 @@ pub fn calc_shapes_lines<V>(
 
 where V : VectorTrait
 {
-	//DEBUG
+	//DEBUG: list entities in front of each shape
 	// for (i,(sh,s)) in (shapes, shape_clip_states).join().enumerate() {
 	// 	println!("shape {}: {}",i,sh.get_pos());
 	// 	use itertools::Itertools;
@@ -223,9 +223,13 @@ where V : VectorTrait
 
 		//clip these lines and append to list
 		if clip_state.clipping_enabled {
-			let shapes_in_front = shape_clip_state.in_front.iter().map(|&e| shapes.get(e).unwrap());
+			let shapes_in_front = shape_clip_state.in_front.iter()
+				.map(|&e| match shapes.get(e) {
+					Some(s) => s,
+					None => panic!(format!("Invalid entity {} found in shape_clip_state",e.id())),
+				});
 			let mut clipped_lines = crate::clipping::clip_draw_lines(
-				shape_lines,shapes, shapes_in_front);
+				shape_lines, shapes_in_front);
 			lines.append(&mut clipped_lines);
 		} else {
 			lines.append(&mut shape_lines);

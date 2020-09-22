@@ -1,8 +1,6 @@
 
 use std::time::{Duration,Instant};
 use crate::FPSTimer;
-use crate::spatial_hash::SpatialHashSet;
-use crate::coin::Coin;
 use crate::collide;
 use specs::prelude::*;
 use glium::Display;
@@ -13,7 +11,6 @@ use glium::glutin::{
         event_loop::ControlFlow,
     };
 
-use crate::geometry::{Shape};
 
 use crate::camera::Camera;
 use crate::clipping::ClipState;
@@ -28,6 +25,7 @@ use crate::graphics::{Graphics,Graphics2d,Graphics3d};
 use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait,Field};
 use crate::fps::FPSFloat;
 
+use crate::systems::*;
 
 
 pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
@@ -45,23 +43,26 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let mut world = World::new();
 
         let mut dispatcher = DispatcherBuilder::new()
-            .with(crate::input::UpdateCameraSystem(PhantomData::<V>),"update_camera",&[])
-            .with(crate::collide::PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision_detect",&["update_camera"]) 
-            .with(crate::collide::PlayerStaticCollisionSystem(PhantomData::<V>),"player_static_collision",&["player_collision_detect"])
-            .with(crate::collide::PlayerCoinCollisionSystem(PhantomData::<V>),"player_coin_collision",&["player_collision_detect","player_static_collision"])
-            .with(crate::collide::MovePlayerSystem(PhantomData::<V>),"move_player",&["player_static_collision","player_coin_collision"])
-            .with(crate::collide::UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
-            .with(crate::coin::CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
-            .with(crate::input::PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
-            //start drawing phase
+            //start drawing phase. this is first so that we can do world.maintain() before we draw
             //for each shape, update clipping boundaries and face visibility
-            .with(draw::VisibilitySystem(PhantomData::<V>),"visibility",&["coin_spinning","move_player"])
+            .with(VisibilitySystem(PhantomData::<V>),"visibility",&[])
             //determine what shapes are in front of other shapes
-            .with(crate::clipping::InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
+            .with(InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
             //calculate and clip lines for each shape
-            .with(draw::CalcShapesLinesSystem(PhantomData::<V>),"calc_shapes_lines",&["in_front"])
+            .with(CalcShapesLinesSystem(PhantomData::<V>),"calc_shapes_lines",&["in_front"])
             //project lines
-            .with(draw::TransformDrawLinesSystem(PhantomData::<V>),"transform_draw_lines",&["calc_shapes_lines"])
+            .with(TransformDrawLinesSystem(PhantomData::<V>),"transform_draw_lines",&["calc_shapes_lines"])
+            //start game update phase
+            .with(UpdateCameraSystem(PhantomData::<V>),"update_camera",&["calc_shapes_lines"])
+            .with(PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision_detect",&["update_camera"]) 
+            .with(PlayerStaticCollisionSystem(PhantomData::<V>),"player_static_collision",&["player_collision_detect"])
+            .with(PlayerCoinCollisionSystem(PhantomData::<V>),"player_coin_collision",&["player_collision_detect","player_static_collision"])
+            .with(MovePlayerSystem(PhantomData::<V>),"move_player",&["player_static_collision","player_coin_collision"])
+            .with(UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
+            .with(CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
+            .with(ShapeCleanupSystem(PhantomData::<V>),"shape_cleanup",&["player_coin_collision"])
+            .with(PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])
+            
             .build();
 
         dispatcher.setup(&mut world);
@@ -69,7 +70,6 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         world.insert(Input::new());
 
         build_scene(&mut world);
-        let shapes_len = world.read_component::<Shape<V>>().count();
 
         collide::create_spatial_hash::<V>(&mut world);
 
@@ -77,7 +77,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         //use crate::vector::Rotatable;
         //camera.rotate(-2,-1,3.14159/2.);
         
-        let clip_state = ClipState::<V>::new(shapes_len);
+        let clip_state = ClipState::<V>::new();
         let draw_lines = draw::DrawLineList::<V>(vec![]);
         let proj_lines = draw_lines.map(|l| draw::transform_draw_line(l,&Camera::new(V::zero()))); // <-- dummy camera
          //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
@@ -123,11 +123,16 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             input.listen_events(event);
 
             //values to be passed to UI
-            ui_args = UIArgs::Test{
+            // ui_args = UIArgs::Test{
+            //     frame_duration,
+            //     elapsed_time : fps_timer.elapsed_time,
+            //     mouse_diff : input.mouse_dpos,
+            //     mouse_pos : input.helper.mouse()
+            // };
+            ui_args = UIArgs::Simple{
                 frame_duration,
-                elapsed_time : fps_timer.elapsed_time,
-                mouse_diff : input.mouse_dpos,
-                mouse_pos : input.helper.mouse()
+                coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
+                coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
             };
 
             if input.closed {
