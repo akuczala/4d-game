@@ -200,14 +200,15 @@ pub fn calc_shapes_lines<V>(
 where V : VectorTrait
 {
 	//DEBUG
-	for (i,s) in (&shape_clip_states).join().enumerate() {
-		println!("shape {}",i);
-		for e in s.in_front.iter() {
-			print!("{} ",e.id());
-		}
-		println!("");
-	}
-	panic!();
+	// for (i,(sh,s)) in (shapes, shape_clip_states).join().enumerate() {
+	// 	println!("shape {}: {}",i,sh.get_pos());
+	// 	use itertools::Itertools;
+	// 	for e in s.in_front.iter().sorted() {
+	// 		print!("{} ",e.id());
+	// 	}
+	// 	println!("");
+	// }
+	// panic!();
 	//probably worth computing / storing number of lines
 	//and using Vec::with_capacity
 	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();

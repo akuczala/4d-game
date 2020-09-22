@@ -214,7 +214,7 @@ pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontAr
     };}
     {
     let b_clip_state = shape_clip_states.get_mut(b.entity).unwrap();
-    match new_vals.0 {
+    match new_vals.1 {
         true => b_clip_state.in_front.insert(a.entity),
         false => b_clip_state.in_front.remove(&a.entity),
     };}
