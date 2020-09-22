@@ -14,7 +14,7 @@ use crate::camera::{Camera};
 use crate::vector::{VectorTrait,Field};
 use crate::geometry::{VertIndex,Shape,Line};
 //use crate::graphics;
-use crate::clipping::{clip_line_plane,clip_line_sphere,clip_line_cube};
+use crate::clipping::{clip_line_plane,clip_line_sphere,clip_line_cube,ShapeClipState};
 use crate::colors::*;
 use crate::clipping::ClipState;
 
@@ -181,40 +181,50 @@ pub fn update_shape_visibility<V : VectorTrait>(
 pub struct CalcShapesLinesSystem<V : VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
-	type SystemData = (ReadStorage<'a,Shape<V>>,ReadExpect<'a,Vec<Field>>,ReadExpect<'a,ClipState<V>>,WriteExpect<'a,DrawLineList<V>>);
+	type SystemData = (ReadStorage<'a,Shape<V>>,ReadStorage<'a,ShapeClipState<V>>,
+		ReadExpect<'a,Vec<Field>>,ReadExpect<'a,ClipState<V>>,WriteExpect<'a,DrawLineList<V>>);
 
-	fn run(&mut self, (shapes, face_scale, clip_state, mut lines) : Self::SystemData) {
-			lines.0 = calc_shapes_lines(shapes, &face_scale, &clip_state);
+	fn run(&mut self, (shapes, shape_clip_states, face_scale, clip_state, mut lines) : Self::SystemData) {
+			lines.0 = calc_shapes_lines(&shapes, &shape_clip_states, &face_scale, &clip_state);
 		}
 
 }
 
 pub fn calc_shapes_lines<V>(
-	shapes_storage : ReadStorage<Shape<V>>,
+	shapes : &ReadStorage<Shape<V>>,
+	shape_clip_states : &ReadStorage<ShapeClipState<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
 	)  -> Vec<Option<DrawLine<V>>>
 
 where V : VectorTrait
 {
-	
-	let shapes = &shapes_storage;
-
+	//DEBUG
+	for (i,s) in (&shape_clip_states).join().enumerate() {
+		println!("shape {}",i);
+		for e in s.in_front.iter() {
+			print!("{} ",e.id());
+		}
+		println!("");
+	}
+	panic!();
 	//probably worth computing / storing number of lines
 	//and using Vec::with_capacity
 	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();
 	
 	//compute lines for each shape
-	for (shape,shape_in_front) in (&shapes).join().zip(clip_state.in_front.iter()) {
+	for (shape,shape_clip_state) in (shapes,shape_clip_states).join() {
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
 		for face in &shape.faces {
 			shape_lines.append(&mut face.texture_mapping.draw(face, &shape, &face_scale))
 		}
+
 		//clip these lines and append to list
 		if clip_state.clipping_enabled {
+			let shapes_in_front = shape_clip_state.in_front.iter().map(|&e| shapes.get(e).unwrap());
 			let mut clipped_lines = crate::clipping::clip_draw_lines(
-				shape_lines,&shapes_storage, Some(shape_in_front));
+				shape_lines,shapes, shapes_in_front);
 			lines.append(&mut clipped_lines);
 		} else {
 			lines.append(&mut shape_lines);

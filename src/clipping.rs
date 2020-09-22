@@ -1,79 +1,27 @@
-
+use std::cell::Cell;
+use std::collections::{HashSet,HashMap};
 use crate::player::Player;
 use crate::vector::{VectorTrait,Field,scalar_linterp};
 use crate::geometry::{Line,Plane,SubFace,Face,Shape};
 use crate::draw::DrawLine;
 
 use specs::prelude::*;
+use specs::{Component,VecStorage};
 use std::marker::PhantomData;
 
 use crate::camera::Camera;
 
-pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
-impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
-    type SystemData = (Write<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
-
-    fn run(&mut self, (mut clip_state,shape_data,camera,player) : Self::SystemData) {
-        calc_in_front(&mut clip_state,shape_data.as_slice(),&camera.get(player.0).unwrap().pos);
-    }
-}
-pub fn calc_in_front<V : VectorTrait>(
-        clip_state : &mut ClipState<V>,
-        //read_shapes : ReadStorage<Shape<V>>,
-        shapes : &[Shape<V>],
-        origin : &V
-    ) {
-        //collect a vec of references to shapes
-        //let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
-        //loop over unique pairs
-        for i in 0..shapes.len() {
-            for j in i+1 .. shapes.len() {
-                //try dynamic separation
-                let mut sep_state = dynamic_separate(&shapes[i],&shapes[j],origin);
-                let is_unknown = match sep_state {
-                    Separation::Unknown => true,
-                    _ => false
-                };
-                //if that's unsuccessful, try static separation
-                if is_unknown {
-                    let sep = &mut clip_state.separators[i][j];
-                    //compute static separator if it hasn't been computed yet
-                    let needs_value = match sep {
-                        Separator::Unknown => true,
-                        _ => false
-                    };
-                    //right now tries only one static separator
-                    if needs_value {
-                        *sep = separate_between_centers(&shapes[i],&shapes[j]);
-                    }
-                    //determine separation state from separator
-                    sep_state = sep.apply(origin);
-                };
-                let new_vals = match sep_state {
-                    Separation::S1Front => (true,false),
-                    Separation::S2Front => (false,true),
-                    Separation::NoFront => (false,false),
-                    Separation::Unknown => (true,true)
-                };
-                clip_state.in_front[i][j] = new_vals.0;
-                clip_state.in_front[j][i] = new_vals.1;
-
-                //debug
-                clip_state.separations_debug[i][j] = sep_state;
-            }
-        }
-    }
-
 pub struct ClipState<V : VectorTrait> {
-    pub in_front : Vec<Vec<bool>>,
-    pub separators : Vec<Vec<Separator<V>>>,
-    pub separations_debug : Vec<Vec<Separation>>, //don't need this, but is useful for debug
+    //pub in_front : Vec<Vec<bool>>,
+    //pub separators : Vec<Vec<Separator<V>>>,
+    //pub in_front : HashSet<(Entity,Entity)>, //needs to be cleared whenever # shapes changes
+    //pub separators : HashMap<(Entity,Entity),Separator<V>>, //ditto
+    //pub separations_debug : Vec<Vec<Separation>>, //don't need this, but is useful for debug
     pub clipping_enabled : bool,
+    phantom : std::marker::PhantomData<V>,
 }
-struct ShapeClipState<V : VectorTrait> {
-    in_front : bool,
-    separators : Vec<Separator<V>>,
-}
+//could alternatively hold in a hash map over (entity,entity) pairs
+
 
 impl<V : VectorTrait> Default for ClipState<V> {
     fn default() -> Self {ClipState::new(0)}
@@ -83,28 +31,197 @@ impl<V : VectorTrait> ClipState<V> {
     pub fn new(shapes_len : usize) -> Self {
         //let shapes : Vec<&Shape<V>> = (&read_shapes).join().collect();
         ClipState {
-            in_front : vec![vec![false ; shapes_len] ; shapes_len],
-            separations_debug :vec![vec![Separation::Unknown ; shapes_len] ; shapes_len],
-            separators : vec![vec![Separator::Unknown ; shapes_len] ; shapes_len],
+            //in_front : HashSet::new(),
+            //separations_debug :vec![vec![Separation::Unknown ; shapes_len] ; shapes_len],
+            //separators : HashMap::new(),
             clipping_enabled : true,
+            phantom : std::marker::PhantomData::<V>,
         }
     }
-    #[allow(dead_code)]
-    pub fn print_debug(&self) {
-        for row in self.separations_debug.iter() {
-            println!("");
-            for val in row.iter() {
-                    print!("{}, ",match val {
-                        Separation::S1Front => "1",
-                        Separation::S2Front => "2",
-                        Separation::NoFront => "_",
-                        Separation::Unknown => "U"
-                    });
-                }
-            }
-            println!("");
+    // #[allow(dead_code)]
+    // pub fn print_debug(&self) {
+    //     for row in self.separations_debug.iter() {
+    //         println!("");
+    //         for val in row.iter() {
+    //                 print!("{}, ",match val {
+    //                     Separation::S1Front => "1",
+    //                     Separation::S2Front => "2",
+    //                     Separation::NoFront => "_",
+    //                     Separation::Unknown => "U"
+    //                 });
+    //             }
+    //         }
+    //         println!("");
+    // }
+}
+
+pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
+impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
+    type SystemData = (Write<'a,ClipState<V>>,ReadStorage<'a,Shape<V>>,WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
+        ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
+
+    fn run(&mut self, (mut clip_state,shape_data,mut shape_clip_state,entities,camera,player) : Self::SystemData) {
+        calc_in_front(&mut clip_state,&shape_data,&mut shape_clip_state,&entities,&camera.get(player.0).unwrap().pos);
     }
 }
+
+
+//i've avoiding double mutable borrowing here by passing the entire shape_clip_states to calc_in_front_pair
+//a disadvantage here is that we have no guarantee that the processed entities have the ShapeClipState component
+//and that we have to iterate over all entities with the Shape component, instead of just those with both Shape and ShapeClipState
+//but for now, every shape has a ShapeClipState.
+pub fn calc_in_front<V : VectorTrait>(
+        clip_state : &mut ClipState<V>,
+        read_shapes : & ReadStorage<Shape<V>>,
+        shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
+        entities : &Entities,
+        origin : &V,
+    ) {
+    //collect a vec of references to shapes
+    //let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
+    //loop over unique pairs
+    for (shape1, e1) in (read_shapes,&*entities).join() {
+        for (shape2, e2) in (read_shapes,&*entities).join().filter(|(_sh,e)| *e > e1) {
+            calc_in_front_pair(
+                InFrontArg{shape : &shape1, entity : e1},
+                InFrontArg{shape : &shape2, entity : e2},
+                clip_state,
+                shape_clip_states,
+                origin
+                )
+        }
+    }
+
+
+    //let iter_slice = (read_shapes,shape_clip_state,&*entities).as_slice();
+    //while let Some(val) = iter_slice.next
+    // for (i, (shape_a, mut clip_a,e_a)) in (read_shapes,shape_clip_state,&*entities).join().map(|(sh,cs,e)| (sh,Cell::new(cs),e)).enumerate() {
+    //     for (_j, (shape_b, mut clip_b,e_b)) in (read_shapes,shape_clip_state,&*entities).join().map(|(sh,cs,e)| (sh,Cell::new(cs),e)).enumerate().filter(|(j,_)| *j >= i+1) {
+    //         calc_in_front_pair(
+    //             InFrontArg{shape : &shape_a, clip_state : clip_a.get_mut(), entity : e_a},
+    //             InFrontArg{shape : &shape_b, clip_state : clip_b.get_mut(), entity : e_b},
+    //             clip_state,
+    //             origin
+    //             )
+    //     }
+    // }
+}
+// struct InFrontArg<'a, V : VectorTrait>{
+//     shape : &'a Shape<V>,
+//     entity : Entity,
+// }
+// pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontArg<'a,V>,
+//     clip_state : &mut ClipState<V>, origin : &V) {
+
+//     //try dynamic separation
+//     let mut sep_state = dynamic_separate(a.shape,b.shape,origin);
+//     let is_unknown = match sep_state {
+//         Separation::Unknown => true,
+//         _ => false
+//     };
+//     //if that's unsuccessful, try static separation
+//     if is_unknown {
+//         let sep = match clip_state.separators.get_mut(&(a.entity,b.entity)) {
+//             Some(s) => s, None => &mut Separator::Unknown,
+//         };
+//         //compute static separator if it hasn't been computed yet
+//         let needs_value = match sep {
+//             Separator::Unknown => true,
+//             _ => false
+//         };
+//         //right now tries only one static separator
+//         if needs_value {
+//             *sep = separate_between_centers(&a.shape,&b.shape);
+//         }
+//         //determine separation state from separator
+//         sep_state = sep.apply(origin);
+//     };
+//     let new_vals = match sep_state {
+//         Separation::S1Front => (true,false),
+//         Separation::S2Front => (false,true),
+//         Separation::NoFront => (false,false),
+//         Separation::Unknown => (true,true)
+//     };
+//     match new_vals.0 {
+//         true => clip_state.in_front.insert((a.entity,b.entity)),
+//         false => clip_state.in_front.remove(&(a.entity,b.entity)),
+//     };
+//     match new_vals.0 {
+//         true => clip_state.in_front.insert((b.entity,a.entity)),
+//         false => clip_state.in_front.remove(&(b.entity,a.entity)),
+//     };
+
+// }
+#[derive(Component)]
+#[storage(VecStorage)]
+pub struct ShapeClipState<V : VectorTrait> {
+    pub in_front : HashSet<Entity>,
+    pub separators : HashMap<Entity,Separator<V>>,
+}
+impl<V : VectorTrait> Default for ShapeClipState<V> {
+    fn default() -> Self {
+        Self{
+            in_front : HashSet::new(),
+            separators : HashMap::new(),
+        }
+    }
+}
+
+pub struct InFrontArg<'a, V : VectorTrait>{
+    shape : &'a Shape<V>,
+    //clip_state : &'a mut ShapeClipState<V>,
+    entity : Entity,
+}
+pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontArg<'a,V>,
+    clip_state : &mut ClipState<V>, shape_clip_states : &mut WriteStorage<ShapeClipState<V>>, origin : &V) {
+
+    //try dynamic separation
+    let mut sep_state = dynamic_separate(a.shape,b.shape,origin);
+    let is_unknown = match sep_state {
+        Separation::Unknown => true,
+        _ => false
+    };
+    //if that's unsuccessful, try static separation
+    if is_unknown {
+        let a_clip_state = shape_clip_states.get_mut(a.entity).unwrap();
+        //let mut a_separators = shape_clip_states.get_mut(a.entity).unwrap().separators;
+        let maybe_sep = a_clip_state.separators.get_mut(&b.entity);
+
+        //compute static separator if it hasn't been computed yet
+        let sep = match maybe_sep {
+            Some(s) => *s,
+            None => {
+                let s = separate_between_centers(&a.shape,&b.shape);
+                a_clip_state.separators.insert(b.entity, s);
+                s
+            }
+        };
+
+        //determine separation state from separator
+        sep_state = sep.apply(origin);
+    };
+    let new_vals = match sep_state {
+        Separation::S1Front => (true,false),
+        Separation::S2Front => (false,true),
+        Separation::NoFront => (false,false),
+        Separation::Unknown => (true,true)
+    };
+    {
+    let a_clip_state = shape_clip_states.get_mut(a.entity).unwrap();
+    match new_vals.0 {
+        true => a_clip_state.in_front.insert(b.entity),
+        false => a_clip_state.in_front.remove(&b.entity),
+    };}
+    {
+    let b_clip_state = shape_clip_states.get_mut(b.entity).unwrap();
+    match new_vals.0 {
+        true => b_clip_state.in_front.insert(a.entity),
+        false => b_clip_state.in_front.remove(&a.entity),
+    };}
+
+}
+
+
 pub fn clip_line_plane<V>(line : Line<V>, plane : &Plane<V>, small_z : Field) -> Option<Line<V>>
 where V : VectorTrait {
     let Line(p0,p1)= line;
@@ -238,22 +355,22 @@ pub fn clip_line<V : VectorTrait>(
 }
 
 //consider using parallel joins here
-pub fn clip_draw_lines<V : VectorTrait>(
+pub fn clip_draw_lines<'a, V : VectorTrait,I : std::iter::Iterator<Item=&'a Shape<V>>>(
     lines : Vec<Option<DrawLine<V>>>,
     shapes: &ReadStorage<Shape<V>>,
-    shape_in_front : Option<&Vec<bool>>
+    shapes_in_front : I
     ) ->  Vec<Option<DrawLine<V>>>
 {
     let mut clipped_lines = lines;
 
 
-    let clipping_shapes : Vec<&Shape<V>> = match shape_in_front {
-        Some(in_fronts) => shapes.join().zip(in_fronts)
-            .filter(|(_shape,&front)| front)
-            .map(|(shape,_front)| shape).collect(),
-        None => shapes.join().collect()
-    };
-    for clipping_shape in clipping_shapes {
+    // let clipping_shapes : Vec<&Shape<V>> = match shape_in_front {
+    //     Some(in_fronts) => shapes.join().zip(in_fronts)
+    //         .filter(|(_shape,&front)| front)
+    //         .map(|(shape,_front)| shape).collect(),
+    //     None => shapes.join().collect()
+    // };
+    for clipping_shape in shapes_in_front {
         //compare pointers
         // let same_shape = match shape {
         //     Some(shape) => clipping_shape as *const _ == shape as *const _,
@@ -342,7 +459,7 @@ pub enum Separation {
     S1Front,
     S2Front
 }
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,Copy)]
 pub enum Separator<V : VectorTrait> {
     Unknown,
     Normal{

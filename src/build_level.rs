@@ -1,3 +1,4 @@
+use crate::clipping::ShapeClipState;
 use crate::camera::Camera;
 use crate::coin::Coin;
 use specs::prelude::*;
@@ -14,6 +15,7 @@ pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
     world.create_entity()
         .with(bbox)
         .with(shape)
+        .with(ShapeClipState::<V>::default())
         .with(StaticCollider)
         .build();
 }
@@ -21,6 +23,7 @@ pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
     world.create_entity()
         .with(calc_bbox(&shape))
         .with(shape)
+        .with(ShapeClipState::<V>::default())
         .with(Coin)
         .build();
 }
