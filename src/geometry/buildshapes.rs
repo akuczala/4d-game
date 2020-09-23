@@ -21,6 +21,7 @@ impl ShapeBuilder<Vec3> {
 	}
 	pub fn build_coin() -> Shape<Vec3> {
 		build_prism_3d(0.1,0.025,10)
+		//build_cube_3d(0.2)
             .set_color(YELLOW)
 	}
 }
@@ -29,7 +30,7 @@ impl ShapeBuilder<Vec4> {
 		build_cube_4d(length)
 	}
 	pub fn build_coin() -> Shape<Vec4> {
-		build_duoprism_4d([0.1,0.1],[[0,1],[2,3]],[10,10])
+		build_duoprism_4d([0.1,0.025],[[0,1],[2,3]],[10,4])
             .set_color(YELLOW)
 	}
 }

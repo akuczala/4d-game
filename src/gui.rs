@@ -102,14 +102,13 @@ impl UIArgs{
         let targets = world.read_storage::<MaybeTarget<V>>();
         let maybe_target : &MaybeTarget<V> = targets.get(player.0).expect("player has no target");
 
-        let debug_strings = vec![
+        let mut debug_strings = vec![
                 match maybe_target {
                     MaybeTarget(Some(target)) => format!("target: {}, {}, {}\n",target.entity.id(),target.distance,target.point),
                     MaybeTarget(None) => "None".to_string(),
                 },
             crate::clipping::ShapeClipState::<V>::in_front_debug(world),
         ];
-
         //print draw lines
         //let draw_lines = world.read_resource::<DrawLineList<V::SubV>>();
         // for line in draw_lines.0.iter() {

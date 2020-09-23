@@ -140,7 +140,22 @@ pub fn transform_draw_line<V : VectorTrait>(
 		}
 }
 
-//would be nicer to move lines out of read_in_lines rather than clone them
+// pub struct DrawTargetSystem<V : VectorTrait>(pub PhantomData<V>);
+// impl<'a,V : VectorTrait> System<'a> for DrawTargetSystem<V> {
+//     type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,MaybeTarget<V>>,WriteExpect<'a,DrawLineList<V>>);
+
+//     fn run(&mut self, (player, maybe_target, mut draw_lines) : Self::SystemData) {
+//     	//write new vec of draw lines to DrawLineList
+//     	if let Some(target) = maybe_target.get(player.0).unwrap().0 {
+// 	    		for line in draw_wireframe(&crate::geometry::buildshapes::build_cube_3d(0.04),WHITE).into_iter() {
+// 	    			draw_lines.0.push(line);
+// 	    		}
+    	
+//     	}
+    	
+//     }
+// }
+
 pub struct DrawCursorSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
     type SystemData = (ReadStorage<'a,Cursor>,ReadStorage<'a,Shape<V::SubV>>,WriteExpect<'a,DrawLineList<V::SubV>>);

@@ -4,3 +4,4 @@ pub use crate::player::{Player};
 pub use crate::player::{MaybeTarget,Cursor};
 pub use crate::geometry::shape::Shape;
 pub use crate::draw::{DrawLineList};
+pub use crate::clipping::ShapeClipState;

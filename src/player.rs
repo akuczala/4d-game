@@ -28,11 +28,11 @@ const MAX_TARGET_DIST : Field = 10.;
 pub struct ShapeTargetingSystem<V :VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for ShapeTargetingSystem<V> {
-	type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,Camera<V>>,ReadStorage<'a,Shape<V>>,Entities<'a>,WriteStorage<'a,MaybeTarget<V>>);
+	type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,Camera<V>>,ReadStorage<'a,Shape<V>>,ReadStorage<'a,ShapeClipState<V>>,Entities<'a>,WriteStorage<'a,MaybeTarget<V>>);
 
-	fn run(&mut self, (player, cameras, shapes, entities, mut targets) : Self::SystemData) {
+	fn run(&mut self, (player, cameras, shapes, shape_clip_state, entities, mut targets) : Self::SystemData) {
 		let camera = cameras.get(player.0).expect("Player has no camera");
-		let target = shape_targeting(&camera,(&shapes,&*entities).join());
+		let target = shape_targeting(&camera,(&shapes,&shape_clip_state,&*entities).join()); //filter by shapes having a clip state
 		*targets.get_mut(player.0).expect("Player has no target") = target;
 		
 
@@ -50,21 +50,25 @@ pub struct Target<V : VectorTrait> {
 	pub entity : Entity,
 	pub distance : Field,
 	pub point : V,
+	//pub all_points : Vec<V>,
 
 }
 
-fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>,Entity)>>(camera : &Camera<V>, iter : I) -> MaybeTarget<V> {
+fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>,&'a ShapeClipState<V>,Entity)>>(camera : &Camera<V>, iter : I) -> MaybeTarget<V> {
 	let pos = camera.pos;
 	let dir = camera.frame[-1];
 	let ray = Line(pos, pos + dir*MAX_TARGET_DIST);
 
 	//loop through all shapes and check for nearest intersection
 	let mut closest : Option<(Entity,Field,V)> = None;
-	for (shape,e) in iter {
+	let mut all_points = Vec::<V>::new();
+	for (shape,_,e) in iter {
+
 		for intersect_point in shape.line_intersect(&ray,true) { //find intersections of ray with visible faces
+			all_points.push(intersect_point);
 			let distsq = (intersect_point - pos).norm_sq();
 			closest = match closest {
-				Some((_cle, cldistsq, _clpoint)) => match distsq > cldistsq {
+				Some((_cle, cldistsq, _clpoint)) => match distsq < cldistsq {
 					true => Some((e,distsq,intersect_point)),
 					false => closest,
 				}
