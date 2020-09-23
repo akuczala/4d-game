@@ -45,7 +45,7 @@ impl<V : VectorTrait> fmt::Display for Plane<V> {
 pub fn point_plane_normal_axis<V : VectorTrait>(point : &V, plane : &Plane<V>) -> Field {
   return plane.threshold - point.dot(plane.normal)
 }
-pub fn line_plane_intersect<V>(line : Line<V>, plane : Plane<V>) -> Option<V>
+pub fn line_plane_intersect<V>(line : &Line<V>, plane : &Plane<V>) -> Option<V>
 where V : VectorTrait
 {
   let p0 = line.0; let p1 = line.1;
@@ -205,12 +205,22 @@ impl fmt::Display for SubFace {
 
 //find indices of (d-1) faces that are joined by a (d-2) edge
 fn calc_subfaces<V : VectorTrait>(faces : &Vec<Face<V>>) -> Vec<SubFace> {
+  let mut subfaces : Vec<SubFace> = Vec::new();
+  if V::DIM == 2{
+    for i in 0..faces.len() {
+      for j in 0..i {
+        if count_common_verts(&faces[i],&faces[j]) >= 1 {
+          subfaces.push(SubFace{faceis : (i,j)})
+        }
+      }
+    }
+    return subfaces
+  }
   let n_target = match V::DIM {
     3 => 1,
     4 => 2,
     _ => panic!("Invalid dimension for computing subfaces")
   };
-  let mut subfaces : Vec<SubFace> = Vec::new();
   for i in 0..faces.len() {
     for j in 0..i {
       if count_common_edges(&faces[i],&faces[j]) >= n_target {
@@ -227,6 +237,15 @@ fn count_common_edges<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> us
     .unique()
     .count();
   total_edges - unique_edges
+
+}
+fn count_common_verts<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> usize {
+  let total_verts = face1.vertis.len() + face2.vertis.len();
+  let unique_verts = face1.vertis.iter()
+    .chain(face2.vertis.iter())
+    .unique()
+    .count();
+  total_verts - unique_verts
 
 }
 

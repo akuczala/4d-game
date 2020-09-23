@@ -2,10 +2,12 @@
 pub use crate::draw::{
 	VisibilitySystem,
 	CalcShapesLinesSystem,
-	TransformDrawLinesSystem
+	TransformDrawLinesSystem,
+	DrawCursorSystem,
 };
 pub use crate::clipping::{InFrontSystem};
 pub use crate::input::{UpdateCameraSystem,PrintDebugSystem};
+pub use crate::player::{ShapeTargetingSystem};
 pub use crate::collide::{
 	PlayerCollisionDetectionSystem,
 	PlayerStaticCollisionSystem,

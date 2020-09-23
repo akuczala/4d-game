@@ -1,3 +1,6 @@
+use crate::vector::VectorTrait;
+use specs::prelude::*;
+use crate::components::*;
 use glium::Frame;
 use glium::glutin;
 use glium::glutin::event::{Event, WindowEvent};
@@ -12,8 +15,6 @@ use crate::fps::FPSFloat;
 //mod clipboard;
 
 pub struct System {
-    //pub event_loop: EventLoop<()>,
-    //pub display: glium::Display,
     pub imgui: Context,
     pub platform: WinitPlatform,
     pub renderer: Renderer,
@@ -26,13 +27,6 @@ pub fn init(title: &str, display : &Display) -> System {
         Some(idx) => title.split_at(idx + 1).1,
         None => title,
     };
-    //let event_loop = EventLoop::new();
-    // let context = glutin::ContextBuilder::new().with_vsync(true);
-    // let builder = WindowBuilder::new()
-    //     .with_title(title.to_owned())
-    //     .with_inner_size(glutin::dpi::LogicalSize::new(1024f64, 768f64));
-    // let display =
-    //     Display::new(builder, context, &event_loop).expect("Failed to initialize display");
 
     let mut imgui = Context::create();
     imgui.set_ini_filename(None);
@@ -75,8 +69,6 @@ pub fn init(title: &str, display : &Display) -> System {
     let renderer = Renderer::init(&mut imgui, display).expect("Failed to initialize renderer");
 
     System {
-        //event_loop,
-        //display,
         imgui,
         platform,
         renderer,
@@ -84,7 +76,6 @@ pub fn init(title: &str, display : &Display) -> System {
         ui_args : UIArgs::None,
     }
 }
-#[derive(Copy,Clone)]
 pub enum UIArgs{
     None,
     Test{
@@ -97,6 +88,44 @@ pub enum UIArgs{
         frame_duration : FPSFloat,
         coins_collected : u32,
         coins_left : u32,
+    },
+    Debug{
+        frame_duration : FPSFloat,
+        debug_text : String,
+    }
+}
+impl UIArgs{
+    pub fn new_debug<V : VectorTrait>(world : &World, frame_duration : FPSFloat) -> Self {
+        let mut debug_text = "".to_string();
+
+        let player = world.read_resource::<Player>();
+        let targets = world.read_storage::<MaybeTarget<V>>();
+        let maybe_target : &MaybeTarget<V> = targets.get(player.0).expect("player has no target");
+
+        let debug_strings = vec![
+                match maybe_target {
+                    MaybeTarget(Some(target)) => format!("target: {}, {}, {}\n",target.entity.id(),target.distance,target.point),
+                    MaybeTarget(None) => "None".to_string(),
+                },
+            crate::clipping::ShapeClipState::<V>::in_front_debug(world),
+        ];
+
+        //print draw lines
+        //let draw_lines = world.read_resource::<DrawLineList<V::SubV>>();
+        // for line in draw_lines.0.iter() {
+        //     if let Some(ref l) = line {
+        //         debug_strings.push(format!("{:}\n",l.line));
+        //     }
+        // }
+
+        //concatenate all strings
+        for string in debug_strings.into_iter() {
+            debug_text = format!("{}{}",debug_text,string);
+        }
+
+        Self::Debug{
+            frame_duration, debug_text
+        }
     }
 }
 
@@ -137,7 +166,6 @@ fn simple_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
             .menu_bar(false)
             .build(ui, || {
                 match ui_args {
-                    UIArgs::None => (),
                     UIArgs::Test{ref frame_duration, ref elapsed_time, ref mouse_diff, ref mouse_pos} => {
                         ui.text(format!("FPS: {0:0}",1./frame_duration));
                         ui.text(format!("elapsed_time (ms): {}",elapsed_time));
@@ -156,6 +184,29 @@ fn simple_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
                         ui.text("Press M to toggle mouse");
                         ui.text("Backspace toggles 3D/4D");
                     }
+                    _ => (),
+                };
+            });
+        
+    }
+fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
+        use imgui::{Window,im_str,Condition};
+        Window::new(im_str!("Press M to toggle mouse control"))
+            .position([0.,0.], Condition::Appearing)
+            .size([190.0, 500.0], Condition::FirstUseEver)
+            .always_auto_resize(true)
+            .bg_alpha(0.75)
+            .title_bar(false)
+            .resizable(false)
+            .scroll_bar(false)
+            .menu_bar(false)
+            .build(ui, || {
+                match ui_args {
+                    UIArgs::Debug{ref frame_duration, ref debug_text} => {
+                        ui.text(format!("FPS: {:0.0}",1./frame_duration));
+                        ui.text(debug_text);
+                    }
+                    _ => (),
                 };
             });
         
@@ -196,7 +247,7 @@ impl System {
         //let font_size = self.font_size;
         let mut ui = imgui.frame();
         let mut run = true;
-        simple_ui(&mut run, &mut ui, &mut self.ui_args);
+        debug_ui(&mut run, &mut ui, &mut self.ui_args);
         if !run {
             //*control_flow = ControlFlow::Exit;
             panic!("Would exit here because ui didn't run");

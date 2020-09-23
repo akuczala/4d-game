@@ -1,8 +1,10 @@
+use crate::components::Cursor;
+
 use crate::clipping::ShapeClipState;
 use crate::camera::Camera;
 use crate::coin::Coin;
 use specs::prelude::*;
-use crate::vector::{Vec3,Vec4,linspace};
+use crate::vector::{Vec2,Vec3,Vec4,linspace};
 use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d,ShapeBuilder};
 
 use crate::geometry::{Shape,buildshapes};
@@ -30,9 +32,18 @@ pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
 pub fn build_shapes_3d(world : &mut World) {
 
     build_lvl_1_3d(world);
+
+    world.create_entity()
+        .with(Cursor)
+        .with(ShapeBuilder::<Vec2>::build_cube(0.03))
+        .build();
 }
 pub fn build_shapes_4d(world : &mut World) {
     build_lvl_1_4d(world);
+    world.create_entity()
+        .with(Cursor)
+        .with(ShapeBuilder::<Vec3>::build_cube(0.03))
+        .build();
     
 }
 

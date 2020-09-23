@@ -10,6 +10,11 @@ use crate::draw::Texture;
 use std::marker::PhantomData;
 
 pub struct ShapeBuilder<V : VectorTrait>(PhantomData<V>);
+impl ShapeBuilder<Vec2> {
+	pub fn build_cube(length : Field) -> Shape<Vec2> {
+		build_prism_2d(length/(2.0 as Field).sqrt(),4)
+	}
+}
 impl ShapeBuilder<Vec3> {
 	pub fn build_cube(length : Field) -> Shape<Vec3> {
 		build_cube_3d(length)
@@ -27,6 +32,28 @@ impl ShapeBuilder<Vec4> {
 		build_duoprism_4d([0.1,0.1],[[0,1],[2,3]],[10,10])
             .set_color(YELLOW)
 	}
+}
+
+pub fn build_prism_2d(r : Field, n : VertIndex) -> Shape<Vec2> {
+
+	//starting angle causes first edge to be parallel to y axis
+	//lets us define a cube as a cylinder
+	let angles = (0..n).map(|i| 2.0*PI*((i as Field)-0.5)/(n as Field));
+	let verts : Vec<Vec2> = angles.map(|angle| Vec2::new(angle.cos(),angle.sin())*r).collect();
+	
+	let n_angles = (0..n).map(|i| 2.0*PI*(i as Field)/(n as Field));
+	let normals = n_angles.map(|angle| Vec2::new(angle.cos(),angle.sin()));
+
+	//build edges
+	let edges = (0..n).map(|i| Edge(i,(i+1)%n)).collect();
+	
+	//build faces
+	let faces = (0..n).zip(normals)
+		.map(|(i,normal)| Face::new(vec![i], normal))
+		.collect();
+
+	return Shape::new(verts,edges,faces);
+
 }
 
 pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {

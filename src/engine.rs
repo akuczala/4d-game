@@ -52,12 +52,14 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             .with(CalcShapesLinesSystem(PhantomData::<V>),"calc_shapes_lines",&["in_front"])
             //project lines
             .with(TransformDrawLinesSystem(PhantomData::<V>),"transform_draw_lines",&["calc_shapes_lines"])
+            .with(DrawCursorSystem(PhantomData::<V>),"draw_cursor",&["transform_draw_lines"])
             //start game update phase
             .with(UpdateCameraSystem(PhantomData::<V>),"update_camera",&["calc_shapes_lines"])
             .with(PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision_detect",&["update_camera"]) 
             .with(PlayerStaticCollisionSystem(PhantomData::<V>),"player_static_collision",&["player_collision_detect"])
             .with(PlayerCoinCollisionSystem(PhantomData::<V>),"player_coin_collision",&["player_collision_detect","player_static_collision"])
             .with(MovePlayerSystem(PhantomData::<V>),"move_player",&["player_static_collision","player_coin_collision"])
+            .with(ShapeTargetingSystem(PhantomData::<V>),"shape_targeting",&["move_player"])
             .with(UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
             .with(CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
             .with(ShapeCleanupSystem(PhantomData::<V>),"shape_cleanup",&["player_coin_collision"])
@@ -127,13 +129,18 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //     frame_duration,
             //     elapsed_time : fps_timer.elapsed_time,
             //     mouse_diff : input.mouse_dpos,
-            //     mouse_pos : input.helper.mouse()
+            //     mouse_pos : input.helper.mouse(),
+
             // };
-            ui_args = UIArgs::Simple{
-                frame_duration,
-                coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
-                coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
-            };
+            ui_args = UIArgs::new_debug::<V>(
+                &self.world,
+                frame_duration
+            );
+            // ui_args = UIArgs::Simple{
+            //     frame_duration,
+            //     coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
+            //     coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
+            // };
 
             if input.closed {
                 println!("Escape button pressed; exiting.");

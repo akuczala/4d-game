@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 mod texture;
 
-use crate::player::Player;
+use crate::components::*;
 use specs::prelude::*;
 use std::marker::PhantomData;
 
@@ -140,6 +140,21 @@ pub fn transform_draw_line<V : VectorTrait>(
 		}
 }
 
+//would be nicer to move lines out of read_in_lines rather than clone them
+pub struct DrawCursorSystem<V : VectorTrait>(pub PhantomData<V>);
+impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
+    type SystemData = (ReadStorage<'a,Cursor>,ReadStorage<'a,Shape<V::SubV>>,WriteExpect<'a,DrawLineList<V::SubV>>);
+
+    fn run(&mut self, (cursors, shapes, mut draw_lines) : Self::SystemData) {
+    	//write new vec of draw lines to DrawLineList
+    	for (_,shape) in (&cursors,&shapes).join() {
+    		for line in draw_wireframe(shape,WHITE).into_iter() {
+    			draw_lines.0.push(line);
+    		}
+    	}
+    }
+}
+
 //in this implementation, the length of the vec is always
 //the same, and invisible faces are just sequences of None
 //seems to be significantly slower than not padding and just changing the buffer when needed
@@ -202,11 +217,7 @@ where V : VectorTrait
 	//DEBUG: list entities in front of each shape
 	// for (i,(sh,s)) in (shapes, shape_clip_states).join().enumerate() {
 	// 	println!("shape {}: {}",i,sh.get_pos());
-	// 	use itertools::Itertools;
-	// 	for e in s.in_front.iter().sorted() {
-	// 		print!("{} ",e.id());
-	// 	}
-	// 	println!("");
+	// 	println!("{}",s.in_front_debug());
 	// }
 	// panic!();
 	//probably worth computing / storing number of lines

@@ -1,7 +1,7 @@
 use crate::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex};
-use crate::geometry::{Edge,Face,SubFace,Plane,FaceIndex,calc_subfaces};
+use crate::geometry::{Line,Edge,Face,SubFace,Plane,FaceIndex,calc_subfaces,line_plane_intersect};
 
 use specs::{Component,System,VecStorage, DenseVecStorage};
 
@@ -131,7 +131,7 @@ impl <V : VectorTrait> Shape<V> {
     verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
   }
   pub fn point_signed_distance(&self, point : V) -> Field {
-    self.faces.iter().map(|f| f.normal.dot(point) - f.threshold).fold(f32::NEG_INFINITY,|a,b| match a > b {true => a, false => b})
+    self.faces.iter().map(|f| f.normal.dot(point) - f.threshold).fold(Field::NEG_INFINITY,|a,b| match a > b {true => a, false => b})
   }
   //returns distance and normal of closest face
   pub fn point_normal_distance(&self, point : V) -> (V, Field) {
@@ -146,8 +146,19 @@ impl <V : VectorTrait> Shape<V> {
   pub fn point_within(&self, point : V, distance : Field) -> bool {
     self.faces.iter().all(|f| f.normal.dot(point) - f.threshold < distance)
   }
+  //returns points of intersection with shape
+  pub fn line_intersect(&self, line : &Line<V>, visible_only : bool) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
+    let mut out_points = Vec::<V>::new();
+    for face in self.faces.iter().filter(|f| !visible_only || f.visible) {
+      if let Some(p) = line_plane_intersect(line,&Plane{normal : face.normal, threshold : face.threshold}) {
+        if crate::vector::is_close(self.point_signed_distance(p),0.) {
+          out_points.push(p);
+        }
+      }
+    }
+   out_points
+  }
 }
-
 
 #[test]
 fn test_point_within() {

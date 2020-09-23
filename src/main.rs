@@ -15,6 +15,7 @@ mod camera;
 mod colors;
 
 mod graphics;
+#[allow(dead_code)]
 mod gui;
 mod engine;
 mod collide;
@@ -27,6 +28,7 @@ mod fps;
 mod player;
 mod cleanup;
 mod systems;
+mod components;
 //mod object;
 
 //use specs::prelude::*;

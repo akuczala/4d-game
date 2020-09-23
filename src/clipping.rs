@@ -157,11 +157,30 @@ pub struct ShapeClipState<V : VectorTrait> {
     pub separators : HashMap<Entity,Separator<V>>,
 }
 impl<V : VectorTrait> Default for ShapeClipState<V> {
-    fn default() -> Self {
+   fn default() -> Self {
         Self{
             in_front : HashSet::new(),
             separators : HashMap::new(),
         }
+    }
+}
+impl<V : VectorTrait> ShapeClipState<V> {
+    pub fn in_front_debug(world : &World) -> String {
+        let mut outstr = "In front debug \n".to_string();
+        for (i,state) in world.read_storage::<ShapeClipState<V>>().join().enumerate() {
+            outstr = format!("{}entity {}",outstr,i);
+            outstr = format!("{} \n {}",outstr,state.this_in_front_debug());
+        }
+        outstr
+    }
+    pub fn this_in_front_debug(&self) -> String{
+        use itertools::Itertools;
+        let mut outstr = "".to_string();
+         for e in self.in_front.iter().sorted() {
+             outstr = format!("{} {} ",outstr,e.id());
+         }
+         outstr = format!("{}\n", outstr);
+         outstr
     }
 }
 impl<V : VectorTrait> ShapeClipState<V> {
