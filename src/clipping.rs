@@ -155,12 +155,16 @@ pub fn calc_in_front<V : VectorTrait>(
 pub struct ShapeClipState<V : VectorTrait> {
     pub in_front : HashSet<Entity>,
     pub separators : HashMap<Entity,Separator<V>>,
+    pub boundaries : Vec<Plane<V>>,
+    pub transparent: bool,
 }
 impl<V : VectorTrait> Default for ShapeClipState<V> {
    fn default() -> Self {
         Self{
             in_front : HashSet::new(),
             separators : HashMap::new(),
+            boundaries : Vec::new(),
+            transparent : false,
         }
     }
 }
@@ -378,9 +382,9 @@ pub fn clip_line<V : VectorTrait>(
 }
 
 //consider using parallel joins here
-pub fn clip_draw_lines<'a, V : VectorTrait,I : std::iter::Iterator<Item=&'a Shape<V>>>(
+pub fn clip_draw_lines<'a, V : VectorTrait,I : std::iter::Iterator<Item=&'a ShapeClipState<V>>>(
     lines : Vec<Option<DrawLine<V>>>,
-    shapes_in_front : I
+    clip_states_in_front : I
     ) ->  Vec<Option<DrawLine<V>>>
 {
     let mut clipped_lines = lines;
@@ -392,7 +396,7 @@ pub fn clip_draw_lines<'a, V : VectorTrait,I : std::iter::Iterator<Item=&'a Shap
     //         .map(|(shape,_front)| shape).collect(),
     //     None => shapes.join().collect()
     // };
-    for clipping_shape in shapes_in_front {
+    for clipping_shape in clip_states_in_front {
         //compare pointers
         // let same_shape = match shape {
         //     Some(shape) => clipping_shape as *const _ == shape as *const _,

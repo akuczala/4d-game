@@ -179,13 +179,13 @@ impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
 pub struct VisibilitySystem<V : VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
-	type SystemData = (WriteStorage<'a,Shape<V>>,ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>,ReadExpect<'a,ClipState<V>>);
+	type SystemData = (WriteStorage<'a,Shape<V>>,WriteStorage<'a,ShapeClipState<V>>,ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>,ReadExpect<'a,ClipState<V>>);
 
-	fn run(&mut self, (mut shapes, camera, player, clip_state) : Self::SystemData) {
+	fn run(&mut self, (mut shapes, mut shape_clip_states, camera, player, clip_state) : Self::SystemData) {
 
-		for shape in (&mut shapes).join() {
+		for (shape,shape_clip_state) in (&mut shapes, &mut shape_clip_states).join() {
 
-			update_shape_visibility(&camera.get(player.0).unwrap(), shape, &clip_state)
+			update_shape_visibility(&camera.get(player.0).unwrap(), shape, shape_clip_state, &clip_state)
 		}
 	}
 
@@ -196,13 +196,14 @@ impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 pub fn update_shape_visibility<V : VectorTrait>(
 	camera : &Camera<V>,
 	shape : &mut Shape<V>,
+	shape_clip_state : &mut ShapeClipState<V>,
 	clip_state : &ClipState<V>
 	) {
 	//update shape visibility and boundaries
-	shape.update_visibility(camera.pos);
+	shape.update_visibility(camera.pos,shape_clip_state.transparent);
 	//calculate boundaries for clipping
 	if clip_state.clipping_enabled {
-		shape.boundaries = crate::clipping::calc_boundaries(
+		shape_clip_state.boundaries = crate::clipping::calc_boundaries(
 			&shape.faces, &shape.subfaces, camera.pos);
 	}
 
@@ -249,13 +250,15 @@ where V : VectorTrait
 
 		//clip these lines and append to list
 		if clip_state.clipping_enabled {
-			let shapes_in_front = shape_clip_state.in_front.iter()
-				.map(|&e| match shapes.get(e) {
+			let clip_states_in_front = shape_clip_state.in_front.iter()
+				.map(|&e| match shape_clip_states.get(e) {
 					Some(s) => s,
 					None => panic!(format!("Invalid entity {} found in shape_clip_state",e.id())),
 				});
+			//do clipping between all shapes
+			//let shapes_in_front = shapes.join().filter(|&s| (s as *const _ ) != (shape as *const _));
 			let mut clipped_lines = crate::clipping::clip_draw_lines(
-				shape_lines, shapes_in_front);
+				shape_lines, clip_states_in_front);
 			lines.append(&mut clipped_lines);
 		} else {
 			lines.append(&mut shape_lines);

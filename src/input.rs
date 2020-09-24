@@ -193,15 +193,6 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     //             input.pressed.space = true;
 
 }
-pub fn update_shape<V : VectorTrait>(input : &mut Input, shape : &mut Shape<V>)
-{
-    //toggle transparency
-    if input.helper.key_released(VKC::T) {
-        shape.transparent = !shape.transparent;
-        //input.pressed.t = true;
-        input.update = true;
-    }
-}
 
 pub struct PrintDebugSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for PrintDebugSystem<V> {

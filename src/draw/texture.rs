@@ -84,7 +84,7 @@ pub struct TextureMapping {
 impl TextureMapping {
 	pub fn draw<V : VectorTrait>(&self, face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>
 	) -> Vec<Option<DrawLine<V>>>{
-		if !face.visible && !shape.transparent  {
+		if !face.visible {
 			return Vec::new();
 		}
 		match &face.texture {
