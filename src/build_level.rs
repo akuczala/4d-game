@@ -7,7 +7,7 @@ use specs::prelude::*;
 use crate::vector::{Vec2,Vec3,Vec4,linspace};
 use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d,ShapeBuilder};
 
-use crate::geometry::{Shape,buildshapes};
+use crate::geometry::{Shape,buildshapes,ShapeTrait};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 use crate::collide::{StaticCollider,calc_bbox};

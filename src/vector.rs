@@ -87,7 +87,7 @@ pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
 //fn foo<C>() where i64: From<C>, C: Foo {}
 
 
-pub fn barycenter<V>(vlist : Vec<V>) -> V
+pub fn barycenter<V>(vlist : &Vec<V>) -> V
 where V : VectorTrait
 {
     vlist.iter().fold(V::zero(),|sum,val| sum + *val)/(vlist.len() as Field)

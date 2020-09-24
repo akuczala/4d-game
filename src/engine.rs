@@ -45,7 +45,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let mut dispatcher = DispatcherBuilder::new()
             //start drawing phase. this is first so that we can do world.maintain() before we draw
             //for each shape, update clipping boundaries and face visibility
-            .with(VisibilitySystem(PhantomData::<V>),"visibility",&[])
+            .with(VisibilitySystem(PhantomData::<(V,crate::geometry::shape::Shape<V>)>),"visibility",&[])
             //determine what shapes are in front of other shapes
             .with(InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
             //calculate and clip lines for each shape

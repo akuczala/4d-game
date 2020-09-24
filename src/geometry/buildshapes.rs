@@ -6,6 +6,7 @@ use super::{Shape,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
 use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
+use crate::geometry::{ShapeTrait};
 use crate::draw::Texture;
 use std::marker::PhantomData;
 
@@ -188,7 +189,7 @@ pub fn build_duoprism_4d(
 		let verts_in_face : Vec<Vec4> = vertis.iter()
 			.map(|vi| verts[*vi])
 			.collect();
-		let center = barycenter(verts_in_face);
+		let center = barycenter(&verts_in_face);
 		center.normalize()
 	}
 	// we need m n-prisms and n m-prisms

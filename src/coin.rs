@@ -4,7 +4,7 @@ use crate::collide::InPlayerCell;
 use crate::cleanup::DeletedEntities;
 use crate::vector::{VectorTrait,Field};
 use core::marker::PhantomData;
-use crate::geometry::Shape;
+use crate::geometry::{Shape,ShapeTrait};
 use crate::input::Input;
 use specs::prelude::*;
 use specs::{Component,VecStorage};

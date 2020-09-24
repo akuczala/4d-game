@@ -1,11 +1,13 @@
 use crate::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex};
-use crate::geometry::{Line,Edge,Face,SubFace,Plane,FaceIndex,calc_subfaces,line_plane_intersect};
+use crate::geometry::{Line,Edge,Face,Plane,FaceIndex,line_plane_intersect,ShapeTrait};
 
-use specs::{Component,System,VecStorage, DenseVecStorage};
+use specs::{Component, VecStorage};
+use itertools::Itertools;
 
-#[derive(Clone)]
+#[derive(Clone,Component)]
+#[storage(VecStorage)]
 pub struct Shape<V : VectorTrait> {
     pub verts_ref : Vec<V>,
     pub verts : Vec<V>,
@@ -24,10 +26,6 @@ pub struct Shape<V : VectorTrait> {
     //pub transparent : bool
 }
 
-impl<V: VectorTrait> Component for Shape<V> {
-        type Storage = DenseVecStorage<Self>;
-}
-
 impl <V : VectorTrait> Shape<V> {
     pub fn new(verts : Vec<V>, edges: Vec<Edge>, mut faces: Vec<Face<V>>) -> Shape<V> {
         //compute vertex indices for all faces
@@ -37,7 +35,7 @@ impl <V : VectorTrait> Shape<V> {
         for face in faces.iter_mut() {
             face.calc_vertis(&edges);
             let face_verts = face.vertis.iter().map(|verti| verts[*verti]).collect();
-            face.center_ref = vector::barycenter(face_verts);
+            face.center_ref = vector::barycenter(&face_verts);
             //try to do this with iterators
             //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
             face.center = face.center_ref.clone();
@@ -67,69 +65,6 @@ impl <V : VectorTrait> Shape<V> {
     {
         self.faces[facei].vertis.iter().map(|vi| self.verts[*vi]).collect()
     }
-    pub fn transform(&mut self) {
-        for (v,vr) in self.verts.iter_mut().zip(self.verts_ref.iter()) {
-            *v = self.frame * (*vr * self.scale) + self.pos;
-        }
-        for face in &mut self.faces {
-            face.normal = self.frame * face.normal_ref;
-            face.center = self.frame * face.center_ref + self.pos;
-            face.threshold = face.normal.dot(face.center);
-        }
-    }
-    pub fn update(&mut self) {
-        self.transform();
-    }
-    pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) {
-        let rot_mat = vector::rotation_matrix(self.frame[axis1],self.frame[axis2],Some(angle));
-        self.frame = self.frame.dot(rot_mat);
-        self.update();
-    }
-    pub fn set_pos(mut self, pos : &V) -> Self {
-        self.pos = *pos;
-        self.update();
-        self
-    }
-    pub fn get_pos(& self) -> &V {
-        &self.pos
-    }
-    pub fn stretch(&self, scales : &V) -> Self {
-    let mut new_shape = self.clone();
-    let new_verts : Vec<V> = self.verts_ref.iter()
-        .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
-    //need to explicitly update this as it stands
-    //need to have a clear differentiation between
-    //changes to mesh (verts_ref and center_ref) and
-    //changes to position/orientation/scaling of mesh
-
-    for face in &mut new_shape.faces {
-                let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
-        face.center_ref = vector::barycenter(face_verts);
-    }
-    new_shape.radius = Shape::calc_radius(&new_verts);
-    new_shape.verts_ref = new_verts;
-    new_shape.update();
-    new_shape
-}
-    pub fn update_visibility(&mut self, camera_pos : V, transparent : bool) {
-        for face in self.faces.iter_mut() {
-            if transparent {
-                face.visible = true;
-            }
-            else {
-                face.update_visibility(camera_pos);
-            }
-        }
-    }
-    pub fn set_color(mut self, color : Color) -> Self {
-        for face in &mut self.faces {
-            face.set_color(color);
-        }
-        self
-    }
-    pub fn calc_radius(verts : &Vec<V>) -> Field {
-        verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
-    }
     pub fn point_signed_distance(&self, point : V) -> Field {
         self.faces.iter().map(|f| f.normal.dot(point) - f.threshold).fold(Field::NEG_INFINITY,|a,b| match a > b {true => a, false => b})
     }
@@ -158,6 +93,171 @@ impl <V : VectorTrait> Shape<V> {
         }
      out_points
     }
+
+    pub fn calc_boundary(face1 : &Face<V>, face2 : &Face<V>, origin : V) -> Plane<V>
+    {
+        let (n1,n2) = (face1.normal,face2.normal);
+        let (th1,th2) = (face1.threshold, face2.threshold);
+
+        //k1 and k2 must have opposite signs
+        let k1 = n1.dot(origin) - th1;
+        let k2 = n2.dot(origin) - th2;
+        //assert!(k1*k2 < 0.0,"k1 = {}, k2 = {}",k1,k2);
+
+        let t = k1/(k1 - k2);
+
+        let n3 = V::linterp(n1, n2, t);
+        let th3 = crate::vector::scalar_linterp(th1, th2, t);
+
+        Plane{normal : n3, threshold: th3}
+    }
+}
+impl<V : VectorTrait> ShapeTrait<V> for Shape<V> {
+    fn transform(&mut self) {
+        for (v,vr) in self.verts.iter_mut().zip(self.verts_ref.iter()) {
+            *v = self.frame * (*vr * self.scale) + self.pos;
+        }
+        for face in &mut self.faces {
+            face.normal = self.frame * face.normal_ref;
+            face.center = self.frame * face.center_ref + self.pos;
+            face.threshold = face.normal.dot(face.center);
+        }
+    }
+    fn update(&mut self) {
+        self.transform();
+    }
+    fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) {
+        let rot_mat = vector::rotation_matrix(self.frame[axis1],self.frame[axis2],Some(angle));
+        self.frame = self.frame.dot(rot_mat);
+        self.update();
+    }
+    fn set_pos(mut self, pos : &V) -> Self {
+        self.pos = *pos;
+        self.update();
+        self
+    }
+    fn get_pos(& self) -> &V {
+        &self.pos
+    }
+    fn stretch(&self, scales : &V) -> Self {
+    let mut new_shape = self.clone();
+    let new_verts : Vec<V> = self.verts_ref.iter()
+        .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
+    //need to explicitly update this as it stands
+    //need to have a clear differentiation between
+    //changes to mesh (verts_ref and center_ref) and
+    //changes to position/orientation/scaling of mesh
+
+    for face in &mut new_shape.faces {
+                let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
+        face.center_ref = vector::barycenter(&face_verts);
+    }
+    new_shape.radius = Shape::calc_radius(&new_verts);
+    new_shape.verts_ref = new_verts;
+    new_shape.update();
+    new_shape
+}
+    fn update_visibility(&mut self, camera_pos : V, transparent : bool) {
+        for face in self.faces.iter_mut() {
+            if transparent {
+                face.visible = true;
+            }
+            else {
+                face.update_visibility(camera_pos);
+            }
+        }
+    }
+    fn set_color(mut self, color : Color) -> Self {
+        for face in &mut self.faces {
+            face.set_color(color);
+        }
+        self
+    }
+    fn calc_radius(verts : &Vec<V>) -> Field {
+        verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
+    }
+    fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>> {
+
+        let faces = &self.faces; let subfaces = &self.subfaces;
+
+        let mut boundaries : Vec<Plane<V>> = Vec::new();
+
+        for subface in subfaces {
+            let face1 = &faces[subface.faceis.0];
+            let face2 = &faces[subface.faceis.1];
+            if face1.visible == !face2.visible {
+                let boundary = Self::calc_boundary(face1, face2, origin);
+                boundaries.push(boundary);
+            }
+        }
+        //visible faces are boundaries
+        for face in faces {
+            if face.visible {
+                boundaries.push(Plane{
+                    normal : face.normal, threshold : face.threshold
+                })
+            }
+        }
+        boundaries
+    }
+}
+
+
+#[derive(Clone)]
+pub struct SubFace {
+  pub faceis : (FaceIndex,FaceIndex)
+}
+use std::fmt;
+impl fmt::Display for SubFace {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SubFace({},{})", self.faceis.0, self.faceis.1)
+    }
+}
+
+//find indices of (d-1) faces that are joined by a (d-2) edge
+fn calc_subfaces<V : VectorTrait>(faces : &Vec<Face<V>>) -> Vec<SubFace> {
+  let mut subfaces : Vec<SubFace> = Vec::new();
+  if V::DIM == 2{
+    for i in 0..faces.len() {
+      for j in 0..i {
+        if count_common_verts(&faces[i],&faces[j]) >= 1 {
+          subfaces.push(SubFace{faceis : (i,j)})
+        }
+      }
+    }
+    return subfaces
+  }
+  let n_target = match V::DIM {
+    3 => 1,
+    4 => 2,
+    _ => panic!("Invalid dimension for computing subfaces")
+  };
+  for i in 0..faces.len() {
+    for j in 0..i {
+      if count_common_edges(&faces[i],&faces[j]) >= n_target {
+        subfaces.push(SubFace{faceis : (i,j)})
+      }
+    }
+  }
+  subfaces
+}
+fn count_common_edges<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> usize {
+  let total_edges = face1.edgeis.len() + face2.edgeis.len();
+  let unique_edges = face1.edgeis.iter()
+    .chain(face2.edgeis.iter())
+    .unique()
+    .count();
+  total_edges - unique_edges
+
+}
+fn count_common_verts<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> usize {
+  let total_verts = face1.vertis.len() + face2.vertis.len();
+  let unique_verts = face1.vertis.iter()
+    .chain(face2.vertis.iter())
+    .unique()
+    .count();
+  total_verts - unique_verts
+
 }
 
 #[test]
