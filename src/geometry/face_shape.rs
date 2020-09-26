@@ -1,11 +1,12 @@
 use crate::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex};
-use super::{Edge,Face,ShapeTrait,Plane};
+use super::{Edge,Face,ShapeTrait,Plane,Shape};
 
 use specs::{Component, DenseVecStorage};
 
-#[derive(Clone)]
+#[derive(Clone,Component)]
+#[storage(DenseVecStorage)]
 pub struct FaceShape<V : VectorTrait> {
     pub verts_ref : Vec<V>,
     pub verts : Vec<V>,
@@ -21,11 +22,10 @@ pub struct FaceShape<V : VectorTrait> {
 
 }
 
-impl<V: VectorTrait> Component for FaceShape<V> {
-        type Storage = DenseVecStorage<Self>;
-}
-
 impl<V : VectorTrait> FaceShape<V> {
+    pub fn from_convex(shape : &Shape<V::SubV>, normal : &V) {
+        
+    }
     pub fn new(verts : Vec<V>, edges: Vec<Edge>, mut face: Face<V>) -> FaceShape<V> {
 
         face.calc_vertis(&edges);
@@ -108,4 +108,5 @@ impl<V : VectorTrait> ShapeTrait<V> for FaceShape<V> {
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>> {
         todo!()
     }
+
 }

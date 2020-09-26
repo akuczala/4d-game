@@ -3,6 +3,7 @@ pub mod buildfloor;
 pub mod shape;
 pub mod face_shape;
 pub mod face;
+pub mod mesh;
 
 pub use face::Face;
 pub use shape::{Shape,SubFace};
@@ -130,5 +131,3 @@ pub trait ShapeTrait<V : VectorTrait> {
 
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>>;
 }
-
-

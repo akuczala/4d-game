@@ -11,6 +11,9 @@ use crate::draw::Texture;
 use std::marker::PhantomData;
 
 pub struct ShapeBuilder<V : VectorTrait>(PhantomData<V>);
+// impl<V : VectorTrait> ShapeBuilder<V> {
+// 	pub fn build_cube(length : Field) -> Shape<V> 
+// }
 impl ShapeBuilder<Vec2> {
 	pub fn build_cube(length : Field) -> Shape<Vec2> {
 		build_prism_2d(length/(2.0 as Field).sqrt(),4)

@@ -15,15 +15,12 @@ pub struct Shape<V : VectorTrait> {
     pub faces : Vec<Face<V>>,
     pub subfaces : Vec<SubFace>,
 
-    //pub boundaries : Vec<Plane<V>>,
-
     ref_frame : V::M,
     frame : V::M,
     pos : V,
     pub scale : Field,
     pub radius : Field,
 
-    //pub transparent : bool
 }
 
 impl <V : VectorTrait> Shape<V> {
