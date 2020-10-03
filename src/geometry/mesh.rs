@@ -1,10 +1,41 @@
+use itertools::Itertools;
+use std::hash::Hash;
 use super::{VectorTrait,VertIndex};
 
-pub trait FacetI : Copy {}
+//properties that the "index" I must satisfy
+pub trait FacetI : Copy + Eq + Hash {}
 
+//Facet1 is an edge. it holds two indices
+#[derive(Clone,PartialEq,Eq,Hash)]
 pub struct Facet1<I : FacetI>(I, I);
+//Facet2 is a 2d face. it holds indices corresponding to its points,
+//as well as its edges, each of which hold an index corresponding to its points
+#[derive(Clone)]
 pub struct Facet2<I : FacetI>(Vec<I>,Vec<Facet1<I>>);
 pub struct Facet3<I : FacetI>(Vec<I>,Vec<Facet1<I>>,Vec<Facet2<I>>);
+
+impl<I : FacetI> Facet2<I> {
+    fn new(edges : &Vec<Facet1<I>>) -> Self {
+        let vertis : Vec<I> = edges.iter().map(|f1| vec![f1.0,f1.1])
+            .flatten()
+            .unique()
+            .collect();
+        Self(vertis,edges.clone())
+    }
+}
+impl<I : FacetI> Facet3<I> {
+    fn new(faces : &Vec<Facet2<I>>) -> Self {
+        let vertis : Vec<I> = faces.iter().map(|f2| f2.0.clone())
+            .flatten()
+            .unique()
+            .collect();
+        let edges : Vec<Facet1<I>> = faces.iter().map(|f2| f2.1.clone())
+            .flatten()
+            .unique()
+            .collect();
+        Self(vertis,edges,(*faces).clone())
+    }
+}
 
 impl<I : FacetI> Facet1<I> {
     pub fn map<F : Fn(I) -> I + Copy>(&self, f : F) -> Self {
@@ -55,7 +86,7 @@ impl<I : FacetI> Facets<I> {
     }
 }
 
-#[derive(Clone,Copy)]
+#[derive(Clone,Copy,PartialEq,Eq,Hash)]
 pub enum Parity {
     Neg, Pos
 }
@@ -83,7 +114,7 @@ impl Parity {
         Parity::from_sign(self.to_sign()*par2.to_sign())
     }
 }
-#[derive(Clone,Copy)]
+#[derive(Clone,Copy,PartialEq,Eq,Hash)]
 pub struct FacetInfo {
     index : VertIndex,
     parity : Parity, 
@@ -112,22 +143,32 @@ impl<V :VectorTrait> MeshBuilder<V> {
                 FacetInfo{index : 0, parity : Parity::Neg},
                 FacetInfo{index : 1, parity : Parity::Pos}
             )]),
-            ref facet1 @ Facets::E1(_) => Facets::E2(
-                facet1.0.iter().map(move |&i| i)
-                .chain(
-                        facet1.0.iter().map(|&i| i.map(
-                                |f| f.extrude
-                            ))
-                    )
-                .collect(),
-                facet1.1.iter().map(move |&i| i)
-                .chain(
-                        facet1.1.iter().map(|&i| i.map(
-                                |f| f.extrude
-                            ))
-                    )
-                .collect(),
-                ),
+            Facets::E1(edges) => {
+                let shifted_edges : Vec<Facet1<FacetInfo>> = edges.iter()
+                    .map(|e| e.map(|i| i.extrude(edges.len()))).collect();
+
+                let faces = edges.iter().zip(shifted_edges.iter())
+                    .map(|(e0,e1)| Facet2::new(&vec![
+                        e0.clone(),Facet1(e0.1,e1.0),e1.clone(),Facet1(e1.1,e0.0)
+                        ]))
+                    .collect();
+
+                let mut new_edges = edges.clone();
+                new_edges.extend(shifted_edges);
+
+                Facets::E2(new_edges, faces)
+            },
+            Facets::E2(edges,faces) => {
+                let shifted_edges : Vec<Facet1<FacetInfo>> = edges.iter()
+                    .map(|e| e.map(|i| i.extrude(edges.len()))).collect();
+                let shifted_faces : Vec<Facet2<FacetInfo>> = faces.iter()
+                    .map(|f| e.map(|i| i.extrude(faces.len()))).collect();
+                let volumes = edges.iter().zip(shifted_edges.iter())
+                    .map(|(e0,e1)| Facet2::new(&vec![
+                        e0.clone(),Facet1(e0.1,e1.0),e1.clone(),Facet1(e1.1,e0.0)
+                        ]))
+                    .collect();
+            },
             _ => todo!()
         };
         let verts = mesh.verts;
