@@ -80,7 +80,7 @@ pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
     fn linterp(v1: Self, v2: Self,x : Field) -> Self {
         v1*(1.-x) + v2*x
     }
-    fn cross_product<I : std::iter::Iterator<Item=Self>>(points : I) -> Self;
+    fn cross<I : std::iter::Iterator<Item=Self>>(points : I) -> Self;
 }
 //impl<T> Foo for T where T: Clone + Mul<i64> + Add<i64> + ... {}
 
@@ -223,19 +223,19 @@ pub fn test_vectors() {
 #[test]
 pub fn test_cross_product() {
     assert!(
-        VectorTrait::is_close(VectorTrait::cross_product(
+        VectorTrait::is_close(VectorTrait::cross(
             vec![Vec2::new(2.,3.)].into_iter()
         ),Vec2::new(-3.,2.))
     );
     assert!(
-        VectorTrait::is_close(VectorTrait::cross_product(
+        VectorTrait::is_close(VectorTrait::cross(
             vec![
             Vec3::new(2.,3.,5.),
             Vec3::new(7.,11.,13.)
         
     ].into_iter()),Vec3::new(-16.,9.,1.))
     );
-    let cross4 = VectorTrait::cross_product(
+    let cross4 = VectorTrait::cross(
             vec![
             Vec4::new(2.,3.,5.,7.),
             Vec4::new(11.,13.,17.,19.),

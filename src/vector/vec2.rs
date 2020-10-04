@@ -120,7 +120,7 @@ impl VectorTrait for Vec2 {
     fn project(&self) -> Vec2 {
         Vec2::new(self[0],0.0)
     }
-    fn cross_product<I : std::iter::Iterator<Item=Self>>(mut vecs_iter : I) -> Self {
+    fn cross<I : std::iter::Iterator<Item=Self>>(mut vecs_iter : I) -> Self {
         let v0 = vecs_iter.next().expect("No vecs given to 2d cross product");
         if let Some(v1) = vecs_iter.next() {
             panic!("2D cross product given more than 1 vec");

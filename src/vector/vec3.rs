@@ -114,7 +114,7 @@ impl VectorTrait for Vec3 {
     fn project(&self) -> Vec2 {
         Vec2::new(self[0],self[1])
     }
-    fn cross_product<I : std::iter::Iterator<Item=Self>>(mut vecs_iter : I) -> Self {
+    fn cross<I : std::iter::Iterator<Item=Self>>(mut vecs_iter : I) -> Self {
         let a = vecs_iter.next().expect("No vecs given to 3d cross product");
         let b = vecs_iter.next().expect("1 vec given to 3d cross product");
         if let Some(_) = vecs_iter.next() {
