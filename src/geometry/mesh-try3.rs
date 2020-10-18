@@ -56,31 +56,31 @@ impl<V : VectorTrait> Facets0<V> {
         };
         Facets1::new(vert_normals,edgeis)
     }
-    fn set_vertis(&mut self, vertis : Vec<FacetIndex>) {
-        todo!()
-    }
-    fn get_vertis(&self) -> Vec<FacetIndex> {
-        todo!()
-    }
+    // fn set_vertis(&mut self, vertis : Vec<FacetIndex>) {
+    //     todo!()
+    // }
+    // fn get_vertis(&self) -> Vec<FacetIndex> {
+    //     todo!()
+    // }
     fn get_n_verts(&self) -> FacetIndex {
         todo!()
     }
-    fn get_shifted(&self, evec : V) -> Facets0<V> {
-        let mut out = self.clone();
-        out.set_vertis(
-            self.get_vertis().iter()
-                .map(|&vi| vi + self.get_n_verts())
-                .collect()
-        );
-        out
-    }
+    // fn get_shifted(&self, evec : V) -> Facets0<V> {
+    //     let mut out = self.clone();
+    //     out.set_vertis(
+    //         self.get_vertis().iter()
+    //             .map(|&vi| vi + self.get_n_verts())
+    //             .collect()
+    //     );
+    //     out
+    // }
 }
 impl<V : VectorTrait> Facets1<V> {
     fn extrude(&self, evec : V) -> Facets2<V> {
-        let edgeis = (0..self.get_n_verts())
+        let long_edgeis = (0..self.get_n_verts())
             .map(|vi| Facet1::new(vi,vi+self.get_n_verts()));
 
-        let edge_normals = self.get_vert_normals().iter()
+        let long_edge_normals = self.get_vert_normals().iter()
             .map(|&n| {
                 let mut edge_normal = VectorTrait::cross(vec![evec].into_iter());
                 if edge_normal.dot(n) < 0. {
@@ -89,15 +89,20 @@ impl<V : VectorTrait> Facets1<V> {
                 }
                 edge_normal
             });
+        let shifted = self.get_shifted(evec);
 
-        //let edges = edgeis.zip(edge_normals)
-        //    .map(|&ei,n| )
+        //let faces = 
+
+
         todo!()
     }
     fn set_vertis(&mut self, vertis : Vec<FacetIndex>) {
         todo!()
     }
     fn get_vertis(&self) -> Vec<FacetIndex> {
+        todo!()
+    }
+    fn get_verts(&self) -> Vec<V> {
         todo!()
     }
     fn get_n_verts(&self) -> FacetIndex {
