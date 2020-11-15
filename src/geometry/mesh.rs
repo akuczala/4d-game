@@ -158,6 +158,18 @@ pub fn extrude<V : VectorTrait>(mesh : &Mesh<V>, evec : V) -> Mesh<V> {
         .collect();
     let long_faces = FacetList(long_faces);
 
+    let long_volumes : Vec<Facet3> = mesh.facet_complex.faces.0.iter().enumerate()
+        .map(|(fi0,&f0)| {
+            f0.map(|ei| 2*n_edges + ei)
+        })
+        .collect();
+
+    //Join[volumes, ShiftIndex[volumes, nFaces],
+      // MapThread[
+      // Join[{#1, #1 + nFaces}, (2*nFaces + #2)] &, {Range[nFaces], 
+      //  facets[[3]]}]
+    //],
+
     let edges = mesh.facet_complex.edges
         .extended(&shifted.facet_complex.edges)
         .extended(&long_edges);
