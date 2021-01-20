@@ -9,6 +9,7 @@ trait FacetTrait : Clone {
     //     self.map(|x| x + n)
     // }
 }
+
 #[derive(Copy,Clone,Debug)]
 struct Facet0(FacetIndex);
 impl Facet0 {
@@ -40,6 +41,9 @@ impl Facet2 {
     
     fn shifted(&self, n : FacetIndex) -> Self {
         self.map(|x| x + n)
+    }
+    fn get_vec(&self) -> &Vec<FacetIndex> {
+        &self.0
     }
 }
 #[derive(Clone,Debug)]
@@ -77,6 +81,9 @@ impl FacetTrait for Facet3 {
 #[derive(Clone,Debug)]
 struct FacetList<T : FacetTrait>(Vec<T>);
 impl<T : FacetTrait> FacetList<T> {
+    fn empty() -> Self {
+        Self(vec![])
+    }
     fn map_index<F : Fn(FacetIndex) -> FacetIndex + Copy>(&self, f : F) -> Self {
         Self(self.0.iter().map(|x| x.map(f)).collect())
     }
@@ -88,10 +95,16 @@ impl<T : FacetTrait> FacetList<T> {
     fn len(&self) -> FacetIndex {
         self.0.len()
     }
-    fn extended(&self, other : &Self) -> Self {
-        let mut out = self.0.clone();
-        out.extend(other.0.clone());
-        Self(out)
+    fn extend(&mut self, other : &FacetList<T>) -> Vec<FacetIndex> {
+        let n_old = self.len();
+        self.0.extend(other.0.clone());
+        (n_old..self.len()).collect() // return new indices
+    }
+    fn get_vec(&self) -> &Vec<T> {
+        &self.0
+    }
+    fn get_facets(&self, indices: &Vec<FacetIndex>) -> Vec<T> {
+        indices.iter().map(|&i| self.0[i].clone()).collect()
     }
 }
 use std::ops::Index;
@@ -111,9 +124,16 @@ struct FacetComplex{
     volumes: FacetList<Facet3>
 }
 impl FacetComplex{
+    fn empty() -> Self {
+        Self{
+            vertis: FacetList::<Facet0>::empty(),
+            edges: FacetList::<Facet1>::empty(),
+            faces: FacetList::<Facet2>::empty(),
+            volumes: FacetList::<Facet3>::empty(),
+        }
+
+    }
     fn concat(&self, other: &Self) -> Self {
-        let n = self.vertis.len();
-        let shifted = self.shifted();
         Self{
             vertis: self.vertis.concat(&other.vertis),
             edges: self.edges.concat(&other.edges),
@@ -133,60 +153,58 @@ impl FacetComplex{
         todo!()
     }
 }
+//replicate mesh-test-p2.nb (in progress)
 
 pub fn extrude<V : VectorTrait>(mesh : &Mesh<V>, evec : V) -> Mesh<V> {
-    let n = mesh.facet_complex.vertis.len();
-    let n_edges = mesh.facet_complex.edges.len();
-    let n_faces = mesh.facet_complex.faces.len();
+    let facets = &mesh.facet_complex;
+    let shifted_facets = mesh.facet_complex.shifted();
 
-    //copy mesh to translated position
-    let mut shifted = mesh.translated(evec);
-    shifted.facet_complex = shifted.facet_complex.shifted();
+    let mut new_facets = FacetComplex::empty();
+    let vertis_far = new_facets.vertis.extend(&facets.vertis);
+    let vertis_close = new_facets.vertis.extend(&shifted_facets.vertis);
 
-    //build new edges, faces, etc between these two meshes
-    let long_edges : Vec<Facet1> = mesh.facet_complex.vertis.0.iter()
-        .zip(shifted.facet_complex.vertis.0.iter())
-        .map(|(&vi0,&vi1)| Facet1::new(vi0,vi1))
-        .collect();
-    let long_edges = FacetList(long_edges);
+    let far_edgeis = new_facets.edges.extend(&facets.edges.clone());
+    let close_edgeis = new_facets.edges.extend(&shifted_facets.edges.clone());
+    let long_edgeis = new_facets.edges.extend(&FacetList(
+        vertis_far.iter()
+            .zip(vertis_close.iter())
+            .map(|(&f,&sf)| Facet1(f,sf))
+            .collect()
+    ));
 
-    let long_faces : Vec<Facet2> = mesh.facet_complex.edges.0.iter().enumerate()
-        .map(|(ei0,&e0)| {
-            let long_eis = (2*n_edges + e0.0, 2*n_edges + e0.1);
-            Facet2::new(vec![ei0,long_eis.0,ei0 + n_edges,long_eis.1])
-        })
-        .collect();
-    let long_faces = FacetList(long_faces);
+    let far_faceis = new_facets.faces.extend(&facets.faces.clone());
+    let close_faceis = new_facets.faces.extend(&shifted_facets.faces.clone());
+    let long_faceis = new_facets.faces.extend(&FacetList(
+        far_edgeis.iter().zip(close_edgeis.iter())
+        .map(|(&far_i,&close_i)| Facet2(vec![
+                far_i,
+                long_edgeis[new_facets.edges[far_i].1],
+                close_i,
+                long_edgeis[new_facets.edges[far_i].0]
+            ]))
+        .collect()
+        ));
 
-    let long_volumes : Vec<Facet3> = mesh.facet_complex.faces.0.iter().enumerate()
-        .map(|(fi0,&f0)| {
-            f0.map(|ei| 2*n_edges + ei)
-        })
-        .collect();
-
-    //Join[volumes, ShiftIndex[volumes, nFaces],
-      // MapThread[
-      // Join[{#1, #1 + nFaces}, (2*nFaces + #2)] &, {Range[nFaces], 
-      //  facets[[3]]}]
-    //],
-
-    let edges = mesh.facet_complex.edges
-        .extended(&shifted.facet_complex.edges)
-        .extended(&long_edges);
-    let faces = mesh.facet_complex.faces
-        .extended(&shifted.facet_complex.faces)
-        .extended(&long_faces);
-    let volumes = FacetList(vec![]);
-
-    let mut verts =  mesh.verts.clone();
-    verts.extend(shifted.verts.clone());
+    let _close_voluis = new_facets.volumes.extend(&facets.volumes.clone());
+    let _far_voluis = new_facets.volumes.extend(&shifted_facets.volumes.clone());
+    let _long_voluis = new_facets.volumes.extend(&FacetList(
+        far_faceis.iter().zip(close_faceis.iter())
+        .map(|(&far_i,&close_i)| Facet3(
+                vec![far_i, close_i].into_iter()
+                .chain(
+                    new_facets.faces[far_i].get_vec().iter()
+                    .map(|&ei| long_faceis[ei])
+                )
+                .collect()
+            ))
+        .collect()
+        ));
 
     Mesh{
-        verts,
-        facet_complex: FacetComplex{
-            vertis: mesh.facet_complex.vertis.extended(&shifted.facet_complex.vertis),
-            edges, faces, volumes 
-        }
+        verts: mesh.verts.clone().into_iter().chain(
+                mesh.verts.iter().map(|&v| v + evec)
+            ).collect(),
+        facet_complex: new_facets
     }
 
 }
@@ -217,9 +235,9 @@ impl<V: VectorTrait> Mesh<V> {
 
 #[test]
 fn test_extrude() {
-    use crate::vector::{Vec3};
+    use crate::vector::{Vec4};
     let point = Mesh{
-        verts: vec![Vec3::new(0.,0.,0.)],
+        verts: vec![Vec4::new(0.,0.,0.,0.)],
         facet_complex : FacetComplex{
             vertis: FacetList(vec![Facet0::new(0)]),
             edges: FacetList(vec![]),
@@ -227,9 +245,10 @@ fn test_extrude() {
             volumes: FacetList(vec![]),
         }
     };
-    let line = extrude(&point,Vec3::new(1.0,0.,0.));
-    let square = extrude(&line,Vec3::new(0.0,1.,0.));
-    let cube = extrude(&square,Vec3::new(0.,0.,1.0));
+    let line = extrude(&point,Vec4::new(1.0,0.,0.,0.));
+    let square = extrude(&line,Vec4::new(0.0,1.,0.,0.));
+    let cube = extrude(&square,Vec4::new(0.,0.,1.0,0.));
+    let tess = extrude(&cube,Vec4::new(0.,0.,0.,1.0));
     println!("point");
     println!("{:?}", point);
     println!("line");
@@ -238,5 +257,7 @@ fn test_extrude() {
     println!("{:?}", square);
     println!("cube");
     println!("{:?}", cube);
+    println!("tess");
+    println!("{:?}", tess);
     assert!(false)
 }
