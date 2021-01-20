@@ -5,76 +5,58 @@ type FacetIndex = VertIndex;
 
 trait FacetTrait : Clone {
     fn map<F : Fn(FacetIndex) -> FacetIndex>(&self, f : F) -> Self;
-    // fn shifted(&self, n : FacetIndex) -> Self {
-    //     self.map(|x| x + n)
-    // }
 }
 
 #[derive(Copy,Clone,Debug)]
-struct Facet0(FacetIndex);
-impl Facet0 {
-    fn new(i : FacetIndex) -> Self {
-        Self(i)
-    }
-    
-    fn shifted(&self, n : FacetIndex) -> Self {
-        self.map(|x| x + n)
+struct Facet0<V: VectorTrait>{i: FacetIndex, normal: V}
+impl<V: VectorTrait> Facet0<V> {
+    fn new(i : FacetIndex, normal: V) -> Self {
+        Self{i, normal}
     }
 }
 #[derive(Copy,Clone,Debug)]
-struct Facet1(FacetIndex,FacetIndex);
-impl Facet1 {
-    fn new(vi0 : Facet0, vi1 : Facet0) -> Self {
-        Self(vi0.0,vi1.0)
-    }
-    
-    fn shifted(&self, n : FacetIndex) -> Self {
-        self.map(|x| x + n)
+struct Facet1<V: VectorTrait>{edge: (FacetIndex,FacetIndex), normal: V}
+impl<V: VectorTrait> Facet1<V> {
+    fn new(vi0 : FacetIndex, vi1 : FacetIndex, normal: V) -> Self {
+        Self{edge: (vi0,vi1), normal}
     }
 }
 #[derive(Clone,Debug)]
-struct Facet2(Vec<FacetIndex>);
-impl Facet2 {
-    fn new(edgeis : Vec<FacetIndex>) -> Self {
-        Facet2(edgeis)
-    }
-    
-    fn shifted(&self, n : FacetIndex) -> Self {
-        self.map(|x| x + n)
+struct Facet2<V: VectorTrait>{edgeis: Vec<FacetIndex>, normal: V}
+impl<V: VectorTrait> Facet2<V> {
+    fn new(edgeis : Vec<FacetIndex>, normal: V) -> Self {
+        Self{edgeis, normal}
     }
     fn get_vec(&self) -> &Vec<FacetIndex> {
-        &self.0
+        &self.edgeis
     }
 }
 #[derive(Clone,Debug)]
-struct Facet3(Vec<FacetIndex>);
-impl Facet3 {
-    fn new(faceis : Vec<FacetIndex>) -> Self {
-        Facet3(faceis)
-    }
-    
-    fn shifted(&self, n : FacetIndex) -> Self {
-        self.map(|x| x + n)
+struct Facet3<V: VectorTrait>{faceis: Vec<FacetIndex>, normal: V}
+impl<V: VectorTrait> Facet3<V> {
+    fn new(faceis : Vec<FacetIndex>, normal: V) -> Self {
+        Facet3{faceis, normal}
     }
 }
-impl FacetTrait for Facet0 {
+
+impl<V: VectorTrait> FacetTrait for Facet0<V> {
     fn map<F : Fn(FacetIndex) -> FacetIndex>(&self, f : F) -> Self {
-        Self(f(self.0))
+        Self{i: f(self.i), normal: self.normal}
     }
 }
-impl FacetTrait for Facet1 {
+impl<V: VectorTrait> FacetTrait for Facet1<V> {
     fn map<F : Fn(FacetIndex) -> FacetIndex>(&self, f : F) -> Self {
-        Self(f(self.0),f(self.1))
+        Self{edge: (f(self.edge.0),f(self.edge.1)), normal: self.normal}
     }
 }
-impl FacetTrait for Facet2 {
+impl<V: VectorTrait> FacetTrait for Facet2<V> {
     fn map<F : Fn(FacetIndex) -> FacetIndex>(&self, f : F) -> Self {
-        Self(self.0.iter().map(|&x| f(x)).collect())
+        Self{edgeis: self.edgeis.iter().map(|&x| f(x)).collect(), normal: self.normal}
     }
 }
-impl FacetTrait for Facet3 {
+impl<V: VectorTrait> FacetTrait for Facet3<V> {
     fn map<F : Fn(FacetIndex) -> FacetIndex>(&self, f : F) -> Self {
-        Self(self.0.iter().map(|&x| f(x)).collect())
+        Self{faceis: self.faceis.iter().map(|&x| f(x)).collect(), normal: self.normal}
     }
 }
 
@@ -117,19 +99,19 @@ impl<T : FacetTrait> Index<FacetIndex> for FacetList<T> {
 }
 
 #[derive(Clone,Debug)]
-struct FacetComplex{
-    vertis: FacetList<Facet0>,
-    edges: FacetList<Facet1>,
-    faces: FacetList<Facet2>,
-    volumes: FacetList<Facet3>
+struct FacetComplex<V: VectorTrait>{
+    vertis: FacetList<Facet0<V>>,
+    edges: FacetList<Facet1<V>>,
+    faces: FacetList<Facet2<V>>,
+    volumes: FacetList<Facet3<V>>
 }
-impl FacetComplex{
+impl<V: VectorTrait> FacetComplex<V>{
     fn empty() -> Self {
         Self{
-            vertis: FacetList::<Facet0>::empty(),
-            edges: FacetList::<Facet1>::empty(),
-            faces: FacetList::<Facet2>::empty(),
-            volumes: FacetList::<Facet3>::empty(),
+            vertis: FacetList::<Facet0<V>>::empty(),
+            edges: FacetList::<Facet1<V>>::empty(),
+            faces: FacetList::<Facet2<V>>::empty(),
+            volumes: FacetList::<Facet3<V>>::empty(),
         }
 
     }
@@ -156,6 +138,7 @@ impl FacetComplex{
 //replicate mesh-test-p2.nb (in progress)
 
 pub fn extrude<V : VectorTrait>(mesh : &Mesh<V>, evec : V) -> Mesh<V> {
+    let placeholder = V::zero();
     let facets = &mesh.facet_complex;
     let shifted_facets = mesh.facet_complex.shifted();
 
@@ -168,7 +151,7 @@ pub fn extrude<V : VectorTrait>(mesh : &Mesh<V>, evec : V) -> Mesh<V> {
     let long_edgeis = new_facets.edges.extend(&FacetList(
         vertis_far.iter()
             .zip(vertis_close.iter())
-            .map(|(&f,&sf)| Facet1(f,sf))
+            .map(|(&f,&sf)| Facet1::new(f,sf, placeholder))
             .collect()
     ));
 
@@ -176,12 +159,12 @@ pub fn extrude<V : VectorTrait>(mesh : &Mesh<V>, evec : V) -> Mesh<V> {
     let close_faceis = new_facets.faces.extend(&shifted_facets.faces.clone());
     let long_faceis = new_facets.faces.extend(&FacetList(
         far_edgeis.iter().zip(close_edgeis.iter())
-        .map(|(&far_i,&close_i)| Facet2(vec![
+        .map(|(&far_i,&close_i)| Facet2::new(vec![
                 far_i,
-                long_edgeis[new_facets.edges[far_i].1],
+                long_edgeis[new_facets.edges[far_i].edge.1],
                 close_i,
-                long_edgeis[new_facets.edges[far_i].0]
-            ]))
+                long_edgeis[new_facets.edges[far_i].edge.0]
+            ], placeholder))
         .collect()
         ));
 
@@ -189,13 +172,13 @@ pub fn extrude<V : VectorTrait>(mesh : &Mesh<V>, evec : V) -> Mesh<V> {
     let _far_voluis = new_facets.volumes.extend(&shifted_facets.volumes.clone());
     let _long_voluis = new_facets.volumes.extend(&FacetList(
         far_faceis.iter().zip(close_faceis.iter())
-        .map(|(&far_i,&close_i)| Facet3(
+        .map(|(&far_i,&close_i)| Facet3::new(
                 vec![far_i, close_i].into_iter()
                 .chain(
                     new_facets.faces[far_i].get_vec().iter()
                     .map(|&ei| long_faceis[ei])
                 )
-                .collect()
+                .collect(), placeholder
             ))
         .collect()
         ));
@@ -212,7 +195,7 @@ pub fn extrude<V : VectorTrait>(mesh : &Mesh<V>, evec : V) -> Mesh<V> {
 #[derive(Clone,Debug)]
 pub struct Mesh<V : VectorTrait> {
     verts : Vec<V>,
-    facet_complex : FacetComplex,
+    facet_complex : FacetComplex<V>,
 }
 impl<V: VectorTrait> Mesh<V> {
     pub fn translated(&self, v: V) -> Self {
@@ -239,7 +222,7 @@ fn test_extrude() {
     let point = Mesh{
         verts: vec![Vec4::new(0.,0.,0.,0.)],
         facet_complex : FacetComplex{
-            vertis: FacetList(vec![Facet0::new(0)]),
+            vertis: FacetList(vec![Facet0::new(0, Vec4::ones())]),
             edges: FacetList(vec![]),
             faces: FacetList(vec![]),
             volumes: FacetList(vec![]),
