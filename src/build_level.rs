@@ -10,10 +10,10 @@ use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d,Sh
 use crate::geometry::{Shape,buildshapes,ShapeTrait};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
-use crate::collide::{StaticCollider,calc_bbox};
+use crate::collide::{StaticCollider,HasBBox};
 
 pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
-    let bbox = calc_bbox(&shape);
+    let bbox = shape.calc_bbox();
     world.create_entity()
         .with(bbox)
         .with(shape)
@@ -23,7 +23,7 @@ pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
 }
 pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
     world.create_entity()
-        .with(calc_bbox(&shape))
+        .with(shape.calc_bbox())
         .with(shape)
         .with(ShapeClipState::<V>::default())
         .with(Coin)

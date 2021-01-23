@@ -1,4 +1,3 @@
-
 use std::time::{Duration,Instant};
 use crate::FPSTimer;
 use crate::collide;
@@ -61,6 +60,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             .with(MovePlayerSystem(PhantomData::<V>),"move_player",&["player_static_collision","player_coin_collision"])
             .with(ShapeTargetingSystem(PhantomData::<V>),"shape_targeting",&["move_player"])
             .with(UpdatePlayerBBox(PhantomData::<V>),"update_player_bbox",&["move_player"]) //merge with above
+            //.with(UpdateBBoxSystem(PhantomData::<V>,PhantomData::<Shape<V>>),"update_all_bbox",&["update_player_bbox"]) //if we had moving objects other than player
             .with(CoinSpinningSystem(PhantomData::<V>),"coin_spinning",&[])
             .with(ShapeCleanupSystem(PhantomData::<V>),"shape_cleanup",&["player_coin_collision"])
             .with(PrintDebugSystem(PhantomData::<V>),"print_debug",&["update_camera"])

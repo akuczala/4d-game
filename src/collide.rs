@@ -28,6 +28,10 @@ pub struct BBox<V : VectorTrait> {
 	pub max : V,
 }
 
+pub trait HasBBox<V : VectorTrait>: specs::Component {
+	fn calc_bbox(&self) -> BBox<V>;
+}
+
 #[derive(Component)]
 #[storage(VecStorage)]
 pub struct MoveNext<V : VectorTrait>{pub next_dpos : Option<V>, pub can_move : Option<bool>}
@@ -56,33 +60,37 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 	}
 }
 
-pub struct UpdateBBoxSystem<V>(pub PhantomData<V>);
+//this system is not used yet
+pub struct UpdateBBoxSystem<V: VectorTrait,T: HasBBox<V>>(pub PhantomData<V>, pub PhantomData<T>);
 
-impl<'a,V : VectorTrait> System<'a> for UpdateBBoxSystem<V> {
+impl<'a,V: VectorTrait,T: HasBBox<V>> System<'a> for UpdateBBoxSystem<V,T> {
 
-	type SystemData = (ReadStorage<'a,Shape<V>>,WriteStorage<'a,BBox<V>>);
+	type SystemData = (ReadStorage<'a,T>,WriteStorage<'a,BBox<V>>);
 
 	fn run(&mut self, (read_shape, mut write_bbox) : Self::SystemData) {
 		for (shape, bbox) in (&read_shape, &mut write_bbox).join() {
-			*bbox = calc_bbox(shape);
+			*bbox = shape.calc_bbox();
 		}
 	}
 }
 
-pub fn calc_bbox<V : VectorTrait>(shape : &Shape<V>) -> BBox<V> {
-	let verts = &shape.verts;
+impl<V: VectorTrait> HasBBox<V> for Shape<V> {
+	fn calc_bbox(&self) -> BBox<V> {
+		let verts = &self.verts;
 
-	//take smallest and largest components to get bounding box
-	let (mut min, mut max) = (verts[0],verts[0]);
-	for &v in verts.iter() {
-		min = min.zip_map(v,Field::min); 
-		max = max.zip_map(v,Field::max);
+		//take smallest and largest components to get bounding box
+		let (mut min, mut max) = (verts[0],verts[0]);
+		for &v in verts.iter() {
+			min = min.zip_map(v,Field::min); 
+			max = max.zip_map(v,Field::max);
+		}
+		BBox{min,max}
 	}
-	BBox{min,max}
 }
 
+
 pub fn create_spatial_hash<V : VectorTrait>(world : &mut World) {
-	//add shape entities and intialize spatial hash set
+	//add bbox entities and intialize spatial hash set
     let (mut max, mut min) = (V::zero(), V::zero());
     let mut max_lengths = V::zero();
     for bbox in (&world.read_component::<BBox<V>>()).join() {
@@ -96,10 +104,10 @@ pub fn create_spatial_hash<V : VectorTrait>(world : &mut World) {
         SpatialHashSet::<V,Entity>::new(
             min*1.5, //make bounds slightly larger than farthest points
             max*1.5,
-            max_lengths*1.1 //make cell size slightly larger than largest shape dimensions
+            max_lengths*1.1 //make cell size slightly larger than largest bbox dimensions
         )
     );
-    //enter shapes into hash set
+    //enter bboxes into hash set
     BBoxHashingSystem(PhantomData::<V>).run_now(&world);
 }
 
