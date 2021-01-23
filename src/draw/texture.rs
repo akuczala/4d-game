@@ -1,7 +1,7 @@
 use super::{DrawLine};
 
 use crate::vector::{VectorTrait,Field,VecIndex};
-use crate::geometry::{VertIndex,Shape,Line,Face,Edge};
+use crate::geometry::{VertIndex,Shape,ShapeTrait,Line,Face,Edge};
 
 use crate::colors::*;
 
@@ -82,7 +82,7 @@ pub struct TextureMapping {
 	pub origin_verti : VertIndex
 }
 impl TextureMapping {
-	pub fn draw<V : VectorTrait>(&self, face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>
+	pub fn draw<V : VectorTrait, S: ShapeTrait<V>>(&self, face : &Face<V>, shape : &S, face_scales : &Vec<Field>
 	) -> Vec<Option<DrawLine<V>>>{
 		if !face.visible {
 			return Vec::new();
@@ -95,19 +95,20 @@ impl TextureMapping {
 		}
 		
 	}
-	pub fn draw_default_lines<V : VectorTrait>(
-		&self, face : &Face<V>, shape : &Shape<V>,
+	pub fn draw_default_lines<V : VectorTrait, S: ShapeTrait<V>>(
+		&self, face : &Face<V>, shape : &S,
 		color : Color, face_scales : &Vec<Field>) -> Vec<Option<DrawLine<V>>> {
 		let mut lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
 		for &face_scale in face_scales {
 			let scale_point = |v| V::linterp(face.center,v,face_scale);
 			for edgei in &face.edgeis {
-				let edge = &shape.edges[*edgei];
+				let edge = &shape.get_edges()[*edgei];
 				lines.push(
 					Some(DrawLine{
 						line : Line(
-						shape.verts[edge.0],
-						shape.verts[edge.1])
+							shape.get_verts()[edge.0],
+							shape.get_verts()[edge.1]
+						)
 						.map(scale_point),
 						color : color
 						})
@@ -116,10 +117,10 @@ impl TextureMapping {
 		}
 		lines
 	}
-	pub fn draw_lines<V : VectorTrait>(&self, shape : &Shape<V>,
+	pub fn draw_lines<V : VectorTrait, S: ShapeTrait<V>>(&self, shape : &S,
 		lines : &Vec<Line<V::SubV>>, color : Color) -> Vec<Option<DrawLine<V>>> {
-		let origin = shape.verts[self.origin_verti];
-		let frame_verts : Vec<V> = self.frame_vertis.iter().map(|&vi| shape.verts[vi] - origin).collect();
+		let origin = shape.get_verts()[self.origin_verti];
+		let frame_verts : Vec<V> = self.frame_vertis.iter().map(|&vi| shape.get_verts()[vi] - origin).collect();
 		//this is pretty ridiculous. it just matrix multiplies a matrix of frame_verts (as columns) by each vertex
 		//in every line, then adds the origin.
 		lines.iter().map(|line|

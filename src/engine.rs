@@ -49,7 +49,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //determine what shapes are in front of other shapes
             .with(InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
             //calculate and clip lines for each shape
-            .with(CalcShapesLinesSystem(PhantomData::<V>),"calc_shapes_lines",&["in_front"])
+            .with(CalcShapesLinesSystem(PhantomData::<(V,Shape<V>)>),"calc_shapes_lines",&["in_front"])
             //project lines
             .with(TransformDrawLinesSystem(PhantomData::<V>),"transform_draw_lines",&["calc_shapes_lines"])
             .with(DrawCursorSystem(PhantomData::<V>),"draw_cursor",&["transform_draw_lines"])

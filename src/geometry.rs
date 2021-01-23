@@ -124,6 +124,9 @@ pub trait ShapeTrait<V : VectorTrait>: specs::Component {
     fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field);
     fn set_pos(self, pos : &V) -> Self;
     fn get_pos(& self) -> &V;
+    fn get_faces(&self) -> &Vec<Face<V>>;
+    fn get_edges(&self) -> &Vec<Edge>;
+    fn get_verts(&self) -> &Vec<V>;
     fn stretch(&self, scales : &V) -> Self;
     fn update_visibility(&mut self, camera_pos : V, transparent : bool);
     fn set_color(self, color : Color) -> Self;

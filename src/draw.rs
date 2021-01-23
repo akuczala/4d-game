@@ -218,10 +218,10 @@ pub fn update_shape_visibility<V : VectorTrait, S : ShapeTrait<V>>(
 
 }
 
-pub struct CalcShapesLinesSystem<V : VectorTrait>(pub PhantomData<V>);
+pub struct CalcShapesLinesSystem<V : VectorTrait, S: ShapeTrait<V>>(pub PhantomData<(V,S)>);
 
-impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
-	type SystemData = (ReadStorage<'a,Shape<V>>,ReadStorage<'a,ShapeClipState<V>>,
+impl<'a,V : VectorTrait, S: ShapeTrait<V>> System<'a> for CalcShapesLinesSystem<V,S>  {
+	type SystemData = (ReadStorage<'a,S>,ReadStorage<'a,ShapeClipState<V>>,
 		ReadExpect<'a,Vec<Field>>,ReadExpect<'a,ClipState<V>>,WriteExpect<'a,DrawLineList<V>>);
 
 	fn run(&mut self, (shapes, shape_clip_states, face_scale, clip_state, mut lines) : Self::SystemData) {
@@ -230,8 +230,8 @@ impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
 
 }
 
-pub fn calc_shapes_lines<V>(
-	shapes : &ReadStorage<Shape<V>>,
+pub fn calc_shapes_lines<V,S: ShapeTrait<V>>(
+	shapes : &ReadStorage<S>,
 	shape_clip_states : &ReadStorage<ShapeClipState<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
@@ -253,8 +253,8 @@ where V : VectorTrait
 	for (shape,shape_clip_state) in (shapes,shape_clip_states).join() {
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
-		for face in &shape.faces {
-			shape_lines.append(&mut face.texture_mapping.draw(face, &shape, &face_scale))
+		for face in shape.get_faces() {
+			shape_lines.append(&mut face.texture_mapping.draw(face, shape, &face_scale))
 		}
 
 		//clip these lines and append to list
