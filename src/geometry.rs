@@ -6,6 +6,7 @@ pub mod face;
 
 pub use face::Face;
 pub use shape::{Shape,SubFace};
+pub use face_shape::FaceShape;
 
 use std::fmt;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,is_close};
@@ -117,7 +118,7 @@ impl fmt::Display for Edge {
 }
 
 use crate::colors::Color;
-pub trait ShapeTrait<V : VectorTrait> {
+pub trait ShapeTrait<V : VectorTrait>: specs::Component {
     fn transform(&mut self);
     fn update(&mut self);
     fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field);
@@ -129,6 +130,7 @@ pub trait ShapeTrait<V : VectorTrait> {
     fn calc_radius(verts : &Vec<V>) -> Field;
 
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>>;
+    fn point_normal_distance(&self, point : V) -> (V, Field);
 }
 
 

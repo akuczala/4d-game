@@ -4,7 +4,7 @@ use crate::input::Input;
 use crate::camera::Camera;
 use crate::player::Player;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
-use crate::geometry::Shape;
+use crate::geometry::{Shape,ShapeTrait};
 use crate::vector::{VectorTrait,Field,Translatable};
 use specs::prelude::*;
 use specs::{Component};
@@ -61,7 +61,7 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 }
 
 //this system is not used yet
-pub struct UpdateBBoxSystem<V: VectorTrait,T: HasBBox<V>>(pub PhantomData<V>, pub PhantomData<T>);
+pub struct UpdateBBoxSystem<V: VectorTrait,T: HasBBox<V>>(pub PhantomData<(V,T)>);
 
 impl<'a,V: VectorTrait,T: HasBBox<V>> System<'a> for UpdateBBoxSystem<V,T> {
 
@@ -195,11 +195,11 @@ impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 	}
 }
 
-pub struct PlayerStaticCollisionSystem<V :VectorTrait>(pub PhantomData<V>);
-impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
+pub struct PlayerStaticCollisionSystem<V :VectorTrait,T: ShapeTrait<V>>(pub PhantomData<(V,T)>);
+impl<'a, V : VectorTrait, T: ShapeTrait<V>> System<'a> for PlayerStaticCollisionSystem<V,T> {
 
 	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>, WriteStorage<'a,MoveNext<V>>,
-		ReadStorage<'a,Shape<V>>,ReadStorage<'a,StaticCollider>,ReadStorage<'a,InPlayerCell>);
+		ReadStorage<'a,T>,ReadStorage<'a,StaticCollider>,ReadStorage<'a,InPlayerCell>);
 
 	fn run(&mut self, (player, camera, mut write_move_next, shape, static_collider, in_cell) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap();

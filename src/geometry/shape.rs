@@ -69,11 +69,6 @@ impl <V : VectorTrait> Shape<V> {
         self.faces.iter().map(|f| f.normal.dot(point) - f.threshold).fold(Field::NEG_INFINITY,|a,b| match a > b {true => a, false => b})
     }
     //returns distance and normal of closest face
-    pub fn point_normal_distance(&self, point : V) -> (V, Field) {
-         self.faces.iter().map(|f| (f.normal, f.normal.dot(point) - f.threshold))
-            .fold((V::zero(),f32::NEG_INFINITY),|(n1,a),(n2,b)| match a > b {true => (n1,a), false => (n2,b)})
-    }
-    //returns distance and normal of closest face
     pub fn point_facei_distance(&self, point : V) -> (usize, Field) {
          self.faces.iter().enumerate().map(|(i,f)| (i, f.normal.dot(point) - f.threshold))
             .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
@@ -140,23 +135,23 @@ impl<V : VectorTrait> ShapeTrait<V> for Shape<V> {
         &self.pos
     }
     fn stretch(&self, scales : &V) -> Self {
-    let mut new_shape = self.clone();
-    let new_verts : Vec<V> = self.verts_ref.iter()
-        .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
-    //need to explicitly update this as it stands
-    //need to have a clear differentiation between
-    //changes to mesh (verts_ref and center_ref) and
-    //changes to position/orientation/scaling of mesh
+        let mut new_shape = self.clone();
+        let new_verts : Vec<V> = self.verts_ref.iter()
+            .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
+        //need to explicitly update this as it stands
+        //need to have a clear differentiation between
+        //changes to mesh (verts_ref and center_ref) and
+        //changes to position/orientation/scaling of mesh
 
-    for face in &mut new_shape.faces {
-                let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
-        face.center_ref = vector::barycenter(&face_verts);
+        for face in &mut new_shape.faces {
+                    let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
+            face.center_ref = vector::barycenter(&face_verts);
+        }
+        new_shape.radius = Shape::calc_radius(&new_verts);
+        new_shape.verts_ref = new_verts;
+        new_shape.update();
+        new_shape
     }
-    new_shape.radius = Shape::calc_radius(&new_verts);
-    new_shape.verts_ref = new_verts;
-    new_shape.update();
-    new_shape
-}
     fn update_visibility(&mut self, camera_pos : V, transparent : bool) {
         for face in self.faces.iter_mut() {
             if transparent {
@@ -199,6 +194,11 @@ impl<V : VectorTrait> ShapeTrait<V> for Shape<V> {
             }
         }
         boundaries
+    }
+    //returns distance and normal of closest face
+    fn point_normal_distance(&self, point : V) -> (V, Field) {
+        self.faces.iter().map(|f| (f.normal, f.normal.dot(point) - f.threshold))
+            .fold((V::zero(),f32::NEG_INFINITY),|(n1,a),(n2,b)| match a > b {true => (n1,a), false => (n2,b)})
     }
 }
 
@@ -303,6 +303,6 @@ fn test_point_within2() {
         }
         println!("{}",line);
     }
-    assert!(false); //forces cargo test to print this
+    //assert!(false); //forces cargo test to print this
     //assert!(!shape.point_within(point,0.))
 }

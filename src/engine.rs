@@ -14,6 +14,7 @@ use glium::glutin::{
 use crate::camera::Camera;
 use crate::clipping::ClipState;
 use crate::draw;
+use crate::geometry::shape::Shape;
 use crate::gui::UIArgs;
 //NOTES:
 // include visual indicator of what direction a collision is in
@@ -44,7 +45,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let mut dispatcher = DispatcherBuilder::new()
             //start drawing phase. this is first so that we can do world.maintain() before we draw
             //for each shape, update clipping boundaries and face visibility
-            .with(VisibilitySystem(PhantomData::<(V,crate::geometry::shape::Shape<V>)>),"visibility",&[])
+            .with(VisibilitySystem(PhantomData::<(V,Shape<V>)>),"visibility",&[])
             //determine what shapes are in front of other shapes
             .with(InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
             //calculate and clip lines for each shape
@@ -55,7 +56,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //start game update phase
             .with(UpdateCameraSystem(PhantomData::<V>),"update_camera",&["calc_shapes_lines"])
             .with(PlayerCollisionDetectionSystem(PhantomData::<V>),"player_collision_detect",&["update_camera"]) 
-            .with(PlayerStaticCollisionSystem(PhantomData::<V>),"player_static_collision",&["player_collision_detect"])
+            .with(PlayerStaticCollisionSystem(PhantomData::<(V,Shape<V>)>),"player_static_collision",&["player_collision_detect"])
             .with(PlayerCoinCollisionSystem(PhantomData::<V>),"player_coin_collision",&["player_collision_detect","player_static_collision"])
             .with(MovePlayerSystem(PhantomData::<V>),"move_player",&["player_static_collision","player_coin_collision"])
             .with(ShapeTargetingSystem(PhantomData::<V>),"shape_targeting",&["move_player"])
