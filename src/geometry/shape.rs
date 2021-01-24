@@ -21,9 +21,6 @@ pub struct Shape<V : VectorTrait> {
     frame : V::M,
     pos : V,
     pub scale : Field,
-    pub radius : Field,
-
-    //pub transparent : bool
 }
 
 impl <V : VectorTrait> Shape<V> {
@@ -40,7 +37,6 @@ impl <V : VectorTrait> Shape<V> {
             //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
             face.center = face.center_ref.clone();
         }
-        let radius = Shape::calc_radius(&verts);
         let mut shape = Shape{
         verts_ref : verts.clone(),
         verts : verts,
@@ -53,8 +49,6 @@ impl <V : VectorTrait> Shape<V> {
         frame : V::M::id(),
         pos : V::zero(),
         scale : 1.0,
-        radius : radius,
-        //transparent: false
         };
         shape.update();
         shape
@@ -150,7 +144,6 @@ impl<V : VectorTrait> ShapeTrait<V> for Shape<V> {
                     let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
             face.center_ref = vector::barycenter(&face_verts);
         }
-        new_shape.radius = Shape::calc_radius(&new_verts);
         new_shape.verts_ref = new_verts;
         new_shape.update();
         new_shape
@@ -171,8 +164,8 @@ impl<V : VectorTrait> ShapeTrait<V> for Shape<V> {
         }
         self
     }
-    fn calc_radius(verts : &Vec<V>) -> Field {
-        verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
+    fn calc_radius(&self) -> Field {
+        self.verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
     }
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>> {
 

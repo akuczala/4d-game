@@ -11,6 +11,11 @@ use std::marker::PhantomData;
 
 use crate::camera::Camera;
 
+#[derive(Component)]
+#[storage(VecStorage)]
+pub struct BBall<V: VectorTrait> {
+    pos: V, radius: Field,
+}
 pub struct ClipState<V : VectorTrait> {
     //pub in_front : Vec<Vec<bool>>,
     //pub separators : Vec<Vec<Separator<V>>>,
@@ -218,7 +223,7 @@ pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontAr
         let sep = match maybe_sep {
             Some(s) => *s,
             None => {
-                let s = separate_between_centers(&a.shape,&b.shape);
+                let s = separate_between_centers(a.shape,b.shape);
                 a_clip_state.separators.insert(b.entity, s);
                 s
             }
@@ -518,15 +523,15 @@ pub fn dynamic_separate<V : VectorTrait>(
 }
 
 
-pub fn normal_separate<V : VectorTrait>(
-    shape1 : &Shape<V>, shape2 : &Shape<V>, normal : &V
+pub fn normal_separate<V : VectorTrait, S: ShapeTrait<V>>(
+    shape1 : &S, shape2 : &S, normal : &V
 ) -> Separator<V> {
     const OVERLAP : Field = 1e-6;
 
-    let nmin1 = shape1.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
-    let nmax1 = shape1.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
-    let nmin2 = shape2.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
-    let nmax2 = shape2.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
+    let nmin1 = shape1.get_verts().iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
+    let nmax1 = shape1.get_verts().iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
+    let nmin2 = shape2.get_verts().iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
+    let nmax2 = shape2.get_verts().iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
 
     if nmin2 - nmax1 >= -OVERLAP {
         return Separator::Normal{
@@ -546,8 +551,8 @@ pub fn normal_separate<V : VectorTrait>(
 
     return Separator::Unknown
 }
-pub fn separate_between_centers<V : VectorTrait>(
-    shape1 : &Shape<V>, shape2 : &Shape<V>
+pub fn separate_between_centers<V : VectorTrait, S: ShapeTrait<V>>(
+    shape1 : &S, shape2 : &S
     ) -> Separator<V>
 {
     let normal = *shape2.get_pos() - *shape1.get_pos();

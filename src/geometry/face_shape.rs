@@ -22,7 +22,6 @@ pub struct FaceShape<V : VectorTrait> {
     pos : V,
 
     pub scale : Field,
-    pub radius : Field,
 
 }
 
@@ -40,7 +39,6 @@ impl<V : VectorTrait> FaceShape<V> {
         //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
         face.center = face.center_ref.clone();
 
-        let radius = FaceShape::calc_radius(&verts);
         let mut shape = FaceShape{
             verts_ref : verts.clone(),
             verts: verts,
@@ -53,7 +51,6 @@ impl<V : VectorTrait> FaceShape<V> {
             frame : V::M::id(),
             pos : V::zero(),
             scale : 1.0,
-            radius : radius,
         };
         shape.update();
         shape
@@ -108,7 +105,6 @@ impl<V : VectorTrait> ShapeTrait<V> for FaceShape<V> {
         //changes to position/orientation/scaling of mesh
 
         new_shape = new_shape.set_pos(&vector::barycenter(&self.verts));
-        new_shape.radius = FaceShape::calc_radius(&new_verts);
         new_shape.verts_ref = new_verts;
         new_shape.update();
         new_shape
@@ -123,8 +119,8 @@ impl<V : VectorTrait> ShapeTrait<V> for FaceShape<V> {
         self.face.set_color(color);
         self
     }
-    fn calc_radius(verts : &Vec<V>) -> Field {
-        verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
+    fn calc_radius(&self) -> Field {
+        self.verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
     }
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>> {
         self.subfaces.iter().map(|subface| self.calc_boundary(subface, origin)).collect()

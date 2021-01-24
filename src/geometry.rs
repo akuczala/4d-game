@@ -132,7 +132,7 @@ pub trait ShapeTrait<V : VectorTrait>: specs::Component {
     fn stretch(&self, scales : &V) -> Self;
     fn update_visibility(&mut self, camera_pos : V, transparent : bool);
     fn set_color(self, color : Color) -> Self;
-    fn calc_radius(verts : &Vec<V>) -> Field;
+    fn calc_radius(&self) -> Field;
 
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>>;
     fn point_normal_distance(&self, point : V) -> (V, Field);

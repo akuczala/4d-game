@@ -202,8 +202,5 @@ pub fn build_test_scene_3d() -> Vec<Shape<Vec3>> {
     cube.faces[0].texture_mapping = draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]};
 
     let shapes = vec![cube,cube_3];
-    for shape in &shapes {
-        println!("radius:{}", shape.radius);
-    }
     shapes
 }
