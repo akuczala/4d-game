@@ -134,7 +134,7 @@ impl<V : VectorTrait> ShapeTrait<V> for Shape<V> {
     fn get_pos(& self) -> &V {
         &self.pos
     }
-    fn get_faces(&self) -> &Vec<Face<V>> {&self.faces}
+    fn get_faces(&self) -> &[Face<V>] {self.faces.as_slice()}
     fn get_edges(&self) -> &Vec<Edge> {&self.edges}
     fn get_verts(&self) -> &Vec<V> {&self.verts}
     fn stretch(&self, scales : &V) -> Self {

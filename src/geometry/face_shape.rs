@@ -95,7 +95,7 @@ impl<V : VectorTrait> ShapeTrait<V> for FaceShape<V> {
     fn get_pos(& self) -> &V {
         &self.pos
     }
-    fn get_faces(&self) -> &Vec<Face<V>> {vec![self.face.clone()]} // hmmmmm
+    fn get_faces(&self) -> &[Face<V>] {std::slice::from_ref(&self.face)} // hmmmmm
     fn get_edges(&self) -> &Vec<Edge> {&self.edges}
     fn get_verts(&self) -> &Vec<V> {&self.verts}
     fn stretch(&self, scales : &V) -> Self {
