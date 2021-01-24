@@ -13,9 +13,9 @@ use crate::draw;
 use crate::collide::{StaticCollider,HasBBox};
 
 pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
-    let bbox = shape.calc_bbox();
     world.create_entity()
-        .with(bbox)
+        .with(shape.calc_bbox())
+        .with(shape.calc_bball())
         .with(shape)
         .with(ShapeClipState::<V>::default())
         .with(StaticCollider)
@@ -24,6 +24,7 @@ pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
 pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
     world.create_entity()
         .with(shape.calc_bbox())
+        .with(shape.calc_bball())
         .with(shape)
         .with(ShapeClipState::<V>::default())
         .with(Coin)

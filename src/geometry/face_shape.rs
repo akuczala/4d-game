@@ -119,9 +119,6 @@ impl<V : VectorTrait> ShapeTrait<V> for FaceShape<V> {
         self.face.set_color(color);
         self
     }
-    fn calc_radius(&self) -> Field {
-        self.verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
-    }
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>> {
         self.subfaces.iter().map(|subface| self.calc_boundary(subface, origin)).collect()
     }

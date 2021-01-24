@@ -10,7 +10,7 @@ pub use face_shape::FaceShape;
 
 use std::fmt;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,is_close};
-
+use crate::clipping;
 use itertools::Itertools;
 //use std::ops::Index;
 
@@ -132,7 +132,10 @@ pub trait ShapeTrait<V : VectorTrait>: specs::Component {
     fn stretch(&self, scales : &V) -> Self;
     fn update_visibility(&mut self, camera_pos : V, transparent : bool);
     fn set_color(self, color : Color) -> Self;
-    fn calc_radius(&self) -> Field;
+    fn calc_bball(&self) -> clipping::BBall<V> {
+        let radius = self.get_verts().iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt();
+        clipping::BBall{pos: *self.get_pos(), radius}
+    }
 
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>>;
     fn point_normal_distance(&self, point : V) -> (V, Field);

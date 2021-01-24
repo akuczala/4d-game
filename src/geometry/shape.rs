@@ -164,9 +164,6 @@ impl<V : VectorTrait> ShapeTrait<V> for Shape<V> {
         }
         self
     }
-    fn calc_radius(&self) -> Field {
-        self.verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt()
-    }
     fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>> {
 
         let faces = &self.faces; let subfaces = &self.subfaces;

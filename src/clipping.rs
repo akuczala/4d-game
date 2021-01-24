@@ -14,7 +14,7 @@ use crate::camera::Camera;
 #[derive(Component)]
 #[storage(VecStorage)]
 pub struct BBall<V: VectorTrait> {
-    pos: V, radius: Field,
+    pub pos: V, pub radius: Field,
 }
 pub struct ClipState<V : VectorTrait> {
     //pub in_front : Vec<Vec<bool>>,
@@ -62,11 +62,11 @@ impl<V : VectorTrait> ClipState<V> {
 
 pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
-    type SystemData = (ReadStorage<'a,Shape<V>>,WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
+    type SystemData = (ReadStorage<'a,Shape<V>>,ReadStorage<'a,BBall<V>>,WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
         ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
 
-    fn run(&mut self, (shape_data,mut shape_clip_state,entities,camera,player) : Self::SystemData) {
-        calc_in_front(&shape_data,&mut shape_clip_state,&entities,&camera.get(player.0).unwrap().pos);
+    fn run(&mut self, (shape_data,bball_data,mut shape_clip_state,entities,camera,player) : Self::SystemData) {
+        calc_in_front(&shape_data,&bball_data,&mut shape_clip_state,&entities,&camera.get(player.0).unwrap().pos);
     }
 }
 
@@ -77,6 +77,7 @@ impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
 //but for now, every shape has a ShapeClipState.
 pub fn calc_in_front<V : VectorTrait>(
         read_shapes : & ReadStorage<Shape<V>>,
+        read_bballs: &ReadStorage<BBall<V>>,
         shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
         entities : &Entities,
         origin : &V,
@@ -84,11 +85,11 @@ pub fn calc_in_front<V : VectorTrait>(
     //collect a vec of references to shapes
     //let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
     //loop over unique pairs
-    for (shape1, e1) in (read_shapes,&*entities).join() {
-        for (shape2, e2) in (read_shapes,&*entities).join().filter(|(_sh,e)| *e > e1) {
+    for (shape1, bball1, e1) in (read_shapes, read_bballs, &*entities).join() {
+        for (shape2, bball2, e2) in (read_shapes, read_bballs, &*entities).join().filter(|(_sh,_b,e)| *e > e1) {
             calc_in_front_pair(
-                InFrontArg{shape : &shape1, entity : e1},
-                InFrontArg{shape : &shape2, entity : e2},
+                InFrontArg{shape : &shape1, bball: &bball1, entity : e1},
+                InFrontArg{shape : &shape2, bball: &bball2, entity : e2},
                 shape_clip_states,
                 origin
                 )
@@ -201,6 +202,7 @@ impl<V : VectorTrait> ShapeClipState<V> {
 
 pub struct InFrontArg<'a, V : VectorTrait>{
     shape : &'a Shape<V>,
+    bball: &'a BBall<V>,
     //clip_state : &'a mut ShapeClipState<V>,
     entity : Entity,
 }
@@ -208,7 +210,7 @@ pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontAr
     shape_clip_states : &mut WriteStorage<ShapeClipState<V>>, origin : &V) {
 
     //try dynamic separation
-    let mut sep_state = dynamic_separate(a.shape,b.shape,origin);
+    let mut sep_state = dynamic_separate(a.bball,b.bball,origin);
     let is_unknown = match sep_state {
         Separation::Unknown => true,
         _ => false
@@ -486,19 +488,19 @@ impl<V : VectorTrait> Separator<V> {
 //another function basically copied from
 //John McIntosh (urticator.net)
 pub fn dynamic_separate<V : VectorTrait>(
-    shape1 : &Shape<V>,
-    shape2 : &Shape<V>,
+    bball1 : &BBall<V>,
+    bball2 : &BBall<V>,
     origin: &V) -> Separation {
-    let normal = *shape1.get_pos() - *shape2.get_pos();
+    let normal = bball1.pos - bball2.pos;
     let d = normal.norm();
-    let (r1,r2) = (shape1.radius,shape2.radius);
+    let (r1,r2) = (bball1.radius,bball2.radius);
     if d <= r1 + r2 {
         return Separation::Unknown
     }
 
     let ratio = r1/(r1+r2);
     let dist1 = d*ratio;
-    let reg1 = *shape1.get_pos() - normal*ratio;
+    let reg1 = bball1.pos - normal*ratio;
     let reg1 = *origin - reg1;
 
     let adj = reg1.dot(normal)/d;
@@ -577,11 +579,11 @@ pub fn print_in_front(in_front : &Vec<Vec<bool>>) {
     }
     println!("");
 }
-pub fn test_dyn_separate<V : VectorTrait>(shapes : &Vec<Shape<V>>, origin : &V) {
+pub fn test_dyn_separate<V : VectorTrait>(bballs : &Vec<BBall<V>>, origin : &V) {
     use colored::*;
-    for (i,s1) in shapes.iter().enumerate() {
+    for (i,s1) in bballs.iter().enumerate() {
         println!("");
-        for (j,s2) in shapes.iter().enumerate() {
+        for (j,s2) in bballs.iter().enumerate() {
             if i != j {
                 let sep = dynamic_separate(s1,s2,origin);
                 let symb = match sep {
