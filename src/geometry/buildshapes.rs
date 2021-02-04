@@ -313,7 +313,7 @@ pub fn test_3d() -> Vec<Shape<Vec3>> {
         .set_pos(&Vec3::new(0.0,0.0,3.0));
     vec![cube,cylinder,prism]
 }
-
+//not used
 pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	let mut new_shape = shape.clone();
 	for face in &mut new_shape.faces {

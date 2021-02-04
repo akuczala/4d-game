@@ -73,10 +73,14 @@ impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
 
 //i've avoiding double mutable borrowing here by passing the entire shape_clip_states to calc_in_front_pair
 //a disadvantage here is that we have no guarantee that the processed entities have the ShapeClipState component
-//and that we have to iterate over all entities with the Shape component, instead of just those with both Shape and ShapeClipState
+//and that we have to iterate over all entities with the Shape component, instead of just those with both the ShapeTrait type and ShapeClipState
 //but for now, every shape has a ShapeClipState.
-pub fn calc_in_front<V : VectorTrait>(
-        read_shapes : & ReadStorage<Shape<V>>,
+
+//We need to iterate over all pairs of structs with ShapeTrait here, rather than a single type with ShapeTrait.
+//Alternatively, we iterate over only the data common to all ShapeTraits?
+//in this case, we only use the verts attribute of ShapeTrait.
+pub fn calc_in_front<V : VectorTrait, S: ShapeTrait<V>>(
+        read_shapes : & ReadStorage<S>,
         read_bballs: &ReadStorage<BBall<V>>,
         shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
         entities : &Entities,
@@ -88,8 +92,8 @@ pub fn calc_in_front<V : VectorTrait>(
     for (shape1, bball1, e1) in (read_shapes, read_bballs, &*entities).join() {
         for (shape2, bball2, e2) in (read_shapes, read_bballs, &*entities).join().filter(|(_sh,_b,e)| *e > e1) {
             calc_in_front_pair(
-                InFrontArg{shape : &shape1, bball: &bball1, entity : e1},
-                InFrontArg{shape : &shape2, bball: &bball2, entity : e2},
+                InFrontArg{shape : shape1, bball: &bball1, entity : e1},
+                InFrontArg{shape : shape2, bball: &bball2, entity : e2},
                 shape_clip_states,
                 origin
                 )
@@ -200,13 +204,13 @@ impl<V : VectorTrait> ShapeClipState<V> {
     }
 }
 
-pub struct InFrontArg<'a, V : VectorTrait>{
-    shape : &'a Shape<V>,
+pub struct InFrontArg<'a, V : VectorTrait, S: ShapeTrait<V>>{
+    shape : &'a S,
     bball: &'a BBall<V>,
     //clip_state : &'a mut ShapeClipState<V>,
     entity : Entity,
 }
-pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontArg<'a,V>,
+pub fn calc_in_front_pair<'a,V :VectorTrait,S1: ShapeTrait<V>, S2: ShapeTrait<V>>(a : InFrontArg<'a,V,S1>, b : InFrontArg<'a,V,S2>,
     shape_clip_states : &mut WriteStorage<ShapeClipState<V>>, origin : &V) {
 
     //try dynamic separation
@@ -525,8 +529,8 @@ pub fn dynamic_separate<V : VectorTrait>(
 }
 
 
-pub fn normal_separate<V : VectorTrait, S: ShapeTrait<V>>(
-    shape1 : &S, shape2 : &S, normal : &V
+pub fn normal_separate<V : VectorTrait, S1: ShapeTrait<V>, S2: ShapeTrait<V>>(
+    shape1 : &S1, shape2 : &S2, normal : &V
 ) -> Separator<V> {
     const OVERLAP : Field = 1e-6;
 
@@ -553,8 +557,8 @@ pub fn normal_separate<V : VectorTrait, S: ShapeTrait<V>>(
 
     return Separator::Unknown
 }
-pub fn separate_between_centers<V : VectorTrait, S: ShapeTrait<V>>(
-    shape1 : &S, shape2 : &S
+pub fn separate_between_centers<V : VectorTrait, S1: ShapeTrait<V>, S2: ShapeTrait<V>>(
+    shape1 : &S1, shape2 : &S2
     ) -> Separator<V>
 {
     let normal = *shape2.get_pos() - *shape1.get_pos();

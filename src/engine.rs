@@ -14,7 +14,7 @@ use glium::glutin::{
 use crate::camera::Camera;
 use crate::clipping::ClipState;
 use crate::draw;
-use crate::geometry::shape::Shape;
+use crate::geometry::{Shape, FaceShape};
 use crate::gui::UIArgs;
 //NOTES:
 // include visual indicator of what direction a collision is in
@@ -46,8 +46,9 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //start drawing phase. this is first so that we can do world.maintain() before we draw
             //for each shape, update clipping boundaries and face visibility
             .with(VisibilitySystem(PhantomData::<(V,Shape<V>)>),"visibility",&[])
+            .with(VisibilitySystem(PhantomData::<(V,FaceShape<V>)>),"face_visibility",&[])
             //determine what shapes are in front of other shapes
-            .with(InFrontSystem(PhantomData::<V>),"in_front",&["visibility"])
+            .with(InFrontSystem(PhantomData::<V>),"in_front",&["visibility","face_visibility"])
             //calculate and clip lines for each shape
             .with(CalcShapesLinesSystem(PhantomData::<(V,Shape<V>)>),"calc_shapes_lines",&["in_front"])
             //project lines
