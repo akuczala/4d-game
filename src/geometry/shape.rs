@@ -8,6 +8,18 @@ use itertools::Itertools;
 
 #[derive(Clone,Component)]
 #[storage(VecStorage)]
+pub struct Faces<V : VectorTrait>(Vec<Face<V>>);
+
+#[derive(Clone,Component)]
+#[storage(VecStorage)]
+pub struct Edges(Vec<Edge>);
+
+#[derive(Clone,Component)]
+#[storage(VecStorage)]
+pub struct Verts<V: VectorTrait>{verts: Vec<V>, verts_ref: Vec<V>}
+
+#[derive(Clone,Component)]
+#[storage(VecStorage)]
 pub struct Shape<V : VectorTrait> {
     pub verts_ref : Vec<V>,
     pub verts : Vec<V>,

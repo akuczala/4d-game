@@ -52,7 +52,6 @@ impl<V : VectorTrait> FaceShape<V> {
             pos : V::zero(),
             scale : 1.0,
         };
-        shape.update();
         shape
     }
     pub fn calc_boundary(&self, subface: &SubFace, origin: V) -> Plane<V> {
@@ -66,64 +65,11 @@ impl<V : VectorTrait> FaceShape<V> {
         }
         Plane{ normal: boundary_normal, threshold: boundary_normal.dot(origin) }
     }
-}
-impl<V : VectorTrait> ShapeTrait<V> for FaceShape<V> {
-    fn transform(&mut self) {
-        for (v,vr) in self.verts.iter_mut().zip(self.verts_ref.iter()) {
-            *v = self.frame * (*vr * self.scale) + self.pos;
-        }
-        self.face.normal = self.frame * self.face.normal_ref;
-        self.face.threshold = self.face.normal.dot(self.pos);
-    }
-    fn update(&mut self) {
-        self.transform();
-    }
-    fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) {
-        let rot_mat = vector::rotation_matrix(self.frame[axis1],self.frame[axis2],Some(angle));
-        self.frame = self.frame.dot(rot_mat);
-        self.update();
-    }
-    fn set_pos(mut self, pos : &V) -> Self {
-        self.pos = *pos;
-
-        self.update();
-        self
-    }
-    fn get_pos(& self) -> &V {
-        &self.pos
-    }
-    fn get_faces(&self) -> &[Face<V>] {std::slice::from_ref(&self.face)} // hmmmmm
-    fn get_edges(&self) -> &Vec<Edge> {&self.edges}
-    fn get_verts(&self) -> &Vec<V> {&self.verts}
-    fn stretch(&self, scales : &V) -> Self {
-        let mut new_shape = self.clone();
-        let new_verts : Vec<V> = self.verts_ref.iter()
-            .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
-        //need to explicitly update this as it stands
-        //need to have a clear differentiation between
-        //changes to mesh (verts_ref and center_ref) and
-        //changes to position/orientation/scaling of mesh
-
-        new_shape = new_shape.set_pos(&vector::barycenter(&self.verts));
-        new_shape.verts_ref = new_verts;
-        new_shape.update();
-        new_shape
-    }
-    fn update_visibility(&mut self, camera_pos : V, transparent : bool) {
-        if !transparent {
-            self.face.update_visibility(camera_pos);
-        }
-
-    }
-    fn set_color(mut self, color : Color) -> Self {
-        self.face.set_color(color);
-        self
-    }
-    fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>> {
+    pub fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>> {
         self.subfaces.iter().map(|subface| self.calc_boundary(subface, origin)).collect()
     }
     //returns distance and normal of closest face
-    fn point_normal_distance(&self, point : V) -> (V, Field) {
+    pub fn point_normal_distance(&self, point : V) -> (V, Field) {
         (self.face.normal, self.face.normal.dot(point) - self.face.threshold)
     }
 }

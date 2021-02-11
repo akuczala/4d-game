@@ -3,6 +3,7 @@ pub mod buildfloor;
 pub mod shape;
 pub mod face_shape;
 pub mod face;
+pub mod transform;
 
 pub use face::Face;
 pub use shape::{Shape,SubFace};
@@ -117,6 +118,10 @@ impl fmt::Display for Edge {
         }
 }
 
+fn calc_bball(pos: V, verts: &Vec<V>) -> clipping::BBall<V> {
+    let radius = verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt();
+    clipping::BBall{pos, radius}
+}
 use crate::colors::Color;
 pub trait ShapeTrait<V : VectorTrait>: specs::Component {
     //type FaceIterator: Iterator<Item=Face<V>>;
