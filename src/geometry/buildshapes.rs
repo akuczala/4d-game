@@ -6,7 +6,6 @@ use super::{Shape,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
 use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
-use crate::geometry::{ShapeTrait};
 use crate::draw::Texture;
 use std::marker::PhantomData;
 

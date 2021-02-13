@@ -12,7 +12,8 @@ pub use texture::TextureMapping;
 
 use crate::camera::{Camera};
 use crate::vector::{VectorTrait,Field};
-use crate::geometry::{VertIndex,Shape,Line,ShapeTrait};
+use crate::geometry::{VertIndex,Shape,Line};
+use crate::components::{ShapeType};
 //use crate::graphics;
 use crate::clipping::{clip_line_plane,clip_line_sphere,clip_line_cube,ShapeClipState};
 use crate::colors::*;
@@ -175,45 +176,45 @@ impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
 //seems to be significantly slower than not padding and just changing the buffer when needed
 //either way, we need to modify the method to write to an existing line buffer rather than allocating new Vecs
 
-#[derive(SystemData)]
-pub struct ReadAllShapes<'a, V : VectorTrait> {
-    convex_shapes : ReadStorage<'a,Shape<V>>,
-    face_shapes : ReadStorage<'a,FaceShape<V>>,
-}
-#[derive(SystemData)]
-pub struct WriteAllShapes<'a, V : VectorTrait> {
-    convex_shapes : WriteStorage<'a,Shape<V>>,
-    face_shapes : WriteStorage<'a,FaceShape<V>>,
-}
 
+pub struct VisibilitySystem<V : VectorTrait>(pub PhantomData<V>);
 
-pub struct VisibilitySystem<V : VectorTrait, S : ShapeTrait<V>>(pub PhantomData<(V,S)>);
+impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
+	type SystemData = (
+		WriteStorage<'a,Shape<V>>,
+		WriteStorage<'a,ShapeClipState<V>>,
+		ReadStorage<'a,ShapeType>,
+		ReadStorage<'a,Camera<V>>,
+		ReadExpect<'a,Player>,
+		ReadExpect<'a,ClipState<V>>
+	);
 
-impl<'a,V : VectorTrait, S : ShapeTrait<V> + specs::Component> System<'a> for VisibilitySystem<V,S>  {
-	type SystemData = (WriteStorage<'a,S>,WriteStorage<'a,ShapeClipState<V>>,ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>,ReadExpect<'a,ClipState<V>>);
+	fn run(&mut self, (mut shapes, mut shape_clip_states, shape_types, camera, player, clip_state) : Self::SystemData) {
 
-	fn run(&mut self, (mut shapes, mut shape_clip_states, camera, player, clip_state) : Self::SystemData) {
+		for (shape,shape_clip_state, shape_type) in (&mut shapes, &mut shape_clip_states, &shape_types).join() {
 
-		for (shape,shape_clip_state) in (&mut shapes, &mut shape_clip_states).join() {
-
-			update_shape_visibility(&camera.get(player.0).unwrap(), shape, shape_clip_state, &clip_state)
+			update_shape_visibility(&camera.get(player.0).unwrap(), shape, shape_clip_state, shape_type, &clip_state)
 		}
 	}
 
 }
 
 //updates clipping boundaries and face visibility based on normals
-pub fn update_shape_visibility<V : VectorTrait, S : ShapeTrait<V>>(
-	camera : &Camera<V>,
-	shape : &mut S,
+pub fn update_shape_visibility<V : VectorTrait>(
+	camera: &Camera<V>,
+	shape: &mut Shape<V>,
 	shape_clip_state : &mut ShapeClipState<V>,
-	clip_state : &ClipState<V>
+	shape_type: &ShapeType,
+	clip_state: &ClipState<V>
 	) {
 	//update shape visibility and boundaries
 	shape.update_visibility(camera.pos,shape_clip_state.transparent);
 	//calculate boundaries for clipping
 	if clip_state.clipping_enabled {
-		shape_clip_state.boundaries = shape.calc_boundaries(camera.pos);
+		shape_clip_state.boundaries = match shape_type {
+			ShapeType::Convex(convex) => convex.calc_boundaries(camera.pos, &shape.faces),
+			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(camera.pos),
+		};
 	}
 
 }

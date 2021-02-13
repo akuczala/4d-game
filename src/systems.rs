@@ -1,8 +1,5 @@
 use std::marker::PhantomData;
 
-pub type SysTypeV<V> = PhantomData<V>;
-pub type SysTypeVS<V,S> = PhantomData<(V,S)>;
-
 //for easy import of all systems
 pub use crate::draw::{
 	VisibilitySystem,

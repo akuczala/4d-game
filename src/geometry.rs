@@ -1,7 +1,6 @@
 pub mod buildshapes;
 pub mod buildfloor;
 pub mod shape;
-pub mod face_shape;
 pub mod face;
 
 pub use face::Face;
@@ -114,21 +113,6 @@ impl fmt::Display for Edge {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 write!(f, "Edge({},{})", self.0, self.1)
         }
-}
-
-use crate::colors::Color;
-pub trait ShapeTrait<V : VectorTrait> {
-    fn transform(&mut self);
-    fn update(&mut self);
-    fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field);
-    fn set_pos(self, pos : &V) -> Self;
-    fn get_pos(& self) -> &V;
-    fn stretch(&self, scales : &V) -> Self;
-    fn update_visibility(&mut self, camera_pos : V, transparent : bool);
-    fn set_color(self, color : Color) -> Self;
-    fn calc_radius(verts : &Vec<V>) -> Field;
-
-    fn calc_boundaries(&self, origin : V) -> Vec<Plane<V>>;
 }
 
 

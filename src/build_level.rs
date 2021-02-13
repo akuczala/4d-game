@@ -7,15 +7,15 @@ use specs::prelude::*;
 use crate::vector::{Vec2,Vec3,Vec4,linspace};
 use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d,ShapeBuilder};
 
-use crate::geometry::{Shape,buildshapes,ShapeTrait};
+use crate::geometry::{Shape,buildshapes,shape::{ShapeType,Convex}};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 use crate::collide::{StaticCollider,HasBBox};
 
 pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
-    let bbox = shape.calc_bbox();
     world.create_entity()
-        .with(bbox)
+        .with(shape.calc_bbox())
+        .with(ShapeType::Convex(Convex::new(&shape)))
         .with(shape)
         .with(ShapeClipState::<V>::default())
         .with(StaticCollider)
@@ -24,6 +24,7 @@ pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
 pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
     world.create_entity()
         .with(shape.calc_bbox())
+        .with(ShapeType::Convex(Convex::new(&shape)))
         .with(shape)
         .with(ShapeClipState::<V>::default())
         .with(Coin)
