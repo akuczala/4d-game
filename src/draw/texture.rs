@@ -1,7 +1,7 @@
 use super::{DrawLine};
 
 use crate::vector::{VectorTrait,Field,VecIndex};
-use crate::geometry::{VertIndex,Shape,Line,Face,Edge};
+use crate::geometry::{Line,shape::{VertIndex,Shape,Face,Edge}};
 
 use crate::colors::*;
 

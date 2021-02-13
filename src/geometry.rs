@@ -1,10 +1,7 @@
-pub mod buildshapes;
 pub mod buildfloor;
 pub mod shape;
-pub mod face;
 
-pub use face::Face;
-pub use shape::{Shape,SubFace};
+pub use shape::{Shape,Face};
 
 use std::fmt;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,is_close};
@@ -101,18 +98,6 @@ pub fn sphere_line_intersect<V : VectorTrait>(line : Line<V>, r : Field) -> Opti
         let intersect_points = Line(v0 + dv*tm, v0 + dv*tp);
         
         Some(intersect_points)
-}
-
-pub type VertIndex = usize;
-pub type EdgeIndex = usize;
-pub type FaceIndex = usize;
-
-#[derive(Clone)]
-pub struct Edge(pub VertIndex,pub VertIndex);
-impl fmt::Display for Edge {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                write!(f, "Edge({},{})", self.0, self.1)
-        }
 }
 
 

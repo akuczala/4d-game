@@ -1,103 +1,35 @@
+pub mod convex;
+pub mod single_face;
+
+pub mod face;
+pub mod buildshapes;
+
 use crate::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex};
-use crate::geometry::{Line,Edge,Face,Plane,FaceIndex,line_plane_intersect};
+use crate::geometry::{Line,Plane,line_plane_intersect};
+pub use face::Face;
+pub use convex::Convex; pub use single_face::SingleFace;
 
 use specs::{Component, VecStorage};
-use itertools::Itertools;
-
-pub struct Convex{
-    subfaces: Subfaces,
-}
-impl Convex{
-    pub fn new<V: VectorTrait>(shape: &Shape<V>) -> Self {
-        Convex{
-            subfaces: Subfaces::calc_subfaces(&shape.faces)
-        }
-    }
-    pub fn calc_boundary<V: VectorTrait>(face1 : &Face<V>, face2 : &Face<V>, origin : V) -> Plane<V>
-    {
-        let (n1,n2) = (face1.normal,face2.normal);
-        let (th1,th2) = (face1.threshold, face2.threshold);
-
-        //k1 and k2 must have opposite signs
-        let k1 = n1.dot(origin) - th1;
-        let k2 = n2.dot(origin) - th2;
-        //assert!(k1*k2 < 0.0,"k1 = {}, k2 = {}",k1,k2);
-
-        let t = k1/(k1 - k2);
-
-        let n3 = V::linterp(n1, n2, t);
-        let th3 = crate::vector::scalar_linterp(th1, th2, t);
-
-        Plane{normal : n3, threshold: th3}
-    }
-    pub fn calc_boundaries<V: VectorTrait>(&self, origin : V, faces: &Vec<Face<V>>) -> Vec<Plane<V>> {
-
-        let mut boundaries : Vec<Plane<V>> = Vec::new();
-
-        for subface in &self.subfaces.0 {
-            let face1 = &faces[subface.faceis.0];
-            let face2 = &faces[subface.faceis.1];
-            if face1.visible == !face2.visible {
-                let boundary = Self::calc_boundary(face1, face2, origin);
-                boundaries.push(boundary);
-            }
-        }
-        //visible faces are boundaries
-        for face in faces {
-            if face.visible {
-                boundaries.push(Plane{
-                    normal : face.normal, threshold : face.threshold
-                })
-            }
-        }
-        boundaries
-    }
-}
-
-pub struct SingleFace;
-impl SingleFace{
-    pub fn calc_boundaries<V: VectorTrait>(&self, origin : V) -> Vec<Plane<V>> {
-        todo!()
-    }
-}
+use std::fmt;
 
 #[derive(Component)]
 #[storage(VecStorage)]
 pub enum ShapeType {
-    Convex(Convex),
-    SingleFace(SingleFace)
+    Convex(convex::Convex),
+    SingleFace(single_face::SingleFace)
 }
 
-pub struct Subfaces(pub Vec<SubFace>);
-impl Subfaces {
-    //find indices of (d-1) faces that are joined by a (d-2) edge
-    fn calc_subfaces<V : VectorTrait>(faces : &Vec<Face<V>>) -> Subfaces {
-        let mut subfaces : Vec<SubFace> = Vec::new();
-        if V::DIM == 2{
-            for i in 0..faces.len() {
-                for j in 0..i {
-                    if count_common_verts(&faces[i],&faces[j]) >= 1 {
-                        subfaces.push(SubFace{faceis : (i,j)})
-                    }
-                }
-            }
-            return Subfaces(subfaces)
-        }
-        let n_target = match V::DIM {
-            3 => 1,
-            4 => 2,
-            _ => panic!("Invalid dimension for computing subfaces")
-        };
-        for i in 0..faces.len() {
-            for j in 0..i {
-                if count_common_edges(&faces[i],&faces[j]) >= n_target {
-                    subfaces.push(SubFace{faceis : (i,j)})
-                }
-            }
-        }
-        Subfaces(subfaces)
+pub type VertIndex = usize;
+pub type EdgeIndex = usize;
+pub type FaceIndex = usize;
+
+#[derive(Clone)]
+pub struct Edge(pub VertIndex,pub VertIndex);
+impl fmt::Display for Edge {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Edge({},{})", self.0, self.1)
     }
 }
 
@@ -132,16 +64,14 @@ impl <V : VectorTrait> Shape<V> {
         let radius = Shape::calc_radius(&verts);
         let mut shape = Shape{
             verts_ref : verts.clone(),
-            verts : verts,
-            edges : edges,
-            faces : faces,
-
-            //boundaries : Vec::new(),
+            verts,
+            edges,
+            faces,
             ref_frame : V::M::id(),
             frame : V::M::id(),
             pos : V::zero(),
             scale : 1.0,
-            radius : radius,
+            radius,
             //transparent: false
             };
             shape.update();
@@ -165,9 +95,6 @@ impl <V : VectorTrait> Shape<V> {
     pub fn point_facei_distance(&self, point : V) -> (usize, Field) {
          self.faces.iter().enumerate().map(|(i,f)| (i, f.normal.dot(point) - f.threshold))
             .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
-    }
-    pub fn point_within(&self, point : V, distance : Field) -> bool {
-        self.faces.iter().all(|f| f.normal.dot(point) - f.threshold < distance)
     }
     //returns points of intersection with shape
     pub fn line_intersect(&self, line : &Line<V>, visible_only : bool) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
@@ -246,80 +173,3 @@ impl <V : VectorTrait> Shape<V> {
     }
 }
 
-
-#[derive(Clone)]
-pub struct SubFace {
-  pub faceis : (FaceIndex,FaceIndex)
-}
-use std::fmt;
-impl fmt::Display for SubFace {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SubFace({},{})", self.faceis.0, self.faceis.1)
-    }
-}
-
-fn count_common_edges<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> usize {
-  let total_edges = face1.edgeis.len() + face2.edgeis.len();
-  let unique_edges = face1.edgeis.iter()
-    .chain(face2.edgeis.iter())
-    .unique()
-    .count();
-  total_edges - unique_edges
-
-}
-fn count_common_verts<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> usize {
-  let total_verts = face1.vertis.len() + face2.vertis.len();
-  let unique_verts = face1.vertis.iter()
-    .chain(face2.vertis.iter())
-    .unique()
-    .count();
-  total_verts - unique_verts
-
-}
-
-#[test]
-fn test_point_within() {
-    use vector::Vec3;
-    let point = Vec3::new(1.2,1.2,1.2);
-    let shape = crate::geometry::buildshapes::build_prism_3d(1.0, 1.0, 5);
-    for v in shape.faces.iter().map(|f| f.normal.dot(point) - f.threshold) {
-        println!("{}",v);
-    }
-    assert!(!shape.point_within(point,0.))
-}
-
-#[test]
-fn test_linspace() {
-    use crate::vector::{is_close,linspace};
-    assert!(linspace(-2.5,2.5,9).zip(vec![-2.5  , -1.875, -1.25 , -0.625,  0.   ,  0.625,  1.25 ,  1.875,
-                2.5  ]).all(|(a,b)| is_close(a,b)))
-}
-
-//prints points at different distances from prism
-#[test]
-fn test_point_within2() {
-    use colored::*;
-    use vector::{Vec3,linspace};
-    let shape = crate::geometry::buildshapes::build_prism_3d(1.0, 1.0, 4);
-    for x in linspace(-2.,2.,40) {
-        let mut line = "".to_string();
-        for y in linspace(-2.,2.,40) {
-            let point = Vec3::new(x,y,0.);
-            // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
-            //   true => "+", false => "_"
-            // };
-            let (i,dist) = shape.point_facei_distance(point);
-            //println!("{}",dist);
-            //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
-            let mut newstr = match i {1 => "1".blue(), 2 => "2".yellow(), 3 => "3".cyan(), 4 => "4".green(), _ => "_".red()};
-            if dist > 1. {
-                newstr = "+".to_string().white();
-            }
-            line = format!("{} {}",line,newstr);
-            
-        }
-        println!("{}",line);
-    }
-    assert!(false); //forces cargo test to print this
-    //assert!(!shape.point_within(point,0.))
-}

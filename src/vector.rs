@@ -247,3 +247,10 @@ pub fn test_cross_product() {
         Vec4::new(160.,-120.,-90.,70.))
     );
 }
+
+#[test]
+fn test_linspace() {
+    assert!(linspace(-2.5,2.5,9).zip(
+        vec![-2.5  , -1.875, -1.25 , -0.625,  0.   ,  0.625,  1.25 ,  1.875, 2.5  ]
+    ).all(|(a,b)| is_close(a,b)))
+}

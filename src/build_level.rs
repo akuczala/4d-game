@@ -5,9 +5,9 @@ use crate::camera::Camera;
 use crate::coin::Coin;
 use specs::prelude::*;
 use crate::vector::{Vec2,Vec3,Vec4,linspace};
-use crate::geometry::buildshapes::{build_cube_4d,color_cube,build_duoprism_4d,ShapeBuilder};
+use crate::geometry::shape::buildshapes::{build_cube_3d,build_cube_4d,color_cube,build_duoprism_4d,ShapeBuilder};
 
-use crate::geometry::{Shape,buildshapes,shape::{ShapeType,Convex}};
+use crate::geometry::{Shape,shape::{ShapeType,convex::Convex}};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 use crate::collide::{StaticCollider,HasBBox};
@@ -194,7 +194,7 @@ pub fn build_lvl_1<V : VectorTrait>(world : &mut World, cube : Shape<V>, coin : 
 }
 
 pub fn build_test_scene_3d() -> Vec<Shape<Vec3>> {
-    let mut cube = buildshapes::build_cube_3d(1.0);
+    let mut cube = build_cube_3d(1.0);
     //let cube_2 = cube.clone().set_pos(&Vec3::new(0.0,0.0,3.0)).stretch(&Vec3::new(1.0,8.0,1.0));
     let cube_3 = cube.clone().set_pos(&Vec3::new(-2.0,0.0,0.0)).stretch(&Vec3::new(2.0,2.0,2.0));
 

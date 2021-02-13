@@ -1,6 +1,6 @@
 
 use crate::vector::{VectorTrait};
-use crate::geometry::{VertIndex};
+use crate::geometry::shape::{VertIndex};
 use super::{Graphics,VertexTrait};
 use crate::vector::{Vec3};
 use glium::{Surface,Display};

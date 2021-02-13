@@ -12,7 +12,7 @@ pub use texture::TextureMapping;
 
 use crate::camera::{Camera};
 use crate::vector::{VectorTrait,Field};
-use crate::geometry::{VertIndex,Shape,Line};
+use crate::geometry::{shape::{VertIndex},Shape,Line};
 use crate::components::{ShapeType};
 //use crate::graphics;
 use crate::clipping::{clip_line_plane,clip_line_sphere,clip_line_cube,ShapeClipState};
@@ -213,7 +213,7 @@ pub fn update_shape_visibility<V : VectorTrait>(
 	if clip_state.clipping_enabled {
 		shape_clip_state.boundaries = match shape_type {
 			ShapeType::Convex(convex) => convex.calc_boundaries(camera.pos, &shape.faces),
-			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(camera.pos),
+			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(camera.pos, &shape.verts, shape.faces[0].center),
 		};
 	}
 

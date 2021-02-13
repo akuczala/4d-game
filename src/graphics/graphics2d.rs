@@ -3,7 +3,7 @@ use crate::graphics::VertexTrait;
 use super::simple_vertex::SimpleVertex;
 use super::proj_line_vertex::NewVertex;
 use crate::vector::{VectorTrait};
-use crate::geometry::{VertIndex};
+use crate::geometry::shape::{VertIndex};
 use super::Graphics;
 use super::{VERTEX_SHADER_SRC,FRAGMENT_SHADER_SRC};
 use crate::vector::{Vec2};

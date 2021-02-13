@@ -15,7 +15,7 @@ use glium::Display;
 use glium::vertex::Vertex;
 
 use crate::vector::{VectorTrait};
-use crate::geometry::{VertIndex};
+use crate::geometry::shape::{VertIndex};
 use crate::draw::{DrawVertex,DrawLine};
 
 //pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/test-shader.vert");
