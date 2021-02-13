@@ -16,9 +16,9 @@ use std::fmt;
 
 #[derive(Component)]
 #[storage(VecStorage)]
-pub enum ShapeType {
+pub enum ShapeType<V: VectorTrait> {
     Convex(convex::Convex),
-    SingleFace(single_face::SingleFace)
+    SingleFace(single_face::SingleFace<V>)
 }
 
 pub type VertIndex = usize;

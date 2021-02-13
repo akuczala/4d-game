@@ -2,10 +2,39 @@ use crate::vector::{VectorTrait};
 use crate::geometry::{Plane};
 use super::{VertIndex,Face,Shape};
 
-struct SubFace(Vec<VertIndex>); // list of vertis in each subface
-struct SubFaces(Vec<SubFace>);
+struct SubFace<V: VectorTrait>{
+    vertis: Vec<VertIndex>, // list of vertis in each subface
+    plane: Plane<V>
+}
+impl<V: VectorTrait> SubFace<V> {
+    pub fn new(vertis: &Vec<VertIndex>, shape_verts: &Vec<V>, shape_center: V, face_normal: V) {
 
-pub struct SingleFace{subfaces: SubFaces}
+    }
+    fn calc_plane(vertis: &Vec<VertIndex>, shape_center: V, shape_verts: &Vec<V>, face_normal: V) -> Plane<V> {
+        // take D-1 vertices of the subface, then subtract one of these from the others to get
+        // D-2 vectors parallel to the subface
+        let mut verts = vertis.iter()
+            .take((V::DIM.abs() as usize) -1)
+            .map(|&vi| verts[vi] - shape_center);
+        let v0: V = *verts.next().unwrap();
+        let parallel_vecs = verts.map(|&v| v - v0)
+        let mut normal = V::cross_product(parallel_vecs.chain(std::iter::once(face_normal)));
+        if normal.dot(v0 - shape_center) < 0.0 { //normal should be pointing outward from center
+            normal = -normal;
+        }
+        Plane::from_normal_and_point(normal, point: barycenter of subface verts)
+
+
+
+        let mut normal = V::cross_product(
+            vertis.iter().take((V::DIM.abs() as usize) -1)
+                .map(|&vi| verts[vi] - shape_center)
+        ).normalize();
+    }
+}
+struct SubFaces<V: VectorTrait>(Vec<SubFace<V>>);
+
+pub struct SingleFace<V: VectorTrait>{subfaces: SubFaces<V>}
 impl SingleFace{
     pub fn new<V: VectorTrait>(shape: &Shape<V>, subface_vertis: &Vec<Vec<VertIndex>>) -> Self {
         Self{

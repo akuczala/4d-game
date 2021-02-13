@@ -16,7 +16,7 @@ use crate::collide::{StaticCollider,HasBBox};
 pub fn insert_wall<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
     world.create_entity()
         .with(shape.calc_bbox())
-        .with(ShapeType::Convex(Convex::new(&shape)))
+        .with(ShapeType::<V>::Convex(Convex::new(&shape)))
         .with(shape)
         .with(ShapeClipState::<V>::default())
         .with(StaticCollider)

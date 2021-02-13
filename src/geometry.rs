@@ -30,6 +30,11 @@ pub struct Plane<V : VectorTrait> {
     pub normal : V,
     pub threshold : Field
 }
+impl<V: VectorTrait> Plane<V> {
+    fn from_normal_and_point(normal: V, point: V) -> Self {
+        Plane{normal, threshold: normal.dot(point)}
+    }
+}
 impl<V : VectorTrait> fmt::Display for Plane<V> {
         // This trait requires `fmt` with this exact signature.
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
