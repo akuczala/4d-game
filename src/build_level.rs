@@ -5,9 +5,10 @@ use crate::camera::Camera;
 use crate::coin::Coin;
 use specs::prelude::*;
 use crate::vector::{Vec2,Vec3,Vec4,linspace};
+use crate::geometry::shape::buildshapes;
 use crate::geometry::shape::buildshapes::{build_cube_3d,build_cube_4d,color_cube,build_duoprism_4d,ShapeBuilder};
 
-use crate::geometry::{Shape,shape::{ShapeType,convex::Convex}};
+use crate::geometry::{Shape, shape::{ShapeType, convex::Convex, single_face::SingleFace}, Face};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 use crate::collide::{StaticCollider,HasBBox};
@@ -30,21 +31,32 @@ pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
         .with(Coin)
         .build();
 }
-pub fn build_shapes_3d(world : &mut World) {
-
-    build_lvl_1_3d(world);
-
+pub fn insert_test_face(world: &mut World) {
+    let shape = buildshapes::build_test_face();
+    let subface_vertis = shape.edges.iter().map(|edge| vec![edge.0, edge.1]).collect();
     world.create_entity()
-        .with(Cursor)
-        .with(ShapeBuilder::<Vec2>::build_cube(0.03))
+        .with(shape.calc_bbox())
+        .with(ShapeType::SingleFace(SingleFace::new(&shape, &subface_vertis)))
+        .with(shape)
+        .with(ShapeClipState::<Vec3>::default())
+        .with(StaticCollider)
         .build();
+}
+pub fn build_test_level_3d(world: &mut World) {
+    insert_wall(world,build_cube_3d(1.0).set_pos(&Vec3::new(3.,0.,0.)));
+    insert_test_face(world);
+}
+pub fn build_shapes_3d(world : &mut World) {
+    //build_lvl_1_3d(world);
+    build_test_level_3d(world);
+    //build_test_face(world);
+    init_player(world, Vec3::zero());
+    init_cursor_3d(world);
 }
 pub fn build_shapes_4d(world : &mut World) {
     build_lvl_1_4d(world);
-    world.create_entity()
-        .with(Cursor)
-        .with(ShapeBuilder::<Vec3>::build_cube(0.03))
-        .build();
+    init_player(world, Vec4::zero());
+    init_cursor_4d(world);
     
 }
 
@@ -162,7 +174,23 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     shapes
     
 }
+pub fn init_player<V: VectorTrait>(world: &mut World, pos: V) {
+    let camera = Camera::new(pos);
+    crate::player::build_player(world, camera);
 
+}
+pub fn init_cursor_3d(world: &mut World) {
+    world.create_entity()
+        .with(Cursor)
+        .with(ShapeBuilder::<Vec2>::build_cube(0.03))
+        .build();
+}
+pub fn init_cursor_4d(world: &mut World) {
+    world.create_entity()
+        .with(Cursor)
+        .with(ShapeBuilder::<Vec3>::build_cube(0.03))
+        .build();
+}
 pub fn build_lvl_1_3d(world : &mut World) {
     build_lvl_1(world,ShapeBuilder::<Vec3>::build_cube(1.0),ShapeBuilder::<Vec3>::build_coin());
 }
@@ -188,8 +216,6 @@ pub fn build_lvl_1<V : VectorTrait>(world : &mut World, cube : Shape<V>, coin : 
                 .set_pos(&(V::one_hot(axis)*dir*(wall_length - 0.5)))
         );
     }
-    let camera = Camera::new(V::zero());
-    crate::player::build_player(world, camera);
 
 }
 

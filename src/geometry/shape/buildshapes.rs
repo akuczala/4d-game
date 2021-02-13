@@ -35,6 +35,17 @@ impl ShapeBuilder<Vec4> {
 	}
 }
 
+pub fn build_test_face() -> Shape<Vec3> {
+	type v = Vec3;
+	let basis = <v as VectorTrait>::M::id();
+	let shape = Shape::new(
+		vec![v::zero(),basis[0],basis[0] + basis[1], basis[1]],
+		vec![Edge(0,1),Edge(1,2),Edge(2,3),Edge(3,0)],
+		vec![Face::new(vec![0,1,2,3], basis[-1])]
+	);
+	shape
+}
+
 pub fn build_prism_2d(r : Field, n : VertIndex) -> Shape<Vec2> {
 
 	//starting angle causes first edge to be parallel to y axis

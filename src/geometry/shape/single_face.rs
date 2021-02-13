@@ -7,7 +7,7 @@ struct SubFaces(Vec<SubFace>);
 
 pub struct SingleFace{subfaces: SubFaces}
 impl SingleFace{
-    fn new<V: VectorTrait>(shape: &Shape<V>, subface_vertis: &Vec<Vec<VertIndex>>) -> Self {
+    pub fn new<V: VectorTrait>(shape: &Shape<V>, subface_vertis: &Vec<Vec<VertIndex>>) -> Self {
         Self{
             subfaces: SubFaces(
                 subface_vertis.iter().map(|vertis| SubFace(vertis.clone())).collect()
@@ -20,7 +20,7 @@ impl SingleFace{
                 .map(|&vi| verts[vi] - origin)
         ).normalize();
         //not sure about the sign here
-        if boundary_normal.dot(face_center - origin) < 0. {
+        if boundary_normal.dot(face_center - origin) > 0. {
             boundary_normal = -boundary_normal;
         }
         Plane{ normal: boundary_normal, threshold: boundary_normal.dot(origin) }
