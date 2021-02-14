@@ -68,6 +68,11 @@ impl<V : VectorTrait> Face<V> {
     pub fn set_color(&mut self, color : Color) {
         take_mut::take(&mut self.texture,|tex| tex.set_color(color));
     }
+    pub fn with_texture(mut self, texture: Texture<V::SubV>, texture_mapping: TextureMapping) -> Self {
+        self.texture = texture;
+        self.texture_mapping = texture_mapping;
+        self
+    }
 
 }
 

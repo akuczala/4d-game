@@ -126,7 +126,11 @@ impl <V : VectorTrait> Shape<V> {
         self.frame = self.frame.dot(rot_mat);
         self.update();
     }
-    pub fn set_pos(mut self, pos : &V) -> Self {
+    pub fn with_rotation(mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) -> Self {
+        self.rotate(axis1, axis2, angle);
+        self
+    }
+    pub fn with_pos(mut self, pos : &V) -> Self {
         self.pos = *pos;
         self.update();
         self
@@ -162,7 +166,7 @@ impl <V : VectorTrait> Shape<V> {
             }
         }
     }
-    pub fn set_color(mut self, color : Color) -> Self {
+    pub fn with_color(mut self, color : Color) -> Self {
         for face in &mut self.faces {
             face.set_color(color);
         }

@@ -1,5 +1,5 @@
 use crate::components::Cursor;
-
+use crate::colors::*;
 use crate::clipping::ShapeClipState;
 use crate::camera::Camera;
 use crate::coin::Coin;
@@ -31,8 +31,7 @@ pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
         .with(Coin)
         .build();
 }
-pub fn insert_test_face(world: &mut World) {
-    let shape = buildshapes::build_test_face();
+pub fn insert_test_face<V: VectorTrait>(world: &mut World, shape: Shape<V>) {
     let subface_vertis = shape.edges.iter().map(|edge| vec![edge.0, edge.1]).collect();
     world.create_entity()
         .with(shape.calc_bbox())
@@ -43,8 +42,29 @@ pub fn insert_test_face(world: &mut World) {
         .build();
 }
 pub fn build_test_level_3d(world: &mut World) {
-    insert_wall(world,build_cube_3d(1.0).set_pos(&Vec3::new(3.,0.,0.)));
-    insert_test_face(world);
+    insert_wall(world,build_cube_3d(1.0).with_pos(&Vec3::new(3., 0., 0.)));
+
+    let face_shape = buildshapes::build_test_face();
+    let shapes = vec![
+        face_shape.clone()
+            .with_pos(&(-Vec3::one_hot(-1)*1.0))
+            .with_color(RED),
+        face_shape.clone()
+            .with_pos(&(Vec3::one_hot(-1)*1.0))
+            .with_rotation(0,-1,std::f32::consts::PI)
+            .with_color(GREEN),
+        face_shape.clone()
+            .with_pos(&(-Vec3::one_hot(1)*1.0))
+            .with_rotation(-1,1,std::f32::consts::PI/2.)
+            .with_color(BLUE),
+        face_shape.clone()
+            .with_pos(&(Vec3::one_hot(1)*1.0))
+            .with_rotation(-1,1,-std::f32::consts::PI/2.)
+            .with_color(YELLOW),
+    ];
+    for shape in shapes.into_iter() {
+        insert_test_face(world, shape);
+    }
 }
 pub fn build_shapes_3d(world : &mut World) {
     //build_lvl_1_3d(world);
@@ -98,7 +118,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     //corridor walls
     let mut walls1 : Vec<Shape<V>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
         .map(|(s1,s2,(ax1,ax2))| cube.clone()
-            .set_pos(&(
+            .with_pos(&(
                 V::one_hot(*ax1)*(*s1)*(corr_width+wall_length)/2.0
                 + V::one_hot(*ax2)*(*s2)*(corr_width+wall_length)/2.0
                 ))
@@ -139,7 +159,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     
     let walls2 = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)| cube.clone()
-                .set_pos(&(V::one_hot(i)*(wall_length+corr_width)*(*sign)))
+                .with_pos(&(V::one_hot(i)*(wall_length+corr_width)*(*sign)))
                 .stretch(&(
                     V::one_hot(1)*(wall_height-corr_width) + V::ones()*corr_width
                     ))
@@ -148,14 +168,14 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     //floors and ceilings
     let mut floors_long : Vec<Shape<V>> = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)| cube.clone()
-                .set_pos(&(V::one_hot(i)*(wall_length+corr_width)*(*sign)/2.0
+                .with_pos(&(V::one_hot(i)*(wall_length+corr_width)*(*sign)/2.0
                     - V::one_hot(1)*(wall_height + corr_width)/2.0
                     ))
                 .stretch(&(V::one_hot(i)*(wall_length-corr_width) + V::ones()*corr_width
                     ))
                 ).collect();
     let mut ceilings_long : Vec<Shape<V>> = floors_long.iter()
-        .map(|block| block.clone().set_pos(&(
+        .map(|block| block.clone().with_pos(&(
             *block.get_pos()+V::one_hot(1)*(wall_height+corr_width))
         ))
         .collect();
@@ -170,7 +190,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     shapes.append(&mut floors_long);
     shapes.append(&mut ceilings_long);
     //center floor
-    shapes.push(cube.clone().set_pos(&(-V::one_hot(1)*(wall_height + corr_width)/2.0)));
+    shapes.push(cube.clone().with_pos(&(-V::one_hot(1)*(wall_height + corr_width)/2.0)));
     shapes
     
 }
@@ -213,7 +233,7 @@ pub fn build_lvl_1<V : VectorTrait>(world : &mut World, cube : Shape<V>, coin : 
     for (axis,dir) in iproduct!(match V::DIM {3 => vec![0,2], 4 => vec![0,2,3], _ => panic!("Invalid dimension")},vec![-1.,1.]) {
         insert_coin(world,
             coin.clone()
-                .set_pos(&(V::one_hot(axis)*dir*(wall_length - 0.5)))
+                .with_pos(&(V::one_hot(axis)*dir*(wall_length - 0.5)))
         );
     }
 
@@ -222,7 +242,7 @@ pub fn build_lvl_1<V : VectorTrait>(world : &mut World, cube : Shape<V>, coin : 
 pub fn build_test_scene_3d() -> Vec<Shape<Vec3>> {
     let mut cube = build_cube_3d(1.0);
     //let cube_2 = cube.clone().set_pos(&Vec3::new(0.0,0.0,3.0)).stretch(&Vec3::new(1.0,8.0,1.0));
-    let cube_3 = cube.clone().set_pos(&Vec3::new(-2.0,0.0,0.0)).stretch(&Vec3::new(2.0,2.0,2.0));
+    let cube_3 = cube.clone().with_pos(&Vec3::new(-2.0, 0.0, 0.0)).stretch(&Vec3::new(2.0, 2.0, 2.0));
 
     //test texture'
     cube.faces[0].texture = draw::Texture::make_tile_texture(&vec![0.5,0.9],&vec![2,3]);

@@ -6,7 +6,7 @@ use super::{Shape,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
 use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
-use crate::draw::Texture;
+use crate::draw::{Texture,TextureMapping};
 use std::marker::PhantomData;
 
 pub struct ShapeBuilder<V : VectorTrait>(PhantomData<V>);
@@ -22,7 +22,7 @@ impl ShapeBuilder<Vec3> {
 	pub fn build_coin() -> Shape<Vec3> {
 		build_prism_3d(0.1,0.025,10)
 		//build_cube_3d(0.2)
-            .set_color(YELLOW)
+            .with_color(YELLOW)
 	}
 }
 impl ShapeBuilder<Vec4> {
@@ -31,17 +31,26 @@ impl ShapeBuilder<Vec4> {
 	}
 	pub fn build_coin() -> Shape<Vec4> {
 		build_duoprism_4d([0.1,0.025],[[0,1],[2,3]],[10,4])
-            .set_color(YELLOW)
+            .with_color(YELLOW)
 	}
 }
 
 pub fn build_test_face() -> Shape<Vec3> {
 	type v = Vec3;
-	let basis = <v as VectorTrait>::M::id();
 	let shape = Shape::new(
-		vec![v::zero(),basis[0],basis[0] + basis[1], basis[1]],
+		vec![
+			v::new(-1.0,-1.0, 0.0),
+			v::new(-1.0, 1.0, 0.0),
+			v::new(1.0, 1.0, 0.0),
+			v::new(1.0, -1.0, 0.0)],
 		vec![Edge(0,1),Edge(1,2),Edge(2,3),Edge(3,0)],
-		vec![Face::new(vec![0,1,2,3], basis[-1])]
+		vec![
+			Face::new(vec![0,1,2,3], v::one_hot(-1))
+				.with_texture(
+				Texture::make_tile_texture(&vec![0.8],&vec![4,4]),
+				TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]}
+				)
+			]
 	);
 	shape
 }
@@ -263,7 +272,7 @@ pub fn build_axes_cubes_4d() -> Vec<Shape<Vec4>> {
     for i in (0..4).into_iter() {
         for sign in vec![-1.0,1.0] {
             let cube = build_cube_4d(1.0)
-                .set_pos(&(<Vec4 as VectorTrait>::M::id()[i]*sign*3.0));
+                .with_pos(&(<Vec4 as VectorTrait>::M::id()[i]*sign*3.0));
             shapes.push(color_cube(cube));
         }
     }
@@ -276,7 +285,7 @@ pub fn cubeidor_3d() -> Vec<Shape<Vec3>> {
     for (i, sign, z) in iproduct!((0..2).into_iter(),vec![-1.0,1.0],(0..4)) {
     	let pos = <Vec3 as VectorTrait>::M::id()[i]*sign*1.0 + <Vec3 as VectorTrait>::one_hot(-1)*(z as Field);
             let cube = build_cube_3d(1.0)
-                .set_pos(&pos);
+                .with_pos(&pos);
             shapes.push(color_cube(cube));
     }
     shapes
@@ -288,7 +297,7 @@ pub fn cubeidor_4d() -> Vec<Shape<Vec4>> {
     	let pos = <Vec4 as VectorTrait>::M::id()[i]*sign*1.0
     		+ <Vec4 as VectorTrait>::one_hot(-1)*1.0*(z as Field);
             let cube = build_cube_4d(1.0)
-                .set_pos(&pos);
+                .with_pos(&pos);
             shapes.push(color_cube(cube));
     }
     shapes
@@ -296,18 +305,18 @@ pub fn cubeidor_4d() -> Vec<Shape<Vec4>> {
 
 pub fn tube_test_3d() -> Vec<Shape<Vec3>> {
 	//buildshapes::cubeidor_3d()
-    let mut tube = build_long_cube_3d(4.0,1.0).set_pos(&Vec3::new(0.5,0.0,0.0));
-    let mut tube2 = tube.clone().set_pos(&Vec3::new(3.0,0.0,2.5));
+    let mut tube = build_long_cube_3d(4.0,1.0).with_pos(&Vec3::new(0.5, 0.0, 0.0));
+    let mut tube2 = tube.clone().with_pos(&Vec3::new(3.0, 0.0, 2.5));
 
     //let mut tube = buildshapes::invert_normals(&tube);
     //let mut tube2 = buildshapes::invert_normals(&tube2);
     tube2.rotate(0,-1,PI/2.0);
 
-    let cube = build_cube_3d(1.0).set_pos(&Vec3::new(0.5,0.0,2.5));
+    let cube = build_cube_3d(1.0).with_pos(&Vec3::new(0.5, 0.0, 2.5));
     //let cube = buildshapes::invert_normals(&cube);
 
-    let tube = tube.set_color(RED);
-    let tube2 = tube2.set_color(GREEN);
+    let tube = tube.with_color(RED);
+    let tube2 = tube2.with_color(GREEN);
     vec![tube,tube2,cube]
 }
 pub fn test_3d() -> Vec<Shape<Vec3>> {
@@ -317,10 +326,10 @@ pub fn test_3d() -> Vec<Shape<Vec3>> {
         face.texture = Texture::DefaultLines{color};
     }
     let cylinder = build_prism_3d(1.0,1.0,8)
-        .set_pos(&Vec3::new(2.0,0.0,0.0));;
+        .with_pos(&Vec3::new(2.0, 0.0, 0.0));;
 
     let prism = build_prism_3d(1.0,1.0,3)
-        .set_pos(&Vec3::new(0.0,0.0,3.0));
+        .with_pos(&Vec3::new(0.0, 0.0, 3.0));
     vec![cube,cylinder,prism]
 }
 
