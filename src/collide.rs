@@ -11,7 +11,8 @@ use specs::prelude::*;
 use specs::{Component};
 use std::marker::PhantomData;
 use itertools::Itertools;
-//use itertools::Itertools;
+
+pub const PLAYER_COLLIDE_DISTANCE: Field = 0.2;
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -212,20 +213,30 @@ impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 pub struct PlayerStaticCollisionSystem<V :VectorTrait>(pub PhantomData<V>);
 impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 
-	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>, WriteStorage<'a,MoveNext<V>>,
-		ReadStorage<'a,Shape<V>>,ReadStorage<'a,StaticCollider>,ReadStorage<'a,InPlayerCell>);
+	type SystemData = (
+		ReadExpect<'a,Player>,
+		ReadStorage<'a,Camera<V>>,
+		WriteStorage<'a,MoveNext<V>>,
+		ReadStorage<'a,Shape<V>>,
+		ReadStorage<'a,ShapeType<V>>,
+		ReadStorage<'a,StaticCollider>,
+		ReadStorage<'a,InPlayerCell>
+	);
 
-	fn run(&mut self, (player, camera, mut write_move_next, shape, static_collider, in_cell) : Self::SystemData) {
+	fn run(&mut self, (player, camera, mut write_move_next, shape, shape_types, static_collider, in_cell) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap();
 		match move_next {
 			MoveNext{next_dpos : Some(_next_dpos), can_move : Some(true)} => {
 				let pos = camera.get(player.0).unwrap().pos;
-				for (shape, _, _) in (&shape, &static_collider, &in_cell).join() {
+				for (shape, shape_type, _, _) in (&shape, &shape_types, &static_collider, &in_cell).join() {
 
 					let next_dpos = move_next.next_dpos.unwrap();
 					let (normal, dist) = shape.point_normal_distance(pos);
-					
-					if dist < 0.2 {
+
+					if (dist < PLAYER_COLLIDE_DISTANCE) & match shape_type {
+							ShapeType::SingleFace(single_face) => single_face.subface_normal_distance(pos).1 < PLAYER_COLLIDE_DISTANCE,
+							ShapeType::Convex(_) => true }
+					{
 						//push player away along normal of nearest face (projects out -normal)
 						//but i use abs here to guarantee the face always repels the player
 						let new_dpos = next_dpos + (normal)*(normal.dot(next_dpos).abs());

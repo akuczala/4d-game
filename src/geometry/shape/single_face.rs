@@ -1,4 +1,4 @@
-use crate::vector::{VectorTrait,barycenter_iter,barycenter,is_close};
+use crate::vector::{VectorTrait,Field,barycenter_iter,is_close};
 use crate::geometry::{Plane};
 use super::{VertIndex,Face,Shape};
 
@@ -56,6 +56,14 @@ impl<V: VectorTrait> SingleFace<V>{
     }
     pub fn calc_boundaries(&self, origin : V, verts: &Vec<V>, face_center: V) -> Vec<Plane<V>> {
         self.subfaces.0.iter().map(|subface| self.calc_boundary(subface, origin, verts, face_center)).collect()
+    }
+    //return new dpos based on proximity
+    pub fn subface_normal_distance(&self, pos: V) -> (V, Field) {
+        let (closest_subshape_plane, distance) = Plane::point_normal_distance(
+            pos,
+            self.subfaces.0.iter().map(|sf| &sf.plane)
+        ).unwrap();
+        (closest_subshape_plane.normal, distance)
     }
 }
 
@@ -134,4 +142,14 @@ fn test_subface_planes() {
         assert!(Vec3::is_close(subface.plane.normal, expected_plane.normal),"normal={}",subface.plane.normal);
 
     }
+}
+#[test]
+fn test_subface_dist() {
+    let (shape, single_face) = make_3d_square();
+    let (n, d) = single_face.subface_normal_distance(Vec3::new(0.5,0.0,0.0));
+    assert!(Vec3::is_close(n, Vec3::one_hot(0)),"n={}",n);
+    assert!(is_close(d, -0.5),"d={}",d);
+    let (n, d) = single_face.subface_normal_distance(Vec3::new(0.5,2.0,0.0));
+    assert!(Vec3::is_close(n, Vec3::one_hot(1)),"n={}",n);
+    assert!(is_close(d, 1.0),"d={}",d);
 }

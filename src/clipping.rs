@@ -1,8 +1,7 @@
-use std::cell::Cell;
 use std::collections::{HashSet,HashMap};
 use crate::player::Player;
-use crate::vector::{VectorTrait,Field,scalar_linterp};
-use crate::geometry::{Line,Plane,shape::{Face,Shape}};
+use crate::vector::{VectorTrait,Field};
+use crate::geometry::{Line,Plane,shape::{Shape}};
 use crate::draw::DrawLine;
 
 use specs::prelude::*;

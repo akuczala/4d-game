@@ -6,9 +6,6 @@ pub use shape::{Shape,Face};
 use std::fmt;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,is_close};
 
-use itertools::Itertools;
-//use std::ops::Index;
-
 #[derive(Clone)]
 pub struct Line<V : VectorTrait>(pub V,pub V);
 impl<V : VectorTrait> fmt::Display for Line<V> {
@@ -34,6 +31,20 @@ impl<V: VectorTrait> Plane<V> {
     fn from_normal_and_point(normal: V, point: V) -> Self {
         Plane{normal, threshold: normal.dot(point)}
     }
+    //returns closest plane + distance
+    pub fn point_normal_distance<'a, I: Iterator<Item=&'a Plane<V>>>(point : V, planes: I) -> Option<(&'a Plane<V>, Field)> {
+        planes.fold(
+            None,
+            |acc: Option<(&Plane<V>,Field)>, plane| {
+                let this_dist = plane.normal.dot(point) - plane.threshold;
+                Some(acc.map_or_else(
+                    || (plane, this_dist),
+                    |(best_plane,cur_dist)| match this_dist > cur_dist {
+                            true => (plane, this_dist), false => (best_plane,cur_dist)
+                        }
+                ))}
+        )
+    }
 }
 impl<V : VectorTrait> fmt::Display for Plane<V> {
         // This trait requires `fmt` with this exact signature.
@@ -41,6 +52,7 @@ impl<V : VectorTrait> fmt::Display for Plane<V> {
                 write!(f, "n={},th={}", self.normal,self.threshold)
         }
 }
+
 
 pub fn point_plane_normal_axis<V : VectorTrait>(point : &V, plane : &Plane<V>) -> Field {
     return plane.threshold - point.dot(plane.normal)
