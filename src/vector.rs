@@ -87,15 +87,16 @@ pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
 //fn foo<C>() where i64: From<C>, C: Foo {}
 
 
-pub fn barycenter<V>(vlist : &Vec<V>) -> V
-where V : VectorTrait
+pub fn barycenter<V: VectorTrait>(vlist : &Vec<V>) -> V
 {
     vlist.iter().fold(V::zero(),|sum,val| sum + *val)/(vlist.len() as Field)
 }
-pub fn barycenter_iter<V>(viter : &mut std::slice::Iter<V>) -> V
-where V : VectorTrait
+pub fn barycenter_iter<'a, V: VectorTrait, I: Iterator<Item=&'a V>>(viter : I) -> V
 {
-    viter.fold(V::zero(),|sum,val| sum + *val)/(viter.len() as Field)
+    let (sum, len) = viter.fold(
+        (V::zero(), 0),
+        |(sum,len),&val| (sum + val, len + 1));
+    sum/(len as Field)
 }
 
 pub trait MatrixTrait<V : VectorTrait>: Display + Copy + Sync + Send + 'static +
@@ -253,4 +254,28 @@ fn test_linspace() {
     assert!(linspace(-2.5,2.5,9).zip(
         vec![-2.5  , -1.875, -1.25 , -0.625,  0.   ,  0.625,  1.25 ,  1.875, 2.5  ]
     ).all(|(a,b)| is_close(a,b)))
+}
+#[test]
+fn test_barycenter() {
+    use rand::{Rng, thread_rng};
+    let n = 10;
+    let mut rng = thread_rng();
+    let mut vecs: Vec<Vec3> = vec![];
+    let mut accum = Vec3::zero();
+    for _ in 0..n {
+        let new_vec = Vec3::new(rng.gen(),rng.gen(),rng.gen());
+        accum = accum + new_vec;
+        vecs.push(new_vec);
+    }
+    let expected_center = accum / (n as Field);
+    let center = barycenter(&vecs);
+    let center_from_iter = barycenter_iter(vecs.iter());
+    assert!(
+        Vec3::is_close(center,expected_center),
+        "center={}, expected_center={}",center,expected_center
+    );
+    assert!(
+        Vec3::is_close(center_from_iter,expected_center),
+        "center_from_iter={}, expected_center={}",center_from_iter,expected_center
+    );
 }

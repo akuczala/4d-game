@@ -162,7 +162,7 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 		ReadExpect<'a,Player>,
 		ReadStorage<'a,Camera<V>>,
 		ReadStorage<'a,Shape<V>>,
-		ReadStorage<'a,ShapeType>,
+		ReadStorage<'a,ShapeType<V>>,
 		ReadStorage<'a,BBox<V>>,
 		ReadExpect<'a,SpatialHashSet<V,Entity>>
 	);

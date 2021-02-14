@@ -183,7 +183,7 @@ impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 	type SystemData = (
 		WriteStorage<'a,Shape<V>>,
 		WriteStorage<'a,ShapeClipState<V>>,
-		ReadStorage<'a,ShapeType>,
+		ReadStorage<'a,ShapeType<V>>,
 		ReadStorage<'a,Camera<V>>,
 		ReadExpect<'a,Player>,
 		ReadExpect<'a,ClipState<V>>
@@ -204,7 +204,7 @@ pub fn update_shape_visibility<V : VectorTrait>(
 	camera: &Camera<V>,
 	shape: &mut Shape<V>,
 	shape_clip_state : &mut ShapeClipState<V>,
-	shape_type: &ShapeType,
+	shape_type: &ShapeType<V>,
 	clip_state: &ClipState<V>
 	) {
 	//update shape visibility and boundaries
