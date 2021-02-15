@@ -61,6 +61,11 @@ impl Input {
         }
     }
 }
+impl Input {
+    pub fn get_dt(&self) -> Field {
+        (self.frame_duration as Field).min(MAX_DT)
+    }
+}
 
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
@@ -84,7 +89,7 @@ const MOUSE_STICK_POINT : [f32 ; 2] = [100.,100.];
 pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
 {
     //limit max dt
-    let dt = (input.frame_duration as Field).min(MAX_DT);
+    let dt = input.get_dt();
 
     let mut any_slide_turn = false;
 

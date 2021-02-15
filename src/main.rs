@@ -3,6 +3,8 @@
 //extern crate imgui;
 //extern crate imgui_glium_renderer;
 #[allow(dead_code)]
+mod constants;
+#[allow(dead_code)]
 mod vector;
 #[allow(dead_code)]
 mod geometry;
@@ -19,6 +21,7 @@ mod graphics;
 mod gui;
 mod engine;
 mod collide;
+mod gravity;
 mod spatial_hash;
 mod input;
 #[allow(dead_code)]

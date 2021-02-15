@@ -17,6 +17,9 @@ pub use crate::collide::{
 	UpdatePlayerBBox,
 	UpdateBBoxSystem
 };
+pub use crate::gravity::{
+	PlayerGravitySystem
+};
 pub use crate::coin::{
 	CoinSpinningSystem,
 	PlayerCoinCollisionSystem
