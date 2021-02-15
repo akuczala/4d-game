@@ -1,4 +1,5 @@
-use crate::components::Cursor;
+use crate::components::{Cursor,Transform,BBox};
+use crate::geometry::transform::{Transformable};
 use crate::colors::*;
 use crate::clipping::ShapeClipState;
 use crate::camera::Camera;
@@ -6,7 +7,7 @@ use crate::coin::Coin;
 use specs::prelude::*;
 use crate::vector::{Vec2,Vec3,Vec4,linspace};
 use crate::geometry::shape::buildshapes;
-use crate::geometry::shape::buildshapes::{build_cube_3d,build_cube_4d,color_cube,build_duoprism_4d,ShapeBuilder};
+use crate::geometry::shape::buildshapes::{build_cube_3d, build_cube_4d, color_cube, build_duoprism_4d, ShapeBuilder, build_prism_2d};
 
 use crate::geometry::{Shape, shape::{ShapeType, convex::Convex, single_face::SingleFace}, Face};
 use crate::vector::{VectorTrait,Field};
@@ -31,40 +32,88 @@ pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
         .with(Coin)
         .build();
 }
-pub fn insert_test_face<V: VectorTrait>(world: &mut World, shape: Shape<V>) {
-    let subface_vertis = shape.edges.iter().map(|edge| vec![edge.0, edge.1]).collect();
-    world.create_entity()
-        .with(shape.calc_bbox())
-        .with(ShapeType::SingleFace(SingleFace::new(&shape, &subface_vertis)))
-        .with(shape)
-        .with(ShapeClipState::<Vec3>::default())
-        .with(StaticCollider)
-        .build();
+#[derive(Clone)]
+struct BuildFaceShape<V: VectorTrait> {
+    sub_shape: Shape<V::SubV>,
+    transformation: Transform<V>,
+    texture_info: (draw::Texture<V::SubV>, draw::TextureMapping),
+}
+impl<V: VectorTrait> BuildFaceShape<V> {
+    pub fn new(sub_shape: Shape<V::SubV>) -> Self {
+        Self{
+            sub_shape,
+            transformation: Transform::identity(),
+            texture_info: Default::default(),
+        }
+    }
+    pub fn with_texture(mut self, texture: draw::Texture<V::SubV>, texture_mapping: draw::TextureMapping) -> Self {
+        self.texture_info = (texture, texture_mapping);
+        self
+    }
+    pub fn with_color(mut self, color: Color) -> Self {
+        self.texture_info.0 = self.texture_info.0.set_color(color);
+        self
+    }
+    pub fn build(self, world: &mut World) {
+        let Self{sub_shape, transformation, texture_info} = self;
+        let (mut shape, mut single_face) = buildshapes::convex_shape_to_face_shape(sub_shape);
+        shape = shape.transform(transformation);
+        shape.faces[0].set_texture(texture_info.0, texture_info.1);
+        single_face.update(&shape);
+        world.create_entity()
+            .with(shape.calc_bbox())
+            .with(ShapeType::SingleFace(single_face))
+            .with(shape)
+            .with(ShapeClipState::<V>::default())
+            .with(StaticCollider)
+            .build();
+    }
+}
+impl<V: VectorTrait> Transformable<V> for BuildFaceShape<V> {
+    fn transform(mut self, transformation: Transform<V>) -> Self {
+        self.transformation = self.transformation.transform(transformation);
+        self
+    }
+}
+
+fn build_test_walls<V: VectorTrait>(build_shape: &BuildFaceShape<V>, world: &mut World) {
+    build_shape.clone()
+        .with_pos(-V::one_hot(-1)*1.0)
+        .with_color(RED)
+        .build(world);
+    build_shape.clone()
+        .with_pos(V::one_hot(-1)*1.0)
+        .with_rotation(0,-1,std::f32::consts::PI)
+        .with_color(GREEN)
+        .build(world);
+    build_shape.clone()
+        .with_pos(-V::one_hot(1)*1.0)
+        .with_rotation(-1,1,std::f32::consts::PI/2.)
+        .with_color(BLUE)
+        .build(world);
+    build_shape.clone()
+        .with_pos(V::one_hot(1)*1.0)
+        .with_rotation(-1,1,-std::f32::consts::PI/2.)
+        .with_color(YELLOW)
+        .build(world);
 }
 pub fn build_test_level_3d(world: &mut World) {
     insert_wall(world,build_cube_3d(1.0).with_pos(&Vec3::new(3., 0., 0.)));
-
-    let face_shape = buildshapes::build_test_face();
-    let shapes = vec![
-        face_shape.clone()
-            .with_pos(&(-Vec3::one_hot(-1)*1.0))
-            .with_color(RED),
-        face_shape.clone()
-            .with_pos(&(Vec3::one_hot(-1)*1.0))
-            .with_rotation(0,-1,std::f32::consts::PI)
-            .with_color(GREEN),
-        face_shape.clone()
-            .with_pos(&(-Vec3::one_hot(1)*1.0))
-            .with_rotation(-1,1,std::f32::consts::PI/2.)
-            .with_color(BLUE),
-        face_shape.clone()
-            .with_pos(&(Vec3::one_hot(1)*1.0))
-            .with_rotation(-1,1,-std::f32::consts::PI/2.)
-            .with_color(YELLOW),
-    ];
-    for shape in shapes.into_iter() {
-        insert_test_face(world, shape);
-    }
+    let build_shape: BuildFaceShape<Vec3>= BuildFaceShape::new(ShapeBuilder::<Vec2>::build_cube(2.0))
+        .with_texture(
+            draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4]),
+            draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]}
+        );
+    build_test_walls(&build_shape, world);
+}
+pub fn build_test_level_4d(world: &mut World) {
+    insert_wall(world,build_cube_4d(1.0).with_pos(&Vec4::new(3., 0., 0.,0.)));
+    let build_shape: BuildFaceShape<Vec4>= BuildFaceShape::new(ShapeBuilder::<Vec3>::build_cube(2.0))
+        .with_texture(
+            draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4,4]),
+            draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3,4]}
+        );
+    build_test_walls(&build_shape, world)
 }
 pub fn build_shapes_3d(world : &mut World) {
     //build_lvl_1_3d(world);
@@ -74,7 +123,8 @@ pub fn build_shapes_3d(world : &mut World) {
     init_cursor_3d(world);
 }
 pub fn build_shapes_4d(world : &mut World) {
-    build_lvl_1_4d(world);
+    //build_lvl_1_4d(world);
+    build_test_level_4d(world);
     init_player(world, Vec4::zero());
     init_cursor_4d(world);
     

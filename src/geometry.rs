@@ -1,8 +1,8 @@
 pub mod buildfloor;
 pub mod shape;
-
+pub mod transform;
 pub use shape::{Shape,Face};
-
+pub use transform::{Transformable,Transform};
 use std::fmt;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,is_close};
 

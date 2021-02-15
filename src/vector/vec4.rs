@@ -115,6 +115,7 @@ impl VectorTrait for Vec4 {
 	fn project(&self) -> Self::SubV {
 		Self::SubV::new(self[0],self[1],self[2])
 	}
+	fn unproject(v: Self::SubV) -> Self { Self::new(v[0],v[1],v[2],0.0)}
     fn cross_product<I : std::iter::Iterator<Item=Self>>(mut vecs_iter : I) -> Self {
         let a = vecs_iter.next().expect("No vecs given to 4d cross product");
         let b = vecs_iter.next().expect("1 vec given to 4d cross product");

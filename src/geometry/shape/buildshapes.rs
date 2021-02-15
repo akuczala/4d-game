@@ -2,7 +2,7 @@ use itertools::Itertools;
 use crate::vector::{VectorTrait,MatrixTrait,VecIndex};
 use crate::vector::{Vec2,Vec3,Vec4,barycenter};
 //use crate::vec2::Vec2;
-use super::{Shape,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
+use super::{Shape,SingleFace,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
 use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
@@ -35,24 +35,16 @@ impl ShapeBuilder<Vec4> {
 	}
 }
 
-pub fn build_test_face() -> Shape<Vec3> {
-	type v = Vec3;
-	let shape = Shape::new(
-		vec![
-			v::new(-1.0,-1.0, 0.0),
-			v::new(-1.0, 1.0, 0.0),
-			v::new(1.0, 1.0, 0.0),
-			v::new(1.0, -1.0, 0.0)],
-		vec![Edge(0,1),Edge(1,2),Edge(2,3),Edge(3,0)],
-		vec![
-			Face::new(vec![0,1,2,3], v::one_hot(-1))
-				.with_texture(
-				Texture::make_tile_texture(&vec![0.8],&vec![4,4]),
-				TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]}
-				)
-			]
+pub fn convex_shape_to_face_shape<V: VectorTrait>(convex_shape: Shape<V::SubV>) -> (Shape<V>, SingleFace<V>) {
+	let face = Face::new(
+		convex_shape.edges.iter().enumerate().map(|(i,_)| i).collect(),
+		V::one_hot(-1)
 	);
-	shape
+	let verts = convex_shape.verts.iter().map(|&v| V::unproject(v)).collect();
+	let shape = Shape::new(verts, convex_shape.edges, vec![face]);
+	let subface_vertis = convex_shape.faces.iter().map(|face| face.vertis.clone()).collect();
+	let single_face = SingleFace::new(&shape, &subface_vertis);
+	(shape, single_face)
 }
 
 pub fn build_prism_2d(r : Field, n : VertIndex) -> Shape<Vec2> {
@@ -140,6 +132,7 @@ pub fn remove_faces<V : VectorTrait>(shape : Shape<V>, faceis : Vec<FaceIndex>) 
 	Shape::new(verts,edges,new_faces)
 }
 use itertools::multizip;
+use crate::geometry::shape::ShapeType;
 
 //builds 4d duoprism
 //n_circ points is a length two list of # points around each perp circle
@@ -305,7 +298,7 @@ pub fn cubeidor_4d() -> Vec<Shape<Vec4>> {
 
 pub fn tube_test_3d() -> Vec<Shape<Vec3>> {
 	//buildshapes::cubeidor_3d()
-    let mut tube = build_long_cube_3d(4.0,1.0).with_pos(&Vec3::new(0.5, 0.0, 0.0));
+    let tube = build_long_cube_3d(4.0,1.0).with_pos(&Vec3::new(0.5, 0.0, 0.0));
     let mut tube2 = tube.clone().with_pos(&Vec3::new(3.0, 0.0, 2.5));
 
     //let mut tube = buildshapes::invert_normals(&tube);

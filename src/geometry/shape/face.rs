@@ -37,8 +37,8 @@ impl<V : VectorTrait> Face<V> {
             threshold : 0.0,
 
             //change texture to reference
-            texture : Texture::DefaultLines{color : WHITE},
-            texture_mapping : TextureMapping{frame_vertis : Vec::new(), origin_verti : 0}, //this is pretty sloppy
+            texture : Default::default(),
+            texture_mapping : Default::default(),
             visible: true,
 
             edgeis : edgeis,
@@ -68,9 +68,12 @@ impl<V : VectorTrait> Face<V> {
     pub fn set_color(&mut self, color : Color) {
         take_mut::take(&mut self.texture,|tex| tex.set_color(color));
     }
-    pub fn with_texture(mut self, texture: Texture<V::SubV>, texture_mapping: TextureMapping) -> Self {
+    pub fn set_texture(&mut self, texture: Texture<V::SubV>, texture_mapping: TextureMapping) {
         self.texture = texture;
         self.texture_mapping = texture_mapping;
+    }
+    pub fn with_texture(mut self, texture: Texture<V::SubV>, texture_mapping: TextureMapping) -> Self {
+        self.set_texture(texture, texture_mapping);
         self
     }
 

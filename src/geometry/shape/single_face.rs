@@ -13,6 +13,9 @@ impl<V: VectorTrait> SubFace<V> {
             plane: Self::calc_plane(vertis, shape_verts, face_normal),
         }
     }
+    pub fn update(&mut self, shape_verts: &Vec<V>, face_normal: V) {
+        self.plane = Self::calc_plane(&self.vertis, shape_verts, face_normal)
+    }
     fn calc_plane(vertis: &Vec<VertIndex>, shape_verts: &Vec<V>, face_normal: V) -> Plane<V> {
         // take D-1 vertices of the subface, then subtract one of these from the others to get
         // D-2 vectors parallel to the subface
@@ -41,6 +44,11 @@ impl<V: VectorTrait> SingleFace<V>{
                     |vertis| SubFace::new(vertis, &shape.verts, shape.faces[0].normal)
                 ).collect()
             )
+        }
+    }
+    pub fn update(&mut self, shape: &Shape<V>) {
+        for subface in self.subfaces.0.iter_mut() {
+            subface.update(&shape.verts, shape.faces[0].normal)
         }
     }
     fn calc_boundary(&self, subface: &SubFace<V>, origin: V, verts: &Vec<V>, face_center: V) -> Plane<V> {

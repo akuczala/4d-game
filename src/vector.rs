@@ -77,6 +77,7 @@ pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
         Self::M::id()[i]
     }
     fn project(&self) -> Self::SubV;
+    fn unproject(v: Self::SubV) -> Self;
     fn linterp(v1: Self, v2: Self,x : Field) -> Self {
         v1*(1.-x) + v2*x
     }
@@ -124,7 +125,7 @@ pub trait MatrixTrait<V : VectorTrait>: Display + Copy + Sync + Send + 'static +
 pub trait Translatable<V : VectorTrait> {
     fn get_pos(&self) -> V;
     fn set_pos(&mut self, new_pos : V);
-    fn set_pos_into(mut self, new_pos : V) -> Self
+    fn with_pos(mut self, new_pos : V) -> Self
     where Self: std::marker::Sized  {
         self.set_pos(new_pos);
         self

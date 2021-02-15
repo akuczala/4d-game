@@ -7,7 +7,7 @@ pub mod buildshapes;
 use crate::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex};
-use crate::geometry::{Line,Plane,line_plane_intersect};
+use super::{Line,Plane,line_plane_intersect,Transform,Transformable};
 pub use face::Face;
 pub use convex::Convex; pub use single_face::SingleFace;
 
@@ -108,7 +108,7 @@ impl <V : VectorTrait> Shape<V> {
         }
      out_points
     }
-    pub fn transform(&mut self) {
+    pub fn update(&mut self) {
         for (v,vr) in self.verts.iter_mut().zip(self.verts_ref.iter()) {
             *v = self.frame * (*vr * self.scale) + self.pos;
         }
@@ -117,9 +117,6 @@ impl <V : VectorTrait> Shape<V> {
             face.center = self.frame * face.center_ref + self.pos;
             face.threshold = face.normal.dot(face.center);
         }
-    }
-    pub fn update(&mut self) {
-        self.transform();
     }
     pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) {
         let rot_mat = vector::rotation_matrix(self.frame[axis1],self.frame[axis2],Some(angle));
@@ -174,6 +171,14 @@ impl <V : VectorTrait> Shape<V> {
     }
     pub fn calc_radius(verts : &Vec<V>) -> Field {
         verts.iter().map(|v| v.norm_sq()).fold(0. / 0., Field::max).sqrt()
+    }
+}
+impl<V: VectorTrait> Transformable<V> for Shape<V> {
+    fn transform(mut self, transformation: Transform<V>) -> Self {
+        self.pos = transformation.pos;
+        self.frame = self.frame.dot(transformation.frame);
+        self.update();
+        self
     }
 }
 

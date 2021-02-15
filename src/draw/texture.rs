@@ -14,7 +14,9 @@ pub enum Texture<V : VectorTrait> {
 	Lines{lines : Vec<Line<V>>, color : Color},
 	DrawLines(Vec<DrawLine<V>>),
 }
-
+impl<V: VectorTrait> Default for Texture<V> {
+	fn default() -> Self { Self::DefaultLines{color : WHITE} }
+}
 impl<V: VectorTrait> Texture<V> {
 	pub fn set_color(self, color : Color) -> Self {
 		match self {
@@ -80,6 +82,9 @@ impl<V: VectorTrait> Texture<V> {
 pub struct TextureMapping {
 	pub frame_vertis : Vec<VertIndex>,
 	pub origin_verti : VertIndex
+}
+impl Default for TextureMapping {
+	fn default() -> Self { Self{frame_vertis : Vec::new(), origin_verti : 0} } //this is pretty sloppy
 }
 impl TextureMapping {
 	pub fn draw<V : VectorTrait>(&self, face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>
