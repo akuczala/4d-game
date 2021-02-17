@@ -70,6 +70,10 @@ impl<V: VectorTrait> BuildFaceShape<V> {
     }
 }
 impl<V: VectorTrait> Transformable<V> for BuildFaceShape<V> {
+    fn set_identity(mut self) -> Self {
+        self.transformation = Transform::identity();
+        self
+    }
     fn transform(mut self, transformation: Transform<V>) -> Self {
         self.transformation = self.transformation.transform(transformation);
         self
@@ -81,35 +85,35 @@ fn build_test_walls<V: VectorTrait>(build_shape: &BuildFaceShape<V>, world: &mut
     let cos = theta.cos();
     let sin = theta.sin();
     build_shape.clone()
-        .with_pos(V::one_hot(-1)*(-1.0 - cos) + V::one_hot(1)*(sin - 1.0))
+        .with_translation(V::one_hot(-1)*(-1.0 - cos) + V::one_hot(1)*(sin - 1.0))
         .with_rotation(-1, 1, PI/2.0 - theta)
         .with_color(RED)
         .build(world);
     build_shape.clone()
-        .with_pos(V::one_hot(-1)*1.0)
+        .with_translation(V::one_hot(-1)*1.0)
         .with_rotation(0,-1,PI)
         .with_color(GREEN)
         .build(world);
     build_shape.clone()
-        .with_pos(V::one_hot(0)*1.0)
+        .with_translation(V::one_hot(0)*1.0)
         .with_rotation(0,-1,PI/2.)
         .with_color(ORANGE)
         .build(world);
     build_shape.clone()
-        .with_pos(-V::one_hot(0)*1.0)
+        .with_translation(-V::one_hot(0)*1.0)
         .with_rotation(0,-1,3.0*PI/2.)
         .with_color(CYAN)
         .build(world);
     let floor = build_shape.clone()
-        .with_pos(-V::one_hot(1)*1.0)
+        .with_translation(-V::one_hot(1)*1.0)
         .with_rotation(-1,1,PI/2.)
         .with_color(BLUE);
     floor.clone()
-        .with_pos(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(2.0 + 2.0*cos))
+        .with_translation(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(2.0 + 2.0*cos))
         .build(world);
     floor.build(world);
     build_shape.clone()
-        .with_pos(V::one_hot(1)*1.0)
+        .with_translation(V::one_hot(1)*1.0)
         .with_rotation(-1,1,-PI/2.)
         .with_color(YELLOW)
         .build(world);

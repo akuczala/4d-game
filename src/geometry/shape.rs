@@ -174,6 +174,12 @@ impl <V : VectorTrait> Shape<V> {
     }
 }
 impl<V: VectorTrait> Transformable<V> for Shape<V> {
+    fn set_identity(mut self) -> Self {
+        self.pos = V::zero();
+        self.frame = self.ref_frame;
+        self.scale = 1.0;
+        self
+    }
     fn transform(mut self, transformation: Transform<V>) -> Self {
         self.pos = transformation.pos;
         self.frame = self.frame.dot(transformation.frame);

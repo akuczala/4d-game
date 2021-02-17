@@ -4,10 +4,16 @@ use crate::vector::{VectorTrait,MatrixTrait,VecIndex,Field,rotation_matrix};
 use super::Face;
 
 pub trait Transformable<V: VectorTrait> {
+    fn set_identity(self) -> Self;
     fn transform(self, transformation: Transform<V>) -> Self;
-    fn with_pos(self, pos: V) -> Self
-    where Self: std::marker::Sized {
-        self.transform(Transform::identity().with_pos(pos))
+    // fn with_pos(self, pos: V) -> Self
+    // where Self: std::marker::Sized {
+    //     self.set_identity().with_translation(pos)
+    // }
+    fn with_translation(mut self, pos: V) -> Self
+        where Self: std::marker::Sized {
+
+        self.transform(Transform::identity().with_translation(pos))
     }
     fn with_rotation(mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) -> Self
         where Self: std::marker::Sized {
@@ -36,9 +42,6 @@ impl<V: VectorTrait> Transform<V> {
     pub fn set_pos(&mut self, pos: V) {
         self.pos = pos;
     }
-    pub fn with_translation(mut self, dpos: V) -> Self {
-        self.translate(dpos); self
-    }
     pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) {
         let rot_mat = rotation_matrix(self.frame[axis1], self.frame[axis2], Some(angle));
         self.frame = self.frame.dot(rot_mat);
@@ -48,6 +51,9 @@ impl<V: VectorTrait> Transform<V> {
     }
 }
 impl<V: VectorTrait> Transformable<V> for Transform<V> {
+    fn set_identity(mut self) -> Self {
+        Self::identity()
+    }
     fn transform(mut self, transformation: Transform<V>) -> Self {
         let other = transformation;
         self.pos = self.pos + other.pos;
@@ -55,9 +61,8 @@ impl<V: VectorTrait> Transformable<V> for Transform<V> {
         self.scale = self.scale * other.scale;
         self
     }
-    fn with_pos(mut self, pos: V) -> Self {
-        self.set_pos(pos);
-        self
+    fn with_translation(mut self, dpos: V) -> Self {
+        self.translate(dpos); self
     }
     fn with_rotation(mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) -> Self {
         self.rotate(axis1, axis2, angle); self
