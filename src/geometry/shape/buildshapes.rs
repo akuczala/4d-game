@@ -133,6 +133,7 @@ pub fn remove_faces<V : VectorTrait>(shape : Shape<V>, faceis : Vec<FaceIndex>) 
 }
 use itertools::multizip;
 use crate::geometry::shape::ShapeType;
+use crate::geometry::Transform;
 
 //builds 4d duoprism
 //n_circ points is a length two list of # points around each perp circle
@@ -165,9 +166,6 @@ pub fn build_duoprism_4d(
 		    v
 		})
 		.collect();
-	// for v in &verts {
-	// 	println!("{}",v)
-	// }
 
 	//we need m loops of length n and n loops of length m
 	let edges_1 = iproduct!((0..ns[0]),0..ns[1])
@@ -181,10 +179,6 @@ pub fn build_duoprism_4d(
 			j+((i+1)%ns[0])*ns[1])
 		);
 	let edges : Vec<Edge>= edges_1.chain(edges_2).collect();
-
-	// for edge in &edges {
-	// 	println!("{}",edge)
-	// }
 
 	fn make_normal(
 		edgeis : &Vec<EdgeIndex>,
@@ -259,79 +253,13 @@ pub fn color_cube< V: VectorTrait>(mut cube : Shape<V>) -> Shape<V> {
     }
     cube
 }
-pub fn build_axes_cubes_4d() -> Vec<Shape<Vec4>> {
-    let mut shapes : Vec<Shape<Vec4>> = Vec::new();
-
-    for i in (0..4).into_iter() {
-        for sign in vec![-1.0,1.0] {
-            let cube = build_cube_4d(1.0)
-                .with_pos(&(<Vec4 as VectorTrait>::M::id()[i]*sign*3.0));
-            shapes.push(color_cube(cube));
-        }
-    }
-    shapes
-}
-
-pub fn cubeidor_3d() -> Vec<Shape<Vec3>> {
-	let mut shapes : Vec<Shape<Vec3>> = Vec::new();
-
-    for (i, sign, z) in iproduct!((0..2).into_iter(),vec![-1.0,1.0],(0..4)) {
-    	let pos = <Vec3 as VectorTrait>::M::id()[i]*sign*1.0 + <Vec3 as VectorTrait>::one_hot(-1)*(z as Field);
-            let cube = build_cube_3d(1.0)
-                .with_pos(&pos);
-            shapes.push(color_cube(cube));
-    }
-    shapes
-}
-pub fn cubeidor_4d() -> Vec<Shape<Vec4>> {
-	let mut shapes : Vec<Shape<Vec4>> = Vec::new();
-
-    for (i, sign, z) in iproduct!((0..3).into_iter(),vec![-1.0,1.0],(0..4)) {
-    	let pos = <Vec4 as VectorTrait>::M::id()[i]*sign*1.0
-    		+ <Vec4 as VectorTrait>::one_hot(-1)*1.0*(z as Field);
-            let cube = build_cube_4d(1.0)
-                .with_pos(&pos);
-            shapes.push(color_cube(cube));
-    }
-    shapes
-}
-
-pub fn tube_test_3d() -> Vec<Shape<Vec3>> {
-	//buildshapes::cubeidor_3d()
-    let tube = build_long_cube_3d(4.0,1.0).with_pos(&Vec3::new(0.5, 0.0, 0.0));
-    let mut tube2 = tube.clone().with_pos(&Vec3::new(3.0, 0.0, 2.5));
-
-    //let mut tube = buildshapes::invert_normals(&tube);
-    //let mut tube2 = buildshapes::invert_normals(&tube2);
-    tube2.rotate(0,-1,PI/2.0);
-
-    let cube = build_cube_3d(1.0).with_pos(&Vec3::new(0.5, 0.0, 2.5));
-    //let cube = buildshapes::invert_normals(&cube);
-
-    let tube = tube.with_color(RED);
-    let tube2 = tube2.with_color(GREEN);
-    vec![tube,tube2,cube]
-}
-pub fn test_3d() -> Vec<Shape<Vec3>> {
-	let mut cube = build_cube_3d(1.0);
-    let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW];
-    for (face, color) in cube.faces.iter_mut().zip(face_colors) {
-        face.texture = Texture::DefaultLines{color};
-    }
-    let cylinder = build_prism_3d(1.0,1.0,8)
-        .with_pos(&Vec3::new(2.0, 0.0, 0.0));;
-
-    let prism = build_prism_3d(1.0,1.0,3)
-        .with_pos(&Vec3::new(0.0, 0.0, 3.0));
-    vec![cube,cylinder,prism]
-}
 
 pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	let mut new_shape = shape.clone();
 	for face in &mut new_shape.faces {
 		face.normal_ref = -face.normal_ref;
 	}
-	new_shape.update();
+	new_shape.update(&Transform::identity());
 	new_shape
 }
 

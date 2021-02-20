@@ -68,7 +68,7 @@ impl <V : VectorTrait> Shape<V> {
             radius,
             //transparent: false
             };
-            shape.update();
+            shape.update(&Transform::identity());
             shape
     }
 
@@ -107,8 +107,8 @@ impl <V : VectorTrait> Shape<V> {
             *v = transformation.transform_vec(vr);
         }
         for face in &mut self.faces {
-            face.normal = *transformation.frame * face.normal_ref;
-            face.center = transformation.transform_vec(face.center_ref);
+            face.normal = transformation.frame * face.normal_ref;
+            face.center = transformation.transform_vec(&face.center_ref);
             face.threshold = face.normal.dot(face.center);
         }
     }
@@ -127,7 +127,7 @@ impl <V : VectorTrait> Shape<V> {
     }
     new_shape.radius = Shape::calc_radius(&new_verts);
     new_shape.verts_ref = new_verts;
-    new_shape.update();
+    new_shape.update(&Transform::identity());
     new_shape
 }
     pub fn update_visibility(&mut self, camera_pos : V, transparent : bool) {
@@ -156,9 +156,7 @@ impl<V: VectorTrait> Transformable<V> for Shape<V> {
         self
     }
     fn transform(&mut self, transformation: Transform<V>) {
-        self.pos = transformation.pos;
-        self.frame = self.frame.dot(transformation.frame);
-        self.update();
+        self.update(&transformation);
     }
 }
 

@@ -33,15 +33,27 @@ pub fn insert_coin<V : VectorTrait>(world : &mut World, shape : Shape<V>) {
         .build();
 }
 #[derive(Clone)]
-struct BuildFaceShape<V: VectorTrait> {
-    sub_shape: Shape<V::SubV>,
+struct BuildShape<V: VectorTrait> {
+    shape: Shape<V>,
+    shape_type: ShapeType<V>,
     transformation: Transform<V>,
     texture_info: (draw::Texture<V::SubV>, draw::TextureMapping),
 }
-impl<V: VectorTrait> BuildFaceShape<V> {
-    pub fn new(sub_shape: Shape<V::SubV>) -> Self {
+impl<V: VectorTrait> BuildShape<V> {
+    pub fn new_face_shape(sub_shape: Shape<V::SubV>) -> Self {
+        let (mut shape, mut single_face) = buildshapes::convex_shape_to_face_shape(sub_shape);
         Self{
-            sub_shape,
+            shape,
+            shape_type: ShapeType::SingleFace(single_face),
+            transformation: Transform::identity(),
+            texture_info: Default::default(),
+        }
+    }
+    pub fn new_convex_shape(shape: Shape<V>) -> Self {
+        let convex = Convex::new(&shape);
+        Self{
+            shape,
+            shape_type: ShapeType::Convex(convex),
             transformation: Transform::identity(),
             texture_info: Default::default(),
         }
@@ -54,22 +66,24 @@ impl<V: VectorTrait> BuildFaceShape<V> {
         self.texture_info.0 = self.texture_info.0.set_color(color);
         self
     }
-    pub fn build(self, world: &mut World) {
-        let Self{sub_shape, transformation, texture_info} = self;
-        let (mut shape, mut single_face) = buildshapes::convex_shape_to_face_shape(sub_shape);
+    pub fn build(self, world: &mut World) -> EntityBuilder {
+        let Self{mut shape, mut shape_type, transformation, texture_info} = self;
         shape = shape.with_transform(transformation);
-        shape.faces[0].set_texture(texture_info.0, texture_info.1);
-        single_face.update(&shape);
+        for face in shape.faces.iter_mut() {
+            face.set_texture(texture_info.0.clone(), texture_info.1.clone());
+        }
+        match shape_type {
+            ShapeType::SingleFace(single_face) => {single_face.update(&shape)},
+            _ => (),
+        }
         world.create_entity()
             .with(shape.calc_bbox())
-            .with(ShapeType::SingleFace(single_face))
+            .with(shape_type)
             .with(shape)
             .with(ShapeClipState::<V>::default())
-            .with(StaticCollider)
-            .build();
     }
 }
-impl<V: VectorTrait> Transformable<V> for BuildFaceShape<V> {
+impl<V: VectorTrait> Transformable<V> for BuildShape<V> {
     fn set_identity(mut self) -> Self {
         self.transformation = Transform::identity();
         self
@@ -79,7 +93,7 @@ impl<V: VectorTrait> Transformable<V> for BuildFaceShape<V> {
     }
 }
 
-fn build_test_walls<V: VectorTrait>(build_shape: &BuildFaceShape<V>, world: &mut World) {
+fn build_test_walls<V: VectorTrait>(build_shape: &BuildShape<V>, world: &mut World) {
     let theta = (PI/6.0);
     let cos = theta.cos();
     let sin = theta.sin();
@@ -87,39 +101,39 @@ fn build_test_walls<V: VectorTrait>(build_shape: &BuildFaceShape<V>, world: &mut
         .with_translation(V::one_hot(-1)*(-1.0 - cos) + V::one_hot(1)*(sin - 1.0))
         .with_rotation(-1, 1, PI/2.0 - theta)
         .with_color(RED)
-        .build(world);
+        .build(world).build();
     build_shape.clone()
         .with_translation(V::one_hot(-1)*1.0)
         .with_rotation(0,-1,PI)
         .with_color(GREEN)
-        .build(world);
+        .build(world).build();
     build_shape.clone()
         .with_translation(V::one_hot(0)*1.0)
         .with_rotation(0,-1,PI/2.)
         .with_color(ORANGE)
-        .build(world);
+        .build(world).build();
     build_shape.clone()
         .with_translation(-V::one_hot(0)*1.0)
         .with_rotation(0,-1,3.0*PI/2.)
         .with_color(CYAN)
-        .build(world);
+        .build(world).build();
     let floor = build_shape.clone()
         .with_translation(-V::one_hot(1)*1.0)
         .with_rotation(-1,1,PI/2.)
         .with_color(BLUE);
     floor.clone()
         .with_translation(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(2.0 + 2.0*cos))
-        .build(world);
+        .build(world).build();
     floor.build(world);
     build_shape.clone()
         .with_translation(V::one_hot(1)*1.0)
         .with_rotation(-1,1,-PI/2.)
         .with_color(YELLOW)
-        .build(world);
+        .build(world).build();
 }
 pub fn build_test_level_3d(world: &mut World) {
     insert_wall(world,build_cube_3d(1.0).with_pos(&Vec3::new(3., 0., 0.)));
-    let build_shape: BuildFaceShape<Vec3>= BuildFaceShape::new(ShapeBuilder::<Vec2>::build_cube(2.0))
+    let build_shape: BuildShape<Vec3>= BuildShape::new(ShapeBuilder::<Vec2>::build_cube(2.0))
         .with_texture(
             draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4]),
             draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]}
@@ -128,7 +142,7 @@ pub fn build_test_level_3d(world: &mut World) {
 }
 pub fn build_test_level_4d(world: &mut World) {
     insert_wall(world,build_cube_4d(1.0).with_pos(&Vec4::new(3., 0., 0.,0.)));
-    let build_shape: BuildFaceShape<Vec4>= BuildFaceShape::new(ShapeBuilder::<Vec3>::build_cube(2.0))
+    let build_shape: BuildShape<Vec4>= BuildShape::new(ShapeBuilder::<Vec3>::build_cube(2.0))
         .with_texture(
             draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4,4]),
             draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3,4]}

@@ -11,10 +11,17 @@ pub trait Transformable<V: VectorTrait> {
         self.transform(transformation);
         self
     }
+    // fn with_set_transform(mut self, transformation: Transform<V>) -> Self
+    //     where Self: std::marker::Sized {
+    //     self.set_transform(transformation);
+    //     self
+    // }
     // fn with_pos(self, pos: V) -> Self
     // where Self: std::marker::Sized {
     //     self.set_identity().with_translation(pos)
     // }
+    //fn set_transform(&mut self, transform: Transform<V>);
+    //fn set_pos(&mut self, pos: V);
     fn transform(&mut self, transformation: Transform<V>);
     fn with_translation(mut self, pos: V) -> Self
         where Self: std::marker::Sized {
@@ -49,15 +56,20 @@ impl<V: VectorTrait> Transform<V> {
         new.pos = pos;
         new
     }
-    pub fn set_pos(&mut self, pos: V) {
-        self.pos = pos;
-    }
     pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) {
         let rot_mat = rotation_matrix(self.frame[axis1], self.frame[axis2], Some(angle));
         self.frame = self.frame.dot(rot_mat);
     }
     pub fn transform_vec(&self, vec: &V) -> V {
         self.frame * (*vec * self.scale) + self.pos
+    }
+    pub fn set_transform(&mut self, transform: Transform<V>) {
+        self.pos = transform.pos;
+        self.frame = transform.frame;
+        self.scale = transform.scale;
+    }
+    pub fn set_pos(&mut self, pos: V) {
+        self.pos = pos;
     }
 }
 impl<V: VectorTrait> Transformable<V> for Transform<V> {
