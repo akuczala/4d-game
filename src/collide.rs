@@ -1,12 +1,11 @@
 use crate::cleanup::DeletedEntities;
 use crate::coin::Coin;
 use crate::input::Input;
-use crate::camera::Camera;
 use crate::player::Player;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
 use crate::geometry::Shape;
-use crate::vector::{VectorTrait,Field,Translatable};
-use crate::components::{ShapeType,Convex};
+use crate::vector::{VectorTrait,Field};
+use crate::components::{ShapeType,Convex,Transform,Transformable};
 use specs::prelude::*;
 use specs::{Component};
 use std::marker::PhantomData;
@@ -42,18 +41,31 @@ impl<V : VectorTrait> Default for MoveNext<V> {
 		Self{next_dpos : None, can_move : None}
 	}
 }
+impl<V: VectorTrait> Transformable<V> for MoveNext<V> {
+	fn set_identity(mut self) -> Self {
+		self.next_dpos = Some(V::zero());
+		self
+	}
+	fn transform(mut self, transform: Transform<V>) -> Self {
+		self.next_dpos = match self.next_dpos {
+			Some(v) => Some(v + transform.pos),
+			None => Some(V::zero())
+		};
+		self
+	}
+}
 //print entities in the same cell as the player's bbox
 pub struct MovePlayerSystem<V>(pub PhantomData<V>);
 
 impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 
-	type SystemData = (ReadExpect<'a,Player>, WriteStorage<'a,MoveNext<V>>, WriteStorage<'a,Camera<V>>);
+	type SystemData = (ReadExpect<'a,Player>, WriteStorage<'a,MoveNext<V>>, WriteStorage<'a,Transform<V>>);
 
-	fn run(&mut self, (player, mut write_move_next, mut camera) : Self::SystemData) {
+	fn run(&mut self, (player, mut write_move_next, mut transform) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap(); 
 		match move_next {
 			MoveNext{next_dpos : Some(next_dpos), can_move : Some(true)} => {
-				camera.get_mut(player.0).unwrap().translate(*next_dpos);
+				*transform = transform.get_mut(player.0).unwrap().with_translation(*next_dpos);
 			},
 			_ => (),
 		};
@@ -92,7 +104,7 @@ impl<V: VectorTrait> HasBBox<V> for Shape<V> {
 
 
 pub fn create_spatial_hash<V : VectorTrait>(world : &mut World) {
-	//add bbox entities and intialize spatial hash set
+	//add bbox entities and initialize spatial hash set
     let (mut max, mut min) = (V::zero(), V::zero());
     let mut max_lengths = V::zero();
     for bbox in (&world.read_component::<BBox<V>>()).join() {
@@ -144,10 +156,10 @@ fn get_bbox_cells<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet<V,Ent
 pub struct UpdatePlayerBBox<V>(pub PhantomData<V>);
 
 impl<'a, V : VectorTrait> System<'a> for UpdatePlayerBBox<V> {
-	type SystemData = (ReadExpect<'a,Player>,WriteStorage<'a,BBox<V>>,ReadStorage<'a,Camera<V>>);
+	type SystemData = (ReadExpect<'a,Player>,WriteStorage<'a,BBox<V>>,ReadStorage<'a,Transform<V>>);
 
-	fn run(&mut self, (player, mut write_bbox, camera) : Self::SystemData) {
-		let pos = camera.get(player.0).unwrap().pos;
+	fn run(&mut self, (player, mut write_bbox, transform) : Self::SystemData) {
+		let pos = transform.get(player.0).unwrap().pos;
 		let mut bbox = write_bbox.get_mut(player.0).unwrap();
 		bbox.min = pos - V::constant(0.2);
 		bbox.max = pos + V::constant(-0.2);
@@ -161,19 +173,19 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 	type SystemData = (
 		ReadExpect<'a,Input>,
 		ReadExpect<'a,Player>,
-		ReadStorage<'a,Camera<V>>,
+		ReadStorage<'a,Transform<V>>,
 		ReadStorage<'a,Shape<V>>,
 		ReadStorage<'a,ShapeType<V>>,
 		ReadStorage<'a,BBox<V>>,
 		ReadExpect<'a,SpatialHashSet<V,Entity>>
 	);
 
-	fn run(&mut self, (input, player, camera, shapes, shape_types, bbox, hash) : Self::SystemData) {
+	fn run(&mut self, (input, player, transform, shapes, shape_types, bbox, hash) : Self::SystemData) {
 		use glium::glutin::event::VirtualKeyCode as VKC;
 		if input.helper.key_released(VKC::Space) {
 			//let mut out_string = "Entities: ".to_string();
 			let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
-			let player_pos = camera.get(player.0).unwrap().pos;
+			let player_pos = transform.get(player.0).unwrap().pos;
 			if entities_in_bbox.iter().any(
 				|&e| match shape_types.get(e).unwrap() {
 					ShapeType::Convex(convex) => Convex::point_within(player_pos,0.1, &shapes.get(e).unwrap().faces),
@@ -215,7 +227,7 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 
 	type SystemData = (
 		ReadExpect<'a,Player>,
-		ReadStorage<'a,Camera<V>>,
+		ReadStorage<'a,Transform<V>>,
 		WriteStorage<'a,MoveNext<V>>,
 		ReadStorage<'a,Shape<V>>,
 		ReadStorage<'a,ShapeType<V>>,
@@ -223,11 +235,11 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 		ReadStorage<'a,InPlayerCell>
 	);
 
-	fn run(&mut self, (player, camera, mut write_move_next, shape, shape_types, static_collider, in_cell) : Self::SystemData) {
+	fn run(&mut self, (player, transform, mut write_move_next, shape, shape_types, static_collider, in_cell) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap();
 		match move_next {
 			MoveNext{next_dpos : Some(_next_dpos), can_move : Some(true)} => {
-				let pos = camera.get(player.0).unwrap().pos;
+				let pos = transform.get(player.0).unwrap().pos;
 				for (shape, shape_type, _, _) in (&shape, &shape_types, &static_collider, &in_cell).join() {
 
 					let next_dpos = move_next.next_dpos.unwrap();

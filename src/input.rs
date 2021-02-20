@@ -10,11 +10,8 @@ use specs::prelude::*;
 
 use std::time::Duration;
 
-use crate::camera::Camera;
 use crate::vector::{VectorTrait,Field,VecIndex};
-use crate::geometry::Shape;
-use crate::clipping::ClipState;
-use crate::collide::MoveNext;
+use crate::components::{ClipState, Shape, Camera, MoveNext, Transform,Transformable};
 
 //use crate::game::Game;
 
@@ -69,9 +66,9 @@ impl Input {
 
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
-    type SystemData = (Write<'a,Input>,WriteStorage<'a,Camera<V>>,WriteStorage<'a,MoveNext<V>>,ReadExpect<'a,Player>);
-    fn run(&mut self, (mut input, mut camera, mut move_next, player) : Self::SystemData) {
-        update_camera(&mut input, &mut camera.get_mut(player.0).unwrap(), move_next.get_mut(player.0).unwrap());
+    type SystemData = (Write<'a,Input>,WriteStorage<'a,Transform<V>>,WriteStorage<'a,Camera<V>>,WriteStorage<'a,MoveNext<V>>,ReadExpect<'a,Player>);
+    fn run(&mut self, (mut input, mut transform, mut camera, mut move_next, player) : Self::SystemData) {
+        update_camera(&mut input, &mut transform, &mut camera.get_mut(player.0).unwrap(), move_next.get_mut(player.0).unwrap());
     }
 }
 
@@ -86,8 +83,10 @@ const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
 
 const MOUSE_SENSITIVITY : Field = 0.2;
 const MOUSE_STICK_POINT : [f32 ; 2] = [100.,100.];
-pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
+pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<V>, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
 {
+    //clear movement
+    *move_next = MoveNext{ next_dpos: None, can_move: Some(true) };
     //limit max dt
     let dt = input.get_dt();
 
@@ -96,31 +95,21 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     //mouse
     match input.movement_mode {
         MovementMode::Mouse => {
-            // let mouse_pos = input.helper.mouse();
-            // let (mx, my) = match mouse_pos {
-            //     Some((x,y)) => (x-100.,y-100.),
-            //     None => (0.,0.)
-
-            // };
-            //x mouse movement
-            //let (dmx, dmy) = input.helper.mouse_diff();
             let (dmx, dmy) = input.mouse_dpos;
             if dmx.abs() != 0. {
                 if input.helper.held_shift() {
-                    camera.turn(0,2, dmx*dt*MOUSE_SENSITIVITY);
+                    camera.turn(transform,0,2, dmx*dt*MOUSE_SENSITIVITY);
                 } else {
-                    camera.turn(0,-1,dmx*dt*MOUSE_SENSITIVITY);
+                    camera.turn(transform,0,-1,dmx*dt*MOUSE_SENSITIVITY);
                 }
-                
-                //camera.spin(0,-1,mx*dt*MOUSE_SENSITIVITY);
                 any_slide_turn = true;
             }
             //y mouse movement
             if dmy.abs() != 0. {
 
                 match (V::DIM, input.helper.held_shift()) {
-                    (3, _) | (4, true) => camera.tilt(1,-1,-dmy*dt*MOUSE_SENSITIVITY),
-                    (4, false) => camera.turn(2,-1,-dmy*dt*MOUSE_SENSITIVITY),
+                    (3, _) | (4, true) => camera.tilt(transform,1,-1,-dmy*dt*MOUSE_SENSITIVITY),
+                    (4, false) => camera.turn(transform,2,-1,-dmy*dt*MOUSE_SENSITIVITY),
                     (_, _) => panic!("Invalid dimension"),
                 };
                 //camera.spin(axis,-1,-my*dt*MOUSE_SENSITIVITY);
@@ -132,20 +121,17 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
 
     //keyboard
 
-    //fowards + backwards
+    //forwards + backwards
     if input.helper.key_held(VKC::W) {
-        *move_next = MoveNext{
-            next_dpos : Some(camera.get_slide_dpos(camera.heading[-1],dt)),
-            can_move : Some(true)
-        };
-        //camera.slide(camera.heading,dt);
+        *move_next = move_next.with_translation(
+            camera.get_slide_dpos(camera.heading[-1],dt)
+        );
         input.update = true;
     }
     if input.helper.key_held(VKC::S) {
-        *move_next = MoveNext{
-            next_dpos : Some(camera.get_slide_dpos(-camera.heading[-1],dt)),
-            can_move : Some(true)
-        };
+        *move_next = move_next.with_translation(
+            camera.get_slide_dpos(-camera.heading[-1],dt)
+        );
         input.update = true;
     }
 
@@ -161,25 +147,21 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
             any_slide_turn = true;
             //sliding
             if input.helper.held_alt() ^ match input.movement_mode {MovementMode::Mouse => true, _ => false} {
-                *move_next = MoveNext{
-                    next_dpos : Some(camera.get_slide_dpos(camera.heading[axis]*movement_sign,dt)),
-                    can_move : Some(true)
-                };
-                //camera.slide(camera.frame[axis]*movement_sign,dt)
+                *move_next = move_next.with_translation(
+                    camera.get_slide_dpos(camera.heading[axis]*movement_sign,dt)
+                );
             //rotations
             } else { 
                 //special case : (0,2) rotation
                 if V::DIM == 4 && input.helper.held_shift() && axis == 2 {
-                    camera.spin(0,2,movement_sign*dt)
+                    camera.spin(transform,0,2,movement_sign*dt)
                 //turning: rotation along (axis,-1)
                 } else {
                     if axis == 1 {
-                        camera.tilt(axis,-1,movement_sign*dt);
+                        camera.tilt(transform,axis,-1,movement_sign*dt);
                     } else {
-                        camera.turn(axis,-1,movement_sign*dt);
+                        camera.turn(transform,axis,-1,movement_sign*dt);
                     }
-                    
-                    //camera.spin(axis,-1,movement_sign*dt)
                 }
                 
             }
@@ -188,7 +170,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, camera : &mut Camera<V
     }
     //spin unless turning or sliding
     if V::DIM == 4 && any_slide_turn == false {
-        camera.spin(0,2,0.05*dt);
+        camera.spin(transform,0,2,0.05*dt);
     }
     //         //reset orientation
     //         if !input.pressed.space {

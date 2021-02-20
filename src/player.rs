@@ -11,9 +11,11 @@ use crate::collide::BBox;
 
 pub struct Player(pub Entity); //specifies entity of player
 
-pub fn build_player<V : VectorTrait>(world : &mut World, camera : Camera<V>) {
+pub fn build_player<V : VectorTrait>(world : &mut World, transform: &Transform<V>) {
+	let camera = Camera::new(&transform);
 	let player_entity = world.create_entity()
-	    .with(BBox{min : V::ones()*(-0.1) + camera.pos, max : V::ones()*(0.1) + camera.pos})
+		.with(transform.clone(s))
+	    .with(BBox{min : V::ones()*(-0.1) + transform.pos, max : V::ones()*(0.1) + transform.pos})
 	    .with(camera) //decompose
 	    .with(MoveNext::<V>::default())
 	    .with(MaybeTarget::<V>(None))
@@ -28,11 +30,11 @@ const MAX_TARGET_DIST : Field = 10.;
 pub struct ShapeTargetingSystem<V :VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for ShapeTargetingSystem<V> {
-	type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,Camera<V>>,ReadStorage<'a,Shape<V>>,ReadStorage<'a,ShapeClipState<V>>,Entities<'a>,WriteStorage<'a,MaybeTarget<V>>);
+	type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,Transform<V>>,ReadStorage<'a,Shape<V>>,ReadStorage<'a,ShapeClipState<V>>,Entities<'a>,WriteStorage<'a,MaybeTarget<V>>);
 
-	fn run(&mut self, (player, cameras, shapes, shape_clip_state, entities, mut targets) : Self::SystemData) {
-		let camera = cameras.get(player.0).expect("Player has no camera");
-		let target = shape_targeting(&camera,(&shapes,&shape_clip_state,&*entities).join()); //filter by shapes having a clip state
+	fn run(&mut self, (player, transforms, shapes, shape_clip_state, entities, mut targets) : Self::SystemData) {
+		let transform = transforms.get(player.0).expect("Player has no transform");
+		let target = shape_targeting(&transform,(&shapes,&shape_clip_state,&*entities).join()); //filter by shapes having a clip state
 		*targets.get_mut(player.0).expect("Player has no target") = target;
 		
 
@@ -54,9 +56,9 @@ pub struct Target<V : VectorTrait> {
 
 }
 
-fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>,&'a ShapeClipState<V>,Entity)>>(camera : &Camera<V>, iter : I) -> MaybeTarget<V> {
-	let pos = camera.pos;
-	let dir = camera.frame[-1];
+fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>,&'a ShapeClipState<V>,Entity)>>(transform : &Transform<V>, iter : I) -> MaybeTarget<V> {
+	let pos = transform.pos;
+	let dir = transform.frame[-1];
 	let ray = Line(pos, pos + dir*MAX_TARGET_DIST);
 
 	//loop through all shapes and check for nearest intersection

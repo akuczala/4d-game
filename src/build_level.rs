@@ -245,8 +245,8 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     
 }
 pub fn init_player<V: VectorTrait>(world: &mut World, pos: V) {
-    let camera = Camera::new(pos);
-    crate::player::build_player(world, camera);
+    let transform = Transform::identity().with_translation(pos);
+    crate::player::build_player(world, &transform);
 
 }
 pub fn init_cursor_3d(world: &mut World) {
