@@ -75,20 +75,22 @@ where V : VectorTrait
 	}
 	v.project()*focal/z
 }
-fn view_transform<V>(camera : &Camera<V>, point : V) -> V
+fn view_transform<V>(transform : &Transform<V>, point : V) -> V
 where V : VectorTrait
 {
-	camera.frame * (point - camera.pos)
+	transform.frame * (point - transform.pos)
 }
 //this takes a Option<Line> and returns Option<Line>
-pub fn transform_line<V>(line : Option<Line<V>>, camera : &Camera<V>) -> Option<Line<V::SubV>>
+//can likely remove camera here by calculating the plane from the transform, unless you want the
+//camera's plane to differ from its position/heading
+pub fn transform_line<V>(line : Option<Line<V>>, transform : &Transform<V>, camera: &Camera<V>) -> Option<Line<V::SubV>>
 where V : VectorTrait
 {
 	let clipped_line = match line {Some(l) => clip_line_plane(l,&camera.plane,Z_NEAR), None => None};
 
 	let view_line = clipped_line
 		.map(|l| l
-		.map(|v| view_transform(&camera,v)));
+		.map(|v| view_transform(transform,v)));
 	let proj_line = view_line
 		.map(|l| l
 		.map(project));
@@ -112,12 +114,17 @@ impl<V : VectorTrait> DrawLineList<V> {
 //would be nicer to move lines out of read_in_lines rather than clone them
 pub struct TransformDrawLinesSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
-    type SystemData = (ReadExpect<'a,DrawLineList<V>>,WriteExpect<'a,DrawLineList<V::SubV>>,ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
+    type SystemData = (
+		ReadExpect<'a,DrawLineList<V>>,
+		WriteExpect<'a,DrawLineList<V::SubV>>,
+		ReadStorage<'a,Camera<V>>,
+		ReadStorage<'a,Transform<V>>,
+		ReadExpect<'a,Player>);
 
-    fn run(&mut self, (read_in_lines, mut write_out_lines, camera, player) : Self::SystemData) {
+    fn run(&mut self, (read_in_lines, mut write_out_lines, camera, transform, player) : Self::SystemData) {
     	//write new vec of draw lines to DrawLineList
     	write_out_lines.0 = read_in_lines.0.iter()
-    	.map(|line| transform_draw_line(line.clone(),&camera.get(player.0).unwrap()))
+    	.map(|line| transform_draw_line(line.clone(),&transform.get(player.0).unwrap(), &camera.get(player.0).unwrap()))
     	.collect();
 
     }
@@ -128,10 +135,11 @@ impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
 //would probably benefit from something monad-like
 pub fn transform_draw_line<V : VectorTrait>(
 	option_draw_line : Option<DrawLine<V>>,
+	transform: &Transform<V>,
 	camera : &Camera<V>) -> Option<DrawLine<V::SubV>> {
 	match option_draw_line {
 			Some(draw_line) => {
-				let transformed_line = transform_line(Some(draw_line.line),&camera);
+				let transformed_line = transform_line(Some(draw_line.line),&transform,&camera);
 				match transformed_line {
 					Some(line) => Some(DrawLine{line, color : draw_line.color}),
 					None => None
@@ -184,16 +192,16 @@ impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 		WriteStorage<'a,Shape<V>>,
 		WriteStorage<'a,ShapeClipState<V>>,
 		ReadStorage<'a,ShapeType<V>>,
-		ReadStorage<'a,Camera<V>>,
+		ReadStorage<'a,Transform<V>>,
 		ReadExpect<'a,Player>,
 		ReadExpect<'a,ClipState<V>>
 	);
 
-	fn run(&mut self, (mut shapes, mut shape_clip_states, shape_types, camera, player, clip_state) : Self::SystemData) {
+	fn run(&mut self, (mut shapes, mut shape_clip_states, shape_types, transform, player, clip_state) : Self::SystemData) {
 
 		for (shape,shape_clip_state, shape_type) in (&mut shapes, &mut shape_clip_states, &shape_types).join() {
 
-			update_shape_visibility(&camera.get(player.0).unwrap(), shape, shape_clip_state, shape_type, &clip_state)
+			update_shape_visibility(transform.get(player.0).unwrap().pos, shape, shape_clip_state, shape_type, &clip_state)
 		}
 	}
 
@@ -201,19 +209,19 @@ impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 
 //updates clipping boundaries and face visibility based on normals
 pub fn update_shape_visibility<V : VectorTrait>(
-	camera: &Camera<V>,
+	camera_pos: V,
 	shape: &mut Shape<V>,
 	shape_clip_state : &mut ShapeClipState<V>,
 	shape_type: &ShapeType<V>,
 	clip_state: &ClipState<V>
 	) {
 	//update shape visibility and boundaries
-	shape.update_visibility(camera.pos,shape_clip_state.transparent);
+	shape.update_visibility(camera_pos,shape_clip_state.transparent);
 	//calculate boundaries for clipping
 	if clip_state.clipping_enabled {
 		shape_clip_state.boundaries = match shape_type {
-			ShapeType::Convex(convex) => convex.calc_boundaries(camera.pos, &shape.faces),
-			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(camera.pos, &shape.verts, shape.faces[0].center),
+			ShapeType::Convex(convex) => convex.calc_boundaries(camera_pos, &shape.faces),
+			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(camera_pos, &shape.verts, shape.faces[0].center),
 		};
 	}
 

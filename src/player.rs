@@ -14,7 +14,7 @@ pub struct Player(pub Entity); //specifies entity of player
 pub fn build_player<V : VectorTrait>(world : &mut World, transform: &Transform<V>) {
 	let camera = Camera::new(&transform);
 	let player_entity = world.create_entity()
-		.with(transform.clone(s))
+		.with(transform.clone())
 	    .with(BBox{min : V::ones()*(-0.1) + transform.pos, max : V::ones()*(0.1) + transform.pos})
 	    .with(camera) //decompose
 	    .with(MoveNext::<V>::default())

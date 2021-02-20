@@ -16,8 +16,9 @@ impl<'a, V : VectorTrait> System<'a> for PlayerGravitySystem<V> {
     );
 
     fn run(&mut self, (input, mut write_move_next) : Self::SystemData) {
+        return ();
         for move_next in (&mut write_move_next).join() {
-            let gvec = -V::one_hot(1)*input.get_dt();
+            let gvec = -V::one_hot(-1)*input.get_dt();
             match move_next {
                 MoveNext{next_dpos: Some(next_dpos), can_move: Some(true)} => {
                     move_next.next_dpos = Some(*next_dpos + gvec);

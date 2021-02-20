@@ -180,11 +180,10 @@ impl<V: VectorTrait> Transformable<V> for Shape<V> {
         self.scale = 1.0;
         self
     }
-    fn transform(mut self, transformation: Transform<V>) -> Self {
+    fn transform(&mut self, transformation: Transform<V>) {
         self.pos = transformation.pos;
         self.frame = self.frame.dot(transformation.frame);
         self.update();
-        self
     }
 }
 

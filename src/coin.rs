@@ -1,8 +1,8 @@
 use crate::player::Player;
-use crate::camera::Camera;
 use crate::collide::InPlayerCell;
 use crate::cleanup::DeletedEntities;
 use crate::vector::{VectorTrait,Field};
+use crate::components::{Transform};
 use core::marker::PhantomData;
 use crate::geometry::{Shape};
 use crate::input::Input;
@@ -35,11 +35,11 @@ impl <'a,V : VectorTrait> System<'a> for CoinSpinningSystem<V> {
 
 pub struct PlayerCoinCollisionSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a, V : VectorTrait> System<'a> for PlayerCoinCollisionSystem<V> {
-	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Camera<V>>,
+	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Transform<V>>,
 		ReadStorage<'a,Coin>,ReadStorage<'a,InPlayerCell>, ReadStorage<'a,Shape<V>>,Entities<'a>,Write<'a,DeletedEntities>, Write<'a, CoinsCollected>);
 
-	fn run(&mut self, (player, camera, coin, in_cell, shapes, entities, mut deleted, mut coins_collect) : Self::SystemData) {
-		let pos = camera.get(player.0).unwrap().pos;
+	fn run(&mut self, (player, transform, coin, in_cell, shapes, entities, mut deleted, mut coins_collect) : Self::SystemData) {
+		let pos = transform.get(player.0).unwrap().pos;
 
 		for (_, _, shape, e) in (&coin, &in_cell, &shapes, &entities).join() {
 			//collect the coin if close enough

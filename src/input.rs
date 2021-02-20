@@ -67,8 +67,12 @@ impl Input {
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
     type SystemData = (Write<'a,Input>,WriteStorage<'a,Transform<V>>,WriteStorage<'a,Camera<V>>,WriteStorage<'a,MoveNext<V>>,ReadExpect<'a,Player>);
-    fn run(&mut self, (mut input, mut transform, mut camera, mut move_next, player) : Self::SystemData) {
-        update_camera(&mut input, &mut transform, &mut camera.get_mut(player.0).unwrap(), move_next.get_mut(player.0).unwrap());
+    fn run(&mut self, (mut input, mut transforms, mut cameras, mut move_nexts, player) : Self::SystemData) {
+        update_camera(&mut input,
+                      &mut transforms.get_mut(player.0).unwrap(),
+                      &mut cameras.get_mut(player.0).unwrap(),
+                      &mut move_nexts.get_mut(player.0).unwrap()
+        );
     }
 }
 
@@ -123,13 +127,13 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transf
 
     //forwards + backwards
     if input.helper.key_held(VKC::W) {
-        *move_next = move_next.with_translation(
+        move_next.translate(
             camera.get_slide_dpos(camera.heading[-1],dt)
         );
         input.update = true;
     }
     if input.helper.key_held(VKC::S) {
-        *move_next = move_next.with_translation(
+        move_next.translate(
             camera.get_slide_dpos(-camera.heading[-1],dt)
         );
         input.update = true;
@@ -147,7 +151,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transf
             any_slide_turn = true;
             //sliding
             if input.helper.held_alt() ^ match input.movement_mode {MovementMode::Mouse => true, _ => false} {
-                *move_next = move_next.with_translation(
+                move_next.translate(
                     camera.get_slide_dpos(camera.heading[axis]*movement_sign,dt)
                 );
             //rotations

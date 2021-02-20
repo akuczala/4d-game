@@ -57,7 +57,7 @@ impl<V: VectorTrait> BuildFaceShape<V> {
     pub fn build(self, world: &mut World) {
         let Self{sub_shape, transformation, texture_info} = self;
         let (mut shape, mut single_face) = buildshapes::convex_shape_to_face_shape(sub_shape);
-        shape = shape.transform(transformation);
+        shape = shape.with_transform(transformation);
         shape.faces[0].set_texture(texture_info.0, texture_info.1);
         single_face.update(&shape);
         world.create_entity()
@@ -74,9 +74,8 @@ impl<V: VectorTrait> Transformable<V> for BuildFaceShape<V> {
         self.transformation = Transform::identity();
         self
     }
-    fn transform(mut self, transformation: Transform<V>) -> Self {
-        self.transformation = self.transformation.transform(transformation);
-        self
+    fn transform(&mut self, transformation: Transform<V>) {
+        self.transformation = self.transformation.with_transform(transformation);
     }
 }
 

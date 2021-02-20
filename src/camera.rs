@@ -30,7 +30,7 @@ where V : VectorTrait
 		}
 	}
 	pub fn look_at(&mut self, transform: &mut Transform<V>, point : &V) {
-		transform.frame = rotation_matrix(*point - self.pos, V::one_hot(-1), None);
+		transform.frame = rotation_matrix(*point - transform.pos, V::one_hot(-1), None);
 		self.update(&transform);
 	}
 	pub fn slide(&mut self,  transform: &mut Transform<V>, direction : V, time : Field) {
@@ -41,7 +41,7 @@ where V : VectorTrait
 		direction.normalize()*Self::SPEED*time
 	}
 	pub fn spin(&mut self, transform: &mut Transform<V>, axis1 : VecIndex, axis2 : VecIndex, speed_mult : Field) {
-		let rot = rotation_matrix(self.frame[axis1],self.frame[axis2],Some(speed_mult*Self::ANG_SPEED));
+		let rot = rotation_matrix(transform.frame[axis1],transform.frame[axis2],Some(speed_mult*Self::ANG_SPEED));
 		transform.frame = transform.frame.dot(rot);
 		self.heading = self.heading.dot(rot);
 		self.update(&transform);
@@ -68,7 +68,7 @@ where V : VectorTrait
 		}
 		
 	}
-	pub fn update_plane(&mut self, transform: &transform) {
+	pub fn update_plane(&mut self, transform: &Transform<V>) {
 		self.plane = Plane{
 			normal : transform.frame[-1],
 			threshold : transform.frame[-1].dot(transform.pos)

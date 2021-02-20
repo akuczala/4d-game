@@ -46,12 +46,11 @@ impl<V: VectorTrait> Transformable<V> for MoveNext<V> {
 		self.next_dpos = Some(V::zero());
 		self
 	}
-	fn transform(mut self, transform: Transform<V>) -> Self {
+	fn transform(&mut self, transform: Transform<V>) {
 		self.next_dpos = match self.next_dpos {
 			Some(v) => Some(v + transform.pos),
-			None => Some(V::zero())
+			None => Some(transform.pos)
 		};
-		self
 	}
 }
 //print entities in the same cell as the player's bbox
@@ -61,11 +60,12 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 
 	type SystemData = (ReadExpect<'a,Player>, WriteStorage<'a,MoveNext<V>>, WriteStorage<'a,Transform<V>>);
 
-	fn run(&mut self, (player, mut write_move_next, mut transform) : Self::SystemData) {
-		let move_next = write_move_next.get_mut(player.0).unwrap(); 
+	fn run(&mut self, (player, mut write_move_next, mut transforms) : Self::SystemData) {
+		let move_next = write_move_next.get_mut(player.0).unwrap();
+		let transform = transforms.get_mut(player.0).unwrap();
 		match move_next {
 			MoveNext{next_dpos : Some(next_dpos), can_move : Some(true)} => {
-				*transform = transform.get_mut(player.0).unwrap().with_translation(*next_dpos);
+				*transform = transform.with_translation(*next_dpos);
 			},
 			_ => (),
 		};

@@ -1,8 +1,9 @@
 use std::collections::{HashSet,HashMap};
 use crate::player::Player;
 use crate::vector::{VectorTrait,Field};
-use crate::geometry::{Line,Plane,shape::{Shape}};
+use crate::geometry::{Line,Plane};
 use crate::draw::DrawLine;
+use crate::components::{Transform,Transformable,Shape,};
 
 use specs::prelude::*;
 use specs::{Component,VecStorage};
@@ -57,10 +58,10 @@ impl<V : VectorTrait> ClipState<V> {
 pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
     type SystemData = (ReadStorage<'a,Shape<V>>,WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
-        ReadStorage<'a,Camera<V>>,ReadExpect<'a,Player>);
+        ReadStorage<'a,Transform<V>>,ReadExpect<'a,Player>);
 
-    fn run(&mut self, (shape_data,mut shape_clip_state,entities,camera,player) : Self::SystemData) {
-        calc_in_front(&shape_data,&mut shape_clip_state,&entities,&camera.get(player.0).unwrap().pos);
+    fn run(&mut self, (shape_data,mut shape_clip_state,entities,transform,player) : Self::SystemData) {
+        calc_in_front(&shape_data,&mut shape_clip_state,&entities,&transform.get(player.0).unwrap().pos);
     }
 }
 

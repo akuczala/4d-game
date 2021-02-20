@@ -25,6 +25,7 @@ use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait,Field};
 use crate::fps::FPSFloat;
 
 use crate::systems::*;
+use crate::components::{Transform,Transformable};
 
 
 pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
@@ -98,7 +99,12 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         
         let clip_state = ClipState::<V>::new();
         let draw_lines = draw::DrawLineList::<V>(vec![]);
-        let proj_lines = draw_lines.map(|l| draw::transform_draw_line(l,&Camera::new(V::zero()))); // <-- dummy camera
+        let proj_lines = draw_lines.map(
+            |l| draw::transform_draw_line(
+                l,&Transform::identity(),
+                &Camera::new(&Transform::identity()) // <-- dummy camera
+            )
+        );
          //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
         let cur_lines_length = draw_lines.len();
         let face_scales : Vec<crate::vector::Field> = vec![0.9];
