@@ -3,13 +3,25 @@ use crate::player::Player;
 use crate::vector::{VectorTrait,Field};
 use crate::geometry::{Line,Plane};
 use crate::draw::DrawLine;
-use crate::components::{Transform,Transformable,Shape,};
+use crate::components::{Transform,Transformable,Shape};
 
 use specs::prelude::*;
 use specs::{Component,VecStorage};
 use std::marker::PhantomData;
 
 use crate::camera::Camera;
+
+#[derive(Component)]
+#[storage(VecStorage)]
+pub struct BBall<V: VectorTrait> {
+    pub pos: V, pub radius: Field,
+}
+impl<V: VectorTrait> BBall<V> {
+    pub fn new(verts: &Vec<V>, pos: V) -> Self {
+        let radius = verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt();
+        Self{pos,radius}
+    }
+}
 
 pub struct ClipState<V : VectorTrait> {
     //pub in_front : Vec<Vec<bool>>,
@@ -57,11 +69,16 @@ impl<V : VectorTrait> ClipState<V> {
 
 pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
-    type SystemData = (ReadStorage<'a,Shape<V>>,WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
-        ReadStorage<'a,Transform<V>>,ReadExpect<'a,Player>);
+    type SystemData = (
+        ReadStorage<'a,Shape<V>>,
+        ReadStorage<'a,BBall<V>>,
+        WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
+        ReadStorage<'a,Transform<V>>,
+        ReadExpect<'a,Player>
+    );
 
-    fn run(&mut self, (shape_data,mut shape_clip_state,entities,transform,player) : Self::SystemData) {
-        calc_in_front(&shape_data,&mut shape_clip_state,&entities,&transform.get(player.0).unwrap().pos);
+    fn run(&mut self, (shape_data, bball_data, mut shape_clip_state,entities,transform,player) : Self::SystemData) {
+        calc_in_front(&shape_data, &bball_data,&mut shape_clip_state,&entities,&transform.get(player.0).unwrap().pos);
     }
 }
 
@@ -72,6 +89,7 @@ impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
 //but for now, every shape has a ShapeClipState.
 pub fn calc_in_front<V : VectorTrait>(
         read_shapes : & ReadStorage<Shape<V>>,
+        read_bballs: &ReadStorage<BBall<V>>,
         shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
         entities : &Entities,
         origin : &V,
@@ -79,11 +97,11 @@ pub fn calc_in_front<V : VectorTrait>(
     //collect a vec of references to shapes
     //let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
     //loop over unique pairs
-    for (shape1, e1) in (read_shapes,&*entities).join() {
-        for (shape2, e2) in (read_shapes,&*entities).join().filter(|(_sh,e)| *e > e1) {
+    for (shape1, bball1, e1) in (read_shapes, read_bballs, &*entities).join() {
+        for (shape2, bball2, e2) in (read_shapes, read_bballs, &*entities).join().filter(|(_sh,_bb,e)| *e > e1) {
             calc_in_front_pair(
-                InFrontArg{shape : &shape1, entity : e1},
-                InFrontArg{shape : &shape2, entity : e2},
+                InFrontArg{shape : &shape1, bball: &bball1, entity : e1},
+                InFrontArg{shape : &shape2, bball: &bball2, entity : e2},
                 shape_clip_states,
                 origin
                 )
@@ -193,17 +211,18 @@ impl<V : VectorTrait> ShapeClipState<V> {
         self.separators.remove(e);
     }
 }
-
+#[derive(Clone,Copy)]
 pub struct InFrontArg<'a, V : VectorTrait>{
     shape : &'a Shape<V>,
-    //clip_state : &'a mut ShapeClipState<V>,
+    bball: &'a BBall<V>,
     entity : Entity,
 }
+
 pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontArg<'a,V>,
     shape_clip_states : &mut WriteStorage<ShapeClipState<V>>, origin : &V) {
 
     //try dynamic separation
-    let mut sep_state = dynamic_separate(a.shape,b.shape,origin);
+    let mut sep_state = dynamic_separate(a.bball,b.bball,origin);
     let is_unknown = match sep_state {
         Separation::Unknown => true,
         _ => false
@@ -218,7 +237,7 @@ pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontAr
         let sep = match maybe_sep {
             Some(s) => *s,
             None => {
-                let s = separate_between_centers(&a.shape,&b.shape);
+                let s = separate_between_centers(a,b);
                 a_clip_state.separators.insert(b.entity, s);
                 s
             }
@@ -481,19 +500,19 @@ impl<V : VectorTrait> Separator<V> {
 //another function basically copied from
 //John McIntosh (urticator.net)
 pub fn dynamic_separate<V : VectorTrait>(
-    shape1 : &Shape<V>,
-    shape2 : &Shape<V>,
+    bball1 : &BBall<V>,
+    bball2 : &BBall<V>,
     origin: &V) -> Separation {
-    let normal = *shape1.get_pos() - *shape2.get_pos();
+    let normal = bball1.pos - bball2.pos;
     let d = normal.norm();
-    let (r1,r2) = (shape1.radius,shape2.radius);
+    let (r1,r2) = (bball1.radius,bball2.radius);
     if d <= r1 + r2 {
         return Separation::Unknown
     }
 
     let ratio = r1/(r1+r2);
     let dist1 = d*ratio;
-    let reg1 = *shape1.get_pos() - normal*ratio;
+    let reg1 = bball1.pos - normal*ratio;
     let reg1 = *origin - reg1;
 
     let adj = reg1.dot(normal)/d;
@@ -519,14 +538,14 @@ pub fn dynamic_separate<V : VectorTrait>(
 
 
 pub fn normal_separate<V : VectorTrait>(
-    shape1 : &Shape<V>, shape2 : &Shape<V>, normal : &V
+    in_front1: InFrontArg<V>, in_front2 : InFrontArg<V>, normal : &V
 ) -> Separator<V> {
     const OVERLAP : Field = 1e-6;
 
-    let nmin1 = shape1.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
-    let nmax1 = shape1.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
-    let nmin2 = shape2.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
-    let nmax2 = shape2.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
+    let nmin1 = in_front1.shape.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
+    let nmax1 = in_front1.shape.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
+    let nmin2 = in_front2.shape.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::min);
+    let nmax2 = in_front2.shape.verts.iter().map(|v| v.dot(*normal)).fold(0./0., Field::max);
 
     if nmin2 - nmax1 >= -OVERLAP {
         return Separator::Normal{
@@ -547,13 +566,13 @@ pub fn normal_separate<V : VectorTrait>(
     return Separator::Unknown
 }
 pub fn separate_between_centers<V : VectorTrait>(
-    shape1 : &Shape<V>, shape2 : &Shape<V>
+    in_front1: InFrontArg<V>, in_front2 : InFrontArg<V>
     ) -> Separator<V>
 {
-    let normal = *shape2.get_pos() - *shape1.get_pos();
+    let normal = in_front2.bball.pos - in_front1.bball.pos;
     const EPSILON : Field = 1e-6;
     if normal.dot(normal) > EPSILON {
-        normal_separate(shape1, shape2, &normal)
+        normal_separate(in_front1, in_front2, &normal)
     } else {
         Separator::Unknown
     }
@@ -572,13 +591,13 @@ pub fn print_in_front(in_front : &Vec<Vec<bool>>) {
     }
     println!("");
 }
-pub fn test_dyn_separate<V : VectorTrait>(shapes : &Vec<Shape<V>>, origin : &V) {
+pub fn test_dyn_separate<V : VectorTrait>(bballs: &Vec<BBall<V>>, origin : &V) {
     use colored::*;
-    for (i,s1) in shapes.iter().enumerate() {
+    for (i,bball1) in bballs.iter().enumerate() {
         println!("");
-        for (j,s2) in shapes.iter().enumerate() {
+        for (j, bball2) in bballs.iter().enumerate() {
             if i != j {
-                let sep = dynamic_separate(s1,s2,origin);
+                let sep = dynamic_separate(bball1,bball2,origin);
                 let symb = match sep {
                     Separation::NoFront => "_".black(),
                     Separation::Unknown => "U".purple(),

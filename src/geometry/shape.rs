@@ -14,7 +14,7 @@ pub use convex::Convex; pub use single_face::SingleFace;
 use specs::{Component, VecStorage};
 use std::fmt;
 
-#[derive(Component)]
+#[derive(Component,Clone)]
 #[storage(VecStorage)]
 pub enum ShapeType<V: VectorTrait> {
     Convex(convex::Convex),
@@ -41,7 +41,6 @@ pub struct Shape<V : VectorTrait> {
     pub edges : Vec<Edge>,
     pub faces : Vec<Face<V>>,
     ref_frame : V::M,
-    pub radius : Field,
 }
 
 impl <V : VectorTrait> Shape<V> {
@@ -58,18 +57,15 @@ impl <V : VectorTrait> Shape<V> {
             //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
             face.center = face.center_ref.clone();
         }
-        let radius = Shape::calc_radius(&verts);
         let mut shape = Shape{
             verts_ref : verts.clone(),
             verts,
             edges,
             faces,
             ref_frame : V::M::id(),
-            radius,
-            //transparent: false
-            };
-            shape.update(&Transform::identity());
-            shape
+        };
+        shape.update(&Transform::identity());
+        shape
     }
 
     //pub fn get_face_verts(&self, face : Face)
@@ -125,7 +121,6 @@ impl <V : VectorTrait> Shape<V> {
                 let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
         face.center_ref = vector::barycenter(&face_verts);
     }
-    new_shape.radius = Shape::calc_radius(&new_verts);
     new_shape.verts_ref = new_verts;
     new_shape.update(&Transform::identity());
     new_shape
@@ -145,9 +140,6 @@ impl <V : VectorTrait> Shape<V> {
             face.set_color(color);
         }
         self
-    }
-    pub fn calc_radius(verts : &Vec<V>) -> Field {
-        verts.iter().map(|v| v.norm_sq()).fold(0. / 0., Field::max).sqrt()
     }
 }
 impl<V: VectorTrait> Transformable<V> for Shape<V> {

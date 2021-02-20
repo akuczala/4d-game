@@ -203,7 +203,7 @@ fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
                 match ui_args {
                     UIArgs::Debug{ref frame_duration, ref debug_text} => {
                         ui.text(format!("FPS: {:0.0}",1./frame_duration));
-                        ui.text(debug_text);
+                        //ui.text(debug_text);
                     }
                     _ => (),
                 };

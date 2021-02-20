@@ -2,6 +2,7 @@ use crate::vector::{VectorTrait,Field,barycenter_iter,is_close};
 use crate::geometry::{Plane};
 use super::{VertIndex,Face,Shape};
 
+#[derive(Clone)]
 struct SubFace<V: VectorTrait>{
     vertis: Vec<VertIndex>, // list of vertis in each subface
     plane: Plane<V>
@@ -33,8 +34,10 @@ impl<V: VectorTrait> SubFace<V> {
         Plane::from_normal_and_point(normal, subface_center)
     }
 }
+#[derive(Clone)]
 struct SubFaces<V: VectorTrait>(Vec<SubFace<V>>);
 
+#[derive(Clone)]
 pub struct SingleFace<V: VectorTrait>{subfaces: SubFaces<V>}
 impl<V: VectorTrait> SingleFace<V>{
     pub fn new(shape: &Shape<V>, subface_vertis: &Vec<Vec<VertIndex>>) -> Self {

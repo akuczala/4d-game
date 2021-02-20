@@ -15,6 +15,7 @@ impl fmt::Display for SubFace {
     }
 }
 
+#[derive(Clone)]
 struct Subfaces(pub Vec<SubFace>);
 impl Subfaces {
     //find indices of (d-1) faces that are joined by a (d-2) edge
@@ -45,7 +46,7 @@ impl Subfaces {
         Subfaces(subfaces)
     }
 }
-
+#[derive(Clone)]
 pub struct Convex{
     subfaces: Subfaces,
 }
