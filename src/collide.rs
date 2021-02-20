@@ -5,7 +5,7 @@ use crate::player::Player;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
 use crate::geometry::Shape;
 use crate::vector::{VectorTrait,Field};
-use crate::components::{ShapeType,Convex,Transform,Transformable};
+use crate::components::{ShapeType,Convex,Transform,Transformable,Camera};
 use specs::prelude::*;
 use specs::{Component};
 use std::marker::PhantomData;
@@ -58,14 +58,21 @@ pub struct MovePlayerSystem<V>(pub PhantomData<V>);
 
 impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 
-	type SystemData = (ReadExpect<'a,Player>, WriteStorage<'a,MoveNext<V>>, WriteStorage<'a,Transform<V>>);
+	type SystemData = (
+		ReadExpect<'a,Player>,
+		WriteStorage<'a,MoveNext<V>>,
+		WriteStorage<'a,Transform<V>>,
+		WriteStorage<'a,Camera<V>>,
+	);
 
-	fn run(&mut self, (player, mut write_move_next, mut transforms) : Self::SystemData) {
+	fn run(&mut self, (player, mut write_move_next, mut transforms, mut cameras) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap();
 		let transform = transforms.get_mut(player.0).unwrap();
+		let camera = cameras.get_mut(player.0).unwrap();
 		match move_next {
 			MoveNext{next_dpos : Some(next_dpos), can_move : Some(true)} => {
 				*transform = transform.with_translation(*next_dpos);
+				camera.update(transform);
 			},
 			_ => (),
 		};
