@@ -1,10 +1,11 @@
 use std::marker::PhantomData;
 use specs::prelude::*;
 use specs::{System,SystemData,WriteStorage,Read,Component,VecStorage};
-use crate::vector::VectorTrait;
+use crate::vector::{VectorTrait, Field};
 use crate::components::MoveNext;
 use crate::input::Input;
 
+const GRAVITY_STRENGTH: Field = 4.0;
 #[derive(Component,Clone,Copy)]
 #[storage(VecStorage)]
 pub struct Velocity<V: VectorTrait>(pub V);
@@ -27,7 +28,7 @@ impl<'a, V : VectorTrait> System<'a> for PlayerGravitySystem<V> {
     fn run(&mut self, (input, mut write_move_next, mut write_velocity) : Self::SystemData) {
         for (move_next, velocity) in (&mut write_move_next, &mut write_velocity).join() {
             let dt = input.get_dt();
-            let gvec = -V::one_hot(1)*dt;
+            let gvec = -V::one_hot(1)*dt*GRAVITY_STRENGTH;
             velocity.0 = velocity.0 + gvec;
             match move_next {
                 MoveNext{next_dpos: Some(next_dpos), can_move: Some(true)} => {

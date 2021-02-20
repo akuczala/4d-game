@@ -37,6 +37,7 @@ pub struct Input {
     pub frame_duration : crate::fps::FPSFloat,
     pub mouse_dpos : (f32,f32),
     pub movement_mode : MovementMode,
+    pub jump: bool,
 }
 impl Default for Input {
     fn default() -> Self {
@@ -55,6 +56,7 @@ impl Input {
             frame_duration : crate::fps::TARGET_FPS,
             mouse_dpos : (0.,0.),
             movement_mode : MovementMode::Mouse,
+            jump: false,
         }
     }
 }
@@ -140,7 +142,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transf
         );
         input.update = true;
     }
-    if input.helper.key_held(VKC::V) {
+    if input.helper.key_held(VKC::S) {
         move_next.translate(
             camera.get_slide_dpos(-camera.heading[-1],dt)
         );
@@ -180,11 +182,12 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transf
         };
 
     }
-    //jumping //MOVE TO LISTEN_INPUTS
-    if input.helper.key_pressed(VKC::R) {
-        println!("Jump");
-        velocity.0 = V::one_hot(1)*1.0
+    //jumping
+    if input.jump {
+        velocity.0 = V::one_hot(1)*1.0;
+        input.jump = false;
     }
+
     //spin unless turning or sliding
     if V::DIM == 4 && any_slide_turn == false {
         camera.spin(transform,0,2,0.05*dt);
@@ -240,6 +243,10 @@ impl Input {
                 MovementMode::Mouse => MovementMode::Tank,
                 MovementMode::Tank => MovementMode::Mouse,
             }
+        }
+        if self.helper.key_released(VKC::Space) {
+            println!("Jump");
+            self.jump = true;
         }
     }
     // listing the events produced by application and waiting to be received
