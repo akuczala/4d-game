@@ -14,24 +14,24 @@ use crate::vector::{VectorTrait,Field};
 use crate::draw;
 use crate::collide::{StaticCollider,HasBBox};
 
-pub fn insert_wall<V : VectorTrait>(world : &mut World, shape_builder : BuildShape<V>) {
+pub fn insert_wall<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V>) {
     shape_builder.build(world)
         .with(StaticCollider)
         .build();
 }
-pub fn insert_coin<V : VectorTrait>(world : &mut World, shape_builder : BuildShape<V>) {
+pub fn insert_coin<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V>) {
     shape_builder.build(world)
         .with(Coin)
         .build();
 }
 #[derive(Clone)]
-pub struct BuildShape<V: VectorTrait> {
+pub struct ShapeEntityBuilder<V: VectorTrait> {
     shape: Shape<V>,
     shape_type: ShapeType<V>,
     transformation: Transform<V>,
     texture_info: Option<(draw::Texture<V::SubV>, draw::TextureMapping)>,
 }
-impl<V: VectorTrait> BuildShape<V> {
+impl<V: VectorTrait> ShapeEntityBuilder<V> {
     pub fn new_face_shape(sub_shape: Shape<V::SubV>) -> Self {
         let (shape, single_face) = buildshapes::convex_shape_to_face_shape(sub_shape);
         Self{
@@ -88,7 +88,7 @@ impl<V: VectorTrait> BuildShape<V> {
             .with(ShapeClipState::<V>::default())
     }
 }
-impl<V: VectorTrait> Transformable<V> for BuildShape<V> {
+impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V> {
     fn set_identity(mut self) -> Self {
         self.transformation = Transform::identity();
         self
@@ -98,7 +98,7 @@ impl<V: VectorTrait> Transformable<V> for BuildShape<V> {
     }
 }
 
-fn build_test_walls<V: VectorTrait>(build_shape: &BuildShape<V>, world: &mut World) {
+fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: &mut World) {
     let theta = (PI/6.0);
     let cos = theta.cos();
     let sin = theta.sin();
@@ -106,53 +106,75 @@ fn build_test_walls<V: VectorTrait>(build_shape: &BuildShape<V>, world: &mut Wor
         .with_translation(V::one_hot(-1)*(-1.0 - cos) + V::one_hot(1)*(sin - 1.0))
         .with_rotation(-1, 1, PI/2.0 - theta)
         .with_color(RED)
-        .build(world).build();
+        .build(world)
+        .with(StaticCollider).build();
     build_shape.clone()
         .with_translation(V::one_hot(-1)*1.0)
         .with_rotation(0,-1,PI)
         .with_color(GREEN)
-        .build(world).build();
+        .build(world).with(StaticCollider).build();
     build_shape.clone()
         .with_translation(V::one_hot(0)*1.0)
         .with_rotation(0,-1,PI/2.)
         .with_color(ORANGE)
-        .build(world).build();
+        .build(world).with(StaticCollider).build();
     build_shape.clone()
         .with_translation(-V::one_hot(0)*1.0)
         .with_rotation(0,-1,3.0*PI/2.)
         .with_color(CYAN)
-        .build(world).build();
+        .build(world).with(StaticCollider).build();
     let floor = build_shape.clone()
         .with_translation(-V::one_hot(1)*1.0)
         .with_rotation(-1,1,PI/2.)
         .with_color(BLUE);
     floor.clone()
         .with_translation(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(2.0 + 2.0*cos))
-        .build(world).build();
-    floor.build(world).build();
+        .build(world).with(StaticCollider).build();
+    floor.clone()
+        .with_translation(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(4.0 + 2.0*cos))
+        .with_color(MAGENTA)
+        .build(world).with(StaticCollider).build();
+    floor.build(world).with(StaticCollider).build();
     build_shape.clone()
         .with_translation(V::one_hot(1)*1.0)
         .with_rotation(-1,1,-PI/2.)
         .with_color(YELLOW)
-        .build(world).build();
+        .build(world).with(StaticCollider).build();
 }
-
+pub fn build_test_level_3d(world: &mut World) {
+    //insert_wall(world,build_cube_3d(1.0).with_pos(&Vec3::new(3., 0., 0.)));
+    let build_shape: ShapeEntityBuilder<Vec3>= ShapeEntityBuilder::new_face_shape(ShapeBuilder::<Vec2>::build_cube(2.0))
+        .with_texture(
+            draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4]),
+            draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]}
+        );
+    build_test_walls(&build_shape, world);
+}
+pub fn build_test_level_4d(world: &mut World) {
+    //insert_wall(world,build_cube_4d(1.0).with_pos(&Vec4::new(3., 0., 0.,0.)));
+    let build_shape: ShapeEntityBuilder<Vec4>= ShapeEntityBuilder::new_face_shape(ShapeBuilder::<Vec3>::build_cube(2.0))
+        .with_texture(
+            draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4,4]),
+            draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3,4]}
+        );
+    build_test_walls(&build_shape, world)
+}
 pub fn build_shapes_3d(world : &mut World) {
-    build_lvl_1_3d(world);
-    //build_test_level_3d(world);
+    //build_lvl_1_3d(world);
+    build_test_level_3d(world);
     //build_test_face(world);
     init_player(world, Vec3::zero());
     init_cursor_3d(world);
 }
 pub fn build_shapes_4d(world : &mut World) {
-    build_lvl_1_4d(world);
-    //build_test_level_4d(world);
+    //build_lvl_1_4d(world);
+    build_test_level_4d(world);
     init_player(world, Vec4::zero());
     init_cursor_4d(world);
     
 }
 
-pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<BuildShape<V>> {
+pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<ShapeEntityBuilder<V>> {
 
     pub fn apply_texture<V : VectorTrait>(shape : &mut Shape<V>) {
         for face in shape.faces.iter_mut() {
@@ -186,11 +208,11 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
         _ => panic!("Invalid dimension for build_corridor_cross")
     };
     
-    let mut shape_builders : Vec<BuildShape<V>> = Vec::new();
+    let mut shape_builders : Vec<ShapeEntityBuilder<V>> = Vec::new();
     //corridor walls
-    let mut walls1 : Vec<BuildShape<V>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
+    let mut walls1 : Vec<ShapeEntityBuilder<V>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
         .map(|(s1,s2,(ax1,ax2))|
-            BuildShape::new_convex_shape(cube.clone())
+            ShapeEntityBuilder::new_convex_shape(cube.clone())
             .with_translation(
                 V::one_hot(*ax1)*(*s1)*(corr_width+wall_length)/2.0
                 + V::one_hot(*ax2)*(*s2)*(corr_width+wall_length)/2.0
@@ -211,7 +233,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     
     let walls2 = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)|
-            BuildShape::new_convex_shape(cube.clone())
+            ShapeEntityBuilder::new_convex_shape(cube.clone())
                 .with_translation(V::one_hot(i)*(wall_length+corr_width)*(*sign))
                 .stretch(&(
                     V::one_hot(1)*(wall_height-corr_width) + V::ones()*corr_width
@@ -219,16 +241,16 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
                 );
     shape_builders.append(&mut walls2.collect());
     //floors and ceilings
-    let mut floors_long : Vec<BuildShape<V>> = iproduct!(axes.clone(),signs.iter())
+    let mut floors_long : Vec<ShapeEntityBuilder<V>> = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)|
-            BuildShape::new_convex_shape(cube.clone())
+            ShapeEntityBuilder::new_convex_shape(cube.clone())
                 .with_translation(V::one_hot(i)*(wall_length+corr_width)*(*sign)/2.0
                     - V::one_hot(1)*(wall_height + corr_width)/2.0
                     )
                 .stretch(&(V::one_hot(i)*(wall_length-corr_width) + V::ones()*corr_width
                     ))
                 ).collect();
-    let mut ceilings_long : Vec<BuildShape<V>> = floors_long.iter()
+    let mut ceilings_long : Vec<ShapeEntityBuilder<V>> = floors_long.iter()
         .map(|block| block.clone().with_translation(
             V::one_hot(1)*(wall_height+corr_width)
         ))
@@ -245,7 +267,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
     shape_builders.append(&mut ceilings_long);
     //center floor
     shape_builders.push(
-        BuildShape::new_convex_shape(cube.clone())
+        ShapeEntityBuilder::new_convex_shape(cube.clone())
             .with_translation(-V::one_hot(1)*(wall_height + corr_width)/2.0)
     );
     shape_builders
@@ -277,7 +299,7 @@ pub fn build_lvl_1_4d(world : &mut World) {
 
 pub fn build_lvl_1<V : VectorTrait>(world : &mut World, cube : Shape<V>, coin : Shape<V>) {
     let wall_length = 3.0;
-    let walls : Vec<BuildShape<V>> = build_corridor_cross(&color_cube(cube),wall_length);
+    let walls : Vec<ShapeEntityBuilder<V>> = build_corridor_cross(&color_cube(cube), wall_length);
 
     for wall in walls.into_iter() {
         insert_wall(world,wall)
@@ -286,7 +308,7 @@ pub fn build_lvl_1<V : VectorTrait>(world : &mut World, cube : Shape<V>, coin : 
     //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
     for (axis,dir) in iproduct!(match V::DIM {3 => vec![0,2], 4 => vec![0,2,3], _ => panic!("Invalid dimension")},vec![-1.,1.]) {
         insert_coin(world,
-                    BuildShape::new_convex_shape(coin.clone())
+                    ShapeEntityBuilder::new_convex_shape(coin.clone())
                 .with_translation(V::one_hot(axis)*dir*(wall_length - 0.5))
         );
     }
