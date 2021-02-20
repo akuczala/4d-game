@@ -5,7 +5,7 @@ use crate::player::Player;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
 use crate::geometry::Shape;
 use crate::vector::{VectorTrait,Field};
-use crate::components::{ShapeType,Convex,Transform,Transformable,Camera};
+use crate::components::{ShapeType,Convex,Transform,Transformable,Camera,Velocity};
 use specs::prelude::*;
 use specs::{Component};
 use std::marker::PhantomData;
@@ -235,6 +235,7 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 	type SystemData = (
 		ReadExpect<'a,Player>,
 		ReadStorage<'a,Transform<V>>,
+		WriteStorage<'a,Velocity<V>>,
 		WriteStorage<'a,MoveNext<V>>,
 		ReadStorage<'a,Shape<V>>,
 		ReadStorage<'a,ShapeType<V>>,
@@ -242,8 +243,9 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 		ReadStorage<'a,InPlayerCell>
 	);
 
-	fn run(&mut self, (player, transform, mut write_move_next, shape, shape_types, static_collider, in_cell) : Self::SystemData) {
+	fn run(&mut self, (player, transform, mut write_velocity, mut write_move_next, shape, shape_types, static_collider, in_cell) : Self::SystemData) {
 		let move_next = write_move_next.get_mut(player.0).unwrap();
+		let velocity = write_velocity.get_mut(player.0).unwrap();
 		match move_next {
 			MoveNext{next_dpos : Some(_next_dpos), can_move : Some(true)} => {
 				let pos = transform.get(player.0).unwrap().pos;
@@ -259,7 +261,8 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 						//push player away along normal of nearest face (projects out -normal)
 						//but i use abs here to guarantee the face always repels the player
 						let new_dpos = next_dpos + (normal)*(normal.dot(next_dpos).abs());
-
+						velocity.0 = velocity.0 + (normal)*(normal.dot(velocity.0).abs());
+						velocity.0 = V::one_hot(1)*velocity.0[1]; //kill all but vertical velocity
 						move_next.next_dpos = Some(new_dpos);
 						//println!("{}",normal);
 					}

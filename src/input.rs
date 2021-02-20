@@ -11,7 +11,7 @@ use specs::prelude::*;
 use std::time::Duration;
 
 use crate::vector::{VectorTrait,Field,VecIndex};
-use crate::components::{ClipState, Shape, Camera, MoveNext, Transform,Transformable};
+use crate::components::{ClipState, Shape, Camera, MoveNext, Transform,Transformable, Velocity};
 
 //use crate::game::Game;
 
@@ -66,10 +66,18 @@ impl Input {
 
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
-    type SystemData = (Write<'a,Input>,WriteStorage<'a,Transform<V>>,WriteStorage<'a,Camera<V>>,WriteStorage<'a,MoveNext<V>>,ReadExpect<'a,Player>);
-    fn run(&mut self, (mut input, mut transforms, mut cameras, mut move_nexts, player) : Self::SystemData) {
+    type SystemData = (
+        Write<'a,Input>,
+        WriteStorage<'a,Transform<V>>,
+        WriteStorage<'a,Velocity<V>>,
+        WriteStorage<'a,Camera<V>>,
+        WriteStorage<'a,MoveNext<V>>,
+        ReadExpect<'a,Player>
+    );
+    fn run(&mut self, (mut input, mut transforms, mut write_velocity, mut cameras, mut move_nexts, player) : Self::SystemData) {
         update_camera(&mut input,
                       &mut transforms.get_mut(player.0).unwrap(),
+                      &mut write_velocity.get_mut(player.0).unwrap(),
                       &mut cameras.get_mut(player.0).unwrap(),
                       &mut move_nexts.get_mut(player.0).unwrap()
         );
@@ -87,7 +95,7 @@ const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
 
 const MOUSE_SENSITIVITY : Field = 0.2;
 const MOUSE_STICK_POINT : [f32 ; 2] = [100.,100.];
-pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<V>, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
+pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<V>, velocity: &mut Velocity<V>, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
 {
     //clear movement
     *move_next = MoveNext{ next_dpos: None, can_move: Some(true) };
@@ -132,7 +140,7 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transf
         );
         input.update = true;
     }
-    if input.helper.key_held(VKC::S) {
+    if input.helper.key_held(VKC::V) {
         move_next.translate(
             camera.get_slide_dpos(-camera.heading[-1],dt)
         );
@@ -172,16 +180,15 @@ pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transf
         };
 
     }
+    //jumping //MOVE TO LISTEN_INPUTS
+    if input.helper.key_pressed(VKC::R) {
+        println!("Jump");
+        velocity.0 = V::one_hot(1)*1.0
+    }
     //spin unless turning or sliding
     if V::DIM == 4 && any_slide_turn == false {
         camera.spin(transform,0,2,0.05*dt);
     }
-    //         //reset orientation
-    //         if !input.pressed.space {
-    //             camera.frame = V::M::id();
-    //             camera.update();
-    //             input.update = true;
-    //             input.pressed.space = true;
 
 }
 
@@ -197,7 +204,7 @@ impl <'a,V : VectorTrait> System<'a> for PrintDebugSystem<V> {
 
 pub fn print_debug<V : VectorTrait>(input : &mut Input,clip_state : &mut ClipState<V>)
 {
-    if input.helper.key_released(VKC::Space) {
+    if input.helper.key_released(VKC::Period) {
         //println!("camera.pos = {}",camera.pos);
         //rintln!("camera.heading = {}",camera.heading);
         //println!("camera.frame = {}",camera.frame);
