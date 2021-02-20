@@ -22,7 +22,7 @@ impl<'a, V : VectorTrait> System<'a> for PlayerGravitySystem<V> {
                 MoveNext{next_dpos: Some(next_dpos), can_move: Some(true)} => {
                     move_next.next_dpos = Some(*next_dpos + gvec);
                 },
-                MoveNext{next_dpos: None,can_move: None} => {*move_next = MoveNext{next_dpos: Some(gvec), can_move: Some(true)}}
+                MoveNext{next_dpos: None,can_move: Some(true)} => {*move_next = MoveNext{next_dpos: Some(gvec), can_move: Some(true)}}
                 _ => (),
             }
         }
