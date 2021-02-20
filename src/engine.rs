@@ -109,13 +109,6 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let cur_lines_length = draw_lines.len();
         let face_scales : Vec<crate::vector::Field> = vec![0.9];
 
-        
-        //DEBUG
-        // {
-        // let entities = world.read_resource::<Entities>();
-        // entities.delete(entities.entity(20)).unwrap();
-        // }
-
         world.insert(clip_state); // decompose into single entity properties
         world.insert(draw_lines); // unclear if this would be better as entities
         world.insert(proj_lines);
@@ -155,15 +148,15 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //     mouse_pos : input.helper.mouse(),
 
             // };
-            ui_args = UIArgs::new_debug::<V>(
-                &self.world,
-                frame_duration
-            );
-            // ui_args = UIArgs::Simple{
-            //     frame_duration,
-            //     coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
-            //     coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
-            // };
+            // ui_args = UIArgs::new_debug::<V>(
+            //     &self.world,
+            //     frame_duration
+            // );
+            ui_args = UIArgs::Simple{
+                frame_duration,
+                coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
+                coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
+            };
 
             if input.closed {
                 println!("Escape button pressed; exiting.");

@@ -13,7 +13,6 @@ use crate::geometry::{Shape, shape::{ShapeType, convex::Convex, single_face::Sin
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 use crate::collide::{StaticCollider,HasBBox};
-use glium::framebuffer::ColorAttachment::Texture;
 
 pub fn insert_wall<V : VectorTrait>(world : &mut World, shape_builder : BuildShape<V>) {
     shape_builder.build(world)
@@ -34,7 +33,7 @@ pub struct BuildShape<V: VectorTrait> {
 }
 impl<V: VectorTrait> BuildShape<V> {
     pub fn new_face_shape(sub_shape: Shape<V::SubV>) -> Self {
-        let (mut shape, mut single_face) = buildshapes::convex_shape_to_face_shape(sub_shape);
+        let (shape, single_face) = buildshapes::convex_shape_to_face_shape(sub_shape);
         Self{
             shape,
             shape_type: ShapeType::SingleFace(single_face),
@@ -130,7 +129,7 @@ fn build_test_walls<V: VectorTrait>(build_shape: &BuildShape<V>, world: &mut Wor
     floor.clone()
         .with_translation(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(2.0 + 2.0*cos))
         .build(world).build();
-    floor.build(world);
+    floor.build(world).build();
     build_shape.clone()
         .with_translation(V::one_hot(1)*1.0)
         .with_rotation(-1,1,-PI/2.)

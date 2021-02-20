@@ -246,7 +246,12 @@ impl System {
         //let font_size = self.font_size;
         let mut ui = imgui.frame();
         let mut run = true;
-        debug_ui(&mut run, &mut ui, &mut self.ui_args);
+        match self.ui_args {
+            UIArgs::Debug {..} => debug_ui(&mut run, &mut ui, &mut self.ui_args),
+            UIArgs::Simple {..} => simple_ui(&mut run, &mut ui, &mut self.ui_args),
+            UIArgs::Test {..} => hello_world(&mut run, &mut ui, &mut self.ui_args),
+            UIArgs::None => ()
+        };
         if !run {
             //*control_flow = ControlFlow::Exit;
             panic!("Would exit here because ui didn't run");

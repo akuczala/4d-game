@@ -22,6 +22,7 @@ mod gui;
 mod engine;
 mod collide;
 mod gravity;
+#[allow(dead_code)]
 mod spatial_hash;
 mod input;
 #[allow(dead_code)]
