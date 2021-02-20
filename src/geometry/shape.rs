@@ -41,9 +41,6 @@ pub struct Shape<V : VectorTrait> {
     pub edges : Vec<Edge>,
     pub faces : Vec<Face<V>>,
     ref_frame : V::M,
-    frame : V::M,
-    pos : V,
-    pub scale : Field,
     pub radius : Field,
 }
 
@@ -68,9 +65,6 @@ impl <V : VectorTrait> Shape<V> {
             edges,
             faces,
             ref_frame : V::M::id(),
-            frame : V::M::id(),
-            pos : V::zero(),
-            scale : 1.0,
             radius,
             //transparent: false
             };
@@ -108,32 +102,15 @@ impl <V : VectorTrait> Shape<V> {
         }
      out_points
     }
-    pub fn update(&mut self) {
+    pub fn update(&mut self, transformation: &Transform<V>) {
         for (v,vr) in self.verts.iter_mut().zip(self.verts_ref.iter()) {
-            *v = self.frame * (*vr * self.scale) + self.pos;
+            *v = transformation.transform_vec(vr);
         }
         for face in &mut self.faces {
-            face.normal = self.frame * face.normal_ref;
-            face.center = self.frame * face.center_ref + self.pos;
+            face.normal = *transformation.frame * face.normal_ref;
+            face.center = transformation.transform_vec(face.center_ref);
             face.threshold = face.normal.dot(face.center);
         }
-    }
-    pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) {
-        let rot_mat = vector::rotation_matrix(self.frame[axis1],self.frame[axis2],Some(angle));
-        self.frame = self.frame.dot(rot_mat);
-        self.update();
-    }
-    pub fn with_rotation(mut self, axis1: VecIndex, axis2: VecIndex, angle : Field) -> Self {
-        self.rotate(axis1, axis2, angle);
-        self
-    }
-    pub fn with_pos(mut self, pos : &V) -> Self {
-        self.pos = *pos;
-        self.update();
-        self
-    }
-    pub fn get_pos(& self) -> &V {
-        &self.pos
     }
     pub fn stretch(&self, scales : &V) -> Self {
     let mut new_shape = self.clone();
@@ -175,9 +152,7 @@ impl <V : VectorTrait> Shape<V> {
 }
 impl<V: VectorTrait> Transformable<V> for Shape<V> {
     fn set_identity(mut self) -> Self {
-        self.pos = V::zero();
-        self.frame = self.ref_frame;
-        self.scale = 1.0;
+        self.update(&Transform::identity());
         self
     }
     fn transform(&mut self, transformation: Transform<V>) {
