@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use specs::prelude::*;
-use specs::{System,SystemData,WriteStorage,Read};
+use specs::{System,WriteStorage,Read};
 use crate::vector::VectorTrait;
 use crate::components::MoveNext;
 use crate::input::Input;

@@ -1,12 +1,12 @@
 use itertools::Itertools;
-use crate::vector::{VectorTrait,MatrixTrait,VecIndex};
+use crate::vector::{VectorTrait,VecIndex};
 use crate::vector::{Vec2,Vec3,Vec4,barycenter};
 //use crate::vec2::Vec2;
 use super::{Shape,SingleFace,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
 use crate::vector::PI;
 use crate::vector::Field;
 use crate::colors::*;
-use crate::draw::{Texture,TextureMapping};
+use crate::draw::{Texture};
 use std::marker::PhantomData;
 
 pub struct ShapeBuilder<V : VectorTrait>(PhantomData<V>);
@@ -132,7 +132,6 @@ pub fn remove_faces<V : VectorTrait>(shape : Shape<V>, faceis : Vec<FaceIndex>) 
 	Shape::new(verts,edges,new_faces)
 }
 use itertools::multizip;
-use crate::geometry::shape::ShapeType;
 use crate::geometry::Transform;
 
 //builds 4d duoprism

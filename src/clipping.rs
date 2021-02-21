@@ -3,13 +3,12 @@ use crate::player::Player;
 use crate::vector::{VectorTrait,Field};
 use crate::geometry::{Line,Plane};
 use crate::draw::DrawLine;
-use crate::components::{Transform,Transformable,Shape};
+use crate::components::{Transform,Shape};
 
 use specs::prelude::*;
 use specs::{Component,VecStorage};
 use std::marker::PhantomData;
 
-use crate::camera::Camera;
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -591,6 +590,7 @@ pub fn print_in_front(in_front : &Vec<Vec<bool>>) {
     }
     println!("");
 }
+
 pub fn test_dyn_separate<V : VectorTrait>(bballs: &Vec<BBall<V>>, origin : &V) {
     use colored::*;
     for (i,bball1) in bballs.iter().enumerate() {

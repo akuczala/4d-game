@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 //for easy import of all systems
 pub use crate::draw::{
 	VisibilitySystem,

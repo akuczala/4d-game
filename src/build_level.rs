@@ -1,15 +1,14 @@
-use crate::components::{Cursor,Transform,BBox,BBall};
+use crate::components::{Cursor,Transform,BBall};
 use crate::geometry::transform::{Transformable};
 use crate::colors::*;
 use crate::clipping::ShapeClipState;
-use crate::camera::Camera;
 use crate::coin::Coin;
 use specs::prelude::*;
-use crate::vector::{Vec2,Vec3,Vec4,linspace};
+use crate::vector::{Vec2,Vec3,Vec4};
 use crate::geometry::shape::buildshapes;
 use crate::geometry::shape::buildshapes::{build_cube_3d, build_cube_4d, color_cube, build_duoprism_4d, ShapeBuilder, build_prism_2d};
 use crate::constants::PI;
-use crate::geometry::{Shape, shape::{ShapeType, convex::Convex, single_face::SingleFace}, Face};
+use crate::geometry::{Shape, shape::{ShapeType, convex::Convex}};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 use crate::collide::{StaticCollider,HasBBox};
@@ -99,7 +98,7 @@ impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V> {
 }
 
 fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: &mut World) {
-    let theta = (PI/6.0);
+    let theta = PI/6.0;
     let cos = theta.cos();
     let sin = theta.sin();
     build_shape.clone()

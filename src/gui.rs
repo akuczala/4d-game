@@ -2,11 +2,9 @@ use crate::vector::VectorTrait;
 use specs::prelude::*;
 use crate::components::*;
 use glium::Frame;
-use glium::glutin;
 use glium::glutin::event::{Event, WindowEvent};
 use glium::glutin::event_loop::{ControlFlow};
-use glium::glutin::window::WindowBuilder;
-use glium::{Display, Surface};
+use glium::{Display};
 use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui, ProgressBar};
 use imgui_glium_renderer::Renderer;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
@@ -102,7 +100,7 @@ impl UIArgs{
         let targets = world.read_storage::<MaybeTarget<V>>();
         let maybe_target : &MaybeTarget<V> = targets.get(player.0).expect("player has no target");
 
-        let mut debug_strings = vec![
+        let debug_strings = vec![
                 match maybe_target {
                     MaybeTarget(Some(target)) => format!("target: {}, {}, {}\n",target.entity.id(),target.distance,target.point),
                     MaybeTarget(None) => "None".to_string(),
@@ -203,7 +201,7 @@ fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
                 match ui_args {
                     UIArgs::Debug{ref frame_duration, ref debug_text} => {
                         ui.text(format!("FPS: {:0.0}",1./frame_duration));
-                        //ui.text(debug_text);
+                        ui.text(debug_text);
                     }
                     _ => (),
                 };

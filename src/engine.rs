@@ -21,11 +21,10 @@ use crate::gui::UIArgs;
 use crate::input::{Input,MovementMode};
 
 use crate::graphics::{Graphics,Graphics2d,Graphics3d};
-use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait,Field};
-use crate::fps::FPSFloat;
+use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait};
 
 use crate::systems::*;
-use crate::components::{Transform,Transformable};
+use crate::components::{Transform};
 
 
 pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
@@ -38,7 +37,7 @@ pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
 }
 impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 {
-    pub fn new<F : Fn(&mut World)>(build_scene : F, graphics : G, display : &Display, maybe_gui : Option<crate::gui::System>) -> Self {
+    pub fn new<F : Fn(&mut World)>(build_scene : F, graphics : G, maybe_gui : Option<crate::gui::System>) -> Self {
 
         let mut world = World::new();
         let ph = PhantomData::<V>;
@@ -252,7 +251,7 @@ impl EngineD<Vec3,Graphics2d> {
         let mut graphics = Graphics2d::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
 
-        Self::new(crate::build_level::build_shapes_3d,graphics,display,gui)
+        Self::new(crate::build_level::build_shapes_3d,graphics,gui)
     }
 }
 impl EngineD<Vec4,Graphics3d> {
@@ -261,7 +260,7 @@ impl EngineD<Vec4,Graphics3d> {
         //let game = Game::new(game::build_shapes_4d());
         let mut graphics = Graphics3d::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
-        Self::new(crate::build_level::build_shapes_4d,graphics,display,gui)
+        Self::new(crate::build_level::build_shapes_4d,graphics,gui)
     }
 }
 

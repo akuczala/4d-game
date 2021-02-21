@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 mod texture;
 
 use crate::components::*;
@@ -15,7 +14,7 @@ use crate::vector::{VectorTrait,Field};
 use crate::geometry::{shape::{VertIndex},Shape,Line};
 use crate::components::{ShapeType};
 //use crate::graphics;
-use crate::clipping::{clip_line_plane,clip_line_sphere,clip_line_cube,ShapeClipState};
+use crate::clipping::{clip_line_plane,clip_line_cube,ShapeClipState};
 use crate::colors::*;
 use crate::clipping::ClipState;
 

@@ -3,13 +3,12 @@
 pub type FPSFloat = f64;
 pub const TARGET_FPS : FPSFloat = 60.0;
 pub const N_TIMES : usize = 50;
-use std::time::{Instant,Duration};
+use std::time::{Instant};
 
 pub struct FPSTimer {
     pub start : Instant,
     fps : Option<FPSFloat>,
     elapsed_time_list : [u64 ; N_TIMES],
-    time_sum : u64,
     i : usize,
     pub elapsed_time : u64,
     pub gui_last_time : Instant,
@@ -17,7 +16,7 @@ pub struct FPSTimer {
 impl FPSTimer {
 
 	pub fn new() -> Self {
-		FPSTimer{start : Instant::now(), elapsed_time_list : [0 ; N_TIMES], time_sum : 0, gui_last_time : Instant::now(), fps : None, i : 0, elapsed_time : 0}
+		FPSTimer{start : Instant::now(), elapsed_time_list : [0 ; N_TIMES], gui_last_time : Instant::now(), fps : None, i : 0, elapsed_time : 0}
 	}
 
 	//get time at start of pass

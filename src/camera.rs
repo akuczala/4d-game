@@ -2,7 +2,7 @@ use specs::{Component, VecStorage};
 
 use crate::constants::PI;
 use crate::vector::{VectorTrait,MatrixTrait,Field,
-	VecIndex,rotation_matrix,Rotatable,Translatable};
+	VecIndex,rotation_matrix};
 use crate::geometry::{Plane, Transformable};
 use crate::components::{Transform};
 
