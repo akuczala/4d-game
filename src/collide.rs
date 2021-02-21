@@ -1,9 +1,7 @@
 use crate::input::Input;
-use crate::player::Player;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
-use crate::geometry::Shape;
 use crate::vector::{VectorTrait,Field};
-use crate::components::{ShapeType,Convex,Transform,Transformable,Camera};
+use crate::components::{Player,Shape,ShapeType,Convex,Transform,Transformable,Camera};
 use specs::prelude::*;
 use specs::{Component};
 use std::marker::PhantomData;

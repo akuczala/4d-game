@@ -14,6 +14,7 @@ mod colors;
 mod graphics;
 mod gui;
 mod engine;
+mod shape_entity_builder;
 mod collide;
 mod gravity;
 mod spatial_hash;

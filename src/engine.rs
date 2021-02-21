@@ -109,7 +109,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         let face_scales : Vec<crate::vector::Field> = vec![0.9];
 
         world.insert(clip_state); // decompose into single entity properties
-        world.insert(draw_lines); // unclear if this would be better as entities
+        world.insert(draw_lines); // unclear if this would be better as entities; might be able to thread
         world.insert(proj_lines);
         world.insert(face_scales);
         
