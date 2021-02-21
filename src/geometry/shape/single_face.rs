@@ -1,4 +1,4 @@
-use crate::vector::{VectorTrait,Field,barycenter_iter,is_close};
+use crate::vector::{VectorTrait,Field,barycenter_iter};
 use crate::geometry::{Plane};
 use super::{VertIndex,Face,Shape};
 
@@ -78,7 +78,7 @@ impl<V: VectorTrait> SingleFace<V>{
     }
 }
 
-use crate::vector::{Vec2, Vec3};
+use crate::vector::{Vec2,Vec3};
 use super::Edge;
 fn make_3d_triangle() -> (Shape<Vec3>, SingleFace<Vec3>) {
     let shape = Shape::new(
@@ -102,6 +102,7 @@ fn make_3d_square() -> (Shape<Vec3>, SingleFace<Vec3>) {
 }
 #[test]
 fn test_boundaries() {
+    use crate::vector::is_close;
     let shape = Shape::new(
         vec![Vec2::new(1.,-1.),Vec2::new(1.,1.)],
         vec![Edge(0,1)],
@@ -133,7 +134,8 @@ fn test_boundaries() {
 
 #[test]
 fn test_subface_planes() {
-    let (shape, single_face) = make_3d_square();
+    use crate::vector::is_close;
+    let (_shape, single_face) = make_3d_square();
     type v = Vec3;
     let expected_normals = vec![-v::one_hot(0), -v::one_hot(1), v::one_hot(1), v::one_hot(0)];
     for (subface, &expected_normal) in single_face.subfaces.0.iter().zip(expected_normals.iter()) {
@@ -141,7 +143,7 @@ fn test_subface_planes() {
         assert!(Vec3::is_close(subface.plane.normal, expected_normal),"normal={}",subface.plane.normal);
     }
 
-    let (shape, single_face) = make_3d_triangle();
+    let (_shape, single_face) = make_3d_triangle();
     let expected_planes = vec![
         Plane::from_normal_and_point(v::one_hot(0), v::one_hot(0)),
         Plane::from_normal_and_point(v::new(-1.0, 2.0,0.0).normalize(), v::new( 0.0, 0.5,0.0)),
@@ -156,7 +158,8 @@ fn test_subface_planes() {
 }
 #[test]
 fn test_subface_dist() {
-    let (shape, single_face) = make_3d_square();
+    use crate::vector::is_close;
+    let (_shape, single_face) = make_3d_square();
     let (n, d) = single_face.subface_normal_distance(Vec3::new(0.5,0.0,0.0));
     assert!(Vec3::is_close(n, Vec3::one_hot(0)),"n={}",n);
     assert!(is_close(d, -0.5),"d={}",d);

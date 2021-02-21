@@ -6,7 +6,7 @@ pub mod buildshapes;
 
 use crate::colors::Color;
 use crate::vector;
-use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex};
+use crate::vector::{VectorTrait,Field};
 use super::{Line,Plane,line_plane_intersect,Transform,Transformable};
 pub use face::Face;
 pub use convex::Convex; pub use single_face::SingleFace;
@@ -39,8 +39,7 @@ pub struct Shape<V : VectorTrait> {
     pub verts_ref : Vec<V>,
     pub verts : Vec<V>,
     pub edges : Vec<Edge>,
-    pub faces : Vec<Face<V>>,
-    ref_frame : V::M,
+    pub faces : Vec<Face<V>>
 }
 
 impl <V : VectorTrait> Shape<V> {
@@ -62,7 +61,6 @@ impl <V : VectorTrait> Shape<V> {
             verts,
             edges,
             faces,
-            ref_frame : V::M::id(),
         };
         shape.update(&Transform::identity());
         shape

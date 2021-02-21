@@ -1,11 +1,8 @@
-
-use crate::vector::{VectorTrait};
 use crate::geometry::shape::{VertIndex};
 use super::{Graphics,VertexTrait};
 use crate::vector::{Vec3};
 use glium::{Surface,Display};
-use crate::draw::{DrawVertex,DrawLine};
-use super::{VERTEX_SHADER_SRC,FRAGMENT_SHADER_SRC,simple_vertex::SimpleVertex,proj_line_vertex::NewVertex};
+use super::{VERTEX_SHADER_SRC,FRAGMENT_SHADER_SRC,proj_line_vertex::NewVertex};
 
 type Vertex = NewVertex;
 

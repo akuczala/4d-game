@@ -4,7 +4,7 @@ pub mod transform;
 pub use shape::{Shape,Face};
 pub use transform::{Transformable,Transform};
 use std::fmt;
-use crate::vector::{VectorTrait,MatrixTrait,Field,VecIndex,is_close};
+use crate::vector::{VectorTrait,Field,is_close};
 
 #[derive(Clone)]
 pub struct Line<V : VectorTrait>(pub V,pub V);

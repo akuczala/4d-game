@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 mod texture;
 
 use crate::components::*;
@@ -7,15 +6,13 @@ use std::marker::PhantomData;
 
 extern crate map_in_place;
 
-pub use texture::Texture;
-pub use texture::TextureMapping;
+pub use texture::{Texture,TextureMapping};
 
-use crate::camera::{Camera};
 use crate::vector::{VectorTrait,Field};
 use crate::geometry::{shape::{VertIndex},Shape,Line};
-use crate::components::{ShapeType};
+use crate::components::{Camera,ShapeType,ShapeClipState};
 //use crate::graphics;
-use crate::clipping::{clip_line_plane,clip_line_sphere,clip_line_cube,ShapeClipState};
+use crate::clipping::{clip_line_plane,clip_line_cube};
 use crate::colors::*;
 use crate::clipping::ClipState;
 

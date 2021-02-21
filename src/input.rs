@@ -8,12 +8,8 @@ use winit_input_helper::WinitInputHelper;
 
 use specs::prelude::*;
 
-use std::time::Duration;
-
 use crate::vector::{VectorTrait,Field,VecIndex};
-use crate::components::{ClipState, Shape, Camera, MoveNext, Transform,Transformable};
-
-//use crate::game::Game;
+use crate::components::{ClipState, Camera, MoveNext, Transform,Transformable};
 
 use glutin::event::{Event,WindowEvent};
 

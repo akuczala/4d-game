@@ -1,31 +1,24 @@
+#![allow(dead_code)]
 #[macro_use] extern crate glium;
 #[macro_use] extern crate itertools;
 //extern crate imgui;
 //extern crate imgui_glium_renderer;
-#[allow(dead_code)]
 mod constants;
-#[allow(dead_code)]
 mod vector;
-#[allow(dead_code)]
 mod geometry;
 mod clipping;
-//#[allow(dead_code)]
 mod draw;
-#[allow(dead_code)]
 mod camera;
-#[allow(dead_code)]
 mod colors;
 
 mod graphics;
-#[allow(dead_code)]
 mod gui;
 mod engine;
+mod shape_entity_builder;
 mod collide;
 mod gravity;
-#[allow(dead_code)]
 mod spatial_hash;
 mod input;
-#[allow(dead_code)]
 mod build_level;
 mod coin;
 mod fps;

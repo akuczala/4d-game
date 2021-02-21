@@ -123,7 +123,7 @@ impl VectorTrait for Vec2 {
     fn unproject(v: Vec2) -> Vec2 {v} //this is identity since we don't have Vec1
     fn cross_product<I : std::iter::Iterator<Item=Self>>(mut vecs_iter : I) -> Self {
         let v0 = vecs_iter.next().expect("No vecs given to 2d cross product");
-        if let Some(v1) = vecs_iter.next() {
+        if let Some(_v1) = vecs_iter.next() {
             panic!("2D cross product given more than 1 vec");
         }
         Vec2::new(-v0[1],v0[0]) //right handed

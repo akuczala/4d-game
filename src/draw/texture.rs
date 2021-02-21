@@ -131,7 +131,7 @@ impl TextureMapping {
 			line.map(|v| (0..V::SubV::DIM).zip(frame_verts.iter()).map(|(i,&f)| f*v[i]).fold(V::zero(),|a,b| a + b) + origin)
 			).map(|line| Some(DrawLine{line,color})).collect()
 	}
-	pub fn draw_drawlines<V : VectorTrait>(&self, draw_lines : &Vec<DrawLine<V::SubV>>) -> Vec<Option<DrawLine<V>>> {
+	pub fn draw_drawlines<V : VectorTrait>(&self, _draw_lines : &Vec<DrawLine<V::SubV>>) -> Vec<Option<DrawLine<V>>> {
 		unimplemented!()
 		//draw_lines.iter().map(|draw_line| Some(draw_line.clone())).collect()
 	}

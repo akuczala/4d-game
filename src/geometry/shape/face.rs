@@ -1,9 +1,8 @@
 use super::{EdgeIndex,VertIndex,Edge};
-use crate::vector::{VectorTrait,MatrixTrait,Field};
+use crate::vector::{VectorTrait,Field};
 use crate::colors::Color;
 use itertools::Itertools;
 
-use crate::colors::WHITE;
 use crate::draw::{Texture,TextureMapping};
 
 #[derive(Clone)]

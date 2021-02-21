@@ -1,10 +1,7 @@
-use crate::player::Player;
-use crate::collide::InPlayerCell;
 use crate::cleanup::DeletedEntities;
 use crate::vector::{VectorTrait,Field};
-use crate::components::{Transform,Transformable};
+use crate::components::*;
 use core::marker::PhantomData;
-use crate::geometry::{Shape};
 use crate::input::Input;
 use specs::prelude::*;
 use specs::{Component,VecStorage};

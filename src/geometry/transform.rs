@@ -1,8 +1,6 @@
 use specs::prelude::*;
 use specs::{Component};
 use crate::vector::{VectorTrait,MatrixTrait,VecIndex,Field,rotation_matrix};
-use super::Face;
-use std::convert::identity;
 
 pub trait Transformable<V: VectorTrait> {
     fn set_identity(self) -> Self;
@@ -30,7 +28,7 @@ pub trait Transformable<V: VectorTrait> {
     fn translate(&mut self, pos: V) {
         self.transform(Transform::pos(pos))
     }
-    fn with_rotation(mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) -> Self
+    fn with_rotation(self, axis1: VecIndex, axis2: VecIndex, angle: Field) -> Self
         where Self: std::marker::Sized {
         self.with_transform(Transform::identity().with_rotation(axis1, axis2, angle))
     }
@@ -73,7 +71,7 @@ impl<V: VectorTrait> Transform<V> {
     }
 }
 impl<V: VectorTrait> Transformable<V> for Transform<V> {
-    fn set_identity(mut self) -> Self {
+    fn set_identity(self) -> Self {
         Self::identity()
     }
     fn transform(&mut self, transformation: Transform<V>) {

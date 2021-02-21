@@ -3,13 +3,12 @@ use crate::player::Player;
 use crate::vector::{VectorTrait,Field};
 use crate::geometry::{Line,Plane};
 use crate::draw::DrawLine;
-use crate::components::{Transform,Transformable,Shape};
+use crate::components::{Transform,Shape};
 
 use specs::prelude::*;
 use specs::{Component,VecStorage};
 use std::marker::PhantomData;
 
-use crate::camera::Camera;
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -107,67 +106,8 @@ pub fn calc_in_front<V : VectorTrait>(
                 )
         }
     }
-
-
-    //let iter_slice = (read_shapes,shape_clip_state,&*entities).as_slice();
-    //while let Some(val) = iter_slice.next
-    // for (i, (shape_a, mut clip_a,e_a)) in (read_shapes,shape_clip_state,&*entities).join().map(|(sh,cs,e)| (sh,Cell::new(cs),e)).enumerate() {
-    //     for (_j, (shape_b, mut clip_b,e_b)) in (read_shapes,shape_clip_state,&*entities).join().map(|(sh,cs,e)| (sh,Cell::new(cs),e)).enumerate().filter(|(j,_)| *j >= i+1) {
-    //         calc_in_front_pair(
-    //             InFrontArg{shape : &shape_a, clip_state : clip_a.get_mut(), entity : e_a},
-    //             InFrontArg{shape : &shape_b, clip_state : clip_b.get_mut(), entity : e_b},
-    //             clip_state,
-    //             origin
-    //             )
-    //     }
-    // }
 }
-// struct InFrontArg<'a, V : VectorTrait>{
-//     shape : &'a Shape<V>,
-//     entity : Entity,
-// }
-// pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontArg<'a,V>,
-//     clip_state : &mut ClipState<V>, origin : &V) {
 
-//     //try dynamic separation
-//     let mut sep_state = dynamic_separate(a.shape,b.shape,origin);
-//     let is_unknown = match sep_state {
-//         Separation::Unknown => true,
-//         _ => false
-//     };
-//     //if that's unsuccessful, try static separation
-//     if is_unknown {
-//         let sep = match clip_state.separators.get_mut(&(a.entity,b.entity)) {
-//             Some(s) => s, None => &mut Separator::Unknown,
-//         };
-//         //compute static separator if it hasn't been computed yet
-//         let needs_value = match sep {
-//             Separator::Unknown => true,
-//             _ => false
-//         };
-//         //right now tries only one static separator
-//         if needs_value {
-//             *sep = separate_between_centers(&a.shape,&b.shape);
-//         }
-//         //determine separation state from separator
-//         sep_state = sep.apply(origin);
-//     };
-//     let new_vals = match sep_state {
-//         Separation::S1Front => (true,false),
-//         Separation::S2Front => (false,true),
-//         Separation::NoFront => (false,false),
-//         Separation::Unknown => (true,true)
-//     };
-//     match new_vals.0 {
-//         true => clip_state.in_front.insert((a.entity,b.entity)),
-//         false => clip_state.in_front.remove(&(a.entity,b.entity)),
-//     };
-//     match new_vals.0 {
-//         true => clip_state.in_front.insert((b.entity,a.entity)),
-//         false => clip_state.in_front.remove(&(b.entity,a.entity)),
-//     };
-
-// }
 #[derive(Component)]
 #[storage(VecStorage)]
 pub struct ShapeClipState<V : VectorTrait> {
@@ -591,6 +531,7 @@ pub fn print_in_front(in_front : &Vec<Vec<bool>>) {
     }
     println!("");
 }
+
 pub fn test_dyn_separate<V : VectorTrait>(bballs: &Vec<BBall<V>>, origin : &V) {
     use colored::*;
     for (i,bball1) in bballs.iter().enumerate() {
