@@ -247,14 +247,17 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 
 					let next_dpos = move_next.next_dpos.unwrap();
 					let (normal, dist) = shape.point_normal_distance(pos);
-
-					if (dist < PLAYER_COLLIDE_DISTANCE) & match shape_type {
-							ShapeType::SingleFace(single_face) => single_face.subface_normal_distance(pos).1 < PLAYER_COLLIDE_DISTANCE,
-							ShapeType::Convex(_) => true }
+					if match shape_type {
+						ShapeType::SingleFace(single_face) => if single_face.two_sided {
+							(dist.abs() < PLAYER_COLLIDE_DISTANCE) & (single_face.subface_normal_distance(pos).1 < PLAYER_COLLIDE_DISTANCE)
+						} else {
+							(dist < PLAYER_COLLIDE_DISTANCE) & (single_face.subface_normal_distance(pos).1 < PLAYER_COLLIDE_DISTANCE)
+						},
+						ShapeType::Convex(_) => (dist < PLAYER_COLLIDE_DISTANCE) }
 					{
 						//push player away along normal of nearest face (projects out -normal)
 						//but i use abs here to guarantee the face always repels the player
-						let new_dpos = next_dpos + (normal)*(normal.dot(next_dpos).abs());
+						let new_dpos = next_dpos + (normal*dist.signum())*(normal.dot(next_dpos).abs());
 
 						move_next.next_dpos = Some(new_dpos);
 						//println!("{}",normal);

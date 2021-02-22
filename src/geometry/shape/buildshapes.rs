@@ -35,7 +35,7 @@ impl ShapeBuilder<Vec4> {
 	}
 }
 
-pub fn convex_shape_to_face_shape<V: VectorTrait>(convex_shape: Shape<V::SubV>) -> (Shape<V>, SingleFace<V>) {
+pub fn convex_shape_to_face_shape<V: VectorTrait>(convex_shape: Shape<V::SubV>, two_sided: bool) -> (Shape<V>, SingleFace<V>) {
 	let face = Face::new(
 		convex_shape.edges.iter().enumerate().map(|(i,_)| i).collect(),
 		V::one_hot(-1)
@@ -43,7 +43,7 @@ pub fn convex_shape_to_face_shape<V: VectorTrait>(convex_shape: Shape<V::SubV>) 
 	let verts = convex_shape.verts.iter().map(|&v| V::unproject(v)).collect();
 	let shape = Shape::new(verts, convex_shape.edges, vec![face]);
 	let subface_vertis = convex_shape.faces.iter().map(|face| face.vertis.clone()).collect();
-	let single_face = SingleFace::new(&shape, &subface_vertis);
+	let single_face = SingleFace::new(&shape, &subface_vertis, two_sided);
 	(shape, single_face)
 }
 

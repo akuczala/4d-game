@@ -123,14 +123,9 @@ impl <V : VectorTrait> Shape<V> {
     new_shape.update(&Transform::identity());
     new_shape
 }
-    pub fn update_visibility(&mut self, camera_pos : V, transparent : bool) {
+    pub fn update_visibility(&mut self, camera_pos : V, two_sided : bool) {
         for face in self.faces.iter_mut() {
-            if transparent {
-                face.visible = true;
-            }
-            else {
-                face.update_visibility(camera_pos);
-            }
+            face.update_visibility(camera_pos, two_sided);
         }
     }
     pub fn with_color(mut self, color : Color) -> Self {

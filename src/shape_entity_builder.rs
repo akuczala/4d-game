@@ -11,16 +11,16 @@ pub struct ShapeEntityBuilder<V: VectorTrait> {
     pub shape: Shape<V>,
     shape_type: ShapeType<V>,
     transformation: Transform<V>,
-    texture_info: Option<(Texture<V::SubV>, TextureMapping)>,
+    texture_info: Option<(Texture<V::SubV>, TextureMapping)>
 }
-impl<V: VectorTrait> ShapeEntityBuilder<V> {
-    pub fn new_face_shape(sub_shape: Shape<V::SubV>) -> Self {
-        let (shape, single_face) = buildshapes::convex_shape_to_face_shape(sub_shape);
+impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
+    pub fn new_face_shape(sub_shape: Shape<V::SubV>, two_sided: bool) -> Self {
+        let (shape, single_face) = buildshapes::convex_shape_to_face_shape(sub_shape, two_sided);
         Self{
             shape,
             shape_type: ShapeType::SingleFace(single_face),
             transformation: Transform::identity(),
-            texture_info: None,
+            texture_info: None
         }
     }
     pub fn new_convex_shape(shape: Shape<V>) -> Self {
@@ -50,7 +50,11 @@ impl<V: VectorTrait> ShapeEntityBuilder<V> {
         self
     }
     pub fn build(self, world: &mut World) -> EntityBuilder {
-        let Self{mut shape, mut shape_type, transformation, texture_info} = self;
+        let Self{
+            mut shape,
+            mut shape_type,
+            transformation,
+            texture_info,} = self;
         shape = shape.with_transform(transformation);
         if let Some((texture, texture_mapping)) = texture_info {
             for face in shape.faces.iter_mut() {

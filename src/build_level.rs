@@ -52,6 +52,8 @@ fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: 
         .with_translation(-V::one_hot(1)*1.0)
         .with_rotation(-1,1,PI/2.)
         .with_color(BLUE);
+    floor.clone().with_translation(-V::one_hot(0)*2.0).build(world).with(StaticCollider).build();
+    floor.clone().with_translation(-V::one_hot(0)*2.0 - V::one_hot(-1)*2.0).build(world).with(StaticCollider).build();
     floor.clone()
         .with_translation(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(2.0 + 2.0*cos))
         .build(world).with(StaticCollider).build();
@@ -68,7 +70,8 @@ fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: 
 }
 pub fn build_test_level_3d(world: &mut World) {
     //insert_wall(world,build_cube_3d(1.0).with_pos(&Vec3::new(3., 0., 0.)));
-    let build_shape: ShapeEntityBuilder<Vec3>= ShapeEntityBuilder::new_face_shape(ShapeBuilder::<Vec2>::build_cube(2.0))
+    let build_shape: ShapeEntityBuilder<Vec3>= ShapeEntityBuilder::new_face_shape(
+        ShapeBuilder::<Vec2>::build_cube(2.0), true)
         .with_texture(
             draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4]),
             draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]}
@@ -77,7 +80,8 @@ pub fn build_test_level_3d(world: &mut World) {
 }
 pub fn build_test_level_4d(world: &mut World) {
     //insert_wall(world,build_cube_4d(1.0).with_pos(&Vec4::new(3., 0., 0.,0.)));
-    let build_shape: ShapeEntityBuilder<Vec4>= ShapeEntityBuilder::new_face_shape(ShapeBuilder::<Vec3>::build_cube(2.0))
+    let build_shape: ShapeEntityBuilder<Vec4>= ShapeEntityBuilder::new_face_shape(
+        ShapeBuilder::<Vec3>::build_cube(2.0), true)
         .with_texture(
             draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4,4]),
             draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3,4]}
@@ -85,8 +89,8 @@ pub fn build_test_level_4d(world: &mut World) {
     build_test_walls(&build_shape, world)
 }
 pub fn build_shapes_3d(world : &mut World) {
-    build_lvl_1_3d(world);
-    //build_test_level_3d(world);
+    //build_lvl_1_3d(world);
+    build_test_level_3d(world);
     //build_test_face(world);
     init_player(world, Vec3::zero());
     init_cursor_3d(world);

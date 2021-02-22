@@ -213,12 +213,18 @@ pub fn update_shape_visibility<V : VectorTrait>(
 	clip_state: &ClipState<V>
 	) {
 	//update shape visibility and boundaries
-	shape.update_visibility(camera_pos,shape_clip_state.transparent);
+	let two_sided = match shape_type {
+		ShapeType::Convex(_) => true,
+		ShapeType::SingleFace(single_face) => single_face.two_sided
+	};
+	shape.update_visibility(camera_pos,shape_clip_state.transparent | two_sided);
 	//calculate boundaries for clipping
 	if clip_state.clipping_enabled {
 		shape_clip_state.boundaries = match shape_type {
 			ShapeType::Convex(convex) => convex.calc_boundaries(camera_pos, &shape.faces),
-			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(camera_pos, &shape.verts, shape.faces[0].center),
+			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(
+				camera_pos, &shape.verts, shape.faces[0].center, shape.faces[0].visible
+			),
 		};
 	}
 

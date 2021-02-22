@@ -287,6 +287,10 @@ pub fn clip_line<V : VectorTrait>(
     line : Line<V>,
     boundaries : &Vec<Plane<V>>
     ) -> ReturnLines<V> {
+    //if no boundaries, return original line
+    if boundaries.len() == 0 {
+        return ReturnLines::OneLine(line)
+    }
     let Line(p0,p1)= line;
 
     let (mut a,mut b) = (0.0 as Field,1.0 as Field);

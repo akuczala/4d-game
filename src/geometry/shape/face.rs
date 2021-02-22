@@ -60,9 +60,9 @@ impl<V : VectorTrait> Face<V> {
             self.vertis.push(*verti);
         }
     }
-    pub fn update_visibility(&mut self,camera_pos : V)
+    pub fn update_visibility(&mut self,camera_pos : V, two_sided: bool)
     {
-        self.visible = self.normal.dot(self.center - camera_pos) < 0.0;
+        self.visible = two_sided | (self.normal.dot(self.center - camera_pos) < 0.0)
     }
     pub fn set_color(&mut self, color : Color) {
         take_mut::take(&mut self.texture,|tex| tex.set_color(color));
