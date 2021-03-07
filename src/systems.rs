@@ -4,6 +4,7 @@ pub use crate::draw::{
 	CalcShapesLinesSystem,
 	TransformDrawLinesSystem,
 	DrawCursorSystem,
+	DrawSelectionBox
 };
 pub use crate::draw::clipping::{InFrontSystem};
 pub use crate::input::{UpdateCameraSystem,PrintDebugSystem,SelectTargetSystem};

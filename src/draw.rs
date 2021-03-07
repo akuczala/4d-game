@@ -175,6 +175,27 @@ impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
     }
 }
 
+pub struct DrawSelectionBox<V : VectorTrait>(pub PhantomData<V>);
+impl<'a,V : VectorTrait> System<'a> for DrawSelectionBox<V> {
+	type SystemData = (
+		ReadStorage<'a,MaybeSelected<V>>,
+		WriteExpect<'a,DrawLineList<V>>
+	);
+
+	fn run(&mut self, (selected_storage, mut draw_lines) : Self::SystemData) {
+		//write new vec of draw lines to DrawLineList
+
+		for maybe_selected in (&selected_storage).join() {
+			if let MaybeSelected(Some(selected)) = maybe_selected {
+				for line in draw_wireframe(&selected.selection_box_shape,WHITE).into_iter() {
+					draw_lines.0.push(line);
+				}
+			}
+
+		}
+	}
+}
+
 //in this implementation, the length of the vec is always
 //the same, and invisible faces are just sequences of None
 //seems to be significantly slower than not padding and just changing the buffer when needed

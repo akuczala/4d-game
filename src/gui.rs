@@ -107,7 +107,7 @@ impl UIArgs{
         // the let statements for storage here are needed to avoid temporary borrowing
         let maybe_target_storage = world.read_storage::<MaybeTarget<V>>();
         let maybe_target = maybe_target_storage.get(player.0).expect("player has no target");
-        let maybe_selected_storage= world.read_storage::<MaybeSelected>();
+        let maybe_selected_storage= world.read_storage::<MaybeSelected<V>>();
         let maybe_selected = maybe_selected_storage.get(player.0).expect("player has no selection component");
 
         let debug_strings = vec![
@@ -116,7 +116,7 @@ impl UIArgs{
                     MaybeTarget(None) => "No target\n".to_string(),
                 },
                 match maybe_selected {
-                    MaybeSelected(Some(entity)) => format!("target: {}\n",entity.id()),
+                    MaybeSelected(Some(selected)) => format!("target: {}\n",selected.entity.id()),
                     MaybeSelected(None) => "No selection\n".to_string(),
                 },
             //crate::clipping::ShapeClipState::<V>::in_front_debug(world),

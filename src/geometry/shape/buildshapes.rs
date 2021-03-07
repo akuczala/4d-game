@@ -10,28 +10,27 @@ use crate::draw::{Texture};
 use std::marker::PhantomData;
 
 pub struct ShapeBuilder<V : VectorTrait>(PhantomData<V>);
-impl ShapeBuilder<Vec2> {
-	pub fn build_cube(length : Field) -> Shape<Vec2> {
-		build_prism_2d(length/(2.0 as Field).sqrt(),4)
+impl<V: VectorTrait> ShapeBuilder<V> {
+	pub fn build_cube(length : Field) -> Shape<V> {
+		match V::DIM {
+			2 => build_prism_2d(length/(2.0 as Field).sqrt(),4),
+			3 => build_prism_3d(length/(2.0 as Field).sqrt(),length,4),
+			4 => {
+				let r = length/(2.0 as Field).sqrt();
+				build_duoprism_4d([r,r],
+								  [[0,1],[2,3]],
+								  [4,4])
+			}
+			_ => panic!("build_cube not supported in {} dim",{V::DIM})
+		}
 	}
-}
-impl ShapeBuilder<Vec3> {
-	pub fn build_cube(length : Field) -> Shape<Vec3> {
-		build_cube_3d(length)
-	}
-	pub fn build_coin() -> Shape<Vec3> {
-		build_prism_3d(0.1,0.025,10)
-		//build_cube_3d(0.2)
-            .with_color(YELLOW)
-	}
-}
-impl ShapeBuilder<Vec4> {
-	pub fn build_cube(length : Field) -> Shape<Vec4> {
-		build_cube_4d(length)
-	}
-	pub fn build_coin() -> Shape<Vec4> {
-		build_duoprism_4d([0.1,0.025],[[0,1],[2,3]],[10,4])
-            .with_color(YELLOW)
+	pub fn build_coin() -> Shape<V> {
+		match V::DIM {
+			2 => build_prism_2d(0.1, 10),
+			3=> build_prism_3d(0.1, 0.025, 10),
+			4=> build_duoprism_4d([0.1, 0.025], [[0, 1], [2, 3]], [10, 4]),
+			_ => panic!("build_coin not supported in {} dim",{V::DIM})
+		}.with_color(YELLOW)
 	}
 }
 
@@ -47,15 +46,18 @@ pub fn convex_shape_to_face_shape<V: VectorTrait>(convex_shape: Shape<V::SubV>, 
 	(shape, single_face)
 }
 
-pub fn build_prism_2d(r : Field, n : VertIndex) -> Shape<Vec2> {
+fn circle_vec<V: VectorTrait>(angle: Field) -> V {
+	V::one_hot(0)*angle.cos() + V::one_hot(1)*angle.sin()
+}
+pub fn build_prism_2d<V: VectorTrait>(r : Field, n : VertIndex) -> Shape<V> {
 
 	//starting angle causes first edge to be parallel to y axis
 	//lets us define a cube as a cylinder
 	let angles = (0..n).map(|i| 2.0*PI*((i as Field)-0.5)/(n as Field));
-	let verts : Vec<Vec2> = angles.map(|angle| Vec2::new(angle.cos(),angle.sin())*r).collect();
+	let verts : Vec<V> = angles.map(|angle| circle_vec::<V>(angle)*r).collect();
 	
 	let n_angles = (0..n).map(|i| 2.0*PI*(i as Field)/(n as Field));
-	let normals = n_angles.map(|angle| Vec2::new(angle.cos(),angle.sin()));
+	let normals = n_angles.map(|angle| circle_vec(angle));
 
 	//build edges
 	let edges = (0..n).map(|i| Edge(i,(i+1)%n)).collect();
@@ -69,21 +71,23 @@ pub fn build_prism_2d(r : Field, n : VertIndex) -> Shape<Vec2> {
 
 }
 
-pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
-
+pub fn build_prism_3d<V: VectorTrait>(r : Field, h : Field, n : VertIndex) -> Shape<V> {
+	if V::DIM < 3 {
+		panic!("Can't embed 3d prism into {} dims", V::DIM)
+	}
 	//starting angle causes first edge to be parallel to y axis
 	//lets us define a cube as a cylinder
 	let angles = (0..n).map(|i| 2.0*PI*((i as Field)-0.5)/(n as Field));
-	let cap_coords : Vec<Vec3> = angles.map(|angle| Vec3::new(angle.cos(),angle.sin(),0.0)*r).collect();
+	let cap_coords : Vec<V> = angles.map(|angle| circle_vec::<V>(angle)*r).collect();
 	
 	let n_angles = (0..n).map(|i| 2.0*PI*(i as Field)/(n as Field));
-	let normals = n_angles.map(|angle| Vec3::new(angle.cos(),angle.sin(),0.0));
+	let normals = n_angles.map(|angle| circle_vec::<V>(angle));
 
 	//build verts
-	let top_verts = cap_coords.iter().map(|v| *v + Vec3::new(0.0,0.0,h/2.0));
-	let bottom_verts = cap_coords.iter().map(|v| *v + Vec3::new(0.0,0.0,-h/2.0));
+	let top_verts = cap_coords.iter().map(|v| *v + V::one_hot(2)*(h/2.0));
+	let bottom_verts = cap_coords.iter().map(|v| *v + V::one_hot(2)*(-h/2.0));
 
-	let verts : Vec<Vec3> = top_verts.chain(bottom_verts).collect();
+	let verts : Vec<V> = top_verts.chain(bottom_verts).collect();
 
 	//build edges
 	let top_edges = (0..n).map(|i| Edge(i,(i+1)%n));
@@ -92,13 +96,13 @@ pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 	let edges : Vec<Edge> = top_edges.chain(bottom_edges).chain(long_edges).collect();
 
 	//build faces
-	let top_face = Face::new((0..n).collect(),Vec3::one_hot(2));
-	let bottom_face = Face::new((n..2*n).collect(),Vec3::one_hot(2)*(-1.0));
+	let top_face = Face::new((0..n).collect(),V::one_hot(2));
+	let bottom_face = Face::new((n..2*n).collect(),V::one_hot(2)*(-1.0));
 	let long_faces = (0..n).zip(normals).map(|(i,normal)| Face::new(
 		vec![i,i+n,2*n + i,2*n + (i+1)%n],
 		normal));
 
-	let faces : Vec<Face<Vec3>>  = vec![top_face,bottom_face]
+	let faces : Vec<Face<V>>  = vec![top_face,bottom_face]
 		.into_iter()
 		.chain(long_faces)
 		.collect();
@@ -106,13 +110,10 @@ pub fn build_prism_3d(r : Field, h : Field, n : VertIndex) -> Shape<Vec3> {
 	return Shape::new(verts,edges,faces);
 
 }
-pub fn build_cube_3d(length : Field) -> Shape<Vec3> {
-	build_prism_3d(length/(2.0 as Field).sqrt(),length,4)
-}
-pub fn build_long_cube_3d(length : Field, width: Field) -> Shape<Vec3> {
+pub fn build_long_cube_3d<V: VectorTrait>(length : Field, width: Field) -> Shape<V> {
 	build_prism_3d(width/(2.0 as Field).sqrt(),length,4)
 }
-pub fn build_tube_cube_3d(length : Field, width: Field) -> Shape<Vec3> {
+pub fn build_tube_cube_3d<V: VectorTrait>(length : Field, width: Field) -> Shape<V> {
 	let rect = build_prism_3d(width/(2.0 as Field).sqrt(),length,4);
 	remove_faces(rect,vec![0,1])
 	
@@ -139,12 +140,15 @@ use crate::geometry::Transform;
 //rs is a list of radii of each circle
 //each face is a prism. if circle 0 has m points and circle 1 has n points,
 //there are m n-prisms and n m-prisms
-pub fn build_duoprism_4d(
+pub fn build_duoprism_4d<V: VectorTrait>(
 	radii : [Field ; 2],
 	axes: [[VecIndex ; 2] ; 2],
 	ns : [VertIndex ; 2]
-	) -> Shape<Vec4>
+	) -> Shape<V>
 {
+	if V::DIM < 4 {
+		panic!("Can't build duoprism in {} dimensions",{V::DIM})
+	}
 	if axes[0] == axes[1] {
 		panic!("Axes of duoprism must be distinct")
 	}
@@ -152,12 +156,12 @@ pub fn build_duoprism_4d(
 	let angles = ns_copy.iter().map(move |n| (0..*n)
 		.map(move |i| 2.0*PI*((i as Field)-0.5)/(*n as Field)));
 	let circle_coords : Vec<Vec<Vec2>> = multizip((radii.iter(),angles)).
-	map(|(r,angles)| angles.map(|angle| Vec2::new(angle.cos(),angle.sin())*(*r)).collect()
+	map(|(&r,angles)| angles.map(|angle| circle_vec::<Vec2>(angle)*r).collect()
 		).collect();
 
-	let verts : Vec<Vec4> = iproduct!(circle_coords[0].iter(),circle_coords[1].iter())
+	let verts : Vec<V> = iproduct!(circle_coords[0].iter(),circle_coords[1].iter())
 		.map(|(c0,c1)| {
-			let mut v = Vec4::zero();
+			let mut v = V::zero();
 			v[axes[0][0]] = c0[0];
 		    v[axes[0][1]] = c0[1];
 		    v[axes[1][0]] = c1[0];
@@ -179,11 +183,11 @@ pub fn build_duoprism_4d(
 		);
 	let edges : Vec<Edge>= edges_1.chain(edges_2).collect();
 
-	fn make_normal(
+	fn make_normal<V: VectorTrait>(
 		edgeis : &Vec<EdgeIndex>,
-		verts : &Vec<Vec4>,
+		verts : &Vec<V>,
 		edges : &Vec<Edge>
-		) -> Vec4 {
+		) -> V {
 		let vertis : Vec<VertIndex> = edgeis.iter()
 			.map(|ei| &edges[*ei])
 			.map(|edge| vec![edge.0,edge.1])
@@ -191,18 +195,18 @@ pub fn build_duoprism_4d(
 			.collect(); //would like to not have to collect here
 		//get unique values
 		let vertis : Vec<VertIndex> = vertis.into_iter().unique().collect();
-		let verts_in_face : Vec<Vec4> = vertis.iter()
+		let verts_in_face : Vec<V> = vertis.iter()
 			.map(|vi| verts[*vi])
 			.collect();
 		let center = barycenter(&verts_in_face);
 		center.normalize()
 	}
 	// we need m n-prisms and n m-prisms
-	fn make_face1(
+	fn make_face1<V: VectorTrait>(
 		i : VertIndex,
 		ns : &[VertIndex ; 2],
-		verts : &Vec<Vec4>,
-		edges : &Vec<Edge>) -> Face<Vec4> {
+		verts : &Vec<V>,
+		edges : &Vec<Edge>) -> Face<V> {
 		let (m,n) = (ns[0],ns[1]);
 		let cap1_edgeis = (0..n).map(|j| j + i*n);
 		let cap2_edgeis = (0..n).map(|j| j + ((i+1)%m)*n);
@@ -212,11 +216,11 @@ pub fn build_duoprism_4d(
 		let normal = make_normal(&edgeis,&verts,&edges);
 		Face::new(edgeis,normal)
 	}
-	fn make_face2(
+	fn make_face2<V: VectorTrait>(
 		j : VertIndex,
 		ns : &[VertIndex ; 2],
-		verts : &Vec<Vec4>,
-		edges : &Vec<Edge>) -> Face<Vec4> {
+		verts : &Vec<V>,
+		edges : &Vec<Edge>) -> Face<V> {
 		let (m,n) = (ns[0],ns[1]);
 		let cap1_edgeis = (0..m).map(|i| m*n + j + i*n);
 		let cap2_edgeis = (0..m).map(|i| m*n + (j+1)%n + i*n);
@@ -228,7 +232,7 @@ pub fn build_duoprism_4d(
 	}
 	let faces_1 = (0..ns[0]).map(|i| make_face1(i,&ns.clone(),&verts,&edges));
 	let faces_2 = (0..ns[1]).map(|j| make_face2(j,&ns.clone(),&verts,&edges));
-	let faces : Vec<Face<Vec4>> = faces_1.chain(faces_2).collect();
+	let faces : Vec<Face<V>> = faces_1.chain(faces_2).collect();
 
 	// for face in &faces {
 	// 	println!("{}",face)
@@ -237,12 +241,6 @@ pub fn build_duoprism_4d(
 	Shape::new(verts,edges,faces)
 
 
-}
-pub fn build_cube_4d(length : Field) -> Shape<Vec4> {
-	let r = length/(2.0 as Field).sqrt();
-	build_duoprism_4d([r,r],
-		[[0,1],[2,3]],
-		[4,4])
 }
 
 pub fn color_cube< V: VectorTrait>(mut cube : Shape<V>) -> Shape<V> {
@@ -262,7 +260,7 @@ pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	new_shape
 }
 
-pub fn color_duocylinder(shape : &mut Shape<Vec4>, m : usize, n : usize) {
+pub fn color_duocylinder<V: VectorTrait>(shape : &mut Shape<V>, m : usize, n : usize) {
     for (i, face) in itertools::enumerate(shape.faces.iter_mut()) {
         let iint = i as i32;
         let color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);

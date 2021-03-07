@@ -9,7 +9,7 @@ use winit_input_helper::WinitInputHelper;
 use specs::prelude::*;
 
 use crate::vector::{VectorTrait,Field,VecIndex};
-use crate::components::{ClipState, Camera, MoveNext, Transform,Transformable, MaybeTarget, MaybeSelected};
+use crate::components::*;
 
 use glutin::event::{Event,WindowEvent};
 
@@ -186,15 +186,17 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
     type SystemData = (
         Read<'a,Input>,
         ReadExpect<'a,Player>,
+        ReadStorage<'a,BBox<V>>,
         ReadStorage<'a,MaybeTarget<V>>,
-        WriteStorage<'a,MaybeSelected>
+        WriteStorage<'a,MaybeSelected<V>>
     );
-    fn run(&mut self, (input, player, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) {
+    fn run(&mut self, (input, player, bbox_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) {
         if input.helper.mouse_held(0) {
             let maybe_target = maybe_target_storage.get(player.0).expect("Player has no target component");
             if let MaybeTarget(Some(target)) = maybe_target  {
                 let selected = maybe_selected_storage.get_mut(player.0).expect("Player has no selection component");
-                selected.0 = Some(target.entity)
+                let selected_bbox =  bbox_storage.get(target.entity).expect("Target entity has no bbox");
+                selected.0 = Some(Selected::new(target.entity, selected_bbox))
             }
         }
     }

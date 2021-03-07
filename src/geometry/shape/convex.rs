@@ -134,7 +134,7 @@ fn count_common_edges<V : VectorTrait>(face1 : &Face<V>, face2 : &Face<V>) -> us
 fn test_point_within() {
     use crate::vector::Vec3;
     let point = Vec3::new(1.2,1.2,1.2);
-    let shape = crate::geometry::shape::buildshapes::build_prism_3d(1.0, 1.0, 5);
+    let shape = crate::geometry::shape::buildshapes::build_prism_3d::<Vec3>(1.0, 1.0, 5);
     for v in shape.faces.iter().map(|f| f.normal.dot(point) - f.threshold) {
         println!("{}",v);
     }
@@ -146,7 +146,7 @@ fn test_point_within() {
 fn test_point_within2() {
     use colored::*;
     use crate::vector::{Vec3,linspace};
-    let shape = crate::geometry::shape::buildshapes::build_prism_3d(1.0, 1.0, 4);
+    let shape = crate::geometry::shape::buildshapes::build_prism_3d::<Vec3>(1.0, 1.0, 4);
     for x in linspace(-2.,2.,40) {
         let mut line = "".to_string();
         for y in linspace(-2.,2.,40) {

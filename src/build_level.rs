@@ -5,7 +5,7 @@ use crate::coin::Coin;
 use specs::prelude::*;
 use crate::shape_entity_builder::ShapeEntityBuilder;
 use crate::vector::{Vec2,Vec3,Vec4};
-use crate::geometry::shape::buildshapes::{build_cube_3d, build_cube_4d, color_cube, build_duoprism_4d, ShapeBuilder, build_prism_2d};
+use crate::geometry::shape::buildshapes::{color_cube, build_duoprism_4d, ShapeBuilder, build_prism_2d};
 use crate::constants::PI;
 use crate::geometry::{Shape};
 use crate::vector::{VectorTrait,Field};
@@ -93,13 +93,11 @@ pub fn build_shapes_3d(world : &mut World) {
     build_test_level_3d(world);
     //build_test_face(world);
     init_player(world, Vec3::zero());
-    init_cursor_3d(world);
 }
 pub fn build_shapes_4d(world : &mut World) {
     build_lvl_1_4d(world);
     //build_test_level_4d(world);
     init_player(world, Vec4::zero());
-    init_cursor_4d(world);
     
 }
 
@@ -205,20 +203,16 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
 pub fn init_player<V: VectorTrait>(world: &mut World, pos: V) {
     let transform = Transform::identity().with_translation(pos);
     crate::player::build_player(world, &transform);
+    init_cursor::<V>(world);
 
 }
-pub fn init_cursor_3d(world: &mut World) {
+pub fn init_cursor<V: VectorTrait>(world: &mut World) {
     world.create_entity()
         .with(Cursor)
-        .with(ShapeBuilder::<Vec2>::build_cube(0.03))
+        .with(ShapeBuilder::<V>::build_cube(0.03))
         .build();
 }
-pub fn init_cursor_4d(world: &mut World) {
-    world.create_entity()
-        .with(Cursor)
-        .with(ShapeBuilder::<Vec3>::build_cube(0.03))
-        .build();
-}
+
 pub fn build_lvl_1_3d(world : &mut World) {
     build_lvl_1(world,ShapeBuilder::<Vec3>::build_cube(1.0),ShapeBuilder::<Vec3>::build_coin());
 }

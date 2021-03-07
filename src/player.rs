@@ -7,6 +7,7 @@ use specs::prelude::*;
 use specs::{Component,HashMapStorage};
 use std::marker::PhantomData;
 use crate::collide::BBox;
+use crate::geometry::shape::buildshapes::build_prism_2d;
 
 
 pub struct Player(pub Entity); //specifies entity of player
@@ -19,7 +20,7 @@ pub fn build_player<V : VectorTrait>(world : &mut World, transform: &Transform<V
 	    .with(camera) //decompose
 	    .with(MoveNext::<V>::default())
 	    .with(MaybeTarget::<V>(None))
-		.with(MaybeSelected(None))
+		.with(MaybeSelected::<V>(None))
 	    .build();
 
     world.insert(Player(player_entity));
@@ -58,7 +59,23 @@ pub struct MaybeTarget<V : VectorTrait>(pub Option<Target<V>>);
 
 #[derive(Component)]
 #[storage(HashMapStorage)]
-pub struct MaybeSelected(pub Option<Entity>);
+pub struct MaybeSelected<V: VectorTrait>(pub Option<Selected<V>>);
+
+pub struct Selected<V: VectorTrait> {
+	pub entity: Entity,
+	pub selection_box_shape: Shape<V>,
+}
+impl<V: VectorTrait> Selected<V> {
+	pub fn new(entity: Entity, bbox: &BBox<V>) -> Self {
+		Selected{
+			entity,
+			selection_box_shape: Self::make_selection_box(bbox),
+		}
+	}
+	fn make_selection_box(bbox: &BBox<V>) -> Shape<V> {
+		build_prism_2d(1.0,5) //debug
+	}
+}
 
 pub struct Target<V : VectorTrait> {
 	pub entity : Entity,

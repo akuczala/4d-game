@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 use specs::prelude::*;
 use crate::systems::*;
 use crate::vector::{VectorTrait};
+use crate::draw::DrawSelectionBox;
 
 pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuilder<'a,'b>{
     let ph = PhantomData::<V>;
@@ -17,8 +18,10 @@ pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuil
         .with(CalcShapesLinesSystem(ph),"calc_shapes_lines",
               &["in_front"])
         //project lines
+        .with(DrawSelectionBox(ph),"draw_selection_box",
+              &["in_front"])
         .with(TransformDrawLinesSystem(ph),"transform_draw_lines",
-              &["calc_shapes_lines"])
+              &["calc_shapes_lines","draw_selection_box"])
         .with(DrawCursorSystem(ph),"draw_cursor",
               &["transform_draw_lines"])
         //start game update phase
