@@ -147,15 +147,15 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             //     mouse_pos : input.helper.mouse(),
 
             // };
-            // ui_args = UIArgs::new_debug::<V>(
-            //     &self.world,
-            //     frame_duration
-            // );
-            ui_args = UIArgs::Simple{
-                frame_duration,
-                coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
-                coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
-            };
+            ui_args = UIArgs::new_debug::<V>(
+                &self.world,
+                frame_duration
+            );
+            // ui_args = UIArgs::Simple{
+            //     frame_duration,
+            //     coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
+            //     coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
+            // };
 
             if input.closed {
                 println!("Escape button pressed; exiting.");

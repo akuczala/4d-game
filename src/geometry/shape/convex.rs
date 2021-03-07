@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::vector::{VectorTrait,Field};
 use crate::geometry::shape::{FaceIndex,Face,Shape};
-use crate::geometry::{Plane};
+use crate::geometry::{Plane,Line,line_plane_intersect};
 
 #[derive(Clone)]
 struct SubFace {
@@ -97,6 +97,18 @@ impl Convex{
     }
     pub fn point_within<V: VectorTrait>(point : V, distance : Field, faces: &Vec<Face<V>>) -> bool {
         faces.iter().all(|f| f.normal.dot(point) - f.threshold < distance)
+    }
+    //returns points of intersection with shape
+    pub fn line_intersect<V: VectorTrait>(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
+        let mut out_points = Vec::<V>::new();
+        for face in shape.faces.iter().filter(|f| !visible_only || f.visible) {
+            if let Some(p) = line_plane_intersect(line,&Plane{normal : face.normal, threshold : face.threshold}) {
+                if crate::vector::is_close(shape.point_signed_distance(p),0.) {
+                    out_points.push(p);
+                }
+            }
+        }
+        out_points
     }
 }
 

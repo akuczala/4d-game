@@ -12,12 +12,18 @@ use std::time::Instant;
 use crate::fps::FPSFloat;
 //mod clipboard;
 
+#[derive(Default)]
+struct State {
+    text: String,
+    checked: bool
+}
 pub struct System {
     pub imgui: Context,
     pub platform: WinitPlatform,
     pub renderer: Renderer,
     pub font_size: f32,
     pub ui_args : UIArgs,
+    state: State,
 }
 
 pub fn init(title: &str, display : &Display) -> System {
@@ -72,6 +78,7 @@ pub fn init(title: &str, display : &Display) -> System {
         renderer,
         font_size,
         ui_args : UIArgs::None,
+        state: State::default(),
     }
 }
 pub enum UIArgs{
@@ -105,7 +112,7 @@ impl UIArgs{
                     MaybeTarget(Some(target)) => format!("target: {}, {}, {}\n",target.entity.id(),target.distance,target.point),
                     MaybeTarget(None) => "None".to_string(),
                 },
-            crate::clipping::ShapeClipState::<V>::in_front_debug(world),
+            //crate::clipping::ShapeClipState::<V>::in_front_debug(world),
         ];
         //print draw lines
         //let draw_lines = world.read_resource::<DrawLineList<V::SubV>>();
@@ -186,7 +193,7 @@ fn simple_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
             });
         
     }
-fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
+fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs, state: &mut State) {
         use imgui::{Window,im_str,Condition};
         Window::new(im_str!("Press M to toggle mouse control"))
             .position([0.,0.], Condition::Appearing)
@@ -205,6 +212,10 @@ fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
                     }
                     _ => (),
                 };
+                if ui.radio_button_bool(im_str!("I toggle my state on click"), state.checked) {
+                    state.checked = !state.checked; // flip state on click
+                    state.text = "*** Toggling radio button was clicked".to_string();
+                }
             });
         
     }
@@ -245,7 +256,7 @@ impl System {
         let mut ui = imgui.frame();
         let mut run = true;
         match self.ui_args {
-            UIArgs::Debug {..} => debug_ui(&mut run, &mut ui, &mut self.ui_args),
+            UIArgs::Debug {..} => debug_ui(&mut run, &mut ui, &mut self.ui_args, &mut self.state),
             UIArgs::Simple {..} => simple_ui(&mut run, &mut ui, &mut self.ui_args),
             UIArgs::Test {..} => hello_world(&mut run, &mut ui, &mut self.ui_args),
             UIArgs::None => ()

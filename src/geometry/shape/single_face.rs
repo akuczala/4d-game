@@ -1,5 +1,5 @@
 use crate::vector::{VectorTrait,Field,barycenter_iter};
-use crate::geometry::{Plane};
+use crate::geometry::{Plane,Line,line_plane_intersect};
 use super::{VertIndex,Face,Shape};
 
 #[derive(Clone)]
@@ -74,7 +74,20 @@ impl<V: VectorTrait> SingleFace<V>{
         }
 
     }
-    //return new dpos based on proximity
+    //returns points of intersection with shape
+    pub fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
+        let mut out_points = Vec::<V>::new();
+        let face = &shape.faces[0];
+        if !visible_only || face.visible {
+            if let Some(p) = line_plane_intersect(line,&Plane{normal : face.normal, threshold : face.threshold}) {
+                if self.subface_normal_distance(p).1 < 0.0 {
+                    out_points.push(p)
+                }
+            }
+        }
+        out_points
+    }
+    //returns distance to nearest subface plane
     pub fn subface_normal_distance(&self, pos: V) -> (V, Field) {
         let (closest_subshape_plane, distance) = Plane::point_normal_distance(
             pos,

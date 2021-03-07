@@ -30,11 +30,18 @@ const MAX_TARGET_DIST : Field = 10.;
 pub struct ShapeTargetingSystem<V :VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for ShapeTargetingSystem<V> {
-	type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,Transform<V>>,ReadStorage<'a,Shape<V>>,ReadStorage<'a,ShapeClipState<V>>,Entities<'a>,WriteStorage<'a,MaybeTarget<V>>);
+	type SystemData = (
+		ReadExpect<'a,Player>,
+		ReadStorage<'a,Transform<V>>,
+		ReadStorage<'a,Shape<V>>,
+		ReadStorage<'a,ShapeType<V>>,
+		ReadStorage<'a,ShapeClipState<V>>,
+		Entities<'a>,
+		WriteStorage<'a,MaybeTarget<V>>);
 
-	fn run(&mut self, (player, transforms, shapes, shape_clip_state, entities, mut targets) : Self::SystemData) {
+	fn run(&mut self, (player, transforms, shapes, shape_types, shape_clip_state, entities, mut targets) : Self::SystemData) {
 		let transform = transforms.get(player.0).expect("Player has no transform");
-		let target = shape_targeting(&transform,(&shapes,&shape_clip_state,&*entities).join()); //filter by shapes having a clip state
+		let target = shape_targeting(&transform,(&shapes, &shape_types, &shape_clip_state,&*entities).join()); //filter by shapes having a clip state
 		*targets.get_mut(player.0).expect("Player has no target") = target;
 		
 
@@ -56,7 +63,7 @@ pub struct Target<V : VectorTrait> {
 
 }
 
-fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>,&'a ShapeClipState<V>,Entity)>>(transform : &Transform<V>, iter : I) -> MaybeTarget<V> {
+fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>,Entity)>>(transform : &Transform<V>, iter : I) -> MaybeTarget<V> {
 	let pos = transform.pos;
 	let dir = transform.frame[-1];
 	let ray = Line(pos, pos + dir*MAX_TARGET_DIST);
@@ -64,9 +71,9 @@ fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<
 	//loop through all shapes and check for nearest intersection
 	let mut closest : Option<(Entity,Field,V)> = None;
 	let mut all_points = Vec::<V>::new();
-	for (shape,_,e) in iter {
+	for (shape, shape_type,_,e) in iter {
 
-		for intersect_point in shape.line_intersect(&ray,true) { //find intersections of ray with visible faces
+		for intersect_point in shape_type.line_intersect(shape, &ray, true) { //find intersections of ray with visible faces
 			all_points.push(intersect_point);
 			let distsq = (intersect_point - pos).norm_sq();
 			closest = match closest {

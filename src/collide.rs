@@ -77,12 +77,14 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 	}
 }
 
-//this system is not used yet
 pub struct UpdateBBoxSystem<V: VectorTrait,T: HasBBox<V>>(pub PhantomData<V>, pub PhantomData<T>);
 
 impl<'a,V: VectorTrait,T: HasBBox<V>> System<'a> for UpdateBBoxSystem<V,T> {
 
-	type SystemData = (ReadStorage<'a,T>,WriteStorage<'a,BBox<V>>);
+	type SystemData = (
+		ReadStorage<'a,T>,
+		WriteStorage<'a,BBox<V>>
+	);
 
 	fn run(&mut self, (read_shape, mut write_bbox) : Self::SystemData) {
 		for (shape, bbox) in (&read_shape, &mut write_bbox).join() {
@@ -207,7 +209,7 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 
 	}
 }
-//stop movement through entites indexed in spatial hash set
+//stop movement through entities indexed in spatial hash set
 //need only run these systems when the player is moving
 pub struct PlayerCollisionDetectionSystem<V>(pub PhantomData<V>);
 
@@ -246,6 +248,7 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 				for (shape, shape_type, _, _) in (&shape, &shape_types, &static_collider, &in_cell).join() {
 
 					let next_dpos = move_next.next_dpos.unwrap();
+					//this is more convoluted than it needs to be
 					let (normal, dist) = shape.point_normal_distance(pos);
 					if match shape_type {
 						ShapeType::SingleFace(single_face) => if single_face.two_sided {

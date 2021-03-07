@@ -14,11 +14,22 @@ pub use convex::Convex; pub use single_face::SingleFace;
 use specs::{Component, VecStorage};
 use std::fmt;
 
+pub trait ShapeTypeTrait<V: VectorTrait> {
+    fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V>;
+}
 #[derive(Component,Clone)]
 #[storage(VecStorage)]
 pub enum ShapeType<V: VectorTrait> {
     Convex(convex::Convex),
     SingleFace(single_face::SingleFace<V>)
+}
+impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
+    fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V> {
+        match self {
+            ShapeType::Convex(convex) => convex.line_intersect(shape, line, visible_only),
+            ShapeType::SingleFace(single_face) => single_face.line_intersect(shape, line, visible_only),
+        }
+    }
 }
 
 pub type VertIndex = usize;
@@ -83,18 +94,6 @@ impl <V : VectorTrait> Shape<V> {
     pub fn point_facei_distance(&self, point : V) -> (usize, Field) {
          self.faces.iter().enumerate().map(|(i,f)| (i, f.normal.dot(point) - f.threshold))
             .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
-    }
-    //returns points of intersection with shape
-    pub fn line_intersect(&self, line : &Line<V>, visible_only : bool) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
-        let mut out_points = Vec::<V>::new();
-        for face in self.faces.iter().filter(|f| !visible_only || f.visible) {
-            if let Some(p) = line_plane_intersect(line,&Plane{normal : face.normal, threshold : face.threshold}) {
-                if crate::vector::is_close(self.point_signed_distance(p),0.) {
-                    out_points.push(p);
-                }
-            }
-        }
-     out_points
     }
     pub fn update(&mut self, transformation: &Transform<V>) {
         for (v,vr) in self.verts.iter_mut().zip(self.verts_ref.iter()) {

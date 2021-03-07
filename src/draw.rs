@@ -214,7 +214,7 @@ pub fn update_shape_visibility<V : VectorTrait>(
 	) {
 	//update shape visibility and boundaries
 	let two_sided = match shape_type {
-		ShapeType::Convex(_) => true,
+		ShapeType::Convex(_) => false,
 		ShapeType::SingleFace(single_face) => single_face.two_sided
 	};
 	shape.update_visibility(camera_pos,shape_clip_state.transparent | two_sided);
