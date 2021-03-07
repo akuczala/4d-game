@@ -19,6 +19,7 @@ pub fn build_player<V : VectorTrait>(world : &mut World, transform: &Transform<V
 	    .with(camera) //decompose
 	    .with(MoveNext::<V>::default())
 	    .with(MaybeTarget::<V>(None))
+		.with(MaybeSelected(None))
 	    .build();
 
     world.insert(Player(player_entity));
@@ -54,6 +55,10 @@ pub struct Cursor;
 #[derive(Component)]
 #[storage(HashMapStorage)]
 pub struct MaybeTarget<V : VectorTrait>(pub Option<Target<V>>);
+
+#[derive(Component)]
+#[storage(HashMapStorage)]
+pub struct MaybeSelected(pub Option<Entity>);
 
 pub struct Target<V : VectorTrait> {
 	pub entity : Entity,

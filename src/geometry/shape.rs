@@ -4,7 +4,7 @@ pub mod single_face;
 pub mod face;
 pub mod buildshapes;
 
-use crate::colors::Color;
+use crate::graphics::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait,Field};
 use super::{Line,Plane,line_plane_intersect,Transform,Transformable};

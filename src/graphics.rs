@@ -1,22 +1,23 @@
-pub mod graphics2d;
-pub mod graphics3d;
-mod simple_vertex;
-mod proj_line_vertex;
-
-pub use graphics2d::Graphics2d;
-pub use graphics3d::Graphics3d;
+use glium::Display;
 //use crate::colors::Color;
 //use glium::glutin;
 use glium::Surface;
-use glium::Display;
-
 //use glium::Surface;
 //use glium::glutin::dpi::LogicalSize;
 use glium::vertex::Vertex;
 
-use crate::vector::{VectorTrait};
-use crate::geometry::shape::{VertIndex};
-use crate::draw::{DrawVertex,DrawLine};
+pub use graphics2d::Graphics2d;
+pub use graphics3d::Graphics3d;
+
+use crate::draw::{DrawLine, DrawVertex};
+use crate::geometry::shape::VertIndex;
+use crate::vector::VectorTrait;
+
+pub mod graphics2d;
+pub mod graphics3d;
+mod simple_vertex;
+mod proj_line_vertex;
+pub mod colors;
 
 //pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/test-shader.vert");
 pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/test-shader.vert");

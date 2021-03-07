@@ -1,6 +1,6 @@
 use crate::components::{Cursor,Transform};
 use crate::geometry::transform::{Transformable};
-use crate::colors::*;
+use crate::graphics::colors::*;
 use crate::coin::Coin;
 use specs::prelude::*;
 use crate::shape_entity_builder::ShapeEntityBuilder;

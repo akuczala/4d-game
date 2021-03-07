@@ -1,5 +1,5 @@
 
-use crate::clipping::ShapeClipState;
+use crate::draw::clipping::ShapeClipState;
 use crate::spatial_hash::SpatialHashSet;
 use specs::prelude::*;
 

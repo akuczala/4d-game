@@ -2,7 +2,7 @@ use crate::vector::VectorTrait;
 use crate::components::{Shape,ShapeType,Transform,Transformable,Convex,BBall,ShapeClipState,HasBBox};
 use crate::draw::{Texture,TextureMapping};
 use crate::geometry::shape::buildshapes;
-use crate::colors::Color;
+use crate::graphics::colors::Color;
 
 use specs::prelude::*;
 

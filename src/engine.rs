@@ -1,3 +1,6 @@
+mod dispatcher;
+use dispatcher::get_engine_dispatcher_builder;
+
 use std::time::{Duration,Instant};
 use crate::FPSTimer;
 use crate::collide;
@@ -9,10 +12,6 @@ use glium::glutin::{
         event::{Event, WindowEvent},
         event_loop::ControlFlow,
     };
-
-
-use crate::camera::Camera;
-use crate::clipping::ClipState;
 use crate::draw;
 use crate::gui::UIArgs;
 //NOTES:
@@ -23,8 +22,7 @@ use crate::input::{Input,MovementMode};
 use crate::graphics::{Graphics,Graphics2d,Graphics3d};
 use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait};
 
-use crate::systems::*;
-use crate::components::{Transform};
+use crate::components::*;
 
 
 pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
@@ -40,49 +38,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
     pub fn new<F : Fn(&mut World)>(build_scene : F, graphics : G, maybe_gui : Option<crate::gui::System>) -> Self {
 
         let mut world = World::new();
-        let ph = PhantomData::<V>;
-        let mut dispatcher = DispatcherBuilder::new()
-            //start drawing phase. this is first so that we can do world.maintain() before we draw
-            //for each shape, update clipping boundaries and face visibility
-            .with(VisibilitySystem(ph),"visibility",
-                  &[])
-            //determine what shapes are in front of other shapes
-            .with(InFrontSystem(ph),"in_front",
-                  &["visibility"])
-            //calculate and clip lines for each shape
-            .with(CalcShapesLinesSystem(ph),"calc_shapes_lines",
-                  &["in_front"])
-            //project lines
-            .with(TransformDrawLinesSystem(ph),"transform_draw_lines",
-                  &["calc_shapes_lines"])
-            .with(DrawCursorSystem(ph),"draw_cursor",
-                  &["transform_draw_lines"])
-            //start game update phase
-            .with(UpdateCameraSystem(ph),"update_camera",
-                  &["calc_shapes_lines"])
-            .with(PlayerGravitySystem(ph), "player_gravity",
-                  &["update_camera"])
-            .with(PlayerCollisionDetectionSystem(ph),"player_collision_detect",
-                  &["update_camera","player_gravity"])
-            .with(PlayerStaticCollisionSystem(ph),"player_static_collision",
-                  &["player_collision_detect"])
-            .with(PlayerCoinCollisionSystem(ph),"player_coin_collision",
-                  &["player_collision_detect","player_static_collision"])
-            .with(MovePlayerSystem(ph),"move_player",
-                  &["player_static_collision","player_coin_collision"])
-            .with(ShapeTargetingSystem(ph),"shape_targeting",
-                  &["move_player"])
-            .with(UpdatePlayerBBox(ph),"update_player_bbox",
-                  &["move_player"]) //merge with above
-            //.with(UpdateBBoxSystem(ph,PhantomData::<Shape<V>>),"update_all_bbox",&["update_player_bbox"]) //if we had moving objects other than player
-            .with(CoinSpinningSystem(ph),"coin_spinning",
-                  &[])
-            .with(ShapeCleanupSystem(ph),"shape_cleanup",
-                  &["player_coin_collision"])
-            .with(PrintDebugSystem(ph),"print_debug",
-                  &["update_camera"])
-            
-            .build();
+        let mut dispatcher = get_engine_dispatcher_builder::<V>().build();
 
         dispatcher.setup(&mut world);
 

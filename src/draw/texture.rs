@@ -3,7 +3,7 @@ use super::{DrawLine};
 use crate::vector::{VectorTrait,Field,VecIndex};
 use crate::geometry::{Line,shape::{VertIndex,Shape,Face,Edge}};
 
-use crate::colors::*;
+use crate::graphics::colors::*;
 
 
 use itertools::Itertools;

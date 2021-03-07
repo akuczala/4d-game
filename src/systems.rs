@@ -5,8 +5,8 @@ pub use crate::draw::{
 	TransformDrawLinesSystem,
 	DrawCursorSystem,
 };
-pub use crate::clipping::{InFrontSystem};
-pub use crate::input::{UpdateCameraSystem,PrintDebugSystem};
+pub use crate::draw::clipping::{InFrontSystem};
+pub use crate::input::{UpdateCameraSystem,PrintDebugSystem,SelectTargetSystem};
 pub use crate::player::{ShapeTargetingSystem};
 pub use crate::collide::{
 	PlayerCollisionDetectionSystem,

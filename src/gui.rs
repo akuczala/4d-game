@@ -104,13 +104,20 @@ impl UIArgs{
         let mut debug_text = "".to_string();
 
         let player = world.read_resource::<Player>();
-        let targets = world.read_storage::<MaybeTarget<V>>();
-        let maybe_target : &MaybeTarget<V> = targets.get(player.0).expect("player has no target");
+        // the let statements for storage here are needed to avoid temporary borrowing
+        let maybe_target_storage = world.read_storage::<MaybeTarget<V>>();
+        let maybe_target = maybe_target_storage.get(player.0).expect("player has no target");
+        let maybe_selected_storage= world.read_storage::<MaybeSelected>();
+        let maybe_selected = maybe_selected_storage.get(player.0).expect("player has no selection component");
 
         let debug_strings = vec![
                 match maybe_target {
                     MaybeTarget(Some(target)) => format!("target: {}, {}, {}\n",target.entity.id(),target.distance,target.point),
-                    MaybeTarget(None) => "None".to_string(),
+                    MaybeTarget(None) => "No target\n".to_string(),
+                },
+                match maybe_selected {
+                    MaybeSelected(Some(entity)) => format!("target: {}\n",entity.id()),
+                    MaybeSelected(None) => "No selection\n".to_string(),
                 },
             //crate::clipping::ShapeClipState::<V>::in_front_debug(world),
         ];

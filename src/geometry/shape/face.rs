@@ -1,6 +1,6 @@
 use super::{EdgeIndex,VertIndex,Edge};
 use crate::vector::{VectorTrait,Field};
-use crate::colors::Color;
+use crate::graphics::colors::Color;
 use itertools::Itertools;
 
 use crate::draw::{Texture,TextureMapping};

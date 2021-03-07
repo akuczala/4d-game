@@ -1,15 +1,22 @@
 #![allow(dead_code)]
 #[macro_use] extern crate glium;
 #[macro_use] extern crate itertools;
+
+//use specs::prelude::*;
+use glium::glutin;
+use glium::glutin::dpi::LogicalSize;
+use glium::glutin::event_loop::EventLoop;
+
+use engine::Engine;
+use fps::FPSTimer;
+
 //extern crate imgui;
 //extern crate imgui_glium_renderer;
 mod constants;
 mod vector;
 mod geometry;
-mod clipping;
 mod draw;
 mod camera;
-mod colors;
 
 mod graphics;
 mod gui;
@@ -28,19 +35,8 @@ mod systems;
 mod components;
 //mod object;
 
-//use specs::prelude::*;
-use glium::glutin;
-use glium::glutin::dpi::LogicalSize;
-
-use glium::glutin::event_loop::EventLoop;
-
-
 //NOTES:
 // include visual indicator of what direction a collision is in
-
-use engine::Engine;
-use fps::FPSTimer;
-
 
 fn main() {
     

@@ -1,20 +1,19 @@
-mod texture;
-
-use crate::components::*;
-use specs::prelude::*;
 use std::marker::PhantomData;
 
+use specs::prelude::*;
+
+use clipping::{ClipState,clip_line_plane, clip_line_cube};
+pub use texture::{Texture, TextureMapping};
+
+use crate::components::*;
+use crate::geometry::{Line, Shape, shape::VertIndex};
+use crate::graphics::colors::*;
+use crate::vector::{Field, VectorTrait};
+
+mod texture;
+pub mod clipping;
+
 extern crate map_in_place;
-
-pub use texture::{Texture,TextureMapping};
-
-use crate::vector::{VectorTrait,Field};
-use crate::geometry::{shape::{VertIndex},Shape,Line};
-use crate::components::{Camera,ShapeType,ShapeClipState};
-//use crate::graphics;
-use crate::clipping::{clip_line_plane,clip_line_cube};
-use crate::colors::*;
-use crate::clipping::ClipState;
 
 const Z0 : Field = 0.0;
 
@@ -278,7 +277,7 @@ where V : VectorTrait
 				});
 			//do clipping between all shapes
 			//let shapes_in_front = shapes.join().filter(|&s| (s as *const _ ) != (shape as *const _));
-			let mut clipped_lines = crate::clipping::clip_draw_lines(
+			let mut clipped_lines = clipping::clip_draw_lines(
 				shape_lines, clip_states_in_front);
 			lines.append(&mut clipped_lines);
 		} else {

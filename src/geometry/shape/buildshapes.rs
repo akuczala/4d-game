@@ -5,7 +5,7 @@ use crate::vector::{Vec2,Vec3,Vec4,barycenter};
 use super::{Shape,SingleFace,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
 use crate::vector::PI;
 use crate::vector::Field;
-use crate::colors::*;
+use crate::graphics::colors::*;
 use crate::draw::{Texture};
 use std::marker::PhantomData;
 
