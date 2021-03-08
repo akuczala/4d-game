@@ -200,23 +200,14 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
 }
 
-impl EngineD<Vec3,Graphics2d> {
+impl<V: VectorTrait, G: Graphics<V::SubV>> EngineD<V,G> {
     fn init(display : &Display, gui : Option<crate::gui::System>) -> Self {
-        println!("Starting 3d engine");
+        println!("Starting {}d engine",V::DIM);
         //let game = Game::new(game::build_shapes_3d());
-        let mut graphics = Graphics2d::new(display);
+        let mut graphics = G::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
 
-        Self::new(crate::build_level::build_shapes_3d,graphics,gui)
-    }
-}
-impl EngineD<Vec4,Graphics3d> {
-    fn init(display : &Display, gui : Option<crate::gui::System>) -> Self {
-        println!("Starting 4d engine");
-        //let game = Game::new(game::build_shapes_4d());
-        let mut graphics = Graphics3d::new(display);
-        graphics.new_vertex_buffer_from_lines(&vec![],display);
-        Self::new(crate::build_level::build_shapes_4d,graphics,gui)
+        Self::new(crate::build_level::build_shapes::<V>,graphics,gui)
     }
 }
 

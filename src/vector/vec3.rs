@@ -3,7 +3,7 @@ use std::fmt;
 use crate::vector::{VecIndex,VectorTrait,Field,Vec2};
 use super::Mat3;
 
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Vec3{arr: [Field ; 3]}
 impl Vec3 {
     pub fn new(v0 : Field, v1 : Field, v2 : Field) -> Vec3

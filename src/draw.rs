@@ -163,7 +163,11 @@ pub fn transform_draw_line<V : VectorTrait>(
 
 pub struct DrawCursorSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
-    type SystemData = (ReadStorage<'a,Cursor>,ReadStorage<'a,Shape<V::SubV>>,WriteExpect<'a,DrawLineList<V::SubV>>);
+    type SystemData = (
+		ReadStorage<'a,Cursor>,
+		ReadStorage<'a,Shape<V::SubV>>,
+		WriteExpect<'a,DrawLineList<V::SubV>>
+	);
 
     fn run(&mut self, (cursors, shapes, mut draw_lines) : Self::SystemData) {
     	//write new vec of draw lines to DrawLineList

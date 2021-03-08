@@ -7,7 +7,7 @@ use specs::prelude::*;
 use specs::{Component,HashMapStorage};
 use std::marker::PhantomData;
 use crate::collide::BBox;
-use crate::geometry::shape::buildshapes::build_prism_2d;
+use crate::geometry::shape::buildshapes::ShapeBuilder;
 
 
 pub struct Player(pub Entity); //specifies entity of player
@@ -69,11 +69,15 @@ impl<V: VectorTrait> Selected<V> {
 	pub fn new(entity: Entity, bbox: &BBox<V>) -> Self {
 		Selected{
 			entity,
-			selection_box_shape: Self::make_selection_box(bbox),
+			selection_box_shape: Self::make_selection_box(bbox)
 		}
 	}
 	fn make_selection_box(bbox: &BBox<V>) -> Shape<V> {
-		build_prism_2d(1.0,5) //debug
+		let bbox_lengths = bbox.max - bbox.min;
+		let mut shape = ShapeBuilder::build_cube(1.0)
+			.stretch(&bbox_lengths);
+		shape.transform(Transform::pos(bbox.center()));
+		shape
 	}
 }
 

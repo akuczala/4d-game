@@ -106,22 +106,22 @@ impl <V : VectorTrait> Shape<V> {
         }
     }
     pub fn stretch(&self, scales : &V) -> Self {
-    let mut new_shape = self.clone();
-    let new_verts : Vec<V> = self.verts_ref.iter()
-        .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
-    //need to explicitly update this as it stands
-    //need to have a clear differentiation between
-    //changes to mesh (verts_ref and center_ref) and
-    //changes to position/orientation/scaling of mesh
+        let mut new_shape = self.clone();
+        let new_verts : Vec<V> = self.verts_ref.iter()
+            .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
+        //need to explicitly update this as it stands
+        //need to have a clear differentiation between
+        //changes to mesh (verts_ref and center_ref) and
+        //changes to position/orientation/scaling of mesh
 
-    for face in &mut new_shape.faces {
-                let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
-        face.center_ref = vector::barycenter(&face_verts);
+        for face in &mut new_shape.faces {
+                    let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
+            face.center_ref = vector::barycenter(&face_verts);
+        }
+        new_shape.verts_ref = new_verts;
+        new_shape.update(&Transform::identity());
+        new_shape
     }
-    new_shape.verts_ref = new_verts;
-    new_shape.update(&Transform::identity());
-    new_shape
-}
     pub fn update_visibility(&mut self, camera_pos : V, two_sided : bool) {
         for face in self.faces.iter_mut() {
             face.update_visibility(camera_pos, two_sided);

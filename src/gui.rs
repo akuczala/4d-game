@@ -116,7 +116,11 @@ impl UIArgs{
                     MaybeTarget(None) => "No target\n".to_string(),
                 },
                 match maybe_selected {
-                    MaybeSelected(Some(selected)) => format!("target: {}\n",selected.entity.id()),
+                    MaybeSelected(Some(selected)) => {
+                        let bbox_storage = world.read_storage::<BBox<V>>();
+                        let selected_bbox = bbox_storage.get(selected.entity).expect("selected entity has no bbox");
+                        format!("target: {}, {:?}\n",selected.entity.id(), *selected_bbox)
+                    },
                     MaybeSelected(None) => "No selection\n".to_string(),
                 },
             //crate::clipping::ShapeClipState::<V>::in_front_debug(world),

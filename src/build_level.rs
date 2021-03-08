@@ -68,37 +68,26 @@ fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: 
         .with_color(YELLOW)
         .build(world).with(StaticCollider).build();
 }
-pub fn build_test_level_3d(world: &mut World) {
-    //insert_wall(world,build_cube_3d(1.0).with_pos(&Vec3::new(3., 0., 0.)));
-    let build_shape: ShapeEntityBuilder<Vec3>= ShapeEntityBuilder::new_face_shape(
-        ShapeBuilder::<Vec2>::build_cube(2.0), true)
+pub fn build_test_level<V: VectorTrait>(world: &mut World) {
+    let (n_divisions, frame_vertis) = match V::DIM {
+        3 => (vec![4,4], vec![1,3]),
+        4 => (vec![4,4,4], vec![1,3,4]),
+        _ => panic!("Cannot build test level in {} dimensions.", {V::DIM})
+    };
+    let build_shape: ShapeEntityBuilder<V>= ShapeEntityBuilder::new_face_shape(
+        ShapeBuilder::<V::SubV>::build_cube(2.0), true)
         .with_texture(
-            draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4]),
-            draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3]}
+            draw::Texture::make_tile_texture(&vec![0.8],&n_divisions),
+            draw::TextureMapping{origin_verti : 0, frame_vertis}
         );
     build_test_walls(&build_shape, world);
 }
-pub fn build_test_level_4d(world: &mut World) {
-    //insert_wall(world,build_cube_4d(1.0).with_pos(&Vec4::new(3., 0., 0.,0.)));
-    let build_shape: ShapeEntityBuilder<Vec4>= ShapeEntityBuilder::new_face_shape(
-        ShapeBuilder::<Vec3>::build_cube(2.0), true)
-        .with_texture(
-            draw::Texture::make_tile_texture(&vec![0.8],&vec![4,4,4]),
-            draw::TextureMapping{origin_verti : 0, frame_vertis : vec![1,3,4]}
-        );
-    build_test_walls(&build_shape, world)
-}
-pub fn build_shapes_3d(world : &mut World) {
-    //build_lvl_1_3d(world);
-    build_test_level_3d(world);
+
+pub fn build_shapes<V: VectorTrait>(world : &mut World) {
+    build_lvl_1::<V>(world);
+    //build_test_level::<V>(world);
     //build_test_face(world);
-    init_player(world, Vec3::zero());
-}
-pub fn build_shapes_4d(world : &mut World) {
-    build_lvl_1_4d(world);
-    //build_test_level_4d(world);
-    init_player(world, Vec4::zero());
-    
+    init_player(world, V::zero());
 }
 
 pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<ShapeEntityBuilder<V>> {
@@ -209,18 +198,13 @@ pub fn init_player<V: VectorTrait>(world: &mut World, pos: V) {
 pub fn init_cursor<V: VectorTrait>(world: &mut World) {
     world.create_entity()
         .with(Cursor)
-        .with(ShapeBuilder::<V>::build_cube(0.03))
+        .with(ShapeBuilder::<V::SubV>::build_cube(0.03))
         .build();
 }
 
-pub fn build_lvl_1_3d(world : &mut World) {
-    build_lvl_1(world,ShapeBuilder::<Vec3>::build_cube(1.0),ShapeBuilder::<Vec3>::build_coin());
-}
-pub fn build_lvl_1_4d(world : &mut World) {
-    build_lvl_1(world,ShapeBuilder::<Vec4>::build_cube(1.0),ShapeBuilder::<Vec4>::build_coin());
-}
-
-pub fn build_lvl_1<V : VectorTrait>(world : &mut World, cube : Shape<V>, coin : Shape<V>) {
+pub fn build_lvl_1<V : VectorTrait>(world : &mut World) {
+    let cube = ShapeBuilder::<V>::build_cube(1.0);
+    let coin = ShapeBuilder::<V>::build_coin();
     let wall_length = 3.0;
     let walls : Vec<ShapeEntityBuilder<V>> = build_corridor_cross(&color_cube(cube), wall_length);
 

@@ -32,7 +32,7 @@ pub fn linspace(min : Field, max : Field, n : usize) -> impl Iterator<Item=Field
 
 //the 'static lifetime here tells the compiler that any type with the vector trait
 //does not hold any references that might require lifetimes
-pub trait VectorTrait: Copy + Display + Sync + Send + 'static +
+pub trait VectorTrait: Copy + Display + Sync + Send + std::fmt::Debug + 'static +
  Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
  Mul<Field,Output=Self> + Div<Field,Output=Self> +
  Index<VecIndex,Output=Field> + IndexMut<VecIndex>
