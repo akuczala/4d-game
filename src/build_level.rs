@@ -11,6 +11,7 @@ use crate::geometry::{Shape};
 use crate::vector::{VectorTrait,Field};
 use crate::draw;
 use crate::collide::{StaticCollider};
+use colored::Color::Magenta;
 
 pub fn insert_wall<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V>) {
     shape_builder.build(world)
@@ -83,8 +84,56 @@ pub fn build_test_level<V: VectorTrait>(world: &mut World) {
     build_test_walls(&build_shape, world);
 }
 
+pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
+    let (n_divisions, frame_vertis) = match V::DIM {
+        3 => (vec![4,4], vec![1,3]),
+        4 => (vec![4,4,4], vec![1,3,4]),
+        _ => panic!("Cannot build test level in {} dimensions.", {V::DIM})
+    };
+    let len = 4.0;
+    let wall_builder: ShapeEntityBuilder<V>= ShapeEntityBuilder::new_face_shape(
+        ShapeBuilder::<V::SubV>::build_cube(len), false
+    ).with_texture(
+        draw::Texture::make_tile_texture(&vec![0.8],&n_divisions),
+        draw::TextureMapping{origin_verti : 0, frame_vertis}
+    );
+    let upper_floor_builder = ShapeEntityBuilder::new_face_shape(
+        ShapeBuilder::<V::SubV>::build_cube(len), true
+    ).stretch(&(V::ones()*0.5-V::one_hot(1)*0.25)).with_rotation(-1, 1, -PI/2.0)
+        .with_translation(V::one_hot(1)*len/2.0);
+    // upper_floor_builder.build(world)
+    //     .with(StaticCollider).build();
+    let colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
+    for ((i,sign),color) in iproduct!(0..V::DIM, vec![-1,1]).zip(colors.into_iter()) {
+        if !(i == 1 && sign == 1) {
+            let float_sign = (sign as Field);
+            let shape = wall_builder.clone()
+                .with_translation(V::one_hot(i) * float_sign * len/2.0);
+            match i == V::DIM-1 {
+                true => shape.with_rotation(1, i, -PI * (1.0 + float_sign) / 2.0),
+                false => shape.with_rotation(-1, i, -PI / 2.0 * float_sign)
+            }.with_color(color)
+                .build(world)
+                .with(StaticCollider).build();
+        }
+        if i != 1 {
+            let float_sign = (sign as Field);
+            let shape = upper_floor_builder.clone()
+                .with_translation(V::one_hot(i) * float_sign * len*(1.5));
+            match i == V::DIM-1 {
+                true => shape,
+                false => shape.with_rotation(-1, i, -PI / 2.0 * float_sign)
+            }.with_color(color)
+                .build(world)
+                .with(StaticCollider).build();
+        }
+    }
+
+}
+
 pub fn build_shapes<V: VectorTrait>(world : &mut World) {
-    build_lvl_1::<V>(world);
+    //build_lvl_1::<V>(world);
+    build_fun_level::<V>(world);
     //build_test_level::<V>(world);
     //build_test_face(world);
     init_player(world, V::zero());

@@ -187,16 +187,19 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
         Read<'a,Input>,
         ReadExpect<'a,Player>,
         ReadStorage<'a,BBox<V>>,
+        ReadStorage<'a,Shape<V>>,
         ReadStorage<'a,MaybeTarget<V>>,
         WriteStorage<'a,MaybeSelected<V>>
     );
-    fn run(&mut self, (input, player, bbox_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) {
+    fn run(&mut self, (input, player, bbox_storage, shape_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) {
         if input.helper.mouse_held(0) {
             let maybe_target = maybe_target_storage.get(player.0).expect("Player has no target component");
             if let MaybeTarget(Some(target)) = maybe_target  {
                 let selected = maybe_selected_storage.get_mut(player.0).expect("Player has no selection component");
-                let selected_bbox =  bbox_storage.get(target.entity).expect("Target entity has no bbox");
-                selected.0 = Some(Selected::new(target.entity, selected_bbox))
+                // let selected_bbox =  bbox_storage.get(target.entity).expect("Target entity has no bbox");
+                // selected.0 = Some(Selected::new_from_bbox(target.entity, selected_bbox));
+                let selected_shape =  shape_storage.get(target.entity).expect("Target entity has no shape");
+                selected.0 = Some(Selected::new_from_shape(target.entity, selected_shape));
             }
         }
     }

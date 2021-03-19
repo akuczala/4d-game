@@ -66,10 +66,13 @@ pub struct Selected<V: VectorTrait> {
 	pub selection_box_shape: Shape<V>,
 }
 impl<V: VectorTrait> Selected<V> {
-	pub fn new(entity: Entity, bbox: &BBox<V>) -> Self {
+	pub fn new_from_bbox(entity: Entity, bbox: &BBox<V>) -> Self {
+		Self::new_from_shape(entity, &Self::make_selection_box(bbox))
+	}
+	pub fn new_from_shape(entity: Entity, shape: &Shape<V>) -> Self {
 		Selected{
 			entity,
-			selection_box_shape: Self::make_selection_box(bbox)
+			selection_box_shape: shape.clone()
 		}
 	}
 	fn make_selection_box(bbox: &BBox<V>) -> Shape<V> {
