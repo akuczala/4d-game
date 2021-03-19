@@ -46,7 +46,7 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
         self
     }
     pub fn stretch(mut self, scales : &V) -> Self {
-        self.shape = self.shape.stretch(scales);
+        self.shape = self.shape.stretch(&self.shape,scales);
         self
     }
     pub fn build(self, world: &mut World) -> EntityBuilder {
@@ -75,10 +75,6 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
     }
 }
 impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V> {
-    fn set_identity(mut self) -> Self {
-        self.transformation = Transform::identity();
-        self
-    }
     fn transform(&mut self, transformation: Transform<V>) {
         self.transformation = self.transformation.with_transform(transformation);
     }

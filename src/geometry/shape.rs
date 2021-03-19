@@ -2,8 +2,10 @@ pub mod convex;
 pub mod single_face;
 
 pub mod face;
+
 pub mod buildshapes;
 
+use std::collections::HashMap;
 use crate::graphics::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait,Field};
@@ -13,6 +15,31 @@ pub use convex::Convex; pub use single_face::SingleFace;
 
 use specs::{Component, VecStorage};
 use std::fmt;
+
+#[derive(Component)]
+#[storage(VecStorage)]
+pub struct ShapeLabel(String);
+
+pub struct RefShapes<V: VectorTrait>(HashMap<ShapeLabel,Shape<V>>);
+impl<V: VectorTrait> RefShapes<V> {
+    pub fn new() -> Self {
+        Self::Default
+    }
+    pub fn get(&self, key: &ShapeLabel) -> Option<&Shape<V>> {
+        self.0.get(key)
+    }
+    pub fn insert(&mut self, key: ShapeLabel, value: Shape<V>) -> Option<Shape<V>> {
+        self.0.insert(key, value)
+    }
+    pub fn remove(&mut self, key: &ShapeLabel) -> Option<Shape<V>> {
+        self.0.remove(key)
+    }
+}
+impl<V: VectorTrait> Default for RefShapes<V> {
+    fn default() -> Self {
+        Self(HashMap::new())
+    }
+}
 
 pub trait ShapeTypeTrait<V: VectorTrait> {
     fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V>;
@@ -47,7 +74,6 @@ impl fmt::Display for Edge {
 #[derive(Clone,Component)]
 #[storage(VecStorage)]
 pub struct Shape<V : VectorTrait> {
-    pub verts_ref : Vec<V>,
     pub verts : Vec<V>,
     pub edges : Vec<Edge>,
     pub faces : Vec<Face<V>>
@@ -62,18 +88,16 @@ impl <V : VectorTrait> Shape<V> {
         for face in faces.iter_mut() {
             face.calc_vertis(&edges);
             let face_verts = face.vertis.iter().map(|verti| verts[*verti]).collect();
-            face.center_ref = vector::barycenter(&face_verts);
+            face.center = vector::barycenter(&face_verts);
             //try to do this with iterators
             //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
-            face.center = face.center_ref.clone();
         }
         let mut shape = Shape{
-            verts_ref : verts.clone(),
             verts,
             edges,
             faces,
         };
-        shape.update(&Transform::identity());
+        //shape.update(&Transform::identity());
         shape
     }
 
@@ -95,31 +119,30 @@ impl <V : VectorTrait> Shape<V> {
          self.faces.iter().enumerate().map(|(i,f)| (i, f.normal.dot(point) - f.threshold))
             .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
     }
-    pub fn update(&mut self, transformation: &Transform<V>) {
-        for (v,vr) in self.verts.iter_mut().zip(self.verts_ref.iter()) {
-            *v = transformation.transform_vec(vr);
+    pub fn update(&mut self, ref_shape: &Shape<V>, transform: &Transform<V>) {
+        for (v,vr) in self.verts.iter_mut().zip(ref_shape.verts.iter()) {
+            *v = transform.transform_vec(vr);
         }
-        for face in &mut self.faces {
-            face.normal = transformation.frame * face.normal_ref;
-            face.center = transformation.transform_vec(&face.center_ref);
+        for (face, ref_face) in self.faces.iter_mut().zip(ref_shape.faces.iter()) {
+            face.normal = transform.frame * ref_face.normal;
+            face.center = transform.transform_vec(&ref_face.center);
             face.threshold = face.normal.dot(face.center);
         }
     }
-    pub fn stretch(&self, scales : &V) -> Self {
+    pub fn stretch(&self, ref_shape: &Shape<V>, scales : &V) -> Self {
         let mut new_shape = self.clone();
-        let new_verts : Vec<V> = self.verts_ref.iter()
+        let new_verts : Vec<V> = ref_shape.verts.iter()
             .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
         //need to explicitly update this as it stands
         //need to have a clear differentiation between
         //changes to mesh (verts_ref and center_ref) and
         //changes to position/orientation/scaling of mesh
 
-        for face in &mut new_shape.faces {
+        for face in new_shape.faces.iter_mut() {
                     let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
-            face.center_ref = vector::barycenter(&face_verts);
+            face.center = vector::barycenter(&face_verts);
         }
-        new_shape.verts_ref = new_verts;
-        new_shape.update(&Transform::identity());
+        new_shape.update(ref_shape,&Transform::identity());
         new_shape
     }
     pub fn update_visibility(&mut self, camera_pos : V, two_sided : bool) {
@@ -135,12 +158,8 @@ impl <V : VectorTrait> Shape<V> {
     }
 }
 impl<V: VectorTrait> Transformable<V> for Shape<V> {
-    fn set_identity(mut self) -> Self {
-        self.update(&Transform::identity());
-        self
-    }
     fn transform(&mut self, transformation: Transform<V>) {
-        self.update(&transformation);
+        self.update(&self, &transformation)
     }
 }
 

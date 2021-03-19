@@ -33,56 +33,59 @@ pub fn linspace(min : Field, max : Field, n : usize) -> impl Iterator<Item=Field
 //the 'static lifetime here tells the compiler that any type with the vector trait
 //does not hold any references that might require lifetimes
 pub trait VectorTrait: Copy + Display + Sync + Send + std::fmt::Debug + 'static +
- Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
- Mul<Field,Output=Self> + Div<Field,Output=Self> +
- Index<VecIndex,Output=Field> + IndexMut<VecIndex>
- //+ std::iter::Sum
- {
-    type M : MatrixTrait<Self>;
-    type SubV: VectorTrait;
-    type Arr;
+    Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
+    Mul<Field,Output=Self> + Div<Field,Output=Self> +
+    Index<VecIndex,Output=Field> + IndexMut<VecIndex>
+    //+ std::iter::Sum
+    {
+        type M : MatrixTrait<Self>;
+        type SubV: VectorTrait;
+        type Arr;
 
-    const DIM : VecIndex;
+        const DIM : VecIndex;
 
-    fn from_arr(arr : &Self::Arr) -> Self;
-    fn get_arr(&self) -> &Self::Arr;
-    //ideally, I'd be able to implement this here by constrainting Arr to be iterable
-    //could we use IntoIterator?
-    fn iter<'a>(&'a self) -> std::slice::Iter<'a,Field>;
-    fn map<F : Fn(Field) -> Field>(self, f : F) -> Self;
-    fn zip_map<F : Fn(Field,Field) -> Field>(self, rhs : Self, f : F) -> Self;
-    fn fold<F : Fn(Field, Field) -> Field>(self, init : Option<Field>, f : F) -> Field;
+        fn from_arr(arr : &Self::Arr) -> Self;
+        fn get_arr(&self) -> &Self::Arr;
+        //ideally, I'd be able to implement this here by constrainting Arr to be iterable
+        //could we use IntoIterator?
+        fn iter<'a>(&'a self) -> std::slice::Iter<'a,Field>;
+        fn map<F : Fn(Field) -> Field>(self, f : F) -> Self;
+        fn zip_map<F : Fn(Field,Field) -> Field>(self, rhs : Self, f : F) -> Self;
+        fn fold<F : Fn(Field, Field) -> Field>(self, init : Option<Field>, f : F) -> Field;
 
-    fn dot(self, rhs: Self) -> Field;
-    fn norm_sq(self) -> Field {
-        self.dot(self)
+        fn dot(self, rhs: Self) -> Field;
+        fn norm_sq(self) -> Field {
+            self.dot(self)
+        }
+        fn norm(self) -> Field {
+            self.norm_sq().sqrt()
+        }
+        fn normalize(self) -> Self {
+            self/self.norm()
+        }
+        fn is_close(v1: Self, v2: Self) -> bool {
+            (v1-v2).norm_sq() < EPSILON*EPSILON
+        }
+        fn zero() -> Self {
+            Self::constant(0.0)
+        }
+        fn ones() -> Self {
+            Self::constant(1.0)
+        }
+        fn constant(a : Field) -> Self;
+        fn one_hot(i: VecIndex) -> Self{
+            Self::M::id()[i]
+        }
+        fn project(&self) -> Self::SubV;
+        fn unproject(v: Self::SubV) -> Self;
+        fn linterp(v1: Self, v2: Self,x : Field) -> Self {
+            v1*(1.-x) + v2*x
+        }
+        fn cross_product<I : std::iter::Iterator<Item=Self>>(points : I) -> Self;
+        fn elmt_mult(&self, rhs: Self) -> Self {
+            self.zip_map(rhs, |x,y| x*y)
+        }
     }
-    fn norm(self) -> Field {
-        self.norm_sq().sqrt()
-    }
-    fn normalize(self) -> Self {
-        self/self.norm()
-    }
-    fn is_close(v1: Self, v2: Self) -> bool {
-        (v1-v2).norm_sq() < EPSILON*EPSILON
-    }
-    fn zero() -> Self {
-        Self::constant(0.0)
-    }
-    fn ones() -> Self {
-        Self::constant(1.0)
-    }
-    fn constant(a : Field) -> Self;
-    fn one_hot(i: VecIndex) -> Self{
-        Self::M::id()[i]
-    }
-    fn project(&self) -> Self::SubV;
-    fn unproject(v: Self::SubV) -> Self;
-    fn linterp(v1: Self, v2: Self,x : Field) -> Self {
-        v1*(1.-x) + v2*x
-    }
-    fn cross_product<I : std::iter::Iterator<Item=Self>>(points : I) -> Self;
-}
 //impl<T> Foo for T where T: Clone + Mul<i64> + Add<i64> + ... {}
 
 //fn foo<C>() where i64: From<C>, C: Foo {}

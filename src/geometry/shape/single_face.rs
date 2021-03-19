@@ -18,6 +18,7 @@ impl<V: VectorTrait> SubFace<V> {
         self.plane = Self::calc_plane(&self.vertis, shape_verts, face_normal)
     }
     fn calc_plane(vertis: &Vec<VertIndex>, shape_verts: &Vec<V>, face_normal: V) -> Plane<V> {
+        //note: would like to use some of the logic in Plane::calc_plane but here there are differences
         // take D-1 vertices of the subface, then subtract one of these from the others to get
         // D-2 vectors parallel to the subface
         let mut verts = vertis.iter()

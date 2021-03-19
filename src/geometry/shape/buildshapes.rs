@@ -120,12 +120,12 @@ pub fn build_tube_cube_3d<V: VectorTrait>(length : Field, width: Field) -> Shape
 }
 
 pub fn remove_face<V : VectorTrait>(shape : Shape<V>, face_index : FaceIndex) -> Shape<V> {
-	let verts = shape.verts_ref; let edges = shape.edges; let mut faces = shape.faces;
+	let verts = shape.verts; let edges = shape.edges; let mut faces = shape.faces;
 	faces.remove(face_index);
 	Shape::new(verts,edges,faces)
 }
 pub fn remove_faces<V : VectorTrait>(shape : Shape<V>, faceis : Vec<FaceIndex>) -> Shape<V> {
-	let verts = shape.verts_ref; let edges = shape.edges; let faces = shape.faces;
+	let verts = shape.verts; let edges = shape.edges; let faces = shape.faces;
 	let new_faces = faces.into_iter().enumerate()
 		.filter(|(i,_face)| !faceis.contains(i))
 		.map(|(_i,face)| face)
@@ -254,9 +254,9 @@ pub fn color_cube< V: VectorTrait>(mut cube : Shape<V>) -> Shape<V> {
 pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	let mut new_shape = shape.clone();
 	for face in &mut new_shape.faces {
-		face.normal_ref = -face.normal_ref;
+		face.normal = -face.normal;
 	}
-	new_shape.update(&Transform::identity());
+	new_shape.update(&shape,&Transform::identity());
 	new_shape
 }
 

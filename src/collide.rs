@@ -46,10 +46,6 @@ impl<V : VectorTrait> Default for MoveNext<V> {
 	}
 }
 impl<V: VectorTrait> Transformable<V> for MoveNext<V> {
-	fn set_identity(mut self) -> Self {
-		self.next_dpos = Some(V::zero());
-		self
-	}
 	fn transform(&mut self, transform: Transform<V>) {
 		self.next_dpos = match self.next_dpos {
 			Some(v) => Some(v + transform.pos),
@@ -85,12 +81,12 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 	}
 }
 
-pub struct UpdateBBoxSystem<V: VectorTrait,T: HasBBox<V>>(pub PhantomData<V>, pub PhantomData<T>);
+pub struct UpdateBBoxSystem<V: VectorTrait>(pub PhantomData<V>);
 
-impl<'a,V: VectorTrait,T: HasBBox<V>> System<'a> for UpdateBBoxSystem<V,T> {
+impl<'a,V: VectorTrait> System<'a> for UpdateBBoxSystem<V> {
 
 	type SystemData = (
-		ReadStorage<'a,T>,
+		ReadStorage<'a,Shape<V>>,
 		WriteStorage<'a,BBox<V>>
 	);
 

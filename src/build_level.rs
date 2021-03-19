@@ -133,8 +133,8 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
 
 pub fn build_shapes<V: VectorTrait>(world : &mut World) {
     //build_lvl_1::<V>(world);
-    build_fun_level::<V>(world);
-    //build_test_level::<V>(world);
+    //build_fun_level::<V>(world);
+    build_test_level::<V>(world);
     //build_test_face(world);
     init_player(world, V::zero());
 }

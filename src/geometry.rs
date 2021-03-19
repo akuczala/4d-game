@@ -4,7 +4,7 @@ pub mod transform;
 pub use shape::{Shape,Face};
 pub use transform::{Transformable,Transform};
 use std::fmt;
-use crate::vector::{VectorTrait,Field,is_close};
+use crate::vector::{VectorTrait,Field,is_close,barycenter};
 
 #[derive(Clone)]
 pub struct Line<V : VectorTrait>(pub V,pub V);
@@ -30,6 +30,19 @@ pub struct Plane<V : VectorTrait> {
 impl<V: VectorTrait> Plane<V> {
     fn from_normal_and_point(normal: V, point: V) -> Self {
         Plane{normal, threshold: normal.dot(point)}
+    }
+    fn from_points_and_vec(points: &Vec<V>, normal_dir: V) -> Self {
+        // take D points, then subtract one of these from the others to get
+        // D-1 vectors parallel to the plane
+        let v0: V = points[0];
+        let d = V::DIM.abs() as usize;
+        let parallel_vecs = points[1..d-1].iter().map(|&v| v - v0);
+        let mut normal = V::cross_product(parallel_vecs).normalize();
+        if normal.dot(normal_dir) < 0.0 { //normal should parallel to normal_dir
+            normal = -normal;
+        }
+        let center = barycenter(points);
+        Plane::from_normal_and_point(normal, center)
     }
     //returns closest plane + distance
     pub fn point_normal_distance<'a, I: Iterator<Item=&'a Plane<V>>>(point : V, planes: I) -> Option<(&'a Plane<V>, Field)> {

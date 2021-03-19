@@ -3,7 +3,6 @@ use specs::{Component};
 use crate::vector::{VectorTrait,MatrixTrait,VecIndex,Field,rotation_matrix};
 
 pub trait Transformable<V: VectorTrait> {
-    fn set_identity(self) -> Self;
     fn with_transform(mut self, transformation: Transform<V>) -> Self
         where Self: std::marker::Sized {
         self.transform(transformation);
@@ -33,20 +32,43 @@ pub trait Transformable<V: VectorTrait> {
         self.with_transform(Transform::identity().with_rotation(axis1, axis2, angle))
     }
 }
-
+#[derive(Copy,Clone)]
+pub enum Scaling<V: VectorTrait> {
+    Scalar(Field),
+    Vector(V),
+}
+impl<V: VectorTrait> Scaling<V> {
+    fn unit() -> Self {
+        Self::Scalar(1.0)
+    }
+    fn scale_vec(&self, vec: V) -> V {
+        match self {
+            Self::Scalar(s) => vec*(*s),
+            Self::Vector(ref v) => v.elmt_mult(vec)
+        }
+    }
+    fn compose(&self, rhs: &Self) -> Self {
+        match (self, rhs) {
+            (Self::Scalar(ref s1),Self::Scalar(ref s2)) => Self::Scalar(*s1**s2),
+            (Self::Vector(ref v1),Self::Scalar(ref s2)) => Self::Vector(*v1**s2),
+            (Self::Scalar(ref s1), Self::Vector(ref v2)) => Self::Vector(*v2**s1),
+            (Self::Vector(_), Self::Vector(ref v2)) => Self::Vector(self.scale_vec(*v2)),
+        }
+    }
+}
 #[derive(Component,Clone,Copy)]
 #[storage(VecStorage)]
 pub struct Transform<V: VectorTrait>{
     pub pos: V,
     pub frame: V::M,
-    pub scale: Field
+    pub scale: Scaling<V>,
 }
 impl<V: VectorTrait> Transform<V> {
     pub fn identity() -> Self {
         Self{
             pos: V::zero(),
             frame: V::M::id(),
-            scale: 1.0,
+            scale: Scaling::unit(),
         }
     }
     pub fn pos(pos: V) -> Self {
@@ -58,8 +80,8 @@ impl<V: VectorTrait> Transform<V> {
         let rot_mat = rotation_matrix(self.frame[axis1], self.frame[axis2], Some(angle));
         self.frame = self.frame.dot(rot_mat);
     }
-    pub fn transform_vec(&self, vec: &V) -> V {
-        self.frame * (*vec * self.scale) + self.pos
+    pub fn transform_vec(&self, &vec: &V) -> V {
+        self.frame * (self.scale.scale_vec(vec)) + self.pos
     }
     pub fn set_transform(&mut self, transform: Transform<V>) {
         self.pos = transform.pos;
@@ -71,14 +93,11 @@ impl<V: VectorTrait> Transform<V> {
     }
 }
 impl<V: VectorTrait> Transformable<V> for Transform<V> {
-    fn set_identity(self) -> Self {
-        Self::identity()
-    }
     fn transform(&mut self, transformation: Transform<V>) {
         let other = transformation;
         self.pos = self.pos + other.pos;
         self.frame = self.frame.dot(other.frame);
-        self.scale = self.scale * other.scale;
+        self.scale = self.scale.compose(&other.scale);
     }
     fn with_rotation(mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) -> Self {
         self.rotate(axis1, axis2, angle); self

@@ -7,11 +7,8 @@ use crate::draw::{Texture,TextureMapping};
 
 #[derive(Clone)]
 pub struct Face<V : VectorTrait> {
-    pub normal : V, 
-    pub normal_ref : V,
-
+    pub normal : V,
     pub center : V,
-    pub center_ref : V,
 
     pub threshold : Field,
 
@@ -28,11 +25,7 @@ impl<V : VectorTrait> Face<V> {
     pub fn new(edgeis : Vec<EdgeIndex>, normal : V) -> Face<V> {
         let face = Face{
             normal : normal.normalize(), //let's make 100% these are normalized
-            normal_ref : normal.normalize(),
-
             center : V::zero(),
-            center_ref : V::zero(),
-
             threshold : 0.0,
 
             //change texture to reference
@@ -82,7 +75,7 @@ use std::fmt;
 impl<V : VectorTrait> fmt::Display for Face<V> {
         // This trait requires `fmt` with this exact signature.
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            let mut out = format!("n_ref={}, ",self.normal_ref);
+            let mut out = format!("normal={}, ",self.normal);
             out.push_str("edgeis=[");
             for ei in self.edgeis.iter() {
                 out.push_str(&format!("{},",*ei));

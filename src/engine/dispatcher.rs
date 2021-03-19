@@ -43,7 +43,7 @@ pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuil
               &["shape_targeting"])
         .with(UpdatePlayerBBox(ph),"update_player_bbox",
               &["move_player"]) //merge with above
-        //.with(UpdateBBoxSystem(ph,PhantomData::<Shape<V>>),"update_all_bbox",&["update_player_bbox"]) //if we had moving objects other than player
+        .with(UpdateBBoxSystem(ph),"update_all_bbox",&["update_player_bbox"]) //if we had moving objects other than player
         .with(CoinSpinningSystem(ph),"coin_spinning",
               &[])
         .with(ShapeCleanupSystem(ph),"shape_cleanup",

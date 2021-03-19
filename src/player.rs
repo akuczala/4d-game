@@ -82,6 +82,9 @@ impl<V: VectorTrait> Selected<V> {
 		shape.transform(Transform::pos(bbox.center()));
 		shape
 	}
+	fn update_selection_box(&mut self, bbox: &BBox<V>) {
+		//would like to update selection box shape without having to make a new one
+	}
 }
 
 pub struct Target<V : VectorTrait> {
