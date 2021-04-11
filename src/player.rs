@@ -78,7 +78,7 @@ impl<V: VectorTrait> Selected<V> {
 	fn make_selection_box(bbox: &BBox<V>) -> Shape<V> {
 		let bbox_lengths = bbox.max - bbox.min;
 		let mut shape = ShapeBuilder::build_cube(1.0)
-			.stretch(&bbox_lengths);
+			.stretch(&bbox_lengths).build();
 		shape.transform(Transform::pos(bbox.center()));
 		shape
 	}

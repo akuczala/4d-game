@@ -6,6 +6,7 @@ use specs::prelude::*;
 use crate::shape_entity_builder::ShapeEntityBuilder;
 use crate::vector::{Vec2,Vec3,Vec4};
 use crate::geometry::shape::buildshapes::{color_cube, build_duoprism_4d, ShapeBuilder, build_prism_2d};
+use crate::geometry::shape::{RefShapes, ShapeLabel};
 use crate::constants::PI;
 use crate::geometry::{Shape};
 use crate::vector::{VectorTrait,Field};
@@ -21,6 +22,7 @@ pub fn insert_wall<V : VectorTrait>(world : &mut World, shape_builder : ShapeEnt
 pub fn insert_coin<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V>) {
     shape_builder.build(world)
         .with(Coin)
+        .with(ShapeLabel("Coin".to_string()))
         .build();
 }
 
@@ -76,7 +78,7 @@ pub fn build_test_level<V: VectorTrait>(world: &mut World) {
         _ => panic!("Cannot build test level in {} dimensions.", {V::DIM})
     };
     let build_shape: ShapeEntityBuilder<V>= ShapeEntityBuilder::new_face_shape(
-        ShapeBuilder::<V::SubV>::build_cube(2.0), true)
+        ShapeBuilder::<V::SubV>::build_cube(2.0).build(), true)
         .with_texture(
             draw::Texture::make_tile_texture(&vec![0.8],&n_divisions),
             draw::TextureMapping{origin_verti : 0, frame_vertis}
@@ -92,13 +94,13 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
     };
     let len = 4.0;
     let wall_builder: ShapeEntityBuilder<V>= ShapeEntityBuilder::new_face_shape(
-        ShapeBuilder::<V::SubV>::build_cube(len), false
+        ShapeBuilder::<V::SubV>::build_cube(len).build(), false
     ).with_texture(
         draw::Texture::make_tile_texture(&vec![0.8],&n_divisions),
         draw::TextureMapping{origin_verti : 0, frame_vertis}
     );
     let upper_floor_builder = ShapeEntityBuilder::new_face_shape(
-        ShapeBuilder::<V::SubV>::build_cube(len), true
+        ShapeBuilder::<V::SubV>::build_cube(len).build(), true
     ).stretch(&(V::ones()*0.5-V::one_hot(1)*0.25)).with_rotation(-1, 1, -PI/2.0)
         .with_translation(V::one_hot(1)*len/2.0);
     // upper_floor_builder.build(world)
@@ -106,7 +108,7 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
     let colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
     for ((i,sign),color) in iproduct!(0..V::DIM, vec![-1,1]).zip(colors.into_iter()) {
         if !(i == 1 && sign == 1) {
-            let float_sign = (sign as Field);
+            let float_sign = sign as Field;
             let shape = wall_builder.clone()
                 .with_translation(V::one_hot(i) * float_sign * len/2.0);
             match i == V::DIM-1 {
@@ -117,7 +119,7 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
                 .with(StaticCollider).build();
         }
         if i != 1 {
-            let float_sign = (sign as Field);
+            let float_sign = sign as Field;
             let shape = upper_floor_builder.clone()
                 .with_translation(V::one_hot(i) * float_sign * len*(1.5));
             match i == V::DIM-1 {
@@ -131,12 +133,14 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
 
 }
 
-pub fn build_shapes<V: VectorTrait>(world : &mut World) {
-    //build_lvl_1::<V>(world);
+pub fn build_scene<V: VectorTrait>(world : &mut World) {
+    let mut ref_shapes = RefShapes::new();
+    build_lvl_1::<V>(world, &mut ref_shapes);
     //build_fun_level::<V>(world);
-    build_test_level::<V>(world);
+    //build_test_level::<V>(world);
     //build_test_face(world);
     init_player(world, V::zero());
+    world.insert(ref_shapes);
 }
 
 pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<ShapeEntityBuilder<V>> {
@@ -247,13 +251,13 @@ pub fn init_player<V: VectorTrait>(world: &mut World, pos: V) {
 pub fn init_cursor<V: VectorTrait>(world: &mut World) {
     world.create_entity()
         .with(Cursor)
-        .with(ShapeBuilder::<V::SubV>::build_cube(0.03))
+        .with(ShapeBuilder::<V::SubV>::build_cube(0.03).build())
         .build();
 }
 
-pub fn build_lvl_1<V : VectorTrait>(world : &mut World) {
-    let cube = ShapeBuilder::<V>::build_cube(1.0);
-    let coin = ShapeBuilder::<V>::build_coin();
+pub fn build_lvl_1<V : VectorTrait>(world : &mut World, ref_shapes: &mut RefShapes<V>) {
+    let cube = ShapeBuilder::<V>::build_cube(1.0).build();
+    let coin = ShapeBuilder::<V>::build_coin().build();
     let wall_length = 3.0;
     let walls : Vec<ShapeEntityBuilder<V>> = build_corridor_cross(&color_cube(cube), wall_length);
 
@@ -268,5 +272,6 @@ pub fn build_lvl_1<V : VectorTrait>(world : &mut World) {
                 .with_translation(V::one_hot(axis)*dir*(wall_length - 0.5))
         );
     }
+    ref_shapes.insert(ShapeLabel("Coin".to_string()), coin);
 
 }

@@ -21,7 +21,7 @@ use crate::input::{Input,MovementMode};
 
 use crate::graphics::{Graphics,Graphics2d,Graphics3d};
 use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait};
-
+use crate::geometry::shape::{RefShapes};
 use crate::components::*;
 
 
@@ -207,7 +207,7 @@ impl<V: VectorTrait, G: Graphics<V::SubV>> EngineD<V,G> {
         let mut graphics = G::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
 
-        Self::new(crate::build_level::build_shapes::<V>,graphics,gui)
+        Self::new(crate::build_level::build_scene::<V>, graphics, gui)
     }
 }
 

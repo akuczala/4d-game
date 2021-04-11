@@ -3,34 +3,58 @@ use crate::vector::{VectorTrait,VecIndex};
 use crate::vector::{Vec2,Vec3,Vec4,barycenter};
 //use crate::vec2::Vec2;
 use super::{Shape,SingleFace,Face,Edge,EdgeIndex,VertIndex,FaceIndex};
+use crate::geometry::Transformable;
 use crate::vector::PI;
 use crate::vector::Field;
 use crate::graphics::colors::*;
-use crate::draw::{Texture};
+use crate::draw::{Texture,TextureMapping};
 use std::marker::PhantomData;
 
-pub struct ShapeBuilder<V : VectorTrait>(PhantomData<V>);
+pub struct ShapeBuilder<V : VectorTrait>{
+	pub shape: Shape<V>,
+}
 impl<V: VectorTrait> ShapeBuilder<V> {
-	pub fn build_cube(length : Field) -> Shape<V> {
-		match V::DIM {
+	pub fn new(shape: Shape<V>) -> Self {
+		Self{shape}
+	}
+	pub fn build_cube(length : Field) -> Self {
+		let cube = match V::DIM {
 			2 => build_prism_2d(length/(2.0 as Field).sqrt(),4),
 			3 => build_prism_3d(length/(2.0 as Field).sqrt(),length,4),
 			4 => {
 				let r = length/(2.0 as Field).sqrt();
-				build_duoprism_4d([r,r],
-								  [[0,1],[2,3]],
-								  [4,4])
+				build_duoprism_4d([r,r],[[0,1],[2,3]],[4,4])
 			}
 			_ => panic!("build_cube not supported in {} dim",{V::DIM})
-		}
+		};
+		Self::new(cube)
 	}
-	pub fn build_coin() -> Shape<V> {
-		match V::DIM {
+	pub fn build_coin() -> Self {
+		let coin = match V::DIM {
 			2 => build_prism_2d(0.1, 10),
 			3=> build_prism_3d(0.1, 0.025, 10),
 			4=> build_duoprism_4d([0.1, 0.025], [[0, 1], [2, 3]], [10, 4]),
 			_ => panic!("build_coin not supported in {} dim",{V::DIM})
-		}.with_color(YELLOW)
+		}.with_color(YELLOW);
+		Self::new(coin)
+	}
+	pub fn with_texture(mut self, texture: Texture<V::SubV>, texture_mapping: TextureMapping) -> Self {
+		for face in self.shape.faces.iter_mut() {
+			face.set_texture(texture.clone(), texture_mapping.clone());
+		}
+		self
+	}
+	pub fn stretch(self, scales: &V) -> Self {
+		self.shape.stretch(&self.shape, scales);
+		self
+	}
+	pub fn build(self) -> Shape<V> {
+		self.shape
+	}
+}
+impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
+	fn transform(&mut self, transformation: Transform<V>) {
+		self.shape.transform(transformation)
 	}
 }
 
@@ -256,7 +280,7 @@ pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	for face in &mut new_shape.faces {
 		face.normal = -face.normal;
 	}
-	new_shape.update(&shape,&Transform::identity());
+	new_shape.update_from_ref(&shape,&Transform::identity());
 	new_shape
 }
 

@@ -16,14 +16,14 @@ pub use convex::Convex; pub use single_face::SingleFace;
 use specs::{Component, VecStorage};
 use std::fmt;
 
-#[derive(Component)]
+#[derive(Component,PartialEq,Eq,Hash)]
 #[storage(VecStorage)]
-pub struct ShapeLabel(String);
+pub struct ShapeLabel(pub String);
 
 pub struct RefShapes<V: VectorTrait>(HashMap<ShapeLabel,Shape<V>>);
 impl<V: VectorTrait> RefShapes<V> {
     pub fn new() -> Self {
-        Self::Default
+        Self::default()
     }
     pub fn get(&self, key: &ShapeLabel) -> Option<&Shape<V>> {
         self.0.get(key)
@@ -119,7 +119,17 @@ impl <V : VectorTrait> Shape<V> {
          self.faces.iter().enumerate().map(|(i,f)| (i, f.normal.dot(point) - f.threshold))
             .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
     }
-    pub fn update(&mut self, ref_shape: &Shape<V>, transform: &Transform<V>) {
+    pub fn update(&mut self, transform: &Transform<V>) {
+        for v in self.verts.iter_mut() {
+            *v = transform.transform_vec(v);
+        }
+        for face in self.faces.iter_mut() {
+            face.normal = transform.frame * face.normal;
+            face.center = transform.transform_vec(&face.center);
+            face.threshold = face.normal.dot(face.center);
+        }
+    }
+    pub fn update_from_ref(&mut self, ref_shape: &Shape<V>, transform: &Transform<V>) {
         for (v,vr) in self.verts.iter_mut().zip(ref_shape.verts.iter()) {
             *v = transform.transform_vec(vr);
         }
@@ -131,7 +141,7 @@ impl <V : VectorTrait> Shape<V> {
     }
     pub fn stretch(&self, ref_shape: &Shape<V>, scales : &V) -> Self {
         let mut new_shape = self.clone();
-        let new_verts : Vec<V> = ref_shape.verts.iter()
+        let new_verts: Vec<V> = ref_shape.verts.iter()
             .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
         //need to explicitly update this as it stands
         //need to have a clear differentiation between
@@ -142,7 +152,8 @@ impl <V : VectorTrait> Shape<V> {
                     let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
             face.center = vector::barycenter(&face_verts);
         }
-        new_shape.update(ref_shape,&Transform::identity());
+        new_shape.verts = new_verts;
+        new_shape.update(&Transform::identity());
         new_shape
     }
     pub fn update_visibility(&mut self, camera_pos : V, two_sided : bool) {
@@ -159,7 +170,7 @@ impl <V : VectorTrait> Shape<V> {
 }
 impl<V: VectorTrait> Transformable<V> for Shape<V> {
     fn transform(&mut self, transformation: Transform<V>) {
-        self.update(&self, &transformation)
+        self.update( &transformation)
     }
 }
 
