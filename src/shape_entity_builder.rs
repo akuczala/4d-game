@@ -5,6 +5,7 @@ use crate::geometry::shape::buildshapes;
 use crate::graphics::colors::Color;
 
 use specs::prelude::*;
+use crate::geometry::transform::Scaling;
 
 #[derive(Clone)]
 pub struct ShapeEntityBuilder<V: VectorTrait> {

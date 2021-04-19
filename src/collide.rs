@@ -6,6 +6,7 @@ use specs::prelude::*;
 use specs::{Component};
 use std::marker::PhantomData;
 use itertools::Itertools;
+use crate::geometry::transform::Scaling;
 
 pub const PLAYER_COLLIDE_DISTANCE: Field = 0.2;
 

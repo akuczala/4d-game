@@ -275,3 +275,13 @@ pub fn build_lvl_1<V : VectorTrait>(world : &mut World, ref_shapes: &mut RefShap
     ref_shapes.insert(ShapeLabel("Coin".to_string()), coin);
 
 }
+// pub fn build_lvl_1_with_faces<V : VectorTrait>(world : &mut World, ref_shapes: &mut RefShapes<V>) {
+//     let square_builder = ShapeBuilder::<V::SubV>::build_cube(1.0);
+//     let wall_length = 3.0;
+//     let rect_builder = square_builder.clone().stretch(&(V::one_hot(0)*wall_length));
+//     // let tube =
+//     let coin = ShapeBuilder::<V>::build_coin().build();
+//
+//
+//
+// }

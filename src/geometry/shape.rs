@@ -15,6 +15,7 @@ pub use convex::Convex; pub use single_face::SingleFace;
 
 use specs::{Component, VecStorage};
 use std::fmt;
+use crate::geometry::transform::Scaling;
 
 #[derive(Component,PartialEq,Eq,Hash)]
 #[storage(VecStorage)]
@@ -143,10 +144,6 @@ impl <V : VectorTrait> Shape<V> {
         let mut new_shape = self.clone();
         let new_verts: Vec<V> = ref_shape.verts.iter()
             .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
-        //need to explicitly update this as it stands
-        //need to have a clear differentiation between
-        //changes to mesh (verts_ref and center_ref) and
-        //changes to position/orientation/scaling of mesh
 
         for face in new_shape.faces.iter_mut() {
                     let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();

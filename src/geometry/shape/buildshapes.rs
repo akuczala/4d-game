@@ -10,6 +10,7 @@ use crate::graphics::colors::*;
 use crate::draw::{Texture,TextureMapping};
 use std::marker::PhantomData;
 
+#[derive(Clone)]
 pub struct ShapeBuilder<V : VectorTrait>{
 	pub shape: Shape<V>,
 }
@@ -158,6 +159,7 @@ pub fn remove_faces<V : VectorTrait>(shape : Shape<V>, faceis : Vec<FaceIndex>) 
 }
 use itertools::multizip;
 use crate::geometry::Transform;
+use crate::geometry::transform::Scaling;
 
 //builds 4d duoprism
 //n_circ points is a length two list of # points around each perp circle
