@@ -92,7 +92,7 @@ impl<V: VectorTrait> Transform<V> {
     pub fn rotate_about(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field, pos: V) {
         let rot_mat = rotation_matrix(self.frame[axis1], self.frame[axis2], Some(angle));
         self.frame = self.frame.dot(rot_mat);
-        self.pos = self.pos - rot_mat * self.pos
+        self.pos = self.pos - rot_mat * pos
     }
     pub fn stretch(&mut self, scale: Scaling<V>) {
         self.scale = self.scale.compose(&scale)

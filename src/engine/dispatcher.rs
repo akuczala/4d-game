@@ -41,6 +41,8 @@ pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuil
               &["move_player"])
         .with(SelectTargetSystem(ph),"select_target",
               &["shape_targeting"])
+        .with(ManipulateSelectedShapeSystem(ph), "manipulate_selected",
+              &["select_target"])
         .with(UpdatePlayerBBox(ph),"update_player_bbox",
               &["move_player"]) //merge with above
         .with(UpdateBBoxSystem(ph),"update_all_bbox",&["update_player_bbox"]) //if we had moving objects other than player

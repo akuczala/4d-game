@@ -12,6 +12,7 @@ use crate::vector::{VectorTrait,Field,VecIndex};
 use crate::components::*;
 
 use glutin::event::{Event,WindowEvent};
+use crate::geometry::shape::RefShapes;
 
 // fn duration_as_field(duration : &Duration) -> f32 {
 //  (duration.as_secs() as Field) + 0.001*(duration.subsec_millis() as Field)
@@ -71,8 +72,8 @@ impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
         );
     }
 }
-
-pub enum MovementMode{Tank, Mouse} //add flying tank mode, maybe flying mouse mode
+#[derive(Copy, Clone)]
+pub enum MovementMode{Tank, Mouse, Shape} //add flying tank mode, maybe flying mouse mode
 
 //(- key, + key, axis)
 const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
@@ -116,7 +117,7 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
                 any_slide_turn = true;
             }
         },
-        MovementMode::Tank => (),
+        _ => (),
     }
 
     //keyboard
@@ -180,7 +181,49 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
     //             input.pressed.space = true;
 
 }
+pub struct ManipulateSelectedShapeSystem<V: VectorTrait>(pub PhantomData<V>);
+impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
+    type SystemData = (
+        Read<'a,Input>,
+        ReadExpect<'a,Player>,
+        ReadExpect<'a,RefShapes<V>>,
+        WriteStorage<'a,Shape<V>>,
+        ReadStorage<'a,ShapeLabel>,
+        WriteStorage<'a,Transform<V>>,
+        ReadStorage<'a,MaybeSelected<V>>,
+        Entities<'a>
+    );
+    fn run(&mut self, (
+        input, player, ref_shapes, mut shape_storage, label_storage, mut transform_storage,
+        maybe_selected_storage, entities) : Self::SystemData) {
+        let maybe_selected= maybe_selected_storage.get(player.0).unwrap();
+        if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
+            let (selected_shape, selected_label, selected_transform) =
+                (&mut shape_storage, &label_storage, &mut transform_storage).join().get(*entity, &entities)
+                    .expect("Selected entity either has no Shape, ShapeLabel, or Transform");
+            let selected_ref_shape = ref_shapes.get(selected_label).expect("No reference shape with that name");
+            manipulate_shape(&input, selected_shape, selected_ref_shape, selected_transform);
+        }
+    }
+}
 
+const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::X, 0), (VKC::Y, 1), (VKC::Z, 2), (VKC::W, 3)];
+pub fn manipulate_shape<V: VectorTrait>(input: &Input, shape: &mut Shape<V>, ref_shape: &Shape<V>, transform: &mut Transform<V>) {
+    if let MovementMode::Shape = input.movement_mode {
+        let mut axis = None;
+        for (key_code, ax) in AXIS_KEYMAP.iter() {
+            if input.helper.key_held(*key_code) {
+                axis = Some(ax)
+            }
+        }
+        if let Some(axis) = axis {
+            let (dmx, dmy) = input.mouse_dpos;
+            let dpos = V::one_hot(*axis)*(dmx + dmy)*input.get_dt()*MOUSE_SENSITIVITY;
+            transform.translate(dpos);
+            shape.update_from_ref(ref_shape, transform);
+        }
+    }
+}
 pub struct SelectTargetSystem<V: VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
     type SystemData = (
@@ -252,6 +295,7 @@ impl Input {
             self.movement_mode = match self.movement_mode {
                 MovementMode::Mouse => MovementMode::Tank,
                 MovementMode::Tank => MovementMode::Mouse,
+                _ => self.movement_mode
             }
         }
     }
