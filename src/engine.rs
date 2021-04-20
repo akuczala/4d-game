@@ -161,7 +161,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
                     {
                         let mut input = self.world.write_resource::<Input>();
-                        if let MovementMode::Mouse = input.movement_mode {
+                        if let MovementMode::Mouse | MovementMode::Shape = input.movement_mode {
                             display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
                             display.gl_window().window().set_cursor_visible(false);
                             input.mouse_dpos = (0.,0.);

@@ -17,7 +17,7 @@ use specs::{Component, VecStorage};
 use std::fmt;
 use crate::geometry::transform::Scaling;
 
-#[derive(Component,PartialEq,Eq,Hash)]
+#[derive(Component,PartialEq,Eq,Hash,Clone)]
 #[storage(VecStorage)]
 pub struct ShapeLabel(pub String);
 

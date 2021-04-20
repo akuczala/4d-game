@@ -3,6 +3,8 @@ use std::marker::PhantomData;
 
 use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;
+use glutin::event::{TouchPhase,MouseScrollDelta};
+use glutin::dpi::LogicalPosition;
 
 use winit_input_helper::WinitInputHelper;
 
@@ -33,7 +35,9 @@ pub struct Input {
     pub update : bool,
     pub frame_duration : crate::fps::FPSFloat,
     pub mouse_dpos : (f32,f32),
+    pub scroll_dpos: Option<(f32,f32)>,
     pub movement_mode : MovementMode,
+    pub last_movement_mode: MovementMode
 }
 impl Default for Input {
     fn default() -> Self {
@@ -51,7 +55,9 @@ impl Input {
             update : true,
             frame_duration : crate::fps::TARGET_FPS,
             mouse_dpos : (0.,0.),
+            scroll_dpos: None,
             movement_mode : MovementMode::Mouse,
+            last_movement_mode: MovementMode::Mouse,
         }
     }
 }
@@ -72,7 +78,7 @@ impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
         );
     }
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone,PartialEq,Eq)]
 pub enum MovementMode{Tank, Mouse, Shape} //add flying tank mode, maybe flying mouse mode
 
 //(- key, + key, axis)
@@ -188,39 +194,44 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
         ReadExpect<'a,Player>,
         ReadExpect<'a,RefShapes<V>>,
         WriteStorage<'a,Shape<V>>,
+        WriteStorage<'a,ShapeType<V>>,
         ReadStorage<'a,ShapeLabel>,
         WriteStorage<'a,Transform<V>>,
-        ReadStorage<'a,MaybeSelected<V>>,
+        WriteStorage<'a,MaybeSelected<V>>,
         Entities<'a>
     );
     fn run(&mut self, (
-        input, player, ref_shapes, mut shape_storage, label_storage, mut transform_storage,
-        maybe_selected_storage, entities) : Self::SystemData) {
-        let maybe_selected= maybe_selected_storage.get(player.0).unwrap();
+        input, player, ref_shapes, mut shape_storage, mut shape_type_storage, label_storage, mut transform_storage,
+        mut maybe_selected_storage, entities) : Self::SystemData) {
+        let mut maybe_selected= maybe_selected_storage.get_mut(player.0).unwrap();
         if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
-            let (selected_shape, selected_label, selected_transform) =
-                (&mut shape_storage, &label_storage, &mut transform_storage).join().get(*entity, &entities)
+            let (selected_shape, selected_shape_type, selected_label, selected_transform) =
+                (&mut shape_storage, &mut shape_type_storage, &label_storage, &mut transform_storage).join().get(*entity, &entities)
                     .expect("Selected entity either has no Shape, ShapeLabel, or Transform");
             let selected_ref_shape = ref_shapes.get(selected_label).expect("No reference shape with that name");
-            manipulate_shape(&input, selected_shape, selected_ref_shape, selected_transform);
+            manipulate_shape(&input, selected_shape, selected_shape_type, selected_ref_shape, selected_transform);
         }
     }
 }
 
 const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::X, 0), (VKC::Y, 1), (VKC::Z, 2), (VKC::W, 3)];
-pub fn manipulate_shape<V: VectorTrait>(input: &Input, shape: &mut Shape<V>, ref_shape: &Shape<V>, transform: &mut Transform<V>) {
-    if let MovementMode::Shape = input.movement_mode {
+pub fn manipulate_shape<V: VectorTrait>(
+    input: &Input, shape: &mut Shape<V>, shape_type: &mut ShapeType<V>, ref_shape: &Shape<V>, transform: &mut Transform<V>) {
+    //println!("scroll diff {:?}",input.helper.scroll_diff());
+    if let Some((dx,dy)) = input.scroll_dpos {
         let mut axis = None;
         for (key_code, ax) in AXIS_KEYMAP.iter() {
-            if input.helper.key_held(*key_code) {
+            if input.helper.key_held(*key_code) & (*ax < V::DIM) {
                 axis = Some(ax)
             }
         }
         if let Some(axis) = axis {
-            let (dmx, dmy) = input.mouse_dpos;
-            let dpos = V::one_hot(*axis)*(dmx + dmy)*input.get_dt()*MOUSE_SENSITIVITY;
+            let dpos = V::one_hot(*axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
             transform.translate(dpos);
             shape.update_from_ref(ref_shape, transform);
+            if let ShapeType::SingleFace(single_face) = shape_type {
+                single_face.update(&shape)
+            }
         }
     }
 }
@@ -295,7 +306,7 @@ impl Input {
             self.movement_mode = match self.movement_mode {
                 MovementMode::Mouse => MovementMode::Tank,
                 MovementMode::Tank => MovementMode::Mouse,
-                _ => self.movement_mode
+                MovementMode::Shape => self.last_movement_mode,
             }
         }
     }
@@ -314,6 +325,31 @@ impl Input {
                     self.mouse_dpos.0 = position.x as f32;
                     self.mouse_dpos.1 = position.y as f32;
                     self.mouse_dpos.0 -= MOUSE_STICK_POINT[0]; self.mouse_dpos.1 -= MOUSE_STICK_POINT[1];
+                },
+                WindowEvent::MouseWheel {delta,phase, ..} => {
+                    match phase {
+                        TouchPhase::Started => {
+                            if self.movement_mode != MovementMode::Shape {
+                                self.last_movement_mode = self.movement_mode;
+                                self.movement_mode = MovementMode::Shape;
+                            }
+                        },
+                        TouchPhase::Moved => {
+                            self.scroll_dpos = match delta {
+                                MouseScrollDelta::LineDelta(x,y) => Some((*x,*y)),
+                                MouseScrollDelta::PixelDelta(LogicalPosition{x,y})
+                                    => Some((*x as f32,*y as f32))
+                            }
+                        },
+                        TouchPhase::Cancelled | TouchPhase::Ended => {
+                            self.scroll_dpos = None;
+                            if self.movement_mode == MovementMode::Shape {
+                                self.movement_mode = self.last_movement_mode;
+                            }
+
+                        },
+                    }
+                    //println!("{:?}, {:?}",delta, phase)
                 },
                 WindowEvent::Touch(glutin::event::Touch{phase, ..}) => match phase {
                         glutin::event::TouchPhase::Started => (),

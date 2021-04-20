@@ -5,7 +5,7 @@ use crate::coin::Coin;
 use specs::prelude::*;
 use crate::shape_entity_builder::ShapeEntityBuilder;
 use crate::vector::{Vec2,Vec3,Vec4};
-use crate::geometry::shape::buildshapes::{color_cube, build_duoprism_4d, ShapeBuilder, build_prism_2d};
+use crate::geometry::shape::buildshapes::{color_cube, build_duoprism_4d, ShapeBuilder, build_prism_2d, convex_shape_to_face_shape};
 use crate::geometry::shape::{RefShapes, ShapeLabel};
 use crate::constants::PI;
 use crate::geometry::{Shape};
@@ -26,7 +26,7 @@ pub fn insert_coin<V : VectorTrait>(world : &mut World, shape_builder : ShapeEnt
         .build();
 }
 
-fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: &mut World) {
+fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: &mut World, shape_label: ShapeLabel) {
     let theta = PI/6.0;
     let cos = theta.cos();
     let sin = theta.sin();
@@ -35,22 +35,33 @@ fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: 
         .with_rotation(-1, 1, PI/2.0 - theta)
         .with_color(RED)
         .build(world)
-        .with(StaticCollider).build();
+        .with(StaticCollider)
+        .with(shape_label.clone())
+        .build();
     build_shape.clone()
         .with_translation(V::one_hot(-1)*1.0)
         .with_rotation(0,-1,PI)
         .with_color(GREEN)
-        .build(world).with(StaticCollider).build();
+        .build(world)
+        .with(StaticCollider)
+        .with(shape_label.clone())
+        .build();
     build_shape.clone()
         .with_translation(V::one_hot(0)*1.0)
         .with_rotation(0,-1,PI/2.)
         .with_color(ORANGE)
-        .build(world).with(StaticCollider).build();
+        .build(world)
+        .with(StaticCollider)
+        .with(shape_label.clone())
+        .build();
     build_shape.clone()
         .with_translation(-V::one_hot(0)*1.0)
         .with_rotation(0,-1,3.0*PI/2.)
         .with_color(CYAN)
-        .build(world).with(StaticCollider).build();
+        .build(world)
+        .with(StaticCollider)
+        .with(shape_label.clone())
+        .build();
     let floor = build_shape.clone()
         .with_translation(-V::one_hot(1)*1.0)
         .with_rotation(-1,1,PI/2.)
@@ -59,31 +70,46 @@ fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: 
     floor.clone().with_translation(-V::one_hot(0)*2.0 - V::one_hot(-1)*2.0).build(world).with(StaticCollider).build();
     floor.clone()
         .with_translation(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(2.0 + 2.0*cos))
-        .build(world).with(StaticCollider).build();
+        .build(world)
+        .with(StaticCollider)
+        .with(shape_label.clone())
+        .build();
     floor.clone()
         .with_translation(V::one_hot(1)*(2.0*sin) - V::one_hot(-1)*(4.0 + 2.0*cos))
         .with_color(MAGENTA)
-        .build(world).with(StaticCollider).build();
-    floor.build(world).with(StaticCollider).build();
+        .build(world)
+        .with(StaticCollider)
+        .with(shape_label.clone())
+        .build();;
+    floor.build(world)
+        .with(StaticCollider)
+        .with(shape_label.clone())
+        .build();;
     build_shape.clone()
         .with_translation(V::one_hot(1)*1.0)
         .with_rotation(-1,1,-PI/2.)
         .with_color(YELLOW)
-        .build(world).with(StaticCollider).build();
+        .build(world)
+        .with(StaticCollider)
+        .with(shape_label.clone())
+        .build();
 }
-pub fn build_test_level<V: VectorTrait>(world: &mut World) {
+pub fn build_test_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefShapes<V>) {
     let (n_divisions, frame_vertis) = match V::DIM {
         3 => (vec![4,4], vec![1,3]),
         4 => (vec![4,4,4], vec![1,3,4]),
         _ => panic!("Cannot build test level in {} dimensions.", {V::DIM})
     };
+    let sub_wall = ShapeBuilder::<V::SubV>::build_cube(2.0).build();
+    let (wall,_) = convex_shape_to_face_shape(sub_wall.clone(), true);
+    ref_shapes.insert(ShapeLabel("Wall".to_string()), wall);
     let build_shape: ShapeEntityBuilder<V>= ShapeEntityBuilder::new_face_shape(
-        ShapeBuilder::<V::SubV>::build_cube(2.0).build(), true)
+        sub_wall, true)
         .with_texture(
             draw::Texture::make_tile_texture(&vec![0.8],&n_divisions),
             draw::TextureMapping{origin_verti : 0, frame_vertis}
         );
-    build_test_walls(&build_shape, world);
+    build_test_walls(&build_shape, world, ShapeLabel("Wall".to_string()));
 }
 
 pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
@@ -135,9 +161,9 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
 
 pub fn build_scene<V: VectorTrait>(world : &mut World) {
     let mut ref_shapes = RefShapes::new();
-    build_lvl_1::<V>(world, &mut ref_shapes);
+    //build_lvl_1::<V>(world, &mut ref_shapes);
     //build_fun_level::<V>(world);
-    //build_test_level::<V>(world);
+    build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
     init_player(world, V::zero());
     world.insert(ref_shapes);
