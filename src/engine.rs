@@ -82,8 +82,6 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
     //currently returns bool that tells main whether to swap engines
     //runs for each event
     pub fn update<E>(&mut self, event : &Event<E>, control_flow : &mut ControlFlow, display : &Display, fps_timer : &mut FPSTimer) -> bool {
-        let frame_duration = fps_timer.get_frame_length();
-        let mut ui_args = UIArgs::None;
         //brackets here used to prevent borrowing issues between input + self
         //would probably be sensible to move this into its own function
         {
@@ -94,24 +92,6 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
             }
             //input events
             input.listen_events(event);
-
-            //values to be passed to UI
-            // ui_args = UIArgs::Test{
-            //     frame_duration,
-            //     elapsed_time : fps_timer.elapsed_time,
-            //     mouse_diff : input.mouse_dpos,
-            //     mouse_pos : input.helper.mouse(),
-
-            // };
-            ui_args = UIArgs::new_debug::<V>(
-                &self.world,
-                frame_duration
-            );
-            // ui_args = UIArgs::Simple{
-            //     frame_duration,
-            //     coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
-            //     coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
-            // };
 
             if input.closed {
                 println!("Escape button pressed; exiting.");
@@ -129,53 +109,75 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
                 Event::MainEventsCleared => {
                     // Application update code.
                     display.gl_window().window().request_redraw();
-                    if input.update {
-                        
-                        
-                    }
+                    if input.update {}
                 },
                 _ => (),
             };
         }
-        //gui update (all events)
-        if let Some(ref mut gui) = &mut self.gui {
-            gui.update(&display, &mut fps_timer.gui_last_time, &event, control_flow, ui_args)
-        };
+        self.update_ui(display, control_flow, event, fps_timer);
         //game update and draw
         match event {
             Event::MainEventsCleared => {},
             //frame update
-            Event::RedrawRequested(_) => {
-                // Redraw the application.
-                if Instant::now() > fps_timer.start + Duration::from_millis(16) {
-                    fps_timer.end();
-                    {
-                        self.world.write_resource::<Input>().frame_duration = fps_timer.get_frame_length();
-                    }
-                    fps_timer.start();
-
-                    self.dispatcher.dispatch(&mut self.world);
-                    self.world.maintain();
-
-                    self.draw(&display);
-
-                    {
-                        let mut input = self.world.write_resource::<Input>();
-                        if let MovementMode::Mouse | MovementMode::Shape(_) = input.movement_mode {
-                            display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
-                            display.gl_window().window().set_cursor_visible(false);
-                            input.mouse_dpos = (0.,0.);
-                        } else {
-                            display.gl_window().window().set_cursor_visible(true);
-                        }
-                    }
-
-                }
-            },
+            Event::RedrawRequested(_) => self.on_redraw(&display, fps_timer),
             _ => ()
         };
 
         false //don't switch engines
+    }
+    fn update_ui<E>(&mut self, display: &Display, control_flow : &mut ControlFlow, event: &Event<E>, fps_timer: &mut FPSTimer) {
+        let mut ui_args = UIArgs::None;
+        let frame_duration = fps_timer.get_frame_length();
+
+        //values to be passed to UI
+        // ui_args = UIArgs::Test{
+        //     frame_duration,
+        //     elapsed_time : fps_timer.elapsed_time,
+        //     mouse_diff : input.mouse_dpos,
+        //     mouse_pos : input.helper.mouse(),
+
+        // };
+        ui_args = UIArgs::new_debug::<V>(
+            &self.world,
+            frame_duration
+        );
+        // ui_args = UIArgs::Simple{
+        //     frame_duration,
+        //     coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
+        //     coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
+        // };
+        //gui update (all events)
+        if let Some(ref mut gui) = &mut self.gui {
+            gui.update(&display, &mut fps_timer.gui_last_time, &event, control_flow, ui_args)
+        };
+    }
+
+    fn on_redraw(&mut self, display : &Display, fps_timer: &mut FPSTimer) {
+        // Redraw the application.
+        if Instant::now() > fps_timer.start + Duration::from_millis(16) {
+            fps_timer.end();
+            {
+                self.world.write_resource::<Input>().frame_duration = fps_timer.get_frame_length();
+            }
+            fps_timer.start();
+
+            self.dispatcher.dispatch(&mut self.world);
+            self.world.maintain();
+
+            self.draw(&display);
+
+            {
+                let mut input = self.world.write_resource::<Input>();
+                if let MovementMode::Mouse | MovementMode::Shape(_) = input.movement_mode {
+                    display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
+                    display.gl_window().window().set_cursor_visible(false);
+                    input.mouse_dpos = (0.,0.);
+                } else {
+                    display.gl_window().window().set_cursor_visible(true);
+                }
+            }
+
+        }
     }
 
     fn draw(&mut self, display : &Display) {

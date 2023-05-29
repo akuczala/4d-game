@@ -17,11 +17,13 @@ pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuil
         //calculate and clip lines for each shape
         .with(CalcShapesLinesSystem(ph),"calc_shapes_lines",
               &["in_front"])
-        //project lines
+        //draw selection box in the space
         .with(DrawSelectionBox(ph),"draw_selection_box",
               &["in_front"])
+        //project lines
         .with(TransformDrawLinesSystem(ph),"transform_draw_lines",
               &["calc_shapes_lines","draw_selection_box"])
+        // draw the cursor on the d - 1 screen
         .with(DrawCursorSystem(ph),"draw_cursor",
               &["transform_draw_lines"])
         //start game update phase
