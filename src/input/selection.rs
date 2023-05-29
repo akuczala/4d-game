@@ -18,6 +18,7 @@ use crate::components::*;
 use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
 
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ShapeMovementMode {
     Translate, Rotate, Scale
 }
