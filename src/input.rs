@@ -1,5 +1,7 @@
 mod selection;
 mod update_camera;
+mod input_to_transform;
+
 pub use selection::*;
 pub use update_camera::*;
 
@@ -38,6 +40,7 @@ const MOUSE_STICK_POINT : [f32 ; 2] = [100.,100.];
 #[derive(Copy, Clone,PartialEq,Eq)]
 pub enum MovementMode{Tank, Mouse, Shape(ShapeMovementMode)} //add flying tank mode, maybe flying mouse mode
 
+// TODO better organized input modes + states
 pub struct Input {
     pub helper : WinitInputHelper,
     //pub pressed : ButtonsPressed,
@@ -128,6 +131,12 @@ impl Input {
                 MovementMode::Shape(_) => self.last_movement_mode,
             }
         }
+        for &(key, mode) in MODE_KEYMAP.iter() {
+            if self.helper.key_released(key) {
+                self.movement_mode = MovementMode::Shape(mode)
+            }
+        }
+
     }
     // listing the events produced by application and waiting to be received
     pub fn listen_events<E>(&mut self, ev : &Event<E>) {

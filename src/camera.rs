@@ -39,6 +39,7 @@ where V : VectorTrait
 	pub fn get_slide_dpos(&self, direction : V, time : Field) -> V {
 		direction.normalize()*Self::SPEED*time
 	}
+    // TODO do spin and turn differ at all:?
 	pub fn spin(&mut self, transform: &mut Transform<V>, axis1 : VecIndex, axis2 : VecIndex, speed_mult : Field) {
 		let rot = rotation_matrix(transform.frame[axis1],transform.frame[axis2],Some(speed_mult*Self::ANG_SPEED));
 		transform.frame = transform.frame.dot(rot);

@@ -17,6 +17,7 @@ use crate::components::*;
 
 use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
+use crate::input::ShapeMovementMode;
 
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
@@ -48,7 +49,7 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
 
     //mouse
     match input.movement_mode {
-        MovementMode::Mouse => {
+        MovementMode::Mouse | MovementMode::Shape(ShapeMovementMode::Translate) => {
             let (dmx, dmy) = input.mouse_dpos;
             if dmx.abs() != 0. {
                 if input.helper.held_shift() {
@@ -76,6 +77,7 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
     //keyboard
 
     //forwards + backwards
+    // TODO why do we call update here and not during other operations?
     if input.helper.key_held(VKC::W) {
         move_next.translate(
             camera.get_slide_dpos(camera.heading[-1],dt)

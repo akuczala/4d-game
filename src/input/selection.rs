@@ -17,10 +17,12 @@ use crate::components::*;
 
 use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
+use crate::input::input_to_transform::{scrolling_axis_translation, update_transform};
+use crate::input::ShapeMovementMode::Scale;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ShapeMovementMode {
-    Translate, Rotate, Scale
+    Translate, Rotate, Scale, Free
 }
 
 pub struct ManipulateSelectedShapeSystem<V: VectorTrait>(pub PhantomData<V>);
@@ -45,34 +47,51 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
                 (&mut shape_storage, &mut shape_type_storage, &label_storage, &mut transform_storage).join().get(*entity, &entities)
                     .expect("Selected entity either has no Shape, ShapeLabel, or Transform");
             let selected_ref_shape = ref_shapes.get(selected_label).expect("No reference shape with that name");
-            manipulate_shape(&input, selected_shape, selected_shape_type, selected_ref_shape, selected_transform);
+            match (&input).movement_mode {
+                MovementMode::Shape(mode) => manipulate_shape(
+                    &input,
+                    mode,
+                    selected_shape,
+                    selected_shape_type,
+                    selected_ref_shape,
+                    selected_transform
+                ),
+                _ => ()
+            }
         }
     }
 }
-const MODE_KEYMAP: [(VKC, ShapeMovementMode); 3] = [
-    (VKC::G,ShapeMovementMode::Translate),
+pub const MODE_KEYMAP: [(VKC, ShapeMovementMode); 4] = [
+    (VKC::T,ShapeMovementMode::Translate),
     (VKC::R,ShapeMovementMode::Rotate),
-    (VKC::S,ShapeMovementMode::Scale)
+    (VKC::Y,ShapeMovementMode::Scale),
+    (VKC::F, ShapeMovementMode::Free)
 ];
-const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::X, 0), (VKC::Y, 1), (VKC::Z, 2), (VKC::W, 3)];
 
+// TODO: manipulated shapes do not clip properly - do we need to move it in the spatial hash?
 pub fn manipulate_shape<V: VectorTrait>(
-    input: &Input, shape: &mut Shape<V>, shape_type: &mut ShapeType<V>, ref_shape: &Shape<V>, transform: &mut Transform<V>) {
+    input: &Input,
+    shape_movement_mode: ShapeMovementMode,
+    shape: &mut Shape<V>,
+    shape_type: &mut ShapeType<V>,
+    ref_shape: &Shape<V>,
+    transform: &mut Transform<V>) {
     //println!("scroll diff {:?}",input.helper.scroll_diff());
-    if let Some((dx,dy)) = input.scroll_dpos {
-        let mut axis = None;
-        for (key_code, ax) in AXIS_KEYMAP.iter() {
-            if input.helper.key_held(*key_code) & (*ax < V::DIM) {
-                axis = Some(ax)
-            }
-        }
-        if let Some(axis) = axis {
-            let dpos = V::one_hot(*axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-            transform.translate(dpos);
-            shape.update_from_ref(ref_shape, transform);
-            if let ShapeType::SingleFace(single_face) = shape_type {
-                single_face.update(&shape)
-            }
+    let mut update = false;
+    match shape_movement_mode {
+        ShapeMovementMode::Translate => {
+            update = update | scrolling_axis_translation(input, transform);
+        },
+        // this mode allows you to control the shape as if it were the camera
+        ShapeMovementMode::Free => {
+            update = update_transform(input, transform);
+        },
+        _ => {}
+    }
+    if update {
+        shape.update_from_ref(ref_shape, transform);
+        if let ShapeType::SingleFace(single_face) = shape_type {
+            single_face.update(&shape)
         }
     }
 }
