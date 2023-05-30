@@ -140,6 +140,7 @@ impl <V : VectorTrait> Shape<V> {
             face.threshold = face.normal.dot(face.center);
         }
     }
+    // TODO why isn't deprecated in favor of the Transformable trait's method?
     pub fn stretch(&self, ref_shape: &Shape<V>, scales : &V) -> Self {
         let mut new_shape = self.clone();
         let new_verts: Vec<V> = ref_shape.verts.iter()

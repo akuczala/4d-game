@@ -79,7 +79,15 @@ impl Input {
     pub fn get_dt(&self) -> Field {
         (self.frame_duration as Field).min(MAX_DT)
     }
+    pub fn is_camera_movement_enabled(&self) -> bool {
+        match self.movement_mode {
+            MovementMode::Shape(ShapeMovementMode::Free) => false,
+            _ => true
+        }
+    }
 }
+
+
 
 pub struct PrintDebugSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for PrintDebugSystem<V> {
