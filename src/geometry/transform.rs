@@ -15,10 +15,8 @@ pub trait Transformable<V: VectorTrait> {
     fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) {
         self.transform(Transform::identity().with_rotation(axis1, axis2, angle))
     }
-    // TODO not very compositional... this doesn't play nice with the other transformations
-    // should we go the 5 x 5 matrix route to encode affine transformations?
     fn stretch(&mut self, scale: Scaling<V>) {
-        self.transform(Transform::new(None, None, Some(scale)))
+        self.transform(Transform::new(None, Some(scale.get_mat())))
     }
     fn with_translation(mut self, pos: V) -> Self
         where Self: std::marker::Sized {
@@ -56,6 +54,15 @@ impl<V: VectorTrait> Scaling<V> {
             (Self::Vector(_), Self::Vector(ref v2)) => Self::Vector(self.scale_vec(*v2)),
         }
     }
+    fn get_vec(&self) -> V {
+        match self {
+            Scaling::Scalar(s) => V::ones(),
+            Scaling::Vector(v) => *v
+        }
+    }
+    fn get_mat(&self) -> V::M {
+        V::M::diag(self.get_vec())
+    }
 }
 #[derive(Component,Clone,Copy)]
 #[storage(VecStorage)]
@@ -70,14 +77,13 @@ impl<V: VectorTrait> Scaling<V> {
 pub struct Transform<V: VectorTrait>{
     pub pos: V,
     pub frame: V::M,
-    pub scale: Scaling<V>,
 }
+// TODO improve performance by creating fewer structs? or does the compiler do that
 impl<V: VectorTrait> Transform<V> {
     pub fn identity() -> Self {
         Self{
             pos: V::zero(),
             frame: V::M::id(),
-            scale: Scaling::unit(),
         }
     }
     pub fn pos(pos: V) -> Self {
@@ -85,19 +91,31 @@ impl<V: VectorTrait> Transform<V> {
         new.pos = pos;
         new
     }
-    pub fn new(maybe_pos: Option<V>, maybe_frame: Option<V::M>, maybe_scale: Option<Scaling<V>>) -> Self {
+    pub fn new(maybe_pos: Option<V>, maybe_frame: Option<V::M>) -> Self {
         Self {
             pos: maybe_pos.unwrap_or(V::zero()),
             frame: maybe_frame.unwrap_or(V::M::id()),
-            scale: maybe_scale.unwrap_or(Scaling::unit())
         }
     }
     pub fn translate(&mut self, pos_delta: V) {
         self.pos = self.pos + pos_delta
     }
-    pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) {
+    pub fn rotate_old(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) {
         let rot_mat = rotation_matrix(self.frame[axis1], self.frame[axis2], Some(angle));
         self.frame = self.frame.dot(rot_mat);
+    }
+    pub fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) {
+        self.compose(
+            Transform::new(
+                None,
+                Some(rotation_matrix(
+                    self.frame[axis1],
+                    self.frame[axis2],
+                    Some(angle)
+                ))
+            )
+
+        )
     }
     pub fn rotate_about(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field, pos: V) {
         let rot_mat = rotation_matrix(self.frame[axis1], self.frame[axis2], Some(angle));
@@ -105,23 +123,28 @@ impl<V: VectorTrait> Transform<V> {
         self.pos = self.pos - rot_mat * pos
     }
     pub fn stretch(&mut self, scale: Scaling<V>) {
-        self.scale = self.scale.compose(&scale)
+        self.compose(Transform::new(None, Some(scale.get_mat())))
     }
     pub fn transform_vec(&self, &vec: &V) -> V {
-        self.frame * (self.scale.scale_vec(vec)) + self.pos
+        self.frame * vec + self.pos
     }
     pub fn set_transform(&mut self, transform: Transform<V>) {
         self.pos = transform.pos;
         self.frame = transform.frame;
-        self.scale = transform.scale;
     }
-    //transformations T1 v = R1 S1 v + p1 and T2 compose as
+    //FORMERLY transformations T1 v = R1 S1 v + p1 and T2 composed as
     //T1 T2 v = R1 R2 S1 S2 v + (p1 + p2)
-    pub fn compose(&mut self, transformation: Transform<V>) {
+    // NOW T1 = A1 v + p1 and T2 compose as affine transformations:
+    // T1 T2 v = T1 (A2 v + p2) = A1 (A2 v + p2) + p1 = (A1 A2) v + (A1 p2 + p1)
+
+
+    pub fn apply_self_on_left(&mut self, transformation: Transform<V>) {
         let other = transformation;
-        self.pos = self.pos + other.pos;
+        self.pos = self.pos + self.frame * other.pos;
         self.frame = self.frame.dot(other.frame);
-        self.scale = self.scale.compose(&other.scale);
+    }
+    pub fn compose(&mut self, transformation: Transform<V>) {
+        self.apply_self_on_left(transformation)
     }
     pub fn with_transform(mut self, transformation: Transform<V>) -> Self {
         self.compose(transformation); self

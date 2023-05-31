@@ -117,6 +117,7 @@ pub trait MatrixTrait<V : VectorTrait>: Display + Copy + Sync + Send + 'static +
     //fn transpose(self) -> Self;
     fn outer(v1: V, v2: V) -> Self;
     fn id() -> Self;
+    fn diag(v: V) -> Self;
     fn dot(self, rhs : Self) -> Self;
     fn scale(self, rhs : Field) -> Self {
         self.map_els(|mij| mij*rhs)
