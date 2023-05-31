@@ -135,7 +135,7 @@ impl <V : VectorTrait> Shape<V> {
             *v = transform.transform_vec(vr);
         }
         for (face, ref_face) in self.faces.iter_mut().zip(ref_shape.faces.iter()) {
-            face.normal = transform.frame * ref_face.normal;
+            face.normal = (transform.frame * ref_face.normal).normalize();
             face.center = transform.transform_vec(&ref_face.center);
             face.threshold = face.normal.dot(face.center);
         }

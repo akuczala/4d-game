@@ -127,6 +127,7 @@ pub fn scrolling_axis_translation<V: VectorTrait>(input: &Input, transform: &mut
 
 // TODO rewrite update_camera transformations in terms of these methods; further decompose
 // (a bit tricky because of slight differences in rotations)
+// TODO mouse rotation of scaled objects behaves very strangely
 pub fn update_transform<V : VectorTrait>(
     input : &Input,
     transform: &mut Transform<V>) -> bool

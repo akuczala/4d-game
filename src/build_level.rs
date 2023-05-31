@@ -217,7 +217,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
                 + V::one_hot(*ax1)*(wall_length - corr_width)
                 + V::one_hot(*ax2)*(wall_length - corr_width)
                 + V::ones()*corr_width
-                    ))
+            ))
             ).collect();
     for builder in &mut walls1 {
         apply_texture(&mut builder.shape);
