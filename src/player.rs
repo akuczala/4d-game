@@ -8,6 +8,7 @@ use specs::{Component,HashMapStorage};
 use std::marker::PhantomData;
 use crate::collide::BBox;
 use crate::geometry::shape::buildshapes::ShapeBuilder;
+use crate::geometry::transform::Scaling;
 
 
 pub struct Player(pub Entity); //specifies entity of player
@@ -78,7 +79,7 @@ impl<V: VectorTrait> Selected<V> {
 	fn make_selection_box(bbox: &BBox<V>) -> Shape<V> {
 		let bbox_lengths = bbox.max - bbox.min;
 		let mut shape = ShapeBuilder::build_cube(1.0)
-			.stretch(&bbox_lengths).build();
+			.stretch(&Scaling::Vector(bbox_lengths)).build();
 		shape.transform(Transform::pos(bbox.center()));
 		shape
 	}

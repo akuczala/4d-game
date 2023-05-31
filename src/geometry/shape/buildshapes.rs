@@ -45,8 +45,8 @@ impl<V: VectorTrait> ShapeBuilder<V> {
 		}
 		self
 	}
-	pub fn stretch(self, scales: &V) -> Self {
-		self.shape.stretch(&self.shape, scales);
+	pub fn stretch(self, scales: &Scaling<V>) -> Self {
+		self.shape.stretch(scales);
 		self
 	}
 	pub fn build(self) -> Shape<V> {

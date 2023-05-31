@@ -60,7 +60,7 @@ impl<V: VectorTrait> Scaling<V> {
             Scaling::Vector(v) => *v
         }
     }
-    fn get_mat(&self) -> V::M {
+    pub(crate) fn get_mat(&self) -> V::M {
         V::M::diag(self.get_vec())
     }
 }

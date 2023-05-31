@@ -141,7 +141,8 @@ impl <V : VectorTrait> Shape<V> {
         }
     }
     // TODO why isn't deprecated in favor of the Transformable trait's method?
-    pub fn stretch(&self, ref_shape: &Shape<V>, scales : &V) -> Self {
+    // TODO deprecate
+    pub fn stretch_old(&self, ref_shape: &Shape<V>, scales : &V) -> Self {
         let mut new_shape = self.clone();
         let new_verts: Vec<V> = ref_shape.verts.iter()
             .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
@@ -152,6 +153,11 @@ impl <V : VectorTrait> Shape<V> {
         }
         new_shape.verts = new_verts;
         new_shape.update(&Transform::identity());
+        new_shape
+    }
+    pub fn stretch(&self, scales: &Scaling<V>) -> Self {
+        let mut new_shape = self.clone();
+        new_shape.update(&Transform::new(None, Some(scales.get_mat())));
         new_shape
     }
     pub fn update_visibility(&mut self, camera_pos : V, two_sided : bool) {

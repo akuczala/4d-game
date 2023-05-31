@@ -47,7 +47,7 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
         self
     }
     pub fn stretch(mut self, scales : &V) -> Self {
-        self.shape = self.shape.stretch(&self.shape,scales);
+        self.shape = self.shape.stretch(&Scaling::Vector(*scales));
         self
     }
     pub fn build(self, world: &mut World) -> EntityBuilder {
