@@ -125,7 +125,7 @@ impl <V : VectorTrait> Shape<V> {
             *v = transform.transform_vec(v);
         }
         for face in self.faces.iter_mut() {
-            face.normal = transform.frame * face.normal;
+            face.normal = (transform.frame * face.normal).normalize();
             face.center = transform.transform_vec(&face.center);
             face.threshold = face.normal.dot(face.center);
         }
@@ -139,21 +139,6 @@ impl <V : VectorTrait> Shape<V> {
             face.center = transform.transform_vec(&ref_face.center);
             face.threshold = face.normal.dot(face.center);
         }
-    }
-    // TODO why isn't deprecated in favor of the Transformable trait's method?
-    // TODO deprecate
-    pub fn stretch_old(&self, ref_shape: &Shape<V>, scales : &V) -> Self {
-        let mut new_shape = self.clone();
-        let new_verts: Vec<V> = ref_shape.verts.iter()
-            .map(|v| v.zip_map(*scales,|vi,si| vi*si)).collect();
-
-        for face in new_shape.faces.iter_mut() {
-                    let face_verts = face.vertis.iter().map(|verti| new_verts[*verti]).collect();
-            face.center = vector::barycenter(&face_verts);
-        }
-        new_shape.verts = new_verts;
-        new_shape.update(&Transform::identity());
-        new_shape
     }
     pub fn stretch(&self, scales: &Scaling<V>) -> Self {
         let mut new_shape = self.clone();

@@ -54,9 +54,9 @@ impl<V: VectorTrait> Scaling<V> {
             (Self::Vector(_), Self::Vector(ref v2)) => Self::Vector(self.scale_vec(*v2)),
         }
     }
-    fn get_vec(&self) -> V {
+    pub(crate) fn get_vec(&self) -> V {
         match self {
-            Scaling::Scalar(s) => V::ones(),
+            Scaling::Scalar(s) => V::ones() * *s,
             Scaling::Vector(v) => *v
         }
     }
