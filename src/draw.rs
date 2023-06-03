@@ -247,7 +247,7 @@ pub fn update_shape_visibility<V : VectorTrait>(
 		shape_clip_state.boundaries = match shape_type {
 			ShapeType::Convex(convex) => convex.calc_boundaries(camera_pos, &shape.faces),
 			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(
-				camera_pos, &shape.verts, shape.faces[0].center, shape.faces[0].visible
+				camera_pos, &shape.verts, shape.faces[0].center(), shape.faces[0].visible
 			),
 		};
 	}
@@ -342,7 +342,7 @@ pub fn draw_wireframe_with_normals<V: VectorTrait>(
 	draw_lines.extend(
 		shape.faces.iter().map(|face|
 			Some(DrawLine{
-				line: Line(face.center, face.center + face.normal/2.0),
+				line: Line(face.center(), face.center() + face.normal()/2.0),
 				color
 			})
 		)

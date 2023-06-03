@@ -105,7 +105,7 @@ impl TextureMapping {
 		color : Color, face_scales : &Vec<Field>) -> Vec<Option<DrawLine<V>>> {
 		let mut lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
 		for &face_scale in face_scales {
-			let scale_point = |v| V::linterp(face.center,v,face_scale);
+			let scale_point = |v| V::linterp(face.center(),v,face_scale);
 			for edgei in &face.edgeis {
 				let edge = &shape.edges[*edgei];
 				lines.push(

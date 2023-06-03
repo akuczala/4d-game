@@ -15,6 +15,7 @@ pub use convex::Convex; pub use single_face::SingleFace;
 
 use specs::{Component, VecStorage};
 use std::fmt;
+use crate::geometry::shape::face::FaceGeometry;
 use crate::geometry::transform::Scaling;
 
 #[derive(Component,PartialEq,Eq,Hash,Clone)]
@@ -89,7 +90,7 @@ impl <V : VectorTrait> Shape<V> {
         for face in faces.iter_mut() {
             face.calc_vertis(&edges);
             let face_verts = face.vertis.iter().map(|verti| verts[*verti]).collect();
-            face.center = vector::barycenter(&face_verts);
+            face.geometry.center = vector::barycenter(&face_verts);
             //try to do this with iterators
             //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
         }
@@ -108,16 +109,20 @@ impl <V : VectorTrait> Shape<V> {
         self.faces[facei].vertis.iter().map(|vi| self.verts[*vi]).collect()
     }
     pub fn point_signed_distance(&self, point : V) -> Field {
-        self.faces.iter().map(|f| f.normal.dot(point) - f.threshold).fold(Field::NEG_INFINITY,|a,b| match a > b {true => a, false => b})
+        self.faces.iter().map(
+            |f| f.plane()
+                .point_signed_distance(point))
+                .fold(Field::NEG_INFINITY,|a,b| match a > b {true => a, false => b}
+        )
     }
     //returns distance and normal of closest face
     pub fn point_normal_distance(&self, point : V) -> (V, Field) {
-         self.faces.iter().map(|f| (f.normal, f.normal.dot(point) - f.threshold))
+         self.faces.iter().map(Face::plane).map(|plane| (plane.normal, plane.point_signed_distance(point)))
             .fold((V::zero(),f32::NEG_INFINITY),|(n1,a),(n2,b)| match a > b {true => (n1,a), false => (n2,b)})
     }
     //returns distance and normal of closest face
     pub fn point_facei_distance(&self, point : V) -> (usize, Field) {
-         self.faces.iter().enumerate().map(|(i,f)| (i, f.normal.dot(point) - f.threshold))
+         self.faces.iter().enumerate().map(|(i,f)| (i, f.plane().point_signed_distance(point)))
             .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
     }
     pub fn update(&mut self, transform: &Transform<V>) {
@@ -125,9 +130,14 @@ impl <V : VectorTrait> Shape<V> {
             *v = transform.transform_vec(v);
         }
         for face in self.faces.iter_mut() {
-            face.normal = (transform.frame * face.normal).normalize();
-            face.center = transform.transform_vec(&face.center);
-            face.threshold = face.normal.dot(face.center);
+            face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
+            // recompute normals in case of stretching
+            // todo: is there a way to know when the transform is orthogonal?
+            // let face_verts = face.vertis.iter_mut().map(|verti| self.verts[*verti]).collect();
+            // let new_normal = Plane::from_points_and_vec(&face_verts, face.normal()).normal;
+            // face.geometry.plane.normal = new_normal;
+            face.geometry.center = transform.transform_vec(&face.center());
+            face.geometry.plane.threshold = face.normal().dot(face.center());
         }
     }
     pub fn update_from_ref(&mut self, ref_shape: &Shape<V>, transform: &Transform<V>) {
@@ -135,9 +145,9 @@ impl <V : VectorTrait> Shape<V> {
             *v = transform.transform_vec(vr);
         }
         for (face, ref_face) in self.faces.iter_mut().zip(ref_shape.faces.iter()) {
-            face.normal = (transform.frame * ref_face.normal).normalize();
-            face.center = transform.transform_vec(&ref_face.center);
-            face.threshold = face.normal.dot(face.center);
+            face.geometry.plane.normal = (transform.frame * ref_face.normal()).normalize();
+            face.geometry.center = transform.transform_vec(&ref_face.center());
+            face.geometry.plane.threshold = face.normal().dot(face.center());
         }
     }
     pub fn stretch(&self, scales: &Scaling<V>) -> Self {

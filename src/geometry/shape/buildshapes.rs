@@ -280,7 +280,7 @@ pub fn color_cube< V: VectorTrait>(mut cube : Shape<V>) -> Shape<V> {
 pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	let mut new_shape = shape.clone();
 	for face in &mut new_shape.faces {
-		face.normal = -face.normal;
+		face.geometry.plane.normal = -face.normal();
 	}
 	new_shape.update_from_ref(&shape,&Transform::identity());
 	new_shape

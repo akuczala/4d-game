@@ -45,7 +45,7 @@ impl<V: VectorTrait> SingleFace<V>{
         Self{
             subfaces: SubFaces(
                 subface_vertis.iter().map(
-                    |vertis| SubFace::new(vertis, &shape.verts, shape.faces[0].normal)
+                    |vertis| SubFace::new(vertis, &shape.verts, shape.faces[0].normal())
                 ).collect()
             ),
             two_sided
@@ -53,7 +53,7 @@ impl<V: VectorTrait> SingleFace<V>{
     }
     pub fn update(&mut self, shape: &Shape<V>) {
         for subface in self.subfaces.0.iter_mut() {
-            subface.update(&shape.verts, shape.faces[0].normal)
+            subface.update(&shape.verts, shape.faces[0].normal())
         }
     }
     fn calc_boundary(&self, subface: &SubFace<V>, origin: V, verts: &Vec<V>, face_center: V) -> Plane<V> {
@@ -80,7 +80,7 @@ impl<V: VectorTrait> SingleFace<V>{
         let mut out_points = Vec::<V>::new();
         let face = &shape.faces[0];
         if !visible_only || face.visible {
-            if let Some(p) = line_plane_intersect(line,&Plane{normal : face.normal, threshold : face.threshold}) {
+            if let Some(p) = line_plane_intersect(line,face.plane()) {
                 if self.subface_normal_distance(p).1 < 0.0 {
                     out_points.push(p)
                 }
@@ -130,13 +130,13 @@ fn test_boundaries() {
     );
     let subfaces_vertis = vec![vec![0],vec![1]];
     let single_face = SingleFace::new(&shape, &subfaces_vertis, false);
-    let boundaries = single_face.calc_boundaries(Vec2::zero(), &shape.verts, shape.faces[0].center, shape.faces[0].visible);
+    let boundaries = single_face.calc_boundaries(Vec2::zero(), &shape.verts, shape.faces[0].center(), shape.faces[0].visible);
     for boundary in boundaries.iter() {
         println!("{}",boundary)
     }
     println!("3d, Triangle");
     let (shape, single_face) = make_3d_triangle();
-    let boundaries = single_face.calc_boundaries(Vec3::zero(), &shape.verts, shape.faces[0].center, shape.faces[0].visible);
+    let boundaries = single_face.calc_boundaries(Vec3::zero(), &shape.verts, shape.faces[0].center(), shape.faces[0].visible);
     for boundary in boundaries.iter() {
         assert!(is_close(boundary.threshold,0.0));
         //needs more asserts
@@ -144,7 +144,7 @@ fn test_boundaries() {
     }
     println!("3d, Square");
     let (shape, single_face) = make_3d_square();
-    let boundaries = single_face.calc_boundaries(Vec3::zero(), &shape.verts, shape.faces[0].center, shape.faces[0].visible);
+    let boundaries = single_face.calc_boundaries(Vec3::zero(), &shape.verts, shape.faces[0].center(), shape.faces[0].visible);
     for boundary in boundaries.iter() {
         assert!(is_close(boundary.threshold,0.0));
         //needs more asserts

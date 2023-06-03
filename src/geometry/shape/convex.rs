@@ -56,7 +56,7 @@ impl Convex{
             subfaces: Subfaces::calc_subfaces(&shape.faces)
         }
     }
-    fn calc_boundary<V: VectorTrait>(face1 : &Face<V>, face2 : &Face<V>, origin : V) -> Plane<V>
+    fn calc_boundary<V: VectorTrait>(face1 : &Plane<V>, face2 : &Plane<V>, origin : V) -> Plane<V>
     {
         let (n1,n2) = (face1.normal,face2.normal);
         let (th1,th2) = (face1.threshold, face2.threshold);
@@ -81,28 +81,26 @@ impl Convex{
             let face1 = &faces[subface.faceis.0];
             let face2 = &faces[subface.faceis.1];
             if face1.visible == !face2.visible {
-                let boundary = Self::calc_boundary(face1, face2, origin);
+                let boundary = Self::calc_boundary(face1.plane(), face2.plane(), origin);
                 boundaries.push(boundary);
             }
         }
         //visible faces are boundaries
         for face in faces {
             if face.visible {
-                boundaries.push(Plane{
-                    normal : face.normal, threshold : face.threshold
-                })
+                boundaries.push(face.plane().clone())
             }
         }
         boundaries
     }
     pub fn point_within<V: VectorTrait>(point : V, distance : Field, faces: &Vec<Face<V>>) -> bool {
-        faces.iter().all(|f| f.normal.dot(point) - f.threshold < distance)
+        faces.iter().map(Face::plane).all(|p| p.point_signed_distance(point) < distance)
     }
     //returns points of intersection with shape
     pub fn line_intersect<V: VectorTrait>(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
         let mut out_points = Vec::<V>::new();
         for face in shape.faces.iter().filter(|f| !visible_only || f.visible) {
-            if let Some(p) = line_plane_intersect(line,&Plane{normal : face.normal, threshold : face.threshold}) {
+            if let Some(p) = line_plane_intersect(line,face.plane()) {
                 if crate::vector::is_close(shape.point_signed_distance(p),0.) {
                     out_points.push(p);
                 }
@@ -135,7 +133,7 @@ fn test_point_within() {
     use crate::vector::Vec3;
     let point = Vec3::new(1.2,1.2,1.2);
     let shape = crate::geometry::shape::buildshapes::build_prism_3d::<Vec3>(1.0, 1.0, 5);
-    for v in shape.faces.iter().map(|f| f.normal.dot(point) - f.threshold) {
+    for v in shape.faces.iter().map(Face::plane).map(|plane| plane.point_signed_distance(point)) {
         println!("{}",v);
     }
     assert!(!Convex::point_within(point,0., &shape.faces))

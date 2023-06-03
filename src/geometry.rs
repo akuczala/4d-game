@@ -44,12 +44,15 @@ impl<V: VectorTrait> Plane<V> {
         let center = barycenter(points);
         Plane::from_normal_and_point(normal, center)
     }
+    pub fn point_signed_distance(&self, point : V) -> Field {
+        self.normal.dot(point) - self.threshold
+    }
     //returns closest plane + distance
     pub fn point_normal_distance<'a, I: Iterator<Item=&'a Plane<V>>>(point : V, planes: I) -> Option<(&'a Plane<V>, Field)> {
         planes.fold(
             None,
             |acc: Option<(&Plane<V>,Field)>, plane| {
-                let this_dist = plane.normal.dot(point) - plane.threshold;
+                let this_dist = plane.point_signed_distance(point);
                 Some(acc.map_or_else(
                     || (plane, this_dist),
                     |(best_plane,cur_dist)| match this_dist > cur_dist {

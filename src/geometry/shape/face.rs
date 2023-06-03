@@ -7,10 +7,7 @@ use crate::draw::{Texture,TextureMapping};
 
 #[derive(Clone)]
 pub struct Face<V : VectorTrait> {
-    pub normal : V,
-    pub center : V,
-
-    pub threshold : Field,
+    pub geometry: FaceGeometry<V>,
 
     pub texture : Texture<V::SubV>,
     pub texture_mapping : TextureMapping,
@@ -21,13 +18,23 @@ pub struct Face<V : VectorTrait> {
 
 }
 
+#[derive(Clone)]
+pub struct FaceGeometry<V: VectorTrait> {
+    pub plane: Plane<V>,
+    pub center : V,
+}
+
+
 impl<V : VectorTrait> Face<V> {
     pub fn new(edgeis : Vec<EdgeIndex>, normal : V) -> Face<V> {
         let face = Face{
-            normal : normal.normalize(), //let's make 100% these are normalized
-            center : V::zero(),
-            threshold : 0.0,
-
+            geometry: FaceGeometry{
+                plane: Plane{
+                    normal : normal.normalize(), //let's make 100% these are normalized
+                    threshold : 0.0,
+                },
+                center : V::zero(),
+            },
             //change texture to reference
             texture : Default::default(),
             texture_mapping : Default::default(),
@@ -55,7 +62,9 @@ impl<V : VectorTrait> Face<V> {
     }
     pub fn update_visibility(&mut self,camera_pos : V, two_sided: bool)
     {
-        self.visible = two_sided | (self.normal.dot(self.center - camera_pos) < 0.0)
+        self.visible = two_sided | (
+            self.plane().point_signed_distance(camera_pos) > 0.0
+        )
     }
     pub fn set_color(&mut self, color : Color) {
         take_mut::take(&mut self.texture,|tex| tex.set_color(color));
@@ -68,14 +77,26 @@ impl<V : VectorTrait> Face<V> {
         self.set_texture(texture, texture_mapping);
         self
     }
+    // convenience getters
+    pub fn plane(&self) -> &Plane<V> {
+        return &self.geometry.plane
+    }
+    pub fn normal(&self) -> V {
+        return self.plane().normal
+    }
+    pub fn center(&self) -> V {
+        return self.geometry.center
+    }
 
 }
 
 use std::fmt;
+use crate::geometry::Plane;
+
 impl<V : VectorTrait> fmt::Display for Face<V> {
         // This trait requires `fmt` with this exact signature.
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            let mut out = format!("normal={}, ",self.normal);
+            let mut out = format!("normal={}, ",self.normal());
             out.push_str("edgeis=[");
             for ei in self.edgeis.iter() {
                 out.push_str(&format!("{},",*ei));
