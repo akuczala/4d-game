@@ -8,7 +8,7 @@ pub mod buildshapes;
 use std::collections::HashMap;
 use crate::graphics::colors::Color;
 use crate::vector;
-use crate::vector::{VectorTrait,Field};
+use crate::vector::{VectorTrait, Field, barycenter};
 use super::{Line,Plane,line_plane_intersect,Transform,Transformable};
 pub use face::Face;
 pub use convex::Convex; pub use single_face::SingleFace;
@@ -130,24 +130,28 @@ impl <V : VectorTrait> Shape<V> {
             *v = transform.transform_vec(v);
         }
         for face in self.faces.iter_mut() {
-            face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
-            // recompute normals in case of stretching
-            // todo: is there a way to know when the transform is orthogonal?
-            // let face_verts = face.vertis.iter_mut().map(|verti| self.verts[*verti]).collect();
-            // let new_normal = Plane::from_points_and_vec(&face_verts, face.normal()).normal;
-            // face.geometry.plane.normal = new_normal;
-            face.geometry.center = transform.transform_vec(&face.center());
-            face.geometry.plane.threshold = face.normal().dot(face.center());
+            Shape::update_face(&self.verts, face);
         }
+    }
+    pub fn update_face(verts: &Vec<V>, face: &mut Face<V>) {
+        // todo: is there a way to know when the transform is orthogonal?
+        // face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
+        // recompute normals in case of stretching
+        let vertis = &face.vertis;
+        let mut geometry = &mut face.geometry;
+        let face_verts: Vec<V> = vertis.iter().map(|verti| verts[*verti]).collect();
+
+        geometry.plane.normal = Plane::from_points_and_vec(&face_verts, geometry.plane.normal).normal;
+        geometry.center = barycenter(&face_verts);
+        geometry.plane.threshold = geometry.plane.normal.dot(geometry.center);
+
     }
     pub fn update_from_ref(&mut self, ref_shape: &Shape<V>, transform: &Transform<V>) {
         for (v,vr) in self.verts.iter_mut().zip(ref_shape.verts.iter()) {
             *v = transform.transform_vec(vr);
         }
-        for (face, ref_face) in self.faces.iter_mut().zip(ref_shape.faces.iter()) {
-            face.geometry.plane.normal = (transform.frame * ref_face.normal()).normalize();
-            face.geometry.center = transform.transform_vec(&ref_face.center());
-            face.geometry.plane.threshold = face.normal().dot(face.center());
+        for face in self.faces.iter_mut() {
+            Shape::update_face(&self.verts, face);
         }
     }
     pub fn stretch(&self, scales: &Scaling<V>) -> Self {

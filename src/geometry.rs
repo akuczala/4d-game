@@ -36,7 +36,7 @@ impl<V: VectorTrait> Plane<V> {
         // D-1 vectors parallel to the plane
         let v0: V = points[0];
         let d = V::DIM.abs() as usize;
-        let parallel_vecs = points[1..d-1].iter().map(|&v| v - v0);
+        let parallel_vecs = points[1..d].iter().map(|&v| v - v0);
         let mut normal = V::cross_product(parallel_vecs).normalize();
         if normal.dot(normal_dir) < 0.0 { //normal should parallel to normal_dir
             normal = -normal;
