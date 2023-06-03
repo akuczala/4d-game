@@ -142,6 +142,7 @@ impl <V : VectorTrait> Shape<V> {
         let face_verts: Vec<V> = vertis.iter().map(|verti| verts[*verti]).collect();
 
         geometry.plane.normal = Plane::from_points_and_vec(&face_verts, geometry.plane.normal).normal;
+        // todo: center can be calculated from transform, but its not passed to this fn atm
         geometry.center = barycenter(&face_verts);
         geometry.plane.threshold = geometry.plane.normal.dot(geometry.center);
 
