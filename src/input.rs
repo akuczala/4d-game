@@ -9,6 +9,7 @@ use crate::player::Player;
 use std::marker::PhantomData;
 
 use glium::glutin;
+use glium::glutin::dpi::PhysicalPosition;
 use glutin::event::VirtualKeyCode as VKC;
 use glutin::event::{TouchPhase,MouseScrollDelta};
 use glutin::dpi::LogicalPosition;
@@ -168,7 +169,7 @@ impl Input {
                         TouchPhase::Moved => {
                             self.scroll_dpos = match delta {
                                 MouseScrollDelta::LineDelta(x,y) => Some((*x,*y)),
-                                MouseScrollDelta::PixelDelta(LogicalPosition{x,y})
+                                MouseScrollDelta::PixelDelta(PhysicalPosition{x,y})
                                     => Some((*x as f32,*y as f32))
                             }
                         },
@@ -188,7 +189,7 @@ impl Input {
             },
             _ => (),
         }
-        if self.helper.update(&ev) {
+        if self.helper.update(ev) {
             self.listen_inputs();
             
         }

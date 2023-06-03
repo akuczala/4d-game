@@ -146,11 +146,11 @@ impl UIArgs{
 
 
 fn hello_world(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
-        use imgui::{Window,im_str,Condition};
-        Window::new(im_str!("Debug info"))
+        use imgui::{Window, Condition};
+        ui.window("Debug info")
             .position([20.0, 20.0], Condition::Appearing)
             .size([300.0, 110.0], Condition::FirstUseEver)
-            .build(ui, || {
+            .build(|| {
                 match ui_args {
                     UIArgs::Test{ref frame_duration, ref elapsed_time, ref mouse_diff, ref mouse_pos} => {
                         ui.text(format!("FPS: {}",1./frame_duration));
@@ -170,8 +170,8 @@ fn hello_world(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
         
     }
 fn simple_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
-        use imgui::{Window,im_str,Condition};
-        Window::new(im_str!("Press M to toggle mouse control"))
+        use imgui::{Window,Condition};
+        ui.window("Press M to toggle mouse control")
             .position([0.,0.], Condition::Appearing)
             .size([190.0, 110.0], Condition::FirstUseEver)
             .bg_alpha(0.75)
@@ -179,7 +179,7 @@ fn simple_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
             .resizable(false)
             .scroll_bar(false)
             .menu_bar(false)
-            .build(ui, || {
+            .build(|| {
                 match ui_args {
                     UIArgs::Test{ref frame_duration, ref elapsed_time, ref mouse_diff, ref mouse_pos} => {
                         ui.text(format!("FPS: {0:0}",1./frame_duration));
@@ -205,8 +205,8 @@ fn simple_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
         
     }
 fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs, state: &mut State) {
-        use imgui::{Window,im_str,Condition};
-        Window::new(im_str!("Press M to toggle mouse control"))
+        use imgui::{Window,Condition};
+        ui.window("Press M to toggle mouse control")
             .position([0.,0.], Condition::Appearing)
             .size([190.0, 500.0], Condition::FirstUseEver)
             .always_auto_resize(true)
@@ -215,7 +215,7 @@ fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs, state: &mut Stat
             .resizable(false)
             .scroll_bar(false)
             .menu_bar(false)
-            .build(ui, || {
+            .build(|| {
                 match ui_args {
                     UIArgs::Debug{ref frame_duration, ref debug_text} => {
                         ui.text(format!("FPS: {:0.0}",1./frame_duration));
@@ -223,7 +223,7 @@ fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs, state: &mut Stat
                     }
                     _ => (),
                 };
-                if ui.radio_button_bool(im_str!("I toggle my state on click"), state.checked) {
+                if ui.radio_button_bool("I toggle my state on click", state.checked) {
                     state.checked = !state.checked; // flip state on click
                     state.text = "*** Toggling radio button was clicked".to_string();
                 }
@@ -281,7 +281,7 @@ impl System {
 
         //target.clear_color_srgb(1.0, 1.0, 1.0, 1.0);
         platform.prepare_render(&ui, gl_window.window());
-        let draw_data = ui.render();
+        let draw_data = imgui.render();
         renderer
             .render(target, draw_data)
             .expect("Rendering failed");

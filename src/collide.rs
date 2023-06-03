@@ -261,7 +261,7 @@ impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 						} else {
 							(dist < PLAYER_COLLIDE_DISTANCE) & (single_face.subface_normal_distance(pos).1 < PLAYER_COLLIDE_DISTANCE)
 						},
-						ShapeType::Convex(_) => (dist < PLAYER_COLLIDE_DISTANCE) }
+						ShapeType::Convex(_) => dist < PLAYER_COLLIDE_DISTANCE }
 					{
 						//push player away along normal of nearest face (projects out -normal)
 						//but i use abs here to guarantee the face always repels the player
