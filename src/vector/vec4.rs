@@ -1,6 +1,7 @@
 use std::ops::{Add,Sub,Neg,Mul,Div,Index,IndexMut};
 use std::fmt;
-use crate::vector::{VecIndex,VectorTrait,Field,Vec3};
+use std::slice::Iter;
+use crate::vector::{VecIndex, VectorTrait, Field, Vec3, FROM_ITER_ERROR_MESSAGE};
 use super::Mat4;
 
 #[derive(Copy,Clone,Debug)]
@@ -25,7 +26,7 @@ impl Index<VecIndex> for Vec4 {
 		}
 }
 impl IndexMut<VecIndex> for Vec4 {
-	fn index_mut<'a>(&'a mut self, index: VecIndex) -> &'a mut Self::Output {
+	fn index_mut(&mut self, index: VecIndex) -> &mut Self::Output {
 		match index {
 						 0 | -4 => &mut self.arr[0],
 						 1 | -3 => &mut self.arr[1],
@@ -87,10 +88,18 @@ impl VectorTrait for Vec4 {
 	{
 		Self{arr : *arr}
 	}
+    fn from_iter(mut iter: Iter<Field>) -> Self {
+        Vec4::new(*iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+                  *iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+                  *iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+                  *iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+
+        )
+    }
 	fn get_arr(&self) -> &[Field ; 4]{
 		&self.arr
 	}
-	fn iter<'a>(&'a self) -> std::slice::Iter<'a,Field> {
+	fn iter(&self) -> std::slice::Iter<Field> {
 		self.get_arr().iter()
 	}
 	fn map<F : Fn(Field) -> Field>(self, f : F) -> Self {

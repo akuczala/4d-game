@@ -1,6 +1,6 @@
 use specs::prelude::*;
 use specs::{Component};
-use crate::vector::{VectorTrait,MatrixTrait,VecIndex,Field,rotation_matrix};
+use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field, rotation_matrix, Vec4};
 
 pub trait Transformable<V: VectorTrait> {
     fn with_transform(mut self, transformation: Transform<V>) -> Self
@@ -73,6 +73,8 @@ impl<V: VectorTrait> Scaling<V> {
 
 // we could also create a more restrictive trait + struct RigidTransform, that requires the matrix A to be
 // orthogonal. This might help us where the code assumes "frame" is orthogonal
+
+// todo: there is a nice way to "compose" rotations and scalings, see blender
 pub struct Transform<V: VectorTrait>{
     pub pos: V,
     pub frame: V::M,
@@ -115,7 +117,8 @@ impl<V: VectorTrait> Transform<V> {
                 ))
             )
 
-        )
+        );
+        self.set_transform(self.unshear());
     }
     pub fn rotate_about(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field, pos: V) {
         let rot_mat = rotation_matrix(self.frame[axis1], self.frame[axis2], Some(angle));
@@ -125,6 +128,23 @@ impl<V: VectorTrait> Transform<V> {
     pub fn stretch(&mut self, scale: Scaling<V>) {
         self.compose(Transform::new(None, Some(scale.get_mat())))
     }
+    pub fn decompose_rotation_scaling(&self) -> (V::M, Scaling<V>) {
+        // i tried using normalize_get_norm + unzip but rust hates me
+        let cols: Vec<V> = self.frame.transpose().get_rows();
+        let norms: Vec<Field> = cols.iter().map(|v|v.norm()).collect();
+        //for n in norms.iter() { println!{":: {}", n}}
+        (
+            V::M::from_vec_of_vecs(
+                &self.frame.transpose().get_rows().iter().zip(norms.iter()).map(|(v,n)| *v / *n).collect()
+            ).transpose(),
+            Scaling::Vector(V::from_iter(norms.iter()))
+        )
+    }
+    pub fn unshear(&self) -> Transform<V> {
+        let (rotation, scaling) = self.decompose_rotation_scaling();
+        Transform::new(Some(self.pos), Some(rotation.dot(scaling.get_mat())))
+    }
+
     pub fn transform_vec(&self, &vec: &V) -> V {
         self.frame * vec + self.pos
     }
@@ -159,5 +179,25 @@ impl<V: VectorTrait> Transform<V> {
         self.rotate_about(axis1, axis2, angle, point); self
     }
 
+}
+
+#[test]
+fn test_decompose() {
+    use crate::vector::{Vec4, Mat4};
+    let s = Scaling::Vector(Vec4::new(2.0, 3.0, 5.0, 7.0));
+    let rot_mat = Mat4::from_arr(
+        &[[-0.69214412,  0.44772088,  0.55884119, -0.09043814],
+            [-0.19507629, -0.72900476,  0.2438655 , -0.60911979],
+            [ 0.34303542, -0.2792939 ,  0.73238738,  0.51761989],
+            [ 0.6043248 ,  0.43599655,  0.30304269, -0.59402329]]
+    );
+    let transform = Transform::new(
+        Some(Vec4::zero()),
+        Some(rot_mat.dot(s.get_mat()))
+    );
+    let (rot_mat_recon,s_recon) = transform.decompose_rotation_scaling();
+    println!("{}", transform.frame.transpose());
+    println!("{}", match s_recon {Scaling::Vector(v) => v, Scaling::Scalar(f) => Vec4::zero()});
+    println!("{}", rot_mat_recon)
 }
 

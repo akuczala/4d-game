@@ -3,20 +3,22 @@ pub mod mat2_tuple2; pub mod mat3_tuple2;
 pub mod mat4_tuple2;
 //pub mod vec4;
 use fmt::Display;
-use std::ops::{Add,Sub,Mul,Div,Index,IndexMut,Neg};
+use std::ops::{Add, Sub, Mul, Div, Index, IndexMut, Neg, Range};
 pub use vec2::Vec2;
 pub use vec3::Vec3;
 pub use vec4::Vec4;
 pub use mat2_tuple2::Mat2;
 pub use mat3_tuple2::Mat3;
 pub use mat4_tuple2::Mat4;
-use std::fmt;
+use std::{array, fmt};
 //use alga::linear::FiniteDimInnerSpace;
 pub type VecIndex = i8; //i8
 pub type Field = f32;
 
 const EPSILON : Field = 0.0001;
 pub use std::f32::consts::PI;
+use std::slice::Iter;
+
 pub fn is_close(a : Field, b : Field) -> bool {
     (a-b).abs() < EPSILON
 }
@@ -27,6 +29,7 @@ pub fn linspace(min : Field, max : Field, n : usize) -> impl Iterator<Item=Field
     (0..n).map(move |i| (i as Field)/((n-1) as Field)).map(move |f| (1.-f)*min + f*max)
 }
 
+const FROM_ITER_ERROR_MESSAGE: &str = "Invalid index in from iter";
 //consider using #![feature(associated_consts)]
 //to define vector dimension (might not need to explicity use feature?)
 
@@ -45,6 +48,7 @@ pub trait VectorTrait: Copy + Display + Sync + Send + std::fmt::Debug + 'static 
         const DIM : VecIndex;
 
         fn from_arr(arr : &Self::Arr) -> Self;
+        fn from_iter(iter: Iter<Field>) -> Self;
         fn get_arr(&self) -> &Self::Arr;
         //ideally, I'd be able to implement this here by constrainting Arr to be iterable
         //could we use IntoIterator?
@@ -60,6 +64,7 @@ pub trait VectorTrait: Copy + Display + Sync + Send + std::fmt::Debug + 'static 
         fn norm(self) -> Field {
             self.norm_sq().sqrt()
         }
+        fn normalize_get_norm(self) -> (Self, Field) {(|n| (self / n, n))(self.norm())}
         fn normalize(self) -> Self {
             self/self.norm()
         }
@@ -122,6 +127,13 @@ pub trait MatrixTrait<V : VectorTrait>: Display + Copy + Sync + Send + 'static +
     fn scale(self, rhs : Field) -> Self {
         self.map_els(|mij| mij*rhs)
     }
+    // use vecs of V for now, but it would be faster to use iterators of &V (probably?)
+    fn get_rows(&self) -> Vec<V> {
+        // is it possible to do this without a lambda? i tried self.index
+        (0..V::DIM).map(|i| self[i]).collect()
+    }
+    fn from_vec_of_vecs(vecs: &Vec<V>) -> Self;
+    fn transpose(&self) -> Self;
     
 }
 
@@ -252,6 +264,19 @@ pub fn test_cross_product() {
     assert!(VectorTrait::is_close(cross4,
         Vec4::new(160.,-120.,-90.,70.))
     );
+    // a cross product of 3 vectors in a plane yields 0 in four dimensions
+    assert!(
+        VectorTrait::is_close(
+            VectorTrait::cross_product(
+                vec![
+                    Vec4::new(1., 1., 0., 0.),
+                    Vec4::new(1., 0., 0. ,0.),
+                    Vec4::new(0., 1., 0., 0.),
+                ].into_iter()
+            ),
+            Vec4::zero()
+        )
+    )
 }
 
 #[test]

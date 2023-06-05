@@ -34,6 +34,8 @@ impl<V: VectorTrait> Plane<V> {
     fn from_points_and_vec(points: &Vec<V>, normal_dir: V) -> Self {
         // take D points, then subtract one of these from the others to get
         // D-1 vectors parallel to the plane
+
+        //todo this won't work if the points all lie in the same d-2 plane
         let v0: V = points[0];
         let d = V::DIM.abs() as usize;
         let parallel_vecs = points[1..d].iter().map(|&v| v - v0);

@@ -129,19 +129,29 @@ impl <V : VectorTrait> Shape<V> {
         for v in self.verts.iter_mut() {
             *v = transform.transform_vec(v);
         }
-        for face in self.faces.iter_mut() {
-            Shape::update_face(&self.verts, face);
+        // for face in self.faces.iter_mut() {
+        //     Shape::update_face(&self.verts, face, transform);
+        // }
+        for (face) in self.faces.iter_mut() {
+            face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
+            face.geometry.center = transform.transform_vec(&face.center());
+            face.geometry.plane.threshold = face.normal().dot(face.center());
         }
     }
-    pub fn update_face(verts: &Vec<V>, face: &mut Face<V>) {
+    pub fn update_face(verts: &Vec<V>, face: &mut Face<V>, transform: &Transform<V>) {
         // todo: is there a way to know when the transform is orthogonal?
         // face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
         // recompute normals in case of stretching
+        // todo: at worst we have to track the inverse transpose matrix. there may be
+        // a way around this? https://lxjk.github.io/2017/10/01/Stop-Using-Normal-Matrix.html
         let vertis = &face.vertis;
         let mut geometry = &mut face.geometry;
         let face_verts: Vec<V> = vertis.iter().map(|verti| verts[*verti]).collect();
 
-        geometry.plane.normal = Plane::from_points_and_vec(&face_verts, geometry.plane.normal).normal;
+        geometry.plane.normal = Plane::from_points_and_vec(
+            &face_verts,
+            transform.transform_vec(&geometry.plane.normal)
+        ).normal;
         // todo: center can be calculated from transform, but its not passed to this fn atm
         geometry.center = barycenter(&face_verts);
         geometry.plane.threshold = geometry.plane.normal.dot(geometry.center);
@@ -151,13 +161,18 @@ impl <V : VectorTrait> Shape<V> {
         for (v,vr) in self.verts.iter_mut().zip(ref_shape.verts.iter()) {
             *v = transform.transform_vec(vr);
         }
-        for face in self.faces.iter_mut() {
-            Shape::update_face(&self.verts, face);
+        // for face in self.faces.iter_mut() {
+        //     Shape::update_face(&self.verts, face);
+        // }
+        for (face, ref_face) in self.faces.iter_mut().zip(ref_shape.faces.iter()) {
+            face.geometry.plane.normal = (transform.frame * ref_face.normal()).normalize();
+            face.geometry.center = transform.transform_vec(&ref_face.center());
+            face.geometry.plane.threshold = face.normal().dot(face.center());
         }
     }
     pub fn stretch(&self, scales: &Scaling<V>) -> Self {
         let mut new_shape = self.clone();
-        new_shape.update(&Transform::new(None, Some(scales.get_mat())));
+        //new_shape.update(&Transform::new(None, Some(scales.get_mat())));
         new_shape
     }
     pub fn update_visibility(&mut self, camera_pos : V, two_sided : bool) {

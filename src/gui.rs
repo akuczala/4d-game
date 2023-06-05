@@ -9,6 +9,7 @@ use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui, ProgressBar};
 use imgui_glium_renderer::Renderer;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 use std::time::Instant;
+use map_in_place::MapVecInPlace;
 use crate::fps::FPSFloat;
 //mod clipboard;
 
@@ -110,7 +111,16 @@ impl UIArgs{
         let maybe_selected_storage= world.read_storage::<MaybeSelected<V>>();
         let maybe_selected = maybe_selected_storage.get(player.0).expect("player has no selection component");
 
-        let debug_strings = vec![
+        let shapes = world.read_component::<Shape<V>>();
+        let mut normals: Vec<V> = vec![];
+        for (shape) in (&shapes).join() {
+            for face in shape.faces.iter() {
+                normals.push(face.normal())
+            }
+
+        }
+
+        let debug_strings: Vec<String> = vec![
                 match maybe_target {
                     MaybeTarget(Some(target)) => format!("target: {}, {}, {}\n",target.entity.id(),target.distance,target.point),
                     MaybeTarget(None) => "No target\n".to_string(),
@@ -124,7 +134,10 @@ impl UIArgs{
                     MaybeSelected(None) => "No selection\n".to_string(),
                 },
             //crate::clipping::ShapeClipState::<V>::in_front_debug(world),
-        ];
+        ].into_iter()
+            //.chain(normals.into_iter().map(|n| format!("{}\n", n)))
+            .collect();
+
         //print draw lines
         //let draw_lines = world.read_resource::<DrawLineList<V::SubV>>();
         // for line in draw_lines.0.iter() {

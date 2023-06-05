@@ -2,6 +2,7 @@ use super::Vec2;
 use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field};
 use std::ops::{Add, Sub, Mul, Index};
 use std::fmt;
+use std::slice::Iter;
 
 //column major
 
@@ -69,6 +70,9 @@ impl MatrixTrait<Vec2> for Mat2 {
     fn get_arr(&self) -> Self::Arr {
         [*self[0].get_arr(), *self[1].get_arr()]
     }
+    fn from_vec_of_vecs(vecs: &Vec<Vec2>) -> Self {
+        Mat2::from_vecs(vecs[0], vecs[1])
+    }
 
     fn map_els<F: Fn(Field) -> Field + Copy>(self, f: F) -> Self {
         Self::from_arr(&[
@@ -113,6 +117,15 @@ impl MatrixTrait<Vec2> for Mat2 {
             }
         }
         Self::from_arr(&arr)
+    }
+    fn transpose(&self) -> Mat2 {
+        let a = self.get_arr();
+        Mat2::from_arr(
+            &[
+                [a[0][0], a[1][0]],
+                [a[0][1], a[1][1]]
+            ]
+        )
     }
 }
 

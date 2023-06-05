@@ -1,6 +1,7 @@
 use std::ops::{Add,Sub,Neg,Mul,Div,Index,IndexMut};
 use std::fmt;
-use crate::vector::{VecIndex,VectorTrait,Field};
+use std::slice::Iter;
+use crate::vector::{VecIndex, VectorTrait, Field, FROM_ITER_ERROR_MESSAGE};
 use super::Mat2;
 
 #[derive(Copy,Clone,Debug)]
@@ -88,6 +89,10 @@ impl VectorTrait for Vec2 {
     fn from_arr(arr : &Self::Arr) -> Self
     {
         Self{arr : *arr}
+    }
+    fn from_iter(mut iter: Iter<Field>) -> Self {
+        Vec2::new(*iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+                  *iter.next().expect(FROM_ITER_ERROR_MESSAGE))
     }
     fn get_arr(&self) -> &[Field ; 2]{
         &self.arr

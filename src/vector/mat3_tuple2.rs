@@ -1,7 +1,8 @@
 use super::vec3::Vec3;
-use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field};
+use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field, Vec2, Mat2};
 use std::ops::{Add, Sub, Mul, Index};
 use std::fmt;
+use std::slice::Iter;
 
 //column major
 
@@ -134,6 +135,19 @@ impl MatrixTrait<Vec3> for Mat3 {
             }
         }
         Self::from_arr(&arr)
+    }
+    fn from_vec_of_vecs(vecs: &Vec<Vec3>) -> Self {
+        Mat3::from_vecs(vecs[0], vecs[1], vecs[2])
+    }
+    fn transpose(&self) -> Mat3 {
+        let a = self.get_arr();
+        Mat3::from_arr(
+            &[
+                [a[0][0], a[1][0], a[2][0]],
+                [a[0][1], a[1][1], a[2][1]],
+                [a[0][2], a[1][2], a[2][2]]
+            ]
+        )
     }
 }
 
