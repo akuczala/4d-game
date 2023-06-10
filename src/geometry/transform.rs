@@ -81,6 +81,8 @@ pub struct Transform<V: VectorTrait>{
     pub pos: V,
     pub frame: V::M,
 }
+// todo figure out how to "snap" transforms to e.g. integer scales, deg of rotation, grid pos
+
 // TODO improve performance by creating fewer structs? or does the compiler do that
 impl<V: VectorTrait> Transform<V> {
     pub fn identity() -> Self {

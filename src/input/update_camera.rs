@@ -17,7 +17,7 @@ use crate::components::*;
 
 use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
-use crate::input::ShapeMovementMode;
+use crate::input::{PlayerMovementMode, ShapeMovementMode};
 
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
@@ -51,7 +51,7 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
 
     //mouse
     match input.movement_mode {
-        MovementMode::Mouse | MovementMode::Shape(ShapeMovementMode::Translate) => {
+        MovementMode::Player(PlayerMovementMode::Mouse) => {
             let (dmx, dmy) = input.mouse_dpos;
             if dmx.abs() != 0. {
                 if input.helper.held_shift() {
@@ -104,7 +104,7 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
         if movement_sign != 0. {
             any_slide_turn = true;
             //sliding
-            if input.helper.held_alt() ^ match input.movement_mode {MovementMode::Mouse => true, _ => false} {
+            if input.helper.held_alt() ^ match input.movement_mode {MovementMode::Player(PlayerMovementMode::Mouse) => true, _ => false} {
                 move_next.translate(
                     camera.get_slide_dpos(camera.heading[axis]*movement_sign,dt)
                 );

@@ -5,6 +5,7 @@ use crate::vector::{VectorTrait,Field,VecIndex};
 
 use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;
+use crate::geometry::transform::Scaling;
 
 const SPEED : Field = 1.5;
 const ANG_SPEED : Field = 1.5*PI/3.0;
@@ -105,20 +106,36 @@ fn sliding_and_turning<V: VectorTrait>(
     }
     return any_slide_turn;
 }
-const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::X, 0), (VKC::Y, 1), (VKC::Z, 2), (VKC::W, 3)];
+const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::Key1, 0), (VKC::Key2, 1), (VKC::Key3, 2), (VKC::Key4, 3)];
+
+fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
+    let mut axis = None;
+    for (key_code, ax) in AXIS_KEYMAP.iter() {
+        if input.helper.key_held(*key_code) & (*ax < V::DIM) {
+            axis = Some(*ax)
+        }
+    }
+    axis
+}
 
 pub fn scrolling_axis_translation<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{
     let mut update = false;
     if let Some((dx,dy)) = input.scroll_dpos {
-        let mut axis = None;
-        for (key_code, ax) in AXIS_KEYMAP.iter() {
-            if input.helper.key_held(*key_code) & (*ax < V::DIM) {
-                axis = Some(ax)
-            }
-        }
-        if let Some(axis) = axis {
-            let dpos = V::one_hot(*axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
+        if let Some(axis) = get_axis(input) {
+            let dpos = V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
             transform.translate(dpos);
+            update = true;
+        }
+    }
+    return update
+}
+
+pub fn scrolling_axis_scaling<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{
+    let mut update = false;
+    if let Some((dx,dy)) = input.scroll_dpos {
+        if let Some(axis) = get_axis(input) {
+            let dscale = V::ones() + V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
+            transform.scale(Scaling::Vector(dscale));
             update = true;
         }
     }

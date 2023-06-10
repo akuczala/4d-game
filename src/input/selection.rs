@@ -17,7 +17,7 @@ use crate::components::*;
 
 use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
-use crate::input::input_to_transform::{scrolling_axis_translation, update_transform};
+use crate::input::input_to_transform::{scrolling_axis_scaling, scrolling_axis_translation, update_transform};
 use crate::input::ShapeMovementMode::Scale;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -86,6 +86,9 @@ pub fn manipulate_shape<V: VectorTrait>(
         ShapeMovementMode::Free => {
             update = update_transform(input, transform);
         },
+        ShapeMovementMode::Scale => {
+            update = scrolling_axis_scaling(input, transform)
+        }
         _ => {}
     }
     if update {

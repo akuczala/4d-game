@@ -39,7 +39,13 @@ const MOUSE_SENSITIVITY : Field = 0.2;
 const MOUSE_STICK_POINT : [f32 ; 2] = [100.,100.];
 
 #[derive(Copy, Clone,PartialEq,Eq)]
-pub enum MovementMode{Tank, Mouse, Shape(ShapeMovementMode)} //add flying tank mode, maybe flying mouse mode
+pub enum PlayerMovementMode{
+    Tank,
+    Mouse
+}
+
+#[derive(Copy, Clone,PartialEq,Eq)]
+pub enum MovementMode{Player(PlayerMovementMode), Shape(ShapeMovementMode)} //add flying tank mode, maybe flying mouse mode
 
 // TODO better organized input modes + states
 pub struct Input {
@@ -52,7 +58,6 @@ pub struct Input {
     pub mouse_dpos : (f32,f32),
     pub scroll_dpos: Option<(f32,f32)>,
     pub movement_mode : MovementMode,
-    pub last_movement_mode: MovementMode
 }
 impl Default for Input {
     fn default() -> Self {
@@ -71,8 +76,7 @@ impl Input {
             frame_duration : crate::fps::TARGET_FPS,
             mouse_dpos : (0.,0.),
             scroll_dpos: None,
-            movement_mode : MovementMode::Mouse,
-            last_movement_mode: MovementMode::Mouse,
+            movement_mode : MovementMode::Player(PlayerMovementMode::Mouse),
         }
     }
 }
@@ -135,9 +139,13 @@ impl Input {
         }
         if self.helper.key_released(VKC::M) {
             self.movement_mode = match self.movement_mode {
-                MovementMode::Mouse => MovementMode::Tank,
-                MovementMode::Tank => MovementMode::Mouse,
-                MovementMode::Shape(_) => self.last_movement_mode,
+                MovementMode::Player(player_mode) => MovementMode::Player(
+                    match player_mode {
+                        PlayerMovementMode::Mouse => PlayerMovementMode::Tank,
+                        PlayerMovementMode::Tank => PlayerMovementMode::Mouse
+                    }
+                ),
+                x => MovementMode::Player(PlayerMovementMode::Mouse)
             }
         }
         for &(key, mode) in MODE_KEYMAP.iter() {

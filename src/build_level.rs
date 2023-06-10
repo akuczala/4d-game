@@ -172,6 +172,7 @@ pub fn build_scene<V: VectorTrait>(world : &mut World) {
 
 pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<ShapeEntityBuilder<V>> {
 
+    // todo figure out why texture is now off after changes to transform
     pub fn apply_texture<V : VectorTrait>(shape : &mut Shape<V>) {
         for face in shape.faces.iter_mut() {
             let target_face_color = match face.texture {

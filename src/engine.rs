@@ -17,7 +17,7 @@ use crate::gui::UIArgs;
 //NOTES:
 // include visual indicator of what direction a collision is in
 
-use crate::input::{Input,MovementMode};
+use crate::input::{Input, MovementMode, PlayerMovementMode};
 
 use crate::graphics::{Graphics,Graphics2d,Graphics3d};
 use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait};
@@ -168,7 +168,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
             {
                 let mut input = self.world.write_resource::<Input>();
-                if let MovementMode::Mouse | MovementMode::Shape(_) = input.movement_mode {
+                if let MovementMode::Player(PlayerMovementMode::Mouse) | MovementMode::Shape(_) = input.movement_mode {
                     display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
                     display.gl_window().window().set_cursor_visible(false);
                     input.mouse_dpos = (0.,0.);
