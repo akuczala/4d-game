@@ -81,11 +81,11 @@ fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: 
         .build(world)
         .with(StaticCollider)
         .with(shape_label.clone())
-        .build();;
+        .build();
     floor.build(world)
         .with(StaticCollider)
         .with(shape_label.clone())
-        .build();;
+        .build();
     build_shape.clone()
         .with_translation(V::one_hot(1)*1.0)
         .with_rotation(-1,1,-PI/2.)
@@ -200,8 +200,8 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
         _ => panic!("Invalid dimension for build_corridor_cross")
     };
     let axes = match V::DIM {
-        3 => (-1..1),
-        4 => (-2..1),
+        3 => -1..1,
+        4 => -2..1,
         _ => panic!("Invalid dimension for build_corridor_cross")
     };
     

@@ -29,6 +29,7 @@ pub struct System {
 }
 
 pub fn init(title: &str, display : &Display) -> System {
+    #[allow(unused)]
     let title = match title.rfind('/') {
         Some(idx) => title.split_at(idx + 1).1,
         None => title,
@@ -115,7 +116,7 @@ impl UIArgs{
         let shapes = world.read_component::<Shape<V>>();
         let transforms = world.read_component::<Transform<V>>();
         let mut normals: Vec<V> = vec![];
-        for (shape) in (&shapes).join() {
+        for shape in (&shapes).join() {
             for face in shape.faces.iter() {
                 normals.push(face.normal())
             }

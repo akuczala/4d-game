@@ -26,7 +26,7 @@ pub trait Transformable<V: VectorTrait> {
         where Self: std::marker::Sized {
         self.rotate(axis1, axis2, angle); self
     }
-    fn with_rotation_about(mut self, axis1: VecIndex, axis2: VecIndex, angle: Field, point: V) -> Self
+    fn with_rotation_about(self, axis1: VecIndex, axis2: VecIndex, angle: Field, point: V) -> Self
         where Self: std::marker::Sized {
         self.with_transform(Transform::identity().with_rotation_about(axis1, axis2, angle,point))
     }
@@ -189,6 +189,7 @@ impl<V: VectorTrait> Transform<V> {
 
 }
 
+#[allow(unused)]
 #[test]
 fn test_decompose() {
     use crate::vector::{Vec4, Mat4};

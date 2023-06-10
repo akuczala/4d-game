@@ -72,7 +72,7 @@ fn main() {
             dim = match dim {
                 3 => Ok(4), 4 => Ok(3), _ => Err("Invalid dimension") 
             }.unwrap();
-            engine = engine.swap_dim(dim,&display);
+            engine = engine.swap_dim(&display);
         }
 
     }); //end of event loop

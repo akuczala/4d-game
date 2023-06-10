@@ -156,8 +156,8 @@ fn test_boundaries() {
 fn test_subface_planes() {
     use crate::vector::is_close;
     let (_shape, single_face) = make_3d_square();
-    type v = Vec3;
-    let expected_normals = vec![-v::one_hot(0), -v::one_hot(1), v::one_hot(1), v::one_hot(0)];
+    type V = Vec3;
+    let expected_normals = vec![-V::one_hot(0), -V::one_hot(1), V::one_hot(1), V::one_hot(0)];
     for (subface, &expected_normal) in single_face.subfaces.0.iter().zip(expected_normals.iter()) {
         assert!(is_close(subface.plane.threshold,1.0),"th={}",subface.plane.threshold);
         assert!(Vec3::is_close(subface.plane.normal, expected_normal),"normal={}",subface.plane.normal);
@@ -165,9 +165,9 @@ fn test_subface_planes() {
 
     let (_shape, single_face) = make_3d_triangle();
     let expected_planes = vec![
-        Plane::from_normal_and_point(v::one_hot(0), v::one_hot(0)),
-        Plane::from_normal_and_point(v::new(-1.0, 2.0,0.0).normalize(), v::new( 0.0, 0.5,0.0)),
-        Plane::from_normal_and_point(v::new(-1.0,-2.0,0.0).normalize(), v::new(0.0, -0.5,0.0)),
+        Plane::from_normal_and_point(V::one_hot(0), V::one_hot(0)),
+        Plane::from_normal_and_point(V::new(-1.0, 2.0,0.0).normalize(), V::new( 0.0, 0.5,0.0)),
+        Plane::from_normal_and_point(V::new(-1.0,-2.0,0.0).normalize(), V::new(0.0, -0.5,0.0)),
 
     ];
     for (subface, expected_plane) in single_face.subfaces.0.iter().zip(expected_planes.iter()) {

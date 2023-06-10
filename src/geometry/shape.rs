@@ -98,13 +98,11 @@ impl <V : VectorTrait> Shape<V> {
             //try to do this with iterators
             //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
         }
-        let mut shape = Shape{
+        Shape{
             verts,
             edges,
             faces,
-        };
-        //shape.update(&Transform::identity());
-        shape
+        }
     }
 
     //pub fn get_face_verts(&self, face : Face)
@@ -136,7 +134,7 @@ impl <V : VectorTrait> Shape<V> {
         // for face in self.faces.iter_mut() {
         //     Shape::update_face(&self.verts, face, transform);
         // }
-        for (face) in self.faces.iter_mut() {
+        for face in self.faces.iter_mut() {
             face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
             face.geometry.center = transform.transform_vec(&face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
@@ -153,11 +151,6 @@ impl <V : VectorTrait> Shape<V> {
             face.geometry.center = transform.transform_vec(&ref_face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
         }
-    }
-    pub fn stretch(&self, scales: &Scaling<V>) -> Self {
-        let mut new_shape = self.clone();
-        //new_shape.update(&Transform::new(None, Some(scales.get_mat())));
-        new_shape
     }
     pub fn update_visibility(&mut self, camera_pos : V, two_sided : bool) {
         for face in self.faces.iter_mut() {

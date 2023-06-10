@@ -41,7 +41,7 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
     fn run(&mut self, (
         input, player, ref_shapes, mut shape_storage, mut shape_type_storage, label_storage, mut transform_storage,
         mut maybe_selected_storage, entities) : Self::SystemData) {
-        let mut maybe_selected= maybe_selected_storage.get_mut(player.0).unwrap();
+        let maybe_selected= maybe_selected_storage.get_mut(player.0).unwrap();
         if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
             let (selected_shape, selected_shape_type, selected_label, selected_transform) =
                 (&mut shape_storage, &mut shape_type_storage, &label_storage, &mut transform_storage).join().get(*entity, &entities)
@@ -103,12 +103,11 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
     type SystemData = (
         Read<'a,Input>,
         ReadExpect<'a,Player>,
-        ReadStorage<'a,BBox<V>>,
         ReadStorage<'a,Shape<V>>,
         ReadStorage<'a,MaybeTarget<V>>,
         WriteStorage<'a,MaybeSelected<V>>
     );
-    fn run(&mut self, (input, player, bbox_storage, shape_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) {
+    fn run(&mut self, (input, player, shape_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) {
         if input.helper.mouse_held(0) {
             let maybe_target = maybe_target_storage.get(player.0).expect("Player has no target component");
             if let MaybeTarget(Some(target)) = maybe_target  {

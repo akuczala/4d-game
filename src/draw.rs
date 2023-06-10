@@ -298,7 +298,7 @@ where V : VectorTrait
 			let clip_states_in_front = shape_clip_state.in_front.iter()
 				.map(|&e| match shape_clip_states.get(e) {
 					Some(s) => s,
-					None => panic!(format!("Invalid entity {} found in shape_clip_state",e.id())),
+					None => panic!("Invalid entity {} found in shape_clip_state",e.id()),
 				});
 			//do clipping between all shapes
 			//let shapes_in_front = shapes.join().filter(|&s| (s as *const _ ) != (shape as *const _));

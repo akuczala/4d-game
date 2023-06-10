@@ -126,7 +126,6 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         false //don't switch engines
     }
     fn update_ui<E>(&mut self, display: &Display, control_flow : &mut ControlFlow, event: &Event<E>, fps_timer: &mut FPSTimer) {
-        let mut ui_args = UIArgs::None;
         let frame_duration = fps_timer.get_frame_length();
 
         //values to be passed to UI
@@ -137,7 +136,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         //     mouse_pos : input.helper.mouse(),
 
         // };
-        ui_args = UIArgs::new_debug::<V>(
+        let ui_args = UIArgs::new_debug::<V>(
             &self.world,
             frame_duration
         );
@@ -230,7 +229,7 @@ impl Engine {
             _ => Err("Invalid dimension for game engine")
         }.unwrap()
     }
-    pub fn swap_dim(&mut self, dim : VecIndex, display : &Display) -> Engine {
+    pub fn swap_dim(&mut self, display : &Display) -> Engine {
         let mut gui : Option<crate::gui::System> = None;
         match self {
             Engine::Four(engined) => std::mem::swap(&mut gui, &mut engined.gui),

@@ -145,7 +145,7 @@ impl Input {
                         PlayerMovementMode::Tank => PlayerMovementMode::Mouse
                     }
                 ),
-                x => MovementMode::Player(PlayerMovementMode::Mouse)
+                _ => MovementMode::Player(PlayerMovementMode::Mouse)
             }
         }
         for &(key, mode) in MODE_KEYMAP.iter() {
