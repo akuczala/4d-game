@@ -8,5 +8,5 @@ pub use crate::geometry::{
     shape::{Shape,ShapeType,ShapeTypeTrait,Convex,SingleFace,ShapeLabel}
 };
 pub use crate::draw::{DrawLineList};
-pub use crate::draw::clipping::{ClipState, ShapeClipState, BBall};
+pub use crate::draw::clipping::{ClipState, ShapeClipState, bball::BBall};
 pub use crate::collide::{InPlayerCell,BBox,HasBBox,MoveNext,StaticCollider};

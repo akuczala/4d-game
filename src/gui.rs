@@ -130,12 +130,13 @@ impl UIArgs{
                 },
                 match maybe_selected {
                     MaybeSelected(Some(selected)) => {
-                        //let bbox_storage = world.read_storage::<BBox<V>>();
-                        //let selected_bbox = bbox_storage.get(selected.entity).expect("selected entity has no bbox");
+                        let bbox_storage = world.read_storage::<BBox<V>>();
+                        let selected_bbox = bbox_storage.get(selected.entity).expect("selected entity has no bbox");
                         let selected_transform = transforms.get(selected.entity).expect("Nope");
                         let (frame, scaling) = selected_transform.decompose_rotation_scaling();
-                        //format!("target: {}, {:?}\n",selected.entity.id(), *selected_bbox)
-                        format!("target: {}\n, {}\n{:?}\n",selected.entity.id(), frame, scaling)
+                        let bbox_info = format!("target ({}) bbox: {:?}\n",selected.entity.id(), *selected_bbox);
+                        let frame_info = format!("target frame: {}\n, {}\n{:?}\n",selected.entity.id(), frame, scaling);
+                        format!("{}{}", bbox_info, frame_info)
                     },
                     MaybeSelected(None) => "No selection\n".to_string(),
                 },

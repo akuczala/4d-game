@@ -1,6 +1,9 @@
+pub mod bball;
+
 use std::collections::{HashSet,HashMap};
 use crate::player::Player;
 use crate::vector::{VectorTrait,Field};
+
 use crate::geometry::{Line,Plane};
 use crate::draw::DrawLine;
 use crate::components::{Transform,Shape};
@@ -9,18 +12,7 @@ use specs::prelude::*;
 use specs::{Component,VecStorage};
 use std::marker::PhantomData;
 
-
-#[derive(Component)]
-#[storage(VecStorage)]
-pub struct BBall<V: VectorTrait> {
-    pub pos: V, pub radius: Field,
-}
-impl<V: VectorTrait> BBall<V> {
-    pub fn new(verts: &Vec<V>, pos: V) -> Self {
-        let radius = verts.iter().map(|v| v.norm_sq()).fold(0./0., Field::max).sqrt();
-        Self{pos,radius}
-    }
-}
+use self::bball::BBall;
 
 pub struct ClipState<V : VectorTrait> {
     //pub in_front : Vec<Vec<bool>>,
@@ -70,10 +62,11 @@ pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
     type SystemData = (
         ReadStorage<'a,Shape<V>>,
-        ReadStorage<'a,BBall<V>>,
-        WriteStorage<'a,ShapeClipState<V>>,Entities<'a>,
-        ReadStorage<'a,Transform<V>>,
-        ReadExpect<'a,Player>
+        ReadStorage<'a, BBall<V>>,
+        WriteStorage<'a, ShapeClipState<V>>,
+        Entities<'a>,
+        ReadStorage<'a, Transform<V>>,
+        ReadExpect<'a, Player>
     );
 
     fn run(&mut self, (shape_data, bball_data, mut shape_clip_state,entities,transform,player) : Self::SystemData) {

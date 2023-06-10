@@ -42,8 +42,15 @@ impl <'a,V : VectorTrait> System<'a> for CoinSpinningSystem<V> {
 
 pub struct PlayerCoinCollisionSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a, V : VectorTrait> System<'a> for PlayerCoinCollisionSystem<V> {
-	type SystemData = (ReadExpect<'a,Player>, ReadStorage<'a,Transform<V>>,
-		ReadStorage<'a,Coin>,ReadStorage<'a,InPlayerCell>, ReadStorage<'a,Shape<V>>,Entities<'a>,Write<'a,DeletedEntities>, Write<'a, CoinsCollected>);
+	type SystemData = (
+		ReadExpect<'a,Player>,
+		ReadStorage<'a,Transform<V>>,
+		ReadStorage<'a,Coin>,
+		ReadStorage<'a,InPlayerCell>,
+		ReadStorage<'a,Shape<V>>,Entities<'a>,
+		Write<'a,DeletedEntities>,
+		Write<'a, CoinsCollected>
+	);
 
 	fn run(&mut self, (player, transform, coin, in_cell, shapes, entities, mut deleted, mut coins_collect) : Self::SystemData) {
 		let pos = transform.get(player.0).unwrap().pos;

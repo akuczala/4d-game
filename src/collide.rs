@@ -125,7 +125,7 @@ pub fn create_spatial_hash<V : VectorTrait>(world : &mut World) {
     //println!("Min/max: {},{}",min,max);
     //println!("Longest sides {}",max_lengths);
     world.insert(
-        SpatialHashSet::<V,Entity>::new(
+        SpatialHashSet::<V, Entity>::new(
             min*1.5, //make bounds slightly larger than farthest points
             max*1.5,
             max_lengths*1.1 //make cell size slightly larger than largest bbox dimensions

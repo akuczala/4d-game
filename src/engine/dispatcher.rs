@@ -4,6 +4,7 @@ use crate::systems::*;
 use crate::vector::{VectorTrait};
 use crate::draw::DrawSelectionBox;
 
+// todo: write in terms of larger blocks of systems
 pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuilder<'a,'b>{
     let ph = PhantomData::<V>;
     DispatcherBuilder::new()
@@ -48,6 +49,7 @@ pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuil
         .with(UpdatePlayerBBox(ph),"update_player_bbox",
               &["move_player"]) //merge with above
         .with(UpdateBBoxSystem(ph),"update_all_bbox",&["update_player_bbox"]) //if we had moving objects other than player
+        .with(UpdateBBallSystem(ph), "update_all_bball", &["manipulate_selected"])
         .with(CoinSpinningSystem(ph),"coin_spinning",
               &[])
         .with(ShapeCleanupSystem(ph),"shape_cleanup",
