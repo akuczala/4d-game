@@ -45,19 +45,19 @@ impl<V: VectorTrait> ShapeBuilder<V> {
 		}
 		self
 	}
-	pub fn stretch(self, scales: &Scaling<V>) -> Self {
-		self.shape.stretch(scales);
+	pub fn stretch(mut self, scales: Scaling<V>) -> Self {
+		self.shape.modify(&Transform::identity().with_scale(scales));
 		self
 	}
 	pub fn build(self) -> Shape<V> {
 		self.shape
 	}
 }
-impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
-	fn transform(&mut self, transformation: Transform<V>) {
-		self.shape.transform(transformation)
-	}
-}
+// impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
+// 	fn transform(&mut self, transformation: Transform<V>) {
+// 		self.shape.transform(transformation)
+// 	}
+// }
 
 pub fn convex_shape_to_face_shape<V: VectorTrait>(convex_shape: Shape<V::SubV>, two_sided: bool) -> (Shape<V>, SingleFace<V>) {
 	let face = Face::new(

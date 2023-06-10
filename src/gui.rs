@@ -11,6 +11,7 @@ use imgui_winit_support::{HiDpiMode, WinitPlatform};
 use std::time::Instant;
 use map_in_place::MapVecInPlace;
 use crate::fps::FPSFloat;
+use crate::geometry::shape::RefShapes;
 //mod clipboard;
 
 #[derive(Default)]
@@ -112,6 +113,7 @@ impl UIArgs{
         let maybe_selected = maybe_selected_storage.get(player.0).expect("player has no selection component");
 
         let shapes = world.read_component::<Shape<V>>();
+        let transforms = world.read_component::<Transform<V>>();
         let mut normals: Vec<V> = vec![];
         for (shape) in (&shapes).join() {
             for face in shape.faces.iter() {
@@ -127,14 +129,18 @@ impl UIArgs{
                 },
                 match maybe_selected {
                     MaybeSelected(Some(selected)) => {
-                        let bbox_storage = world.read_storage::<BBox<V>>();
-                        let selected_bbox = bbox_storage.get(selected.entity).expect("selected entity has no bbox");
-                        format!("target: {}, {:?}\n",selected.entity.id(), *selected_bbox)
+                        //let bbox_storage = world.read_storage::<BBox<V>>();
+                        //let selected_bbox = bbox_storage.get(selected.entity).expect("selected entity has no bbox");
+                        let selected_transform = transforms.get(selected.entity).expect("Nope");
+                        let (frame, scaling) = selected_transform.decompose_rotation_scaling();
+                        //format!("target: {}, {:?}\n",selected.entity.id(), *selected_bbox)
+                        format!("target: {}\n, {}\n{:?}\n",selected.entity.id(), frame, scaling)
                     },
                     MaybeSelected(None) => "No selection\n".to_string(),
                 },
             //crate::clipping::ShapeClipState::<V>::in_front_debug(world),
         ].into_iter()
+            //.chain(all_verts.into_iter().map(|v| format!{"::{}\n", v}))
             //.chain(normals.into_iter().map(|n| format!("{}\n", n)))
             .collect();
 

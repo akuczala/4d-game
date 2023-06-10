@@ -89,7 +89,7 @@ pub fn manipulate_shape<V: VectorTrait>(
         _ => {}
     }
     if update {
-        shape.update_from_ref(ref_shape, &transform.unshear());
+        shape.update_from_ref(ref_shape, &transform);
         if let ShapeType::SingleFace(single_face) = shape_type {
             single_face.update(&shape)
         }

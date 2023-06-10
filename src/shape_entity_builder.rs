@@ -47,8 +47,7 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
         self
     }
     pub fn stretch(mut self, scales : &V) -> Self {
-        //self.shape = self.shape.stretch(&Scaling::Vector(*scales));
-        self.transformation.stretch(Scaling::Vector(*scales));
+        self.transformation.scale(Scaling::Vector(*scales));
         self
     }
     pub fn build(self, world: &mut World) -> EntityBuilder {
@@ -57,7 +56,7 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
             mut shape_type,
             transformation,
             texture_info,} = self;
-        shape = shape.with_transform(transformation);
+        shape.update_from_ref(&shape.clone(),&transformation);
         if let Some((texture, texture_mapping)) = texture_info {
             for face in shape.faces.iter_mut() {
                 face.set_texture(texture.clone(), texture_mapping.clone());

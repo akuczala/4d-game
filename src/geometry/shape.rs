@@ -5,6 +5,7 @@ pub mod face;
 
 pub mod buildshapes;
 
+use std::collections::hash_map::Values;
 use std::collections::HashMap;
 use crate::graphics::colors::Color;
 use crate::vector;
@@ -35,6 +36,9 @@ impl<V: VectorTrait> RefShapes<V> {
     }
     pub fn remove(&mut self, key: &ShapeLabel) -> Option<Shape<V>> {
         self.0.remove(key)
+    }
+    pub fn get_all(&self) -> impl Iterator<Item=&Shape<V>> {
+        self.0.values()
     }
 }
 impl<V: VectorTrait> Default for RefShapes<V> {
@@ -125,7 +129,7 @@ impl <V : VectorTrait> Shape<V> {
          self.faces.iter().enumerate().map(|(i,f)| (i, f.plane().point_signed_distance(point)))
             .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
     }
-    pub fn update(&mut self, transform: &Transform<V>) {
+    pub fn modify(&mut self, transform: &Transform<V>) {
         for v in self.verts.iter_mut() {
             *v = transform.transform_vec(v);
         }
@@ -138,33 +142,13 @@ impl <V : VectorTrait> Shape<V> {
             face.geometry.plane.threshold = face.normal().dot(face.center());
         }
     }
-    pub fn update_face(verts: &Vec<V>, face: &mut Face<V>, transform: &Transform<V>) {
-        // todo: is there a way to know when the transform is orthogonal?
-        // face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
-        // recompute normals in case of stretching
-        // todo: at worst we have to track the inverse transpose matrix. there may be
-        // a way around this? https://lxjk.github.io/2017/10/01/Stop-Using-Normal-Matrix.html
-        let vertis = &face.vertis;
-        let mut geometry = &mut face.geometry;
-        let face_verts: Vec<V> = vertis.iter().map(|verti| verts[*verti]).collect();
-
-        geometry.plane.normal = Plane::from_points_and_vec(
-            &face_verts,
-            transform.transform_vec(&geometry.plane.normal)
-        ).normal;
-        // todo: center can be calculated from transform, but its not passed to this fn atm
-        geometry.center = barycenter(&face_verts);
-        geometry.plane.threshold = geometry.plane.normal.dot(geometry.center);
-
-    }
     pub fn update_from_ref(&mut self, ref_shape: &Shape<V>, transform: &Transform<V>) {
         for (v,vr) in self.verts.iter_mut().zip(ref_shape.verts.iter()) {
             *v = transform.transform_vec(vr);
         }
-        // for face in self.faces.iter_mut() {
-        //     Shape::update_face(&self.verts, face);
-        // }
         for (face, ref_face) in self.faces.iter_mut().zip(ref_shape.faces.iter()) {
+            // todo: use inverse transform matrix on normals, or
+            // https://lxjk.github.io/2017/10/01/Stop-Using-Normal-Matrix.html
             face.geometry.plane.normal = (transform.frame * ref_face.normal()).normalize();
             face.geometry.center = transform.transform_vec(&ref_face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
@@ -187,9 +171,9 @@ impl <V : VectorTrait> Shape<V> {
         self
     }
 }
-impl<V: VectorTrait> Transformable<V> for Shape<V> {
-    fn transform(&mut self, transformation: Transform<V>) {
-        self.update( &transformation)
-    }
-}
+// impl<V: VectorTrait> Transformable<V> for Shape<V> {
+//     fn transform(&mut self, transformation: Transform<V>) {
+//         self.update( &transformation)
+//     }
+// }
 

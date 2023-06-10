@@ -182,8 +182,8 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
             let face_scales = vec![0.9];
             face.texture = draw::Texture::make_tile_texture(&face_scales,
             & match V::DIM {
-                3 => vec![3,1],
-                4 => vec![3,1,1],
+                3 => vec![3, 1],
+                4 => vec![3, 1, 1],
                 _ => panic!()
             }).set_color(target_face_color);
             face.texture_mapping = draw::TextureMapping::calc_cube_vertis(face,&shape.verts,&shape.edges)
