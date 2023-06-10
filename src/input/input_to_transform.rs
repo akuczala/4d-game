@@ -121,7 +121,7 @@ fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
 pub fn scrolling_axis_translation<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{
     let mut update = false;
     if let Some((dx,dy)) = input.scroll_dpos {
-        if let Some(axis) = get_axis(input) {
+        if let Some(axis) = get_axis::<V>(input) {
             let dpos = V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
             transform.translate(dpos);
             update = true;
@@ -133,7 +133,7 @@ pub fn scrolling_axis_translation<V: VectorTrait>(input: &Input, transform: &mut
 pub fn scrolling_axis_scaling<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{
     let mut update = false;
     if let Some((dx,dy)) = input.scroll_dpos {
-        if let Some(axis) = get_axis(input) {
+        if let Some(axis) = get_axis::<V>(input) {
             let dscale = V::ones() + V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
             transform.scale(Scaling::Vector(dscale));
             update = true;
@@ -144,7 +144,6 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(input: &Input, transform: &mut Tra
 
 // TODO rewrite update_camera transformations in terms of these methods; further decompose
 // (a bit tricky because of slight differences in rotations)
-// TODO mouse rotation of scaled objects behaves very strangely
 pub fn update_transform<V : VectorTrait>(
     input : &Input,
     transform: &mut Transform<V>) -> bool
