@@ -87,9 +87,9 @@ impl Default for TextureMapping {
 	fn default() -> Self { Self{frame_vertis : Vec::new(), origin_verti : 0} } //this is pretty sloppy
 }
 impl TextureMapping {
-	pub fn draw<V : VectorTrait>(&self, face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>
+	pub fn draw<V : VectorTrait>(&self, face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>, visible: bool,
 	) -> Vec<Option<DrawLine<V>>>{
-		if !face.visible {
+		if !visible {
 			return Vec::new();
 		}
 		match &face.texture {

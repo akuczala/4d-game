@@ -108,6 +108,7 @@ pub struct ShapeClipState<V : VectorTrait> {
     pub separators : HashMap<Entity,Separator<V>>,
     pub boundaries : Vec<Plane<V>>,
     pub transparent: bool,
+    pub face_visibility: Vec<bool>
 }
 impl<V : VectorTrait> Default for ShapeClipState<V> {
    fn default() -> Self {
@@ -116,6 +117,7 @@ impl<V : VectorTrait> Default for ShapeClipState<V> {
             separators : HashMap::new(),
             boundaries : Vec::new(),
             transparent : false,
+            face_visibility: Vec::new()
         }
     }
 }

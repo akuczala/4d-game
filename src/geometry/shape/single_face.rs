@@ -76,10 +76,10 @@ impl<V: VectorTrait> SingleFace<V>{
 
     }
     //returns points of intersection with shape
-    pub fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
+    pub fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool, face_visibility: &Vec<bool>) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
         let mut out_points = Vec::<V>::new();
         let face = &shape.faces[0];
-        if !visible_only || face.visible {
+        if !visible_only || face_visibility[0] {
             if let Some(p) = line_plane_intersect(line,face.plane()) {
                 if self.subface_normal_distance(p).1 < 0.0 {
                     out_points.push(p)

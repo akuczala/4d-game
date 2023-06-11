@@ -6,6 +6,7 @@ use clipping::{ClipState,clip_line_plane, clip_line_cube};
 pub use texture::{Texture, TextureMapping};
 
 use crate::components::*;
+use crate::geometry::Face;
 use crate::geometry::{Line, Shape, shape::VertIndex};
 use crate::graphics::colors::*;
 use crate::vector::{Field, VectorTrait};
@@ -210,7 +211,7 @@ pub struct VisibilitySystem<V : VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 	type SystemData = (
-		WriteStorage<'a,Shape<V>>,
+		ReadStorage<'a,Shape<V>>,
 		WriteStorage<'a,ShapeClipState<V>>,
 		ReadStorage<'a,ShapeType<V>>,
 		ReadStorage<'a,Transform<V>>,
@@ -218,9 +219,17 @@ impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 		ReadExpect<'a,ClipState<V>>
 	);
 
-	fn run(&mut self, (mut shapes, mut shape_clip_states, shape_types, transform, player, clip_state) : Self::SystemData) {
+	fn run(
+		&mut self, (
+			shapes,
+			mut shape_clip_states,
+			shape_types,
+			transform,
+			player,
+			clip_state
+		) : Self::SystemData) {
 
-		for (shape,shape_clip_state, shape_type) in (&mut shapes, &mut shape_clip_states, &shape_types).join() {
+		for (shape,shape_clip_state, shape_type) in (&shapes, &mut shape_clip_states, &shape_types).join() {
 
 			update_shape_visibility(transform.get(player.0).unwrap().pos, shape, shape_clip_state, shape_type, &clip_state)
 		}
@@ -229,9 +238,10 @@ impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 }
 
 //updates clipping boundaries and face visibility based on normals
+// todo: move face visibility state into shape_clip_state, so that we don't need to mutate shapes every step
 pub fn update_shape_visibility<V : VectorTrait>(
 	camera_pos: V,
-	shape: &mut Shape<V>,
+	shape: &Shape<V>,
 	shape_clip_state : &mut ShapeClipState<V>,
 	shape_type: &ShapeType<V>,
 	clip_state: &ClipState<V>
@@ -241,26 +251,54 @@ pub fn update_shape_visibility<V : VectorTrait>(
 		ShapeType::Convex(_) => false,
 		ShapeType::SingleFace(single_face) => single_face.two_sided
 	};
-	shape.update_visibility(camera_pos,shape_clip_state.transparent | two_sided);
+	// build face visibility vec if empty
+	if shape_clip_state.face_visibility.is_empty() {
+		for face in shape.faces.iter() {
+			shape_clip_state.face_visibility.push(get_face_visibility::<V>(face, camera_pos,shape_clip_state.transparent | two_sided));
+		}
+	} else {
+		for (face, visible) in shape.faces.iter().zip(shape_clip_state.face_visibility.iter_mut()) {
+			*visible = get_face_visibility(face, camera_pos, shape_clip_state.transparent | two_sided);
+		}
+	}
+	
 	//calculate boundaries for clipping
 	if clip_state.clipping_enabled {
 		shape_clip_state.boundaries = match shape_type {
-			ShapeType::Convex(convex) => convex.calc_boundaries(camera_pos, &shape.faces),
+			ShapeType::Convex(convex) => convex.calc_boundaries(camera_pos, &shape.faces, &mut shape_clip_state.face_visibility),
 			ShapeType::SingleFace(single_face) => single_face.calc_boundaries(
-				camera_pos, &shape.verts, shape.faces[0].center(), shape.faces[0].visible
+				camera_pos, &shape.verts, shape.faces[0].center(), shape_clip_state.face_visibility[0]
 			),
 		};
 	}
 
 }
 
+pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>,camera_pos : V, two_sided: bool) -> bool
+    {
+        return two_sided | (
+            face.plane().point_signed_distance(camera_pos) > 0.0
+        )
+    }
+
 pub struct CalcShapesLinesSystem<V : VectorTrait>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
-	type SystemData = (ReadStorage<'a,Shape<V>>,ReadStorage<'a,ShapeClipState<V>>,
-		ReadExpect<'a,Vec<Field>>,ReadExpect<'a,ClipState<V>>,WriteExpect<'a,DrawLineList<V>>);
+	type SystemData = (
+		ReadStorage<'a,Shape<V>>,
+		ReadStorage<'a,ShapeClipState<V>>,
+		ReadExpect<'a,Vec<Field>>,
+		ReadExpect<'a,ClipState<V>>,
+		WriteExpect<'a,DrawLineList<V>>
+	);
 
-	fn run(&mut self, (shapes, shape_clip_states, face_scale, clip_state, mut lines) : Self::SystemData) {
+	fn run(&mut self, (
+		shapes,
+		shape_clip_states,
+		face_scale,
+		clip_state,
+		mut lines
+	) : Self::SystemData) {
 			lines.0 = calc_shapes_lines(&shapes, &shape_clip_states, &face_scale, &clip_state);
 		}
 
@@ -289,8 +327,8 @@ where V : VectorTrait
 	for (shape,shape_clip_state) in (shapes,shape_clip_states).join() {
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
-		for face in &shape.faces {
-			shape_lines.append(&mut face.texture_mapping.draw(face, &shape, &face_scale))
+		for (face, &visible) in shape.faces.iter().zip(shape_clip_state.face_visibility.iter()) {
+			shape_lines.append(&mut face.texture_mapping.draw(face, &shape, &face_scale, visible))
 		}
 
 		//clip these lines and append to list

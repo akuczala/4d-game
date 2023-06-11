@@ -21,7 +21,13 @@ use crate::input::{PlayerMovementMode, ShapeMovementMode};
 
 pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
-    type SystemData = (Write<'a,Input>,WriteStorage<'a,Transform<V>>,WriteStorage<'a,Camera<V>>,WriteStorage<'a,MoveNext<V>>,ReadExpect<'a,Player>);
+    type SystemData = (
+        Write<'a,Input>,
+        WriteStorage<'a,Transform<V>>,
+        WriteStorage<'a,Camera<V>>,
+        WriteStorage<'a,MoveNext<V>>,
+        ReadExpect<'a,Player>
+    );
     fn run(&mut self, (mut input, mut transforms, mut cameras, mut move_nexts, player) : Self::SystemData) {
         if input.is_camera_movement_enabled() {
             update_camera(&mut input,

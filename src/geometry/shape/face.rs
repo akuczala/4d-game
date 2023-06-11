@@ -11,7 +11,6 @@ pub struct Face<V : VectorTrait> {
 
     pub texture : Texture<V::SubV>,
     pub texture_mapping : TextureMapping,
-    pub visible : bool,
 
     pub edgeis : Vec<EdgeIndex>,
     pub vertis: Vec<VertIndex>
@@ -38,7 +37,6 @@ impl<V : VectorTrait> Face<V> {
             //change texture to reference
             texture : Default::default(),
             texture_mapping : Default::default(),
-            visible: true,
 
             edgeis : edgeis,
             vertis : Vec::new() 
@@ -59,12 +57,6 @@ impl<V : VectorTrait> Face<V> {
         for verti in vertis.iter().unique() {
             self.vertis.push(*verti);
         }
-    }
-    pub fn update_visibility(&mut self,camera_pos : V, two_sided: bool)
-    {
-        self.visible = two_sided | (
-            self.plane().point_signed_distance(camera_pos) > 0.0
-        )
     }
     pub fn set_color(&mut self, color : Color) {
         take_mut::take(&mut self.texture,|tex| tex.set_color(color));

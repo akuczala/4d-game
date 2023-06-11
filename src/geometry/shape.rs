@@ -48,7 +48,7 @@ impl<V: VectorTrait> Default for RefShapes<V> {
 }
 
 pub trait ShapeTypeTrait<V: VectorTrait> {
-    fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V>;
+    fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool, face_visibility: &Vec<bool>) -> Vec<V>;
 }
 #[derive(Component,Clone)]
 #[storage(VecStorage)]
@@ -57,10 +57,10 @@ pub enum ShapeType<V: VectorTrait> {
     SingleFace(single_face::SingleFace<V>)
 }
 impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
-    fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V> {
+    fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool, face_visibility: &Vec<bool>) -> Vec<V> {
         match self {
-            ShapeType::Convex(convex) => convex.line_intersect(shape, line, visible_only),
-            ShapeType::SingleFace(single_face) => single_face.line_intersect(shape, line, visible_only),
+            ShapeType::Convex(convex) => convex.line_intersect(shape, line, visible_only, face_visibility),
+            ShapeType::SingleFace(single_face) => single_face.line_intersect(shape, line, visible_only, face_visibility),
         }
     }
 }
@@ -150,11 +150,6 @@ impl <V : VectorTrait> Shape<V> {
             face.geometry.plane.normal = (transform.frame * ref_face.normal()).normalize();
             face.geometry.center = transform.transform_vec(&ref_face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
-        }
-    }
-    pub fn update_visibility(&mut self, camera_pos : V, two_sided : bool) {
-        for face in self.faces.iter_mut() {
-            face.update_visibility(camera_pos, two_sided);
         }
     }
     pub fn with_color(mut self, color : Color) -> Self {

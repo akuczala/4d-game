@@ -73,21 +73,21 @@ impl Convex{
 
         Plane{normal : n3, threshold: th3}
     }
-    pub fn calc_boundaries<V: VectorTrait>(&self, origin : V, faces: &Vec<Face<V>>) -> Vec<Plane<V>> {
+    pub fn calc_boundaries<V: VectorTrait>(&self, origin : V, faces: &Vec<Face<V>>, face_visibility: &Vec<bool>) -> Vec<Plane<V>> {
 
         let mut boundaries : Vec<Plane<V>> = Vec::new();
 
         for subface in &self.subfaces.0 {
             let face1 = &faces[subface.faceis.0];
             let face2 = &faces[subface.faceis.1];
-            if face1.visible == !face2.visible {
+            if face_visibility[subface.faceis.0] == !face_visibility[subface.faceis.1] {
                 let boundary = Self::calc_boundary(face1.plane(), face2.plane(), origin);
                 boundaries.push(boundary);
             }
         }
         //visible faces are boundaries
-        for face in faces {
-            if face.visible {
+        for (face, visible) in faces.iter().zip(face_visibility.iter()) {
+            if *visible {
                 boundaries.push(face.plane().clone())
             }
         }
@@ -97,9 +97,9 @@ impl Convex{
         faces.iter().map(Face::plane).all(|p| p.point_signed_distance(point) < distance)
     }
     //returns points of intersection with shape
-    pub fn line_intersect<V: VectorTrait>(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
+    pub fn line_intersect<V: VectorTrait>(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool, face_visibility: &Vec<bool>) -> Vec<V> {//impl std::iter::Iterator<Item=Option<V>> {
         let mut out_points = Vec::<V>::new();
-        for face in shape.faces.iter().filter(|f| !visible_only || f.visible) {
+        for (face, _) in shape.faces.iter().zip(face_visibility.iter()).filter(|(_,&visible)| !visible_only || visible) {
             if let Some(p) = line_plane_intersect(line,face.plane()) {
                 if crate::vector::is_close(shape.point_signed_distance(p),0.) {
                     out_points.push(p);

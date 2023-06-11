@@ -104,9 +104,9 @@ fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<
 	//loop through all shapes and check for nearest intersection
 	let mut closest : Option<(Entity,Field,V)> = None;
 	let mut all_points = Vec::<V>::new();
-	for (shape, shape_type,_,e) in iter {
+	for (shape, shape_type,shape_clip_state,e) in iter {
 
-		for intersect_point in shape_type.line_intersect(shape, &ray, true) { //find intersections of ray with visible faces
+		for intersect_point in shape_type.line_intersect(shape, &ray, true, &shape_clip_state.face_visibility) { //find intersections of ray with visible faces
 			all_points.push(intersect_point);
 			let distsq = (intersect_point - pos).norm_sq();
 			closest = match closest {
