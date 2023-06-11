@@ -1,3 +1,4 @@
+mod shape_systems;
 //for easy import of all systems
 pub use crate::draw::{
 	VisibilitySystem,
@@ -7,7 +8,7 @@ pub use crate::draw::{
 	DrawSelectionBox,
 };
 pub use crate::draw::clipping::{InFrontSystem};
-pub use crate::draw::clipping::bball::UpdateBBallSystem;
+pub use self::shape_systems::{UpdateBBallSystem, UpdateBBoxSystem, TransformShapeSystem};
 pub use crate::input::{UpdateCameraSystem,PrintDebugSystem,SelectTargetSystem,ManipulateSelectedShapeSystem};
 pub use crate::player::{ShapeTargetingSystem};
 pub use crate::collide::{
@@ -15,7 +16,6 @@ pub use crate::collide::{
 	PlayerStaticCollisionSystem,
 	MovePlayerSystem,
 	UpdatePlayerBBox,
-	bbox::UpdateBBoxSystem
 };
 pub use crate::gravity::{
 	PlayerGravitySystem

@@ -34,7 +34,6 @@ impl <'a,V : VectorTrait> System<'a> for CoinSpinningSystem<V> {
 		in (&read_coin, &read_shape_label, &mut write_shape, &mut write_transform).join() {
 			*transform = transform.with_rotation(0,-1,SPIN_SPEED*(input.frame_duration as Field));
 			*transform = transform.with_rotation(2,-1,0.345*SPIN_SPEED*(input.frame_duration as Field));
-			shape.update_from_ref(ref_shape.get(shape_label).expect("Coin shape not found"), transform);
         }
 
     }

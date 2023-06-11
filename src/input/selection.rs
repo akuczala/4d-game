@@ -33,55 +33,23 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
     type SystemData = (
         Read<'a,Input>,
         ReadExpect<'a,Player>,
-        ReadExpect<'a,RefShapes<V>>,
-        WriteStorage<'a,Shape<V>>,
-        WriteStorage<'a,ShapeType<V>>,
-        ReadStorage<'a,ShapeLabel>,
         WriteStorage<'a,Transform<V>>,
-        WriteStorage<'a,MaybeSelected<V>>,
-        WriteStorage<'a, ShapeClipState<V>>,
-        Entities<'a>
+        ReadStorage<'a,MaybeSelected<V>>
     );
     fn run(&mut self, (
         input,
         player,
-        ref_shapes,
-        mut shape_storage,
-        mut shape_type_storage,
-        label_storage,
         mut transform_storage,
-        mut maybe_selected_storage,
-        mut shape_clip_state_storage,
-        entities
+        maybe_selected_storage
     ) : Self::SystemData) {
-        let maybe_selected= maybe_selected_storage.get_mut(player.0).unwrap();
+        let maybe_selected= maybe_selected_storage.get(player.0).unwrap();
         if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
-            let (
-                selected_shape,
-                selected_shape_type,
-                selected_label,
-                selected_transform,
-                selected_shape_clip_state
-            ) =
-                (
-                    &mut shape_storage,
-                    &mut shape_type_storage,
-                    &label_storage,
-                    &mut transform_storage,
-                    &mut shape_clip_state_storage,
-                ).join()
-                .get(*entity, &entities)
-                .expect("Selected entity either has no Shape, ShapeLabel, Transform, or clip state");
-            let selected_ref_shape = ref_shapes.get(selected_label).expect("No reference shape with that name");
+            let selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
             match (&input).movement_mode {
                 MovementMode::Shape(mode) => manipulate_shape(
                     &input,
                     mode,
-                    selected_shape,
-                    selected_shape_type,
-                    selected_ref_shape,
-                    selected_transform,
-                    selected_shape_clip_state
+                    selected_transform
                 ),
                 _ => ()
             }
@@ -96,15 +64,10 @@ pub const MODE_KEYMAP: [(VKC, ShapeMovementMode); 4] = [
 ];
 
 // TODO: manipulated shapes do not clip properly - do we need to move it in the spatial hash?
-// todo: update spatial hash of updated shapes
 pub fn manipulate_shape<V: VectorTrait>(
     input: &Input,
     shape_movement_mode: ShapeMovementMode,
-    shape: &mut Shape<V>,
-    shape_type: &mut ShapeType<V>,
-    ref_shape: &Shape<V>,
     transform: &mut Transform<V>,
-    selected_shape_clip_state: &mut ShapeClipState<V>
 ) {
     //println!("scroll diff {:?}",input.helper.scroll_diff());
     let mut update = false;
@@ -122,13 +85,11 @@ pub fn manipulate_shape<V: VectorTrait>(
         _ => {}
     }
     if update {
-        shape.update_from_ref(ref_shape, &transform);
-        if let ShapeType::SingleFace(single_face) = shape_type {
-            single_face.update(&shape)
-        }
+        // TODO: update spatial hash of updated shapes
+        // TODO: move this stuff to its own system
         // clear static separators for shape, which will be repopulated next draw
         // this is not enough - likely need to also clear separator key for this entity for all other shapes
-        selected_shape_clip_state.separators = HashMap::new();
+        //selected_shape_clip_state.separators = HashMap::new();
     }
 }
 pub struct SelectTargetSystem<V: VectorTrait>(pub PhantomData<V>);
