@@ -5,12 +5,18 @@ use crate::vector::{VectorTrait};
 use crate::draw::DrawSelectionBox;
 
 // todo: write in terms of larger blocks of systems
-pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuilder<'a,'b>{
-    let ph = PhantomData::<V>;
-    DispatcherBuilder::new()
-        //start drawing phase. this is first so that we can do world.maintain() before we draw
-        //for each shape, update clipping boundaries and face visibility
-        .with(VisibilitySystem(ph),"visibility",
+pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuilder<'a,'b> {
+    let builder = add_draw_steps::<V>(DispatcherBuilder::new());
+    let builder = add_game_steps::<V>(builder);
+    builder
+}
+
+//start drawing phase. this is first so that we can do world.maintain() before we draw
+//for each shape, update clipping boundaries and face visibility
+fn add_draw_steps<'a, 'b, V: VectorTrait>(builder: DispatcherBuilder<'a, 'b>) -> DispatcherBuilder<'a, 'b> {
+      let ph = PhantomData::<V>;
+      builder
+      .with(VisibilitySystem(ph),"visibility",
               &[])
         //determine what shapes are in front of other shapes
         .with(InFrontSystem(ph),"in_front",
@@ -27,8 +33,13 @@ pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuil
         // draw the cursor on the d - 1 screen
         .with(DrawCursorSystem(ph),"draw_cursor",
               &["transform_draw_lines"])
-        //start game update phase
-        .with(UpdateCameraSystem(ph),"update_camera",
+}
+
+//start game update phase
+fn add_game_steps<'a, 'b, V: VectorTrait>(builder: DispatcherBuilder<'a, 'b>) -> DispatcherBuilder<'a, 'b> {
+      let ph = PhantomData::<V>;
+      builder
+      .with(UpdateCameraSystem(ph),"update_camera",
               &["calc_shapes_lines"])
         .with(PlayerGravitySystem(ph), "player_gravity",
               &["update_camera"])
@@ -54,6 +65,5 @@ pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuil
               &[])
         .with(ShapeCleanupSystem(ph),"shape_cleanup",
               &["player_coin_collision"])
-        .with(PrintDebugSystem(ph),"print_debug",
-              &["update_camera"])
+        .with(PrintDebugSystem(ph),"print_debug", &["update_camera"])
 }
