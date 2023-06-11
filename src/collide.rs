@@ -1,3 +1,5 @@
+pub mod bbox;
+
 use crate::input::Input;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
 use crate::vector::{VectorTrait,Field};
@@ -8,6 +10,8 @@ use std::marker::PhantomData;
 use itertools::Itertools;
 use crate::geometry::transform::Scaling;
 
+pub use self::bbox::{BBox, HasBBox};
+
 pub const PLAYER_COLLIDE_DISTANCE: Field = 0.2;
 
 #[derive(Component)]
@@ -17,26 +21,6 @@ pub struct StaticCollider;
 #[derive(Component)]
 #[storage(HashMapStorage)]
 pub struct InPlayerCell;
-
-//axis-aligned bounding box
-#[derive(Component,Debug,Clone)]
-#[storage(VecStorage)]
-pub struct BBox<V : VectorTrait> {
-	pub min : V,
-	pub max : V,
-}
-impl<V: VectorTrait> BBox<V> {
-	pub fn max_length(&self) -> Field {
-		(self.max - self.min).fold(Some(0.0), |x,y| match x > y {true => x, false => y})
-	}
-	pub fn center(&self) -> V {
-		(self.max + self.min)/2.0
-	}
-}
-
-pub trait HasBBox<V : VectorTrait>: specs::Component {
-	fn calc_bbox(&self) -> BBox<V>;
-}
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -79,22 +63,6 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 		};
 		*move_next = MoveNext::default(); //clear movement
 
-	}
-}
-
-pub struct UpdateBBoxSystem<V: VectorTrait>(pub PhantomData<V>);
-
-impl<'a,V: VectorTrait> System<'a> for UpdateBBoxSystem<V> {
-
-	type SystemData = (
-		ReadStorage<'a,Shape<V>>,
-		WriteStorage<'a,BBox<V>>
-	);
-
-	fn run(&mut self, (read_shape, mut write_bbox) : Self::SystemData) {
-		for (shape, bbox) in (&read_shape, &mut write_bbox).join() {
-			*bbox = shape.calc_bbox();
-		}
 	}
 }
 

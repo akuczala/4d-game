@@ -32,7 +32,7 @@ fn add_draw_steps<'a, 'b, V: VectorTrait>(builder: DispatcherBuilder<'a, 'b>) ->
               &["calc_shapes_lines","draw_selection_box"])
         // draw the cursor on the d - 1 screen
         .with(DrawCursorSystem(ph),"draw_cursor",
-              &["transform_draw_lines"])
+              &["calc_shapes_lines","draw_selection_box"])
 }
 
 //start game update phase
@@ -59,10 +59,25 @@ fn add_game_steps<'a, 'b, V: VectorTrait>(builder: DispatcherBuilder<'a, 'b>) ->
               &["select_target"])
         .with(UpdatePlayerBBox(ph),"update_player_bbox",
               &["move_player"]) //merge with above
-        .with(UpdateBBoxSystem(ph),"update_all_bbox",&["update_player_bbox"]) //if we had moving objects other than player
-        .with(UpdateBBallSystem(ph), "update_all_bball", &["manipulate_selected"])
-        .with(CoinSpinningSystem(ph),"coin_spinning",
-              &[])
+        .with(
+            UpdateBBoxSystem{
+                  ph,
+                  modified: Default::default(),
+                  reader_id: Default::default()
+            },
+            "update_all_bbox",
+            &["manipulate_selected"]) //if we had moving objects other than player
+        .with(
+            UpdateBBallSystem{
+                  ph,
+                  modified: Default::default(),
+                  reader_id: Default::default()
+            },
+             "update_all_bball",
+              &["manipulate_selected"]
+            )
+      //   .with(CoinSpinningSystem(ph),"coin_spinning",
+      //         &[])
         .with(ShapeCleanupSystem(ph),"shape_cleanup",
               &["player_coin_collision"])
         .with(PrintDebugSystem(ph),"print_debug", &["update_camera"])

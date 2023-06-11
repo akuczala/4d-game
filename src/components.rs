@@ -9,4 +9,4 @@ pub use crate::geometry::{
 };
 pub use crate::draw::{DrawLineList};
 pub use crate::draw::clipping::{ClipState, ShapeClipState, bball::BBall};
-pub use crate::collide::{InPlayerCell,BBox,HasBBox,MoveNext,StaticCollider};
+pub use crate::collide::{InPlayerCell, bbox::BBox, bbox::HasBBox,MoveNext,StaticCollider};

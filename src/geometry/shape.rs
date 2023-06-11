@@ -14,7 +14,7 @@ use super::{Line,Plane,line_plane_intersect,Transform,Transformable};
 pub use face::Face;
 pub use convex::Convex; pub use single_face::SingleFace;
 
-use specs::{Component, VecStorage};
+use specs::{Component, VecStorage, FlaggedStorage};
 use std::fmt;
 use crate::geometry::shape::face::FaceGeometry;
 use crate::geometry::transform::Scaling;
@@ -77,12 +77,14 @@ impl fmt::Display for Edge {
     }
 }
 
-#[derive(Clone,Component)]
-#[storage(VecStorage)]
+#[derive(Clone)]
 pub struct Shape<V : VectorTrait> {
     pub verts : Vec<V>,
     pub edges : Vec<Edge>,
     pub faces : Vec<Face<V>>
+}
+impl<V: VectorTrait> Component for Shape<V> {
+    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
 }
 
 impl <V : VectorTrait> Shape<V> {

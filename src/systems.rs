@@ -4,7 +4,7 @@ pub use crate::draw::{
 	CalcShapesLinesSystem,
 	TransformDrawLinesSystem,
 	DrawCursorSystem,
-	DrawSelectionBox
+	DrawSelectionBox,
 };
 pub use crate::draw::clipping::{InFrontSystem};
 pub use crate::draw::clipping::bball::UpdateBBallSystem;
@@ -15,7 +15,7 @@ pub use crate::collide::{
 	PlayerStaticCollisionSystem,
 	MovePlayerSystem,
 	UpdatePlayerBBox,
-	UpdateBBoxSystem
+	bbox::UpdateBBoxSystem
 };
 pub use crate::gravity::{
 	PlayerGravitySystem
