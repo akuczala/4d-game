@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use specs::prelude::*;
+use crate::ecs_utils::ModSystem;
 use crate::systems::*;
 use crate::vector::{VectorTrait};
 use crate::draw::DrawSelectionBox;
@@ -60,19 +61,11 @@ fn add_game_steps<'a, 'b, V: VectorTrait>(builder: DispatcherBuilder<'a, 'b>) ->
         .with(UpdatePlayerBBox(ph),"update_player_bbox",
               &["move_player"]) //merge with above
         .with(
-            UpdateBBoxSystem{
-                  ph,
-                  modified: Default::default(),
-                  reader_id: Default::default()
-            },
+            UpdateBBoxSystem(ModSystem::typed_default(ph)),
             "update_all_bbox",
             &["manipulate_selected"]) //if we had moving objects other than player
         .with(
-            UpdateBBallSystem{
-                  ph,
-                  modified: Default::default(),
-                  reader_id: Default::default()
-            },
+            UpdateBBallSystem(ModSystem::typed_default(ph)),
              "update_all_bball",
               &["manipulate_selected"]
             )

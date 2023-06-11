@@ -34,6 +34,7 @@ mod player;
 mod cleanup;
 mod systems;
 mod components;
+mod ecs_utils;
 //mod object;
 
 //NOTES:
