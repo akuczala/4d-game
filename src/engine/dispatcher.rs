@@ -5,7 +5,8 @@ use crate::vector::VectorTrait;
 use specs::prelude::*;
 use std::marker::PhantomData;
 
-// todo: write in terms of larger blocks of systems
+// TODO: write in terms of larger blocks of systems
+// TODO: make system labels part of the system struct somehow
 pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuilder<'a, 'b> {
     let builder = add_draw_steps::<V>(DispatcherBuilder::new());
     let builder = add_game_steps::<V>(builder);
@@ -95,6 +96,11 @@ fn add_game_steps<'a, 'b, V: VectorTrait>(
             "manipulate_selected",
             &["select_target"],
         )
+        .with(
+            CreateShapeSystem(ph),
+            "create_shape",
+            &[]
+        )
         .with(CoinSpinningSystem(ph), "coin_spinning", &[])
         .with(
             TransformShapeSystem(ModSystem::typed_default(ph)),
@@ -111,6 +117,11 @@ fn add_game_steps<'a, 'b, V: VectorTrait>(
             UpdateBBallSystem(ModSystem::typed_default(ph)),
             "update_all_bball",
             &["transform_shapes"],
+        )
+        .with(
+            UpdateStaticClippingSystem(ModSystem::typed_default(ph)),
+            "update_static_clipping",
+            &["transform_shapes"]
         )
         .with(
             ShapeCleanupSystem(ph),

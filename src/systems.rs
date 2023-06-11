@@ -8,8 +8,8 @@ pub use crate::draw::{
 	DrawSelectionBox,
 };
 pub use crate::draw::clipping::{InFrontSystem};
-pub use self::shape_systems::{UpdateBBallSystem, UpdateBBoxSystem, TransformShapeSystem};
-pub use crate::input::{UpdateCameraSystem,PrintDebugSystem,SelectTargetSystem,ManipulateSelectedShapeSystem};
+pub use self::shape_systems::{UpdateBBallSystem, UpdateBBoxSystem, TransformShapeSystem, UpdateStaticClippingSystem};
+pub use crate::input::{UpdateCameraSystem,PrintDebugSystem,SelectTargetSystem,ManipulateSelectedShapeSystem, CreateShapeSystem};
 pub use crate::player::{ShapeTargetingSystem};
 pub use crate::collide::{
 	PlayerCollisionDetectionSystem,

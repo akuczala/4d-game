@@ -15,13 +15,18 @@ pub use face::Face;
 pub use convex::Convex; pub use single_face::SingleFace;
 
 use specs::{Component, VecStorage, FlaggedStorage};
-use std::fmt;
+use std::fmt::{self, Display};
 use crate::geometry::shape::face::FaceGeometry;
 use crate::geometry::transform::Scaling;
 
 #[derive(Component,PartialEq,Eq,Hash,Clone)]
 #[storage(VecStorage)]
 pub struct ShapeLabel(pub String);
+impl Display for ShapeLabel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ShapeLabel({})", self.0)
+    }
+}
 
 pub struct RefShapes<V: VectorTrait>(HashMap<ShapeLabel,Shape<V>>);
 impl<V: VectorTrait> RefShapes<V> {
@@ -133,9 +138,6 @@ impl <V : VectorTrait> Shape<V> {
         for v in self.verts.iter_mut() {
             *v = transform.transform_vec(v);
         }
-        // for face in self.faces.iter_mut() {
-        //     Shape::update_face(&self.verts, face, transform);
-        // }
         for face in self.faces.iter_mut() {
             face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
             face.geometry.center = transform.transform_vec(&face.center());

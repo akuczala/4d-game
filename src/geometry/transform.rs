@@ -15,7 +15,7 @@ pub trait Transformable<V: VectorTrait> {
     fn rotate(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field) {
         self.transform(Transform::identity().with_rotation(axis1, axis2, angle))
     }
-    fn stretch(&mut self, scale: Scaling<V>) {
+    fn scale(&mut self, scale: Scaling<V>) {
         self.transform(Transform::new(None, Some(scale.get_mat())))
     }
     fn with_translation(mut self, pos: V) -> Self
@@ -29,6 +29,11 @@ pub trait Transformable<V: VectorTrait> {
     fn with_rotation_about(self, axis1: VecIndex, axis2: VecIndex, angle: Field, point: V) -> Self
         where Self: std::marker::Sized {
         self.with_transform(Transform::identity().with_rotation_about(axis1, axis2, angle,point))
+    }
+    fn with_scale(mut self, scale: Scaling<V>) -> Self
+        where Self: std::marker::Sized {
+        self.scale(scale);
+        self
     }
 }
 

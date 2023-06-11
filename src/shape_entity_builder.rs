@@ -74,6 +74,29 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
             .with(shape)
             .with(ShapeClipState::<V>::default())
     }
+    pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>) {
+        let Self{
+            mut shape,
+            mut shape_type,
+            transformation,
+            texture_info,} = self;
+        shape.update_from_ref(&shape.clone(),&transformation);
+        if let Some((texture, texture_mapping)) = texture_info {
+            for face in shape.faces.iter_mut() {
+                face.set_texture(texture.clone(), texture_mapping.clone());
+            }
+        }
+        match shape_type {
+            ShapeType::SingleFace(ref mut single_face) => {single_face.update(&shape)},
+            _ => (),
+        }
+        lazy.insert(e, shape.calc_bbox());
+        lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
+        lazy.insert(e, transformation);
+        lazy.insert(e, shape_type);
+        lazy.insert(e, shape);
+        lazy.insert(e, ShapeClipState::<V>::default());
+    }
 }
 impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V> {
     fn transform(&mut self, transformation: Transform<V>) {

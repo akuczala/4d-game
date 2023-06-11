@@ -1,10 +1,15 @@
+use std::collections::HashMap;
+
 use specs::{ReadStorage, WriteStorage, World, System};
 use specs::prelude::*;
 
-use crate::components::{BBox, HasBBox, ShapeLabel, ShapeType};
+use crate::components::{BBox, HasBBox, ShapeLabel, ShapeType, ShapeClipState};
 use crate::geometry::shape::RefShapes;
 use crate::{vector::VectorTrait, ecs_utils::ModSystem, components::{Shape, Transform, BBall}};
 
+//TODO: we don't always need to update all of this when a shape gets mutated - e.g. spinning coins do not change any of these components.
+// maybe we can include a marker or something to indicate that these shapes should be excluded?
+// or something more sophisticated where we indicate when pos and/or rotation have been updated?
 #[derive(Default)]
 pub struct UpdateBBallSystem<V: VectorTrait>(pub ModSystem<V>);
 
@@ -60,6 +65,34 @@ impl<'a,V: VectorTrait> System<'a> for UpdateBBoxSystem<V> {
 			*bbox = shape.calc_bbox();
 		}
 	}
+
+    fn setup(&mut self, world: &mut World) {
+        Self::SystemData::setup(world);
+        self.0.reader_id = Some(
+            WriteStorage::<Shape<V>>::fetch(&world).register_reader()
+        );
+    }
+}
+
+// resets static separators when shape is mutated
+#[derive(Default)]
+pub struct UpdateStaticClippingSystem<V: VectorTrait>(pub ModSystem<V>);
+
+impl<'a, V: VectorTrait> System<'a> for UpdateStaticClippingSystem<V> {
+    type SystemData = (
+        ReadStorage<'a, Shape<V>>,
+        WriteStorage<'a, ShapeClipState<V>>
+    );
+
+    fn run(&mut self, (read_shape, mut write_shape_clip_state): Self::SystemData) {
+        // TODO: update spatial hash of updated shapes
+        // clear static separators for shape, which will be repopulated next draw
+        // this is not enough - likely need to also clear separator key for this entity for all other shapes
+        self.0.gather_events(read_shape.channel());
+        for (_, shape_clip_state) in (&self.0.modified, &mut write_shape_clip_state).join() {
+            shape_clip_state.separators = HashMap::new();
+        }
+    }
 
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);

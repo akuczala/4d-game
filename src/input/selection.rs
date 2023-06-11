@@ -1,6 +1,9 @@
 use super::{Input, MovementMode, MOUSE_SENSITIVITY};
 
+use crate::geometry::transform::Scaling;
 use crate::player::Player;
+use crate::shape_entity_builder::ShapeEntityBuilder;
+use crate::spatial_hash::{SpatialHash, SpatialHashSet};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
@@ -85,11 +88,7 @@ pub fn manipulate_shape<V: VectorTrait>(
         _ => {}
     }
     if update {
-        // TODO: update spatial hash of updated shapes
-        // TODO: move this stuff to its own system
-        // clear static separators for shape, which will be repopulated next draw
-        // this is not enough - likely need to also clear separator key for this entity for all other shapes
-        //selected_shape_clip_state.separators = HashMap::new();
+        
     }
 }
 pub struct SelectTargetSystem<V: VectorTrait>(pub PhantomData<V>);
@@ -111,6 +110,51 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
                 let selected_shape =  shape_storage.get(target.entity).expect("Target entity has no shape");
                 selected.0 = Some(Selected::new_from_shape(target.entity, selected_shape));
             }
+        }
+    }
+}
+
+pub struct CreateShapeSystem<V: VectorTrait>(pub PhantomData<V>);
+impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
+    type SystemData = (
+        Read<'a, Input>,
+        ReadExpect<'a, Player>,
+        ReadExpect<'a, RefShapes<V>>,
+        Read<'a, LazyUpdate>,
+        ReadStorage<'a, Transform<V>>,
+        Entities<'a>,
+    );
+
+    fn run(
+        &mut self, (
+            input,
+            player ,
+            ref_shapes,
+            lazy,
+            read_transform,
+            entities
+        ): Self::SystemData) {
+        //not sure why this key press is so unreliable
+        if input.helper.key_released(VKC::Period) {
+            println!("shape created");
+            let player_transform = read_transform.get(player.0).unwrap();
+            let pos = player_transform.pos;
+            let dir = player_transform.frame[-1];
+            let shape_pos = pos + dir * 2.0;
+            let e = entities.create();
+            let shape_label = ShapeLabel("Cube".to_string());
+            ShapeEntityBuilder::new_convex_shape(
+                ref_shapes.get(&shape_label)
+                .expect(&format!("Ref shape {} not found", shape_label))
+                .clone()
+            )
+            .with_transform(Transform::pos(shape_pos))
+            .with_scale(Scaling::Scalar(0.5))
+            .insert(e, &lazy);
+            lazy.insert(e, StaticCollider);
+            lazy.insert(e, shape_label);
+            // TODO: add to spatial hash set (use BBox hash system)
+            
         }
     }
 }
