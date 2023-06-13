@@ -37,8 +37,9 @@ const MAX_DT : Field = 1000./20.;
 
 const MOUSE_SENSITIVITY : Field = 0.2;
 const MOUSE_STICK_POINT : [f32 ; 2] = [100.,100.];
+const MOUSE_INTEGRATION_MAX: f32 = 1e6;
 
-#[derive(Copy, Clone,PartialEq,Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum PlayerMovementMode{
     Tank,
     Mouse
@@ -155,7 +156,9 @@ impl Input {
         }
         for &(key, mode) in MODE_KEYMAP.iter() {
             if self.helper.key_released(key) {
-                self.movement_mode = MovementMode::Shape(mode)
+                self.movement_mode = MovementMode::Shape(mode);
+                self.mouse.integrated_mouse_dpos = Default::default();
+                self.mouse.integrated_scroll_dpos = Default::default();
             }
         }
 
@@ -189,12 +192,17 @@ impl Input {
     }
 
 }
+fn add_mod(x: &mut f32, dx: f32, x_max: f32) {
+    *x = (*x + dx) % x_max
+}
 
 fn mouse_event(mouse: &mut MouseData, window_event: &WindowEvent) {
     match window_event {
         WindowEvent::CursorMoved{position,..} => {
             mouse.mouse_dpos.0 = position.x as f32 - MOUSE_STICK_POINT[0];
             mouse.mouse_dpos.1 = position.y as f32 - MOUSE_STICK_POINT[1];
+            add_mod(&mut mouse.integrated_mouse_dpos.0, mouse.mouse_dpos.0, MOUSE_INTEGRATION_MAX);
+            add_mod(&mut mouse.integrated_mouse_dpos.1, mouse.mouse_dpos.1, MOUSE_INTEGRATION_MAX);
         },
         WindowEvent::MouseWheel {delta,phase, ..} => {
             match phase {
@@ -204,7 +212,10 @@ fn mouse_event(mouse: &mut MouseData, window_event: &WindowEvent) {
                         MouseScrollDelta::LineDelta(x,y) => Some((*x,*y)),
                         MouseScrollDelta::PixelDelta(PhysicalPosition{x,y})
                             => Some((*x as f32,*y as f32))
-                    }
+                    };
+                    let (dx, dy) = mouse.scroll_dpos.unwrap();
+                    add_mod(&mut mouse.integrated_scroll_dpos.0, dx, MOUSE_INTEGRATION_MAX);
+                    add_mod(&mut mouse.integrated_scroll_dpos.1, dy, MOUSE_INTEGRATION_MAX);
                 },
                 TouchPhase::Cancelled | TouchPhase::Ended => {
                     mouse.scroll_dpos = None;

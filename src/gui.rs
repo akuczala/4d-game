@@ -1,3 +1,4 @@
+use crate::input::Input;
 use crate::vector::VectorTrait;
 use specs::prelude::*;
 use crate::components::*;
@@ -122,8 +123,11 @@ impl UIArgs{
             }
 
         }
+        let input = world.read_resource::<Input>();
 
         let debug_strings: Vec<String> = vec![
+                format!("Integrated mouse: {:?}", input.mouse.integrated_mouse_dpos),
+                format!("Integrated scroll: {:?}", input.mouse.integrated_scroll_dpos),
                 match maybe_target {
                     MaybeTarget(Some(target)) => format!("target: {}, {}, {}\n",target.entity.id(),target.distance,target.point),
                     MaybeTarget(None) => "No target\n".to_string(),
