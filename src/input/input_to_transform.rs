@@ -23,7 +23,7 @@ pub fn get_slide_dpos<V: VectorTrait>(direction : V, time : Field) -> V {
 fn mouse_rotation<V: VectorTrait>(input: &Input, dt: Field, transform: &mut Transform<V>) -> bool {
     let mut any_slide_turn = false;
     //mouse
-    let (dmx, dmy) = input.mouse_dpos;
+    let (dmx, dmy) = input.mouse.mouse_dpos;
     if dmx.abs() != 0. {
         if input.helper.held_shift() {
             transform.rotate(0, 2, dmx * dt * MOUSE_SENSITIVITY);
@@ -120,7 +120,7 @@ fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
 
 pub fn scrolling_axis_translation<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{
     let mut update = false;
-    if let Some((dx,dy)) = input.scroll_dpos {
+    if let Some((dx,dy)) = input.mouse.scroll_dpos {
         if let Some(axis) = get_axis::<V>(input) {
             let dpos = V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
             transform.translate(dpos);
@@ -132,7 +132,7 @@ pub fn scrolling_axis_translation<V: VectorTrait>(input: &Input, transform: &mut
 
 pub fn scrolling_axis_scaling<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{
     let mut update = false;
-    if let Some((dx,dy)) = input.scroll_dpos {
+    if let Some((dx,dy)) = input.mouse.scroll_dpos {
         if let Some(axis) = get_axis::<V>(input) {
             let dscale = V::ones() + V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
             transform.scale(Scaling::Vector(dscale));

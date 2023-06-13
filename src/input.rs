@@ -47,7 +47,14 @@ pub enum PlayerMovementMode{
 #[derive(Copy, Clone,PartialEq,Eq)]
 pub enum MovementMode{Player(PlayerMovementMode), Shape(ShapeMovementMode)} //add flying tank mode, maybe flying mouse mode
 
-// TODO better organized input modes + states
+#[derive(Default)]
+pub struct MouseData {
+    pub mouse_dpos : (f32,f32),
+    pub scroll_dpos: Option<(f32,f32)>,
+    pub integrated_mouse_dpos: (f32, f32),
+    pub integrated_scroll_dpos: (f32, f32),
+}
+// TODO: better organized input modes + states
 pub struct Input {
     pub helper : WinitInputHelper,
     //pub pressed : ButtonsPressed,
@@ -55,8 +62,7 @@ pub struct Input {
     pub swap_engine : bool,
     pub update : bool,
     pub frame_duration : crate::fps::FPSFloat,
-    pub mouse_dpos : (f32,f32),
-    pub scroll_dpos: Option<(f32,f32)>,
+    pub mouse: MouseData,
     pub movement_mode : MovementMode,
 }
 impl Default for Input {
@@ -74,8 +80,7 @@ impl Input {
             swap_engine : false,
             update : true,
             frame_duration : crate::fps::TARGET_FPS,
-            mouse_dpos : (0.,0.),
-            scroll_dpos: None,
+            mouse: Default::default(),
             movement_mode : MovementMode::Player(PlayerMovementMode::Mouse),
         }
     }
@@ -163,37 +168,15 @@ impl Input {
 
         match ev {
             Event::WindowEvent { event, .. } => match event {
-
                 WindowEvent::CloseRequested => *closed = true,
                 WindowEvent::Resized(_) => *update = true,
-                WindowEvent::CursorMoved{position,..} => {
-                    self.mouse_dpos.0 = position.x as f32;
-                    self.mouse_dpos.1 = position.y as f32;
-                    self.mouse_dpos.0 -= MOUSE_STICK_POINT[0]; self.mouse_dpos.1 -= MOUSE_STICK_POINT[1];
-                },
-                WindowEvent::MouseWheel {delta,phase, ..} => {
-                    match phase {
-                        TouchPhase::Started => {},
-                        TouchPhase::Moved => {
-                            self.scroll_dpos = match delta {
-                                MouseScrollDelta::LineDelta(x,y) => Some((*x,*y)),
-                                MouseScrollDelta::PixelDelta(PhysicalPosition{x,y})
-                                    => Some((*x as f32,*y as f32))
-                            }
-                        },
-                        TouchPhase::Cancelled | TouchPhase::Ended => {
-                            self.scroll_dpos = None;
-                        },
-                    }
-                    //println!("{:?}, {:?}",delta, phase)
-                },
                 WindowEvent::Touch(glutin::event::Touch{phase, ..}) => match phase {
                         glutin::event::TouchPhase::Started => (),
                         glutin::event::TouchPhase::Ended => (),
                         _ => (),
 
                     }
-                _ => (),
+                e => mouse_event(&mut self.mouse, e),
             },
             _ => (),
         }
@@ -205,4 +188,30 @@ impl Input {
 
     }
 
+}
+
+fn mouse_event(mouse: &mut MouseData, window_event: &WindowEvent) {
+    match window_event {
+        WindowEvent::CursorMoved{position,..} => {
+            mouse.mouse_dpos.0 = position.x as f32 - MOUSE_STICK_POINT[0];
+            mouse.mouse_dpos.1 = position.y as f32 - MOUSE_STICK_POINT[1];
+        },
+        WindowEvent::MouseWheel {delta,phase, ..} => {
+            match phase {
+                TouchPhase::Started => {},
+                TouchPhase::Moved => {
+                    mouse.scroll_dpos = match delta {
+                        MouseScrollDelta::LineDelta(x,y) => Some((*x,*y)),
+                        MouseScrollDelta::PixelDelta(PhysicalPosition{x,y})
+                            => Some((*x as f32,*y as f32))
+                    }
+                },
+                TouchPhase::Cancelled | TouchPhase::Ended => {
+                    mouse.scroll_dpos = None;
+                },
+            }
+            //println!("{:?}, {:?}",delta, phase)
+        },
+        _ => (),
+    }
 }

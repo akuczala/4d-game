@@ -130,13 +130,13 @@ fn test_boundaries() {
     );
     let subfaces_vertis = vec![vec![0],vec![1]];
     let single_face = SingleFace::new(&shape, &subfaces_vertis, false);
-    let boundaries = single_face.calc_boundaries(Vec2::zero(), &shape.verts, shape.faces[0].center(), shape.faces[0].visible);
+    let boundaries = single_face.calc_boundaries(Vec2::zero(), &shape.verts, shape.faces[0].center(), true);
     for boundary in boundaries.iter() {
         println!("{}",boundary)
     }
     println!("3d, Triangle");
     let (shape, single_face) = make_3d_triangle();
-    let boundaries = single_face.calc_boundaries(Vec3::zero(), &shape.verts, shape.faces[0].center(), shape.faces[0].visible);
+    let boundaries = single_face.calc_boundaries(Vec3::zero(), &shape.verts, shape.faces[0].center(), true);
     for boundary in boundaries.iter() {
         assert!(is_close(boundary.threshold,0.0));
         //needs more asserts
@@ -144,7 +144,7 @@ fn test_boundaries() {
     }
     println!("3d, Square");
     let (shape, single_face) = make_3d_square();
-    let boundaries = single_face.calc_boundaries(Vec3::zero(), &shape.verts, shape.faces[0].center(), shape.faces[0].visible);
+    let boundaries = single_face.calc_boundaries(Vec3::zero(), &shape.verts, shape.faces[0].center(), true);
     for boundary in boundaries.iter() {
         assert!(is_close(boundary.threshold,0.0));
         //needs more asserts

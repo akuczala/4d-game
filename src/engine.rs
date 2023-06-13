@@ -170,7 +170,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
                 if let MovementMode::Player(PlayerMovementMode::Mouse) | MovementMode::Shape(_) = input.movement_mode {
                     display.gl_window().window().set_cursor_position(glium::glutin::dpi::Position::new(glium::glutin::dpi::PhysicalPosition::new(100,100))).unwrap();
                     display.gl_window().window().set_cursor_visible(false);
-                    input.mouse_dpos = (0.,0.);
+                    input.mouse.mouse_dpos = (0.,0.);
                 } else {
                     display.gl_window().window().set_cursor_visible(true);
                 }

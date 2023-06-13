@@ -58,7 +58,7 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
     //mouse
     match input.movement_mode {
         MovementMode::Player(PlayerMovementMode::Mouse) => {
-            let (dmx, dmy) = input.mouse_dpos;
+            let (dmx, dmy) = input.mouse.mouse_dpos;
             if dmx.abs() != 0. {
                 if input.helper.held_shift() {
                     camera.turn(transform,0,2, dmx*dt*MOUSE_SENSITIVITY);
