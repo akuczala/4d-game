@@ -34,13 +34,13 @@ pub enum ShapeMovementMode {
 pub struct ManipulateSelectedShapeSystem<V: VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
     type SystemData = (
-        Read<'a,Input>,
+        Write<'a,Input>, // need write only for snapping
         ReadExpect<'a,Player>,
         WriteStorage<'a,Transform<V>>,
         ReadStorage<'a,MaybeSelected<V>>
     );
     fn run(&mut self, (
-        input,
+        mut input,
         player,
         mut transform_storage,
         maybe_selected_storage
@@ -48,9 +48,9 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
         let maybe_selected= maybe_selected_storage.get(player.0).unwrap();
         if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
             let selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
-            match (&input).movement_mode {
+            match (&mut input).movement_mode {
                 MovementMode::Shape(mode) => manipulate_shape(
-                    &input,
+                    &mut input,
                     mode,
                     selected_transform
                 ),
@@ -68,7 +68,7 @@ pub const MODE_KEYMAP: [(VKC, ShapeMovementMode); 4] = [
 
 // TODO: manipulated shapes do not clip properly - do we need to move it in the spatial hash?
 pub fn manipulate_shape<V: VectorTrait>(
-    input: &Input,
+    input: &mut Input,
     shape_movement_mode: ShapeMovementMode,
     transform: &mut Transform<V>,
 ) {

@@ -118,13 +118,19 @@ fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
     axis
 }
 
-pub fn scrolling_axis_translation<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{
+pub fn scrolling_axis_translation<V: VectorTrait>(input: &mut Input, transform: &mut Transform<V>) -> bool{
     let mut update = false;
-    if let Some((dx,dy)) = input.mouse.scroll_dpos {
+    if let Some((_dx, _dy)) = input.mouse.scroll_dpos {
         if let Some(axis) = get_axis::<V>(input) {
-            let dpos = V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-            transform.translate(dpos);
-            update = true;
+            //let dpos = V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
+            if input.mouse.integrated_scroll_dpos.1.abs() > 100.0 {
+
+                let dpos = V::one_hot(axis) * input.mouse.integrated_scroll_dpos.1.signum() * 0.5;
+                transform.translate(dpos);
+                update = true;
+                input.mouse.integrated_scroll_dpos = Default::default();
+            } 
+            
         }
     }
     return update

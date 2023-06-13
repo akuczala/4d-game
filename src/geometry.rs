@@ -1,6 +1,7 @@
 pub mod buildfloor;
 pub mod shape;
 pub mod transform;
+mod affine_transform;
 pub use shape::{Shape,Face};
 pub use transform::{Transformable,Transform};
 use std::fmt;
