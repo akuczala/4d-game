@@ -126,7 +126,6 @@ impl<V: VectorTrait> Transform<V> {
             )),
             None,
         );
-        //self.frame = rot.frame.dot(self.frame)
         self.frame = rot.frame.dot(self.frame)
     }
 
