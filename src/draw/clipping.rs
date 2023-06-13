@@ -153,8 +153,11 @@ pub struct InFrontArg<'a, V : VectorTrait>{
     entity : Entity,
 }
 
-pub fn calc_in_front_pair<'a,V :VectorTrait>(a : InFrontArg<'a,V>, b : InFrontArg<'a,V>,
-    shape_clip_states : &mut WriteStorage<ShapeClipState<V>>, origin : &V) {
+pub fn calc_in_front_pair<'a,V :VectorTrait>(
+    a : InFrontArg<'a,V>,
+    b : InFrontArg<'a,V>,
+    shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
+    origin : &V) {
 
     //try dynamic separation
     let mut sep_state = dynamic_separate(a.bball,b.bball,origin);

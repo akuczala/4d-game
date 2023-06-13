@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use specs::{ReadStorage, WriteStorage, World, System};
 use specs::prelude::*;
@@ -81,17 +81,37 @@ pub struct UpdateStaticClippingSystem<V: VectorTrait>(pub ModSystem<V>);
 impl<'a, V: VectorTrait> System<'a> for UpdateStaticClippingSystem<V> {
     type SystemData = (
         ReadStorage<'a, Shape<V>>,
-        WriteStorage<'a, ShapeClipState<V>>
+        WriteStorage<'a, ShapeClipState<V>>,
+        Entities<'a>,
     );
 
-    fn run(&mut self, (read_shape, mut write_shape_clip_state): Self::SystemData) {
+    fn run(
+        &mut self,
+        (
+            read_shape,
+            mut write_shape_clip_state,
+            entities
+        ): Self::SystemData) {
         // TODO: update spatial hash of updated shapes
         // clear static separators for shape, which will be repopulated next draw
-        // this is not enough - likely need to also clear separator key for this entity for all other shapes
+        // still some odd clipping behavior from single faces, but this might have nothing
+        // to do with updating
         self.0.gather_events(read_shape.channel());
-        for (_, shape_clip_state) in (&self.0.modified, &mut write_shape_clip_state).join() {
+        let mut entities_to_update = Vec::new();
+        for (_, shape_clip_state, entity) in (&self.0.modified, &mut write_shape_clip_state, &entities).join() {
             shape_clip_state.separators = HashMap::new();
+            shape_clip_state.in_front = HashSet::new();
+            entities_to_update.push(entity);
         }
+        // clear separators within other shapes
+        // this is pretty awkwardly asymmetric, and maybe a single hashmap over tuples would make more sense for separators, but at some
+        // point I switched away from that and i don't remember why
+        for (shape_clip_state,) in (&mut write_shape_clip_state,).join() {
+            for e in entities_to_update.iter() {
+                shape_clip_state.remove(e);
+            }
+        }
+        
     }
 
     fn setup(&mut self, world: &mut World) {

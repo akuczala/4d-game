@@ -238,7 +238,7 @@ impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 }
 
 //updates clipping boundaries and face visibility based on normals
-// todo: move face visibility state into shape_clip_state, so that we don't need to mutate shapes every step
+// mutated: shape_clip_state boundaries and face_visibility
 pub fn update_shape_visibility<V : VectorTrait>(
 	camera_pos: V,
 	shape: &Shape<V>,

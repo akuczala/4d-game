@@ -162,9 +162,9 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World) {
 
 pub fn build_scene<V: VectorTrait>(world : &mut World) {
     let mut ref_shapes = RefShapes::new();
-    build_lvl_1::<V>(world, &mut ref_shapes);
+    //build_lvl_1::<V>(world, &mut ref_shapes);
     //build_fun_level::<V>(world);
-    //build_test_level::<V>(world, &mut ref_shapes);
+    build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
     init_player(world, V::zero());
     world.insert(ref_shapes);
