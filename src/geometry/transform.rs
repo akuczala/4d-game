@@ -46,7 +46,7 @@ impl<V: VectorTrait> Scaling<V> {
     fn unit() -> Self {
         Self::Scalar(1.0)
     }
-    fn scale_vec(&self, vec: V) -> V {
+    pub fn scale_vec(&self, vec: V) -> V {
         match self {
             Self::Scalar(s) => vec*(*s),
             Self::Vector(ref v) => v.elmt_mult(vec)

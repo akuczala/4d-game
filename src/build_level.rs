@@ -183,22 +183,13 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
             let face_scales = vec![0.9];
             face.texture = draw::Texture::make_tile_texture(&face_scales,
             & match V::DIM {
-                3 => {
-                    match scale.get_vec().iter().enumerate().fold(
-                        (0, scale.get_vec()[0]), |(i, x), (j, y)| if &x > y {
-                            (i, x)
-                        } else {
-                            (j, *y)
-                        }
-                    ).0 {
-                        0 => vec![1, 3],
-                        _ => vec![3, 1]
-                    }
-                },
+                3 => vec![3, 1],
                 4 => vec![3, 1, 1],
                 _ => panic!()
             }).set_color(target_face_color);
-            face.texture_mapping = draw::TextureMapping::calc_cube_vertis(face,&shape.verts,&shape.edges)
+            // must use scaled verts to properly align textures
+            let scaled_verts = shape.verts.iter().map(|v| scale.scale_vec(*v)).collect();
+            face.texture_mapping = draw::TextureMapping::calc_cube_vertis(face,&scaled_verts,&shape.edges)
         }
     }
     let corr_width = 1.0;
