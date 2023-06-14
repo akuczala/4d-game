@@ -1,5 +1,5 @@
 use crate::components::{Cursor,Transform};
-use crate::geometry::transform::{Transformable};
+use crate::geometry::transform::{Transformable, Scaling};
 use crate::graphics::colors::*;
 use crate::coin::Coin;
 use specs::prelude::*;
@@ -173,7 +173,7 @@ pub fn build_scene<V: VectorTrait>(world : &mut World) {
 pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Field) -> Vec<ShapeEntityBuilder<V>> {
 
     // todo figure out why texture is now off after changes to transform
-    pub fn apply_texture<V : VectorTrait>(shape : &mut Shape<V>) {
+    pub fn apply_texture<V : VectorTrait>(shape : &mut Shape<V>, scale: &Scaling<V>) {
         for face in shape.faces.iter_mut() {
             let target_face_color = match face.texture {
             draw::Texture::DefaultLines{color} => color,
@@ -183,7 +183,18 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
             let face_scales = vec![0.9];
             face.texture = draw::Texture::make_tile_texture(&face_scales,
             & match V::DIM {
-                3 => vec![3, 1],
+                3 => {
+                    match scale.get_vec().iter().enumerate().fold(
+                        (0, scale.get_vec()[0]), |(i, x), (j, y)| if &x > y {
+                            (i, x)
+                        } else {
+                            (j, *y)
+                        }
+                    ).0 {
+                        0 => vec![1, 3],
+                        _ => vec![3, 1]
+                    }
+                },
                 4 => vec![3, 1, 1],
                 _ => panic!()
             }).set_color(target_face_color);
@@ -221,7 +232,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
             ))
             ).collect();
     for builder in &mut walls1 {
-        apply_texture(&mut builder.shape);
+        apply_texture(&mut builder.shape, &builder.transformation.scale);
     }
 
     shape_builders.append(&mut walls1);
@@ -254,10 +265,10 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
         .collect();
 
     for builder in &mut floors_long {
-        apply_texture(&mut builder.shape);
+        apply_texture(&mut builder.shape, &builder.transformation.scale);
     }
     for builder in &mut ceilings_long {
-        apply_texture(&mut builder.shape);
+        apply_texture(&mut builder.shape, &builder.transformation.scale);
     }
 
     shape_builders.append(&mut floors_long);

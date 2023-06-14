@@ -11,7 +11,7 @@ use crate::geometry::transform::Scaling;
 pub struct ShapeEntityBuilder<V: VectorTrait> {
     pub shape: Shape<V>,
     shape_type: ShapeType<V>,
-    transformation: Transform<V>,
+    pub transformation: Transform<V>,
     texture_info: Option<(Texture<V::SubV>, TextureMapping)>
 }
 impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
