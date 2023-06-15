@@ -1,3 +1,4 @@
+use super::input_to_transform::{set_axes, snapping_enabled};
 use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
@@ -146,6 +147,8 @@ pub fn manipulate_shape<V: VectorTrait>(
     transform: &mut Transform<V>,
 ) {
     //println!("scroll diff {:?}",input.helper.scroll_diff());
+    set_axes(input, &mut manip_state.locked_axes, V::DIM);
+    manip_state.snap = snapping_enabled(input);
     let mut update = false;
     let new_mode;
     (update, new_mode) = match manip_state.mode {
@@ -153,6 +156,8 @@ pub fn manipulate_shape<V: VectorTrait>(
 
             let (u, d) = scrolling_axis_translation(
                 input, 
+                &manip_state.locked_axes,
+                manip_state.snap,
                 &manip_state.original_transform, 
                 pos_delta,
                 transform

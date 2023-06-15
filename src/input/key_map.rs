@@ -4,6 +4,7 @@ use crate::vector::VecIndex;
 
 pub const MOVEMENT_MODE: VKC = VKC::M;
 pub const CANCEL_MANIPULATION: VKC = VKC::Backslash;
+pub const SNAPPING: VKC = VKC::Grave;
 pub const TRANSLATE_MODE: VKC = VKC::T;
 pub const ROTATE_MODE: VKC = VKC::R;
 pub const SCALE_MODE: VKC = VKC::Y;
@@ -17,7 +18,7 @@ pub const TOGGLE_CLIPPING: VKC = VKC::C;
 
 
 
-pub const QUIT: VKC = VKC::Q;
+pub const QUIT: VKC = VKC::Escape;
 pub const TOGGLE_DIMENSION: VKC = VKC::Back;
 
 //(- key, + key, axis)

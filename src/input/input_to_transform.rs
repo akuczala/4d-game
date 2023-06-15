@@ -8,7 +8,7 @@ use glutin::event::VirtualKeyCode as VKC;
 use crate::geometry::transform::Scaling;
 
 use super::ShapeManipulationState;
-use super::key_map::{MOVE_FORWARDS, MOVE_BACKWARDS, MOVE_KEYMAP, AXIS_KEYMAP};
+use super::key_map::{MOVE_FORWARDS, MOVE_BACKWARDS, MOVE_KEYMAP, AXIS_KEYMAP, SNAPPING};
 
 const SPEED : Field = 1.5;
 const ANG_SPEED : Field = 1.5*PI/3.0;
@@ -114,8 +114,33 @@ fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
     axis
 }
 
+// TODO: because of how key_held works, this requires you to hold keys if you want more than one axis
+// the order of axes is also fixed. Better to have toggleable axes
+pub fn set_axes(input: &Input, locked_axes: &mut Vec<VecIndex>, dim: VecIndex) {
+    let mut changed = false;
+    for (key_code, ax) in AXIS_KEYMAP.iter() {
+        if input.helper.key_held(*key_code) & (*ax < dim) {
+            if !changed {
+                *locked_axes = Vec::new();
+                changed = true;
+            }
+            locked_axes.push(*ax);
+        }
+    }
+}
+const ROUND_RESOLUTION: Field = 0.25;
+fn round_vec<V: VectorTrait>(v: V) -> V {
+    v.map(|vi| (vi /ROUND_RESOLUTION).round() * ROUND_RESOLUTION)
+}
+
+pub fn snapping_enabled(input: &Input) -> bool {
+    input.helper.key_held(SNAPPING)
+}
+
 pub fn scrolling_axis_translation<V: VectorTrait>(
     input: &Input,
+    locked_axes: &Vec<VecIndex>,
+    snap: bool,
     original_transform: &Transform<V>,
     pos_delta: V,
     transform: &mut Transform<V>
@@ -123,18 +148,30 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
     let mut new_pos_delta = pos_delta;
     let mut update = false;
     if let Some((dx, dy)) = input.mouse.scroll_dpos {
-        if let Some(axis) = get_axis::<V>(input) {
-            let dpos = V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-            //if input.mouse.integrated_scroll_dpos.1.abs() > 100.0 {
-
-            //let dpos = V::one_hot(axis) * input.mouse.integrated_scroll_dpos.1.signum() * 0.5;
-            new_pos_delta = pos_delta + dpos; 
+        let dpos = match locked_axes.len() {
+            0 => V::zero(),
+            1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
+            2 => (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy) * input.get_dt() * MOUSE_SENSITIVITY,
+            _ => V::zero(),
+        };
+        new_pos_delta = pos_delta + dpos; 
             *transform = original_transform.clone();
-            transform.translate(new_pos_delta);
+            transform.translate(
+                match snap {
+                    true => round_vec(new_pos_delta),
+                    false => new_pos_delta
+                }
+            );
             update = true;
-            //input.mouse.integrated_scroll_dpos = Default::default(); 
+        // if let Some(axis) = get_axis::<V>(input) {
+        //     let dpos = 
+        //     //if input.mouse.integrated_scroll_dpos.1.abs() > 100.0 {
+
+        //     //let dpos = V::one_hot(axis) * input.mouse.integrated_scroll_dpos.1.signum() * 0.5;
             
-        }
+        //     //input.mouse.integrated_scroll_dpos = Default::default(); 
+            
+        // }
     }
     return (update, new_pos_delta)
 }

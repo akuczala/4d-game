@@ -147,7 +147,9 @@ impl UIArgs{
                             ShapeManipulationMode::Translate(v) => format!("Translate: {}", v),
                             _ => format!("Other mode.")
                         };
-                        format!("{}{}{}", bbox_info, frame_info, manip_info)
+                        let axes_info = manip_state.locked_axes.iter().fold("Axes:".to_string(), |s, &i| s + &i.to_string()) + "\n";
+                        let snap_info = format!("Snap: {}\n", manip_state.snap);
+                        format!("{}{}{}{}{}", snap_info, axes_info, bbox_info, frame_info, manip_info)
                     },
                     MaybeSelected(None) => "No selection\n".to_string(),
                 },
