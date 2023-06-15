@@ -7,6 +7,8 @@ use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;
 use crate::geometry::transform::Scaling;
 
+use super::ShapeManipulationState;
+
 const SPEED : Field = 1.5;
 const ANG_SPEED : Field = 1.5*PI/3.0;
 
@@ -118,22 +120,29 @@ fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
     axis
 }
 
-pub fn scrolling_axis_translation<V: VectorTrait>(input: &mut Input, transform: &mut Transform<V>) -> bool{
+pub fn scrolling_axis_translation<V: VectorTrait>(
+    input: &Input,
+    original_transform: &Transform<V>,
+    pos_delta: V,
+    transform: &mut Transform<V>
+) -> (bool, V) {
+    let mut new_pos_delta = pos_delta;
     let mut update = false;
-    if let Some((_dx, _dy)) = input.mouse.scroll_dpos {
+    if let Some((dx, dy)) = input.mouse.scroll_dpos {
         if let Some(axis) = get_axis::<V>(input) {
-            //let dpos = V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-            if input.mouse.integrated_scroll_dpos.1.abs() > 100.0 {
+            let dpos = V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
+            //if input.mouse.integrated_scroll_dpos.1.abs() > 100.0 {
 
-                let dpos = V::one_hot(axis) * input.mouse.integrated_scroll_dpos.1.signum() * 0.5;
-                transform.translate(dpos);
-                update = true;
-                input.mouse.integrated_scroll_dpos = Default::default();
-            } 
+            //let dpos = V::one_hot(axis) * input.mouse.integrated_scroll_dpos.1.signum() * 0.5;
+            new_pos_delta = pos_delta + dpos; 
+            *transform = original_transform.clone();
+            transform.translate(new_pos_delta);
+            update = true;
+            //input.mouse.integrated_scroll_dpos = Default::default(); 
             
         }
     }
-    return update
+    return (update, new_pos_delta)
 }
 
 pub fn scrolling_axis_scaling<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{

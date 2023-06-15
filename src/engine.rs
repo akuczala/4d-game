@@ -4,6 +4,7 @@ use dispatcher::get_engine_dispatcher_builder;
 use std::time::{Duration,Instant};
 use crate::FPSTimer;
 use crate::collide;
+use crate::input::ShapeManipulationState;
 use specs::prelude::*;
 use glium::Display;
 use std::marker::PhantomData;
@@ -43,6 +44,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         dispatcher.setup(&mut world);
 
         world.insert(Input::new());
+        world.insert(ShapeManipulationState::default() as ShapeManipulationState<V>);
 
         build_scene(&mut world);
 

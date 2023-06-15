@@ -43,7 +43,7 @@ pub enum Scaling<V: VectorTrait> {
     Vector(V),
 }
 impl<V: VectorTrait> Scaling<V> {
-    fn unit() -> Self {
+    pub fn unit() -> Self {
         Self::Scalar(1.0)
     }
     pub fn scale_vec(&self, vec: V) -> V {
