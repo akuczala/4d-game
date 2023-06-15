@@ -8,16 +8,11 @@ use glutin::event::VirtualKeyCode as VKC;
 use crate::geometry::transform::Scaling;
 
 use super::ShapeManipulationState;
+use super::key_map::{MOVE_FORWARDS, MOVE_BACKWARDS, MOVE_KEYMAP, AXIS_KEYMAP};
 
 const SPEED : Field = 1.5;
 const ANG_SPEED : Field = 1.5*PI/3.0;
 
-//(- key, + key, axis)
-const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
-    (VKC::A, VKC::D, 0),
-    (VKC::K, VKC::I, 1),
-    (VKC::Q, VKC::E, 2),
-];
 pub fn get_slide_dpos<V: VectorTrait>(direction : V, time : Field) -> V {
     direction.normalize()*SPEED*time
 }
@@ -54,13 +49,13 @@ fn forwards_backwards_movement<V: VectorTrait>(
     transform: &mut Transform<V>
 ) -> bool {
     let mut update = false;
-    if input.helper.key_held(VKC::W) {
+    if input.helper.key_held(MOVE_FORWARDS) {
         transform.translate(
             get_slide_dpos(transform.frame[-1],dt)
         );
         update = true;
     }
-    if input.helper.key_held(VKC::S) {
+    if input.helper.key_held(MOVE_BACKWARDS) {
         transform.translate(
             get_slide_dpos(-transform.frame[-1], dt)
         );
@@ -108,7 +103,6 @@ fn sliding_and_turning<V: VectorTrait>(
     }
     return any_slide_turn;
 }
-const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::Key1, 0), (VKC::Key2, 1), (VKC::Key3, 2), (VKC::Key4, 3)];
 
 fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
     let mut axis = None;

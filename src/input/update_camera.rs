@@ -1,3 +1,4 @@
+use super::key_map::{MOVE_KEYMAP, MOVE_FORWARDS, MOVE_BACKWARDS};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY};
 
 use crate::player::Player;
@@ -39,13 +40,6 @@ impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
     }
 }
 
-//(- key, + key, axis)
-const MOVE_KEYMAP : [(VKC,VKC,VecIndex); 3] = [
-    (VKC::A, VKC::D, 0),
-    (VKC::K, VKC::I, 1),
-    (VKC::Q, VKC::E, 2),
-];
-
 fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<V>, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
 {
     //clear movement
@@ -86,13 +80,13 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
 
     //forwards + backwards
     // TODO why do we call update here and not during other operations?
-    if input.helper.key_held(VKC::W) {
+    if input.helper.key_held(MOVE_FORWARDS) {
         move_next.translate(
             camera.get_slide_dpos(camera.heading[-1],dt)
         );
         input.update = true;
     }
-    if input.helper.key_held(VKC::S) {
+    if input.helper.key_held(MOVE_BACKWARDS) {
         move_next.translate(
             camera.get_slide_dpos(-camera.heading[-1],dt)
         );

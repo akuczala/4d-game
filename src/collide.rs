@@ -1,6 +1,7 @@
 pub mod bbox;
 
 use crate::input::Input;
+use crate::input::key_map::PRINT_DEBUG;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
 use crate::vector::{VectorTrait,Field};
 use crate::components::{Player,Shape,ShapeType,Convex,Transform,Transformable,Camera};
@@ -160,7 +161,7 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 
 	fn run(&mut self, (input, player, transform, shapes, shape_types, bbox, hash) : Self::SystemData) {
 		use glium::glutin::event::VirtualKeyCode as VKC;
-		if input.helper.key_released(VKC::Space) {
+		if input.helper.key_released(PRINT_DEBUG) {
 			//let mut out_string = "Entities: ".to_string();
 			let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
 			let player_pos = transform.get(player.0).unwrap().pos;

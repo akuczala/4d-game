@@ -1,3 +1,4 @@
+use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
 use crate::geometry::transform::Scaling;
@@ -110,10 +111,10 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
     }
 }
 pub const MODE_KEYMAP: [(VKC, ShapeMovementMode); 4] = [
-    (VKC::T,ShapeMovementMode::Translate),
-    (VKC::R,ShapeMovementMode::Rotate),
-    (VKC::Y,ShapeMovementMode::Scale),
-    (VKC::F, ShapeMovementMode::Free)
+    (TRANSLATE_MODE, ShapeMovementMode::Translate),
+    (ROTATE_MODE, ShapeMovementMode::Rotate),
+    (SCALE_MODE, ShapeMovementMode::Scale),
+    (FREE_MODE, ShapeMovementMode::Free)
 ];
 
 pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mut ShapeManipulationState<V>, shape_transform: &mut Transform<V>) {
@@ -132,7 +133,7 @@ pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mu
     }
     // cancel transform
     if let MovementMode::Shape(_) = input.movement_mode {
-        if input.helper.key_held(VKC::Backslash) {
+        if input.helper.key_held(CANCEL_MANIPULATION) {
             *shape_transform = manip_state.original_transform;
             input.movement_mode = MovementMode::Player(PlayerMovementMode::Mouse);
         }
@@ -216,7 +217,7 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
             entities
         ): Self::SystemData) {
         //not sure why this key press is so unreliable
-        if input.helper.key_released(VKC::Period) {
+        if input.helper.key_released(CREATE_SHAPE) {
             println!("shape created");
             let player_transform = read_transform.get(player.0).unwrap();
             let pos = player_transform.pos;

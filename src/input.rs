@@ -1,6 +1,7 @@
 mod selection;
 mod update_camera;
 mod input_to_transform;
+pub mod key_map; // this can be private when we're not debugging
 
 pub use selection::*;
 pub use update_camera::*;
@@ -23,6 +24,8 @@ use crate::components::*;
 
 use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
+
+use self::key_map::{TOGGLE_CLIPPING, QUIT, TOGGLE_DIMENSION, MOVEMENT_MODE, PRINT_DEBUG};
 
 // fn duration_as_field(duration : &Duration) -> f32 {
 //  (duration.as_secs() as Field) + 0.001*(duration.subsec_millis() as Field)
@@ -122,7 +125,7 @@ impl <'a,V : VectorTrait> System<'a> for PrintDebugSystem<V> {
 
 pub fn print_debug<V : VectorTrait>(input : &mut Input,clip_state : &mut ClipState<V>)
 {
-    if input.helper.key_released(VKC::Space) {
+    if input.helper.key_released(PRINT_DEBUG) {
         //println!("camera.pos = {}",camera.pos);
         //rintln!("camera.heading = {}",camera.heading);
         //println!("camera.frame = {}",camera.frame);
@@ -136,7 +139,7 @@ pub fn print_debug<V : VectorTrait>(input : &mut Input,clip_state : &mut ClipSta
 
     }
     //toggle clipping
-    if input.helper.key_released(VKC::C) {
+    if input.helper.key_released(TOGGLE_CLIPPING) {
         //TEMPORARILY DISABLED
         clip_state.clipping_enabled = !clip_state.clipping_enabled;
         println!("clipping={}",clip_state.clipping_enabled);
@@ -147,13 +150,13 @@ pub fn print_debug<V : VectorTrait>(input : &mut Input,clip_state : &mut ClipSta
 
 impl Input {
     pub fn listen_inputs(&mut self) {
-        if self.helper.key_released(VKC::Escape) {
+        if self.helper.key_released(QUIT) {
             self.closed = true
         }
-        if self.helper.key_released(VKC::Back) {
+        if self.helper.key_released(TOGGLE_DIMENSION) {
             self.swap_engine = true
         }
-        if self.helper.key_released(VKC::M) {
+        if self.helper.key_released(MOVEMENT_MODE) {
             self.movement_mode = match self.movement_mode {
                 MovementMode::Player(player_mode) => MovementMode::Player(
                     match player_mode {
