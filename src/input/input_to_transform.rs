@@ -125,9 +125,17 @@ pub fn set_axes(input: &Input, locked_axes: &mut Vec<VecIndex>, dim: VecIndex) {
         }
     }
 }
-const ROUND_RESOLUTION: Field = 0.25;
+fn round_to(x: Field, to: Field) -> Field {
+    (x / to).round() * to
+}
+const ROUND_VEC_RESOLUTION: Field = 0.25;
 fn round_vec<V: VectorTrait>(v: V) -> V {
-    v.map(|vi| (vi /ROUND_RESOLUTION).round() * ROUND_RESOLUTION)
+    v.map(|vi| round_to(vi, ROUND_VEC_RESOLUTION))
+}
+
+const ROUND_ANGLE_RESOLUTION: Field = PI / 8.0;
+fn round_angle(angle: Field) -> Field {
+    round_to(angle, ROUND_ANGLE_RESOLUTION)
 }
 
 pub fn snapping_enabled(input: &Input) -> bool {
@@ -171,6 +179,38 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
         // }
     }
     return (update, new_pos_delta)
+}
+
+
+pub fn axis_rotation<V: VectorTrait>(
+    input: &Input,
+    locked_axes: &Vec<VecIndex>,
+    snap: bool,
+    original_transform: &Transform<V>,
+    angle_delta: Field,
+    transform: &mut Transform<V>
+) -> (bool, Field) {
+    let mut new_angle_delta = angle_delta;
+    let mut update = false;
+    let (dx, dy) = input.mouse.mouse_dpos;
+    match locked_axes.len() {
+        2 => {
+            let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
+            new_angle_delta = new_angle_delta + dangle; 
+            *transform = original_transform.clone();
+            transform.rotate(
+                locked_axes[0],
+                locked_axes[1],
+                match snap {
+                    true => round_angle(new_angle_delta),
+                    false => new_angle_delta
+                }
+            );
+            update = true;
+        },
+        _ => {}, // 4 would be valid in 4d
+    }
+    return (update, new_angle_delta)
 }
 
 pub fn scrolling_axis_scaling<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{

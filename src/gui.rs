@@ -145,11 +145,13 @@ impl UIArgs{
                         let manip_state = world.read_resource::<ShapeManipulationState<V>>();
                         let manip_info = match manip_state.mode {
                             ShapeManipulationMode::Translate(v) => format!("Translate: {}", v),
-                            _ => format!("Other mode.")
+                            ShapeManipulationMode::Rotate(a) => format!("Rotate: {:.2}", a),
+                            ShapeManipulationMode::Scale(s) => format!("Scale: {:?}", s),
+                            ShapeManipulationMode::Free(_t) => format!("Free")
                         };
                         let axes_info = manip_state.locked_axes.iter().fold("Axes:".to_string(), |s, &i| s + &i.to_string()) + "\n";
                         let snap_info = format!("Snap: {}\n", manip_state.snap);
-                        format!("{}{}{}{}{}", snap_info, axes_info, bbox_info, frame_info, manip_info)
+                        format!("{}{}{}{}", snap_info, axes_info, frame_info, manip_info)
                     },
                     MaybeSelected(None) => "No selection\n".to_string(),
                 },

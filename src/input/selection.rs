@@ -1,4 +1,4 @@
-use super::input_to_transform::{set_axes, snapping_enabled};
+use super::input_to_transform::{set_axes, snapping_enabled, axis_rotation};
 use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
@@ -164,6 +164,17 @@ pub fn manipulate_shape<V: VectorTrait>(
             );
             (u, ShapeManipulationMode::Translate(d))
         },
+        ShapeManipulationMode::Rotate(angle_delta) => {
+            let (u, new_angle_delta) = axis_rotation(
+                input,
+                &manip_state.locked_axes,
+                manip_state.snap,
+                &manip_state.original_transform,
+                angle_delta,
+                transform
+            );
+            (u, ShapeManipulationMode::Rotate(new_angle_delta))
+        }
         // this mode allows you to control the shape as if it were the camera
         // ShapeMovementMode::Free => {
         //     update = update_transform(input, transform);
