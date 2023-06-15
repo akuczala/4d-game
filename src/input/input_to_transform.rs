@@ -114,16 +114,13 @@ fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
     axis
 }
 
-// TODO: because of how key_held works, this requires you to hold keys if you want more than one axis
-// the order of axes is also fixed. Better to have toggleable axes
+// TODO: Would be nicer to have axes toggle on + off with same key
 pub fn set_axes(input: &Input, locked_axes: &mut Vec<VecIndex>, dim: VecIndex) {
-    let mut changed = false;
+    if input.helper.key_held(VKC::Key0) {
+        *locked_axes = Vec::new();
+    }
     for (key_code, ax) in AXIS_KEYMAP.iter() {
-        if input.helper.key_held(*key_code) & (*ax < dim) {
-            if !changed {
-                *locked_axes = Vec::new();
-                changed = true;
-            }
+        if input.helper.key_held(*key_code) & (*ax < dim) & !locked_axes.contains(ax) {
             locked_axes.push(*ax);
         }
     }
