@@ -148,7 +148,7 @@ pub fn manipulate_shape<V: VectorTrait>(
     transform: &mut Transform<V>,
 ) {
     //println!("scroll diff {:?}",input.helper.scroll_diff());
-    set_axes(input, &mut manip_state.locked_axes, V::DIM);
+    set_axes(&mut input.toggle_keys, &mut manip_state.locked_axes, V::DIM);
     manip_state.snap = snapping_enabled(input);
     //let new_mode;
     let (update, new_mode) = match manip_state.mode {
@@ -225,7 +225,7 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
 pub struct CreateShapeSystem<V: VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
     type SystemData = (
-        Read<'a, Input>,
+        WriteExpect<'a, Input>,
         ReadExpect<'a, Player>,
         ReadExpect<'a, RefShapes<V>>,
         Read<'a, LazyUpdate>,
@@ -235,7 +235,7 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
 
     fn run(
         &mut self, (
-            input,
+            mut input,
             player ,
             ref_shapes,
             lazy,
@@ -243,8 +243,9 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
             entities
         ): Self::SystemData) {
         //not sure why this key press is so unreliable
-        if input.helper.key_released(CREATE_SHAPE) {
+        if input.toggle_keys.state(CREATE_SHAPE) {
             println!("shape created");
+            input.toggle_keys.remove(CREATE_SHAPE);
             let player_transform = read_transform.get(player.0).unwrap();
             let pos = player_transform.pos;
             let dir = player_transform.frame[-1];

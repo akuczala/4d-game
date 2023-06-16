@@ -7,6 +7,7 @@ pub use selection::*;
 pub use update_camera::*;
 
 use crate::player::Player;
+use std::collections::HashSet;
 use std::marker::PhantomData;
 
 use glium::glutin;
@@ -25,7 +26,7 @@ use crate::components::*;
 use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
 
-use self::key_map::{TOGGLE_CLIPPING, QUIT, TOGGLE_DIMENSION, MOVEMENT_MODE, PRINT_DEBUG};
+use self::key_map::{TOGGLE_CLIPPING, QUIT, TOGGLE_DIMENSION, MOVEMENT_MODE, PRINT_DEBUG, TOGGLEABLE_KEYS};
 
 // fn duration_as_field(duration : &Duration) -> f32 {
 //  (duration.as_secs() as Field) + 0.001*(duration.subsec_millis() as Field)
@@ -68,6 +69,45 @@ pub struct MouseData {
     pub integrated_mouse_dpos: (f32, f32),
     pub integrated_scroll_dpos: (f32, f32),
 }
+impl MouseData {
+    pub fn mouse_or_scroll_deltas(&self) -> (f32, f32) {
+        let (mut dx, mut dy) = self.mouse_dpos;
+        if let Some((sdx, sdy)) = self.scroll_dpos {
+            dx += sdx; dy += sdy;
+        }
+        (dx, dy)
+    }
+}
+
+pub struct ToggleKeys(HashSet<VKC>);
+impl Default for ToggleKeys {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+impl ToggleKeys {
+    fn update_toggle_keys(&mut self, helper: &WinitInputHelper) -> bool {
+        let mut update = false;
+        for key in TOGGLEABLE_KEYS {
+            if helper.key_released(key) {
+                update = true;
+                if self.0.contains(&key) {
+                    self.0.remove(&key);
+                } else {
+                    self.0.insert(key);
+                }
+            }
+        }
+        return update;
+    }
+    pub fn state(&self, key: VKC) -> bool {
+        self.0.contains(&key)
+    }
+    pub fn remove(&mut self, key: VKC) -> bool {
+        self.0.remove(&key)
+    }
+}
+
 // TODO: better organized input modes + states
 pub struct Input {
     pub helper : WinitInputHelper,
@@ -77,6 +117,7 @@ pub struct Input {
     pub update : bool,
     pub frame_duration : crate::fps::FPSFloat,
     pub mouse: MouseData,
+    pub toggle_keys: ToggleKeys,
     pub movement_mode : MovementMode,
 }
 impl Default for Input {
@@ -95,6 +136,7 @@ impl Input {
             update : true,
             frame_duration : crate::fps::TARGET_FPS,
             mouse: Default::default(),
+            toggle_keys: Default::default(),
             movement_mode : MovementMode::Player(PlayerMovementMode::Mouse),
         }
     }
@@ -150,6 +192,7 @@ pub fn print_debug<V : VectorTrait>(input : &mut Input,clip_state : &mut ClipSta
 
 impl Input {
     pub fn listen_inputs(&mut self) {
+        self.toggle_keys.update_toggle_keys(&self.helper);
         if self.helper.key_released(QUIT) {
             self.closed = true
         }

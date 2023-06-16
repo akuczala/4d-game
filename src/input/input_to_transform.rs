@@ -7,7 +7,7 @@ use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;
 use crate::geometry::transform::Scaling;
 
-use super::ShapeManipulationState;
+use super::{ShapeManipulationState, ToggleKeys};
 use super::key_map::{MOVE_FORWARDS, MOVE_BACKWARDS, MOVE_KEYMAP, AXIS_KEYMAP, SNAPPING};
 
 const SPEED : Field = 1.5;
@@ -114,14 +114,25 @@ fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
     axis
 }
 
-// TODO: Would be nicer to have axes toggle on + off with same key
-pub fn set_axes(input: &Input, locked_axes: &mut Vec<VecIndex>, dim: VecIndex) {
-    if input.helper.key_held(VKC::Key0) {
-        *locked_axes = Vec::new();
-    }
+
+pub fn set_axes(toggle_keys: &mut ToggleKeys, locked_axes: &mut Vec<VecIndex>, dim: VecIndex) {
+
+    // for (key_code, ax) in AXIS_KEYMAP.iter() {
+    //     if input.toggle_keys.state(*key_code) && !locked_axes.contains(ax) {
+    //         locked_axes.push(*ax);
+    //     }
+    //     if !input.toggle_keys.state(*key_code) && locked_axes.contains(ax) {
+    //         locked_axes.retain(|x| *x != *ax);
+    //     }
+    // }
     for (key_code, ax) in AXIS_KEYMAP.iter() {
-        if input.helper.key_held(*key_code) & (*ax < dim) & !locked_axes.contains(ax) {
-            locked_axes.push(*ax);
+        if toggle_keys.state(*key_code) {
+            if locked_axes.contains(ax) {
+                locked_axes.retain(|x| *x != *ax);
+            } else {
+                locked_axes.push(*ax);
+            }
+            toggle_keys.remove(*key_code);
         }
     }
 }
@@ -142,6 +153,7 @@ pub fn snapping_enabled(input: &Input) -> bool {
     input.helper.key_held(SNAPPING)
 }
 
+
 pub fn scrolling_axis_translation<V: VectorTrait>(
     input: &Input,
     locked_axes: &Vec<VecIndex>,
@@ -152,7 +164,8 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
 ) -> (bool, V) {
     let mut new_pos_delta = pos_delta;
     let mut update = false;
-    if let Some((dx, dy)) = input.mouse.scroll_dpos {
+    let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
+    if dx != 0.0 && dy != 0.0 {
         let dpos = match locked_axes.len() {
             0 => V::zero(),
             1 => V::one_hot(locked_axes[0]) * (dx + dy),
@@ -183,47 +196,50 @@ pub fn axis_rotation<V: VectorTrait>(
 ) -> (bool, Field) {
     let mut new_angle_delta = angle_delta;
     let mut update = false;
-    let (dx, dy) = input.mouse.mouse_dpos;
-    match locked_axes.len() {
-        2 => {
-            let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-            new_angle_delta = new_angle_delta + dangle; 
-            *transform = original_transform.clone();
-            transform.rotate(
-                locked_axes[0],
-                locked_axes[1],
-                match snap {
-                    true => round_angle(new_angle_delta),
-                    false => new_angle_delta
-                }
-            );
-            update = true;
-        },
-        4 => {
-            let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-            new_angle_delta = new_angle_delta + dangle; 
-            *transform = original_transform.clone();
-            transform.rotate(
-                locked_axes[0],
-                locked_axes[1],
-                match snap {
-                    true => round_angle(new_angle_delta),
-                    false => new_angle_delta
-                }
-            );
-            transform.rotate(
-                locked_axes[2],
-                locked_axes[3],
-                match snap {
-                    true => round_angle(new_angle_delta),
-                    false => new_angle_delta
-                }
-            )
-            ;
-            update = true;
+    let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
+    if dx != 0.0 && dy != 0.0 {
+        match locked_axes.len() {
+            2 => {
+                let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
+                new_angle_delta = new_angle_delta + dangle; 
+                *transform = original_transform.clone();
+                transform.rotate(
+                    locked_axes[0],
+                    locked_axes[1],
+                    match snap {
+                        true => round_angle(new_angle_delta),
+                        false => new_angle_delta
+                    }
+                );
+                update = true;
+            },
+            4 => {
+                let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
+                new_angle_delta = new_angle_delta + dangle; 
+                *transform = original_transform.clone();
+                transform.rotate(
+                    locked_axes[0],
+                    locked_axes[1],
+                    match snap {
+                        true => round_angle(new_angle_delta),
+                        false => new_angle_delta
+                    }
+                );
+                transform.rotate(
+                    locked_axes[2],
+                    locked_axes[3],
+                    match snap {
+                        true => round_angle(new_angle_delta),
+                        false => new_angle_delta
+                    }
+                )
+                ;
+                update = true;
+            }
+            _ => {}, // 4 would be valid in 4d
         }
-        _ => {}, // 4 would be valid in 4d
     }
+    
     return (update, new_angle_delta)
 }
 
@@ -238,7 +254,9 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(
 ) -> (bool, Scaling<V>) {
     let mut new_scale_delta = scale_delta;
     let mut update = false;
-    if let Some((dx, dy)) = input.mouse.scroll_dpos {
+    
+    let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
+    if dx != 0.0 && dy != 0.0 {
         let dscale = match locked_axes.len() {
             0 => V::zero(),
             1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
