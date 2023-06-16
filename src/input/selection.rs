@@ -130,6 +130,7 @@ pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mu
                 ShapeMovementMode::Free => ShapeManipulationMode::Free(Transform::identity())
             };
             manip_state.original_transform = shape_transform.clone();
+            manip_state.locked_axes = Vec::new();
         }
     }
     // cancel transform
@@ -149,9 +150,8 @@ pub fn manipulate_shape<V: VectorTrait>(
     //println!("scroll diff {:?}",input.helper.scroll_diff());
     set_axes(input, &mut manip_state.locked_axes, V::DIM);
     manip_state.snap = snapping_enabled(input);
-    let mut update = false;
-    let new_mode;
-    (update, new_mode) = match manip_state.mode {
+    //let new_mode;
+    let (update, new_mode) = match manip_state.mode {
         ShapeManipulationMode::Translate(pos_delta) => {
 
             let (u, d) = scrolling_axis_translation(
@@ -174,15 +174,25 @@ pub fn manipulate_shape<V: VectorTrait>(
                 transform
             );
             (u, ShapeManipulationMode::Rotate(new_angle_delta))
+        },
+        ShapeManipulationMode::Scale(scale_delta) => {
+            let (u, new_scale_delta) = scrolling_axis_scaling(
+                input,
+                &manip_state.locked_axes,
+                manip_state.snap,
+                &manip_state.original_transform,
+                scale_delta,
+                transform
+            );
+            (u, ShapeManipulationMode::Scale(new_scale_delta))
+        },
+        //this mode allows you to control the shape as if it were the camera
+        ShapeManipulationMode::Free(transform_delta) => {
+            let mut new_transform_delta = transform_delta.clone();
+            let update = update_transform(input, &mut new_transform_delta);
+            *transform = manip_state.original_transform.clone().with_transform(new_transform_delta);
+            (update, ShapeManipulationMode::Free(new_transform_delta))
         }
-        // this mode allows you to control the shape as if it were the camera
-        // ShapeMovementMode::Free => {
-        //     update = update_transform(input, transform);
-        // },
-        // ShapeMovementMode::Scale => {
-        //     update = scrolling_axis_scaling(input, transform)
-        // }
-        _ => (update, manip_state.mode.clone())
     };
     manip_state.mode = new_mode;
     if update {

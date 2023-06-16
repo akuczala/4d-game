@@ -192,7 +192,7 @@ impl<'a,V : VectorTrait> System<'a> for DrawSelectionBox<V> {
 
 		for maybe_selected in (&selected_storage).join() {
 			if let MaybeSelected(Some(selected)) = maybe_selected {
-				for line in draw_wireframe_with_normals(&selected.selection_box_shape,WHITE).into_iter() {
+				for line in draw_wireframe(&selected.selection_box_shape,WHITE).into_iter() {
 					draw_lines.0.push(line);
 				}
 			}

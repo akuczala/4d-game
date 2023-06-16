@@ -155,28 +155,19 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
     if let Some((dx, dy)) = input.mouse.scroll_dpos {
         let dpos = match locked_axes.len() {
             0 => V::zero(),
-            1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
-            2 => (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy) * input.get_dt() * MOUSE_SENSITIVITY,
+            1 => V::one_hot(locked_axes[0]) * (dx + dy),
+            2 => V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy,
             _ => V::zero(),
-        };
+        } * input.get_dt() * MOUSE_SENSITIVITY;
         new_pos_delta = pos_delta + dpos; 
-            *transform = original_transform.clone();
-            transform.translate(
-                match snap {
-                    true => round_vec(new_pos_delta),
-                    false => new_pos_delta
-                }
-            );
-            update = true;
-        // if let Some(axis) = get_axis::<V>(input) {
-        //     let dpos = 
-        //     //if input.mouse.integrated_scroll_dpos.1.abs() > 100.0 {
-
-        //     //let dpos = V::one_hot(axis) * input.mouse.integrated_scroll_dpos.1.signum() * 0.5;
-            
-        //     //input.mouse.integrated_scroll_dpos = Default::default(); 
-            
-        // }
+        *transform = original_transform.clone();
+        transform.translate(
+            match snap {
+                true => round_vec(new_pos_delta),
+                false => new_pos_delta
+            }
+        );
+        update = true;
     }
     return (update, new_pos_delta)
 }
@@ -208,21 +199,69 @@ pub fn axis_rotation<V: VectorTrait>(
             );
             update = true;
         },
+        4 => {
+            let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
+            new_angle_delta = new_angle_delta + dangle; 
+            *transform = original_transform.clone();
+            transform.rotate(
+                locked_axes[0],
+                locked_axes[1],
+                match snap {
+                    true => round_angle(new_angle_delta),
+                    false => new_angle_delta
+                }
+            );
+            transform.rotate(
+                locked_axes[2],
+                locked_axes[3],
+                match snap {
+                    true => round_angle(new_angle_delta),
+                    false => new_angle_delta
+                }
+            )
+            ;
+            update = true;
+        }
         _ => {}, // 4 would be valid in 4d
     }
     return (update, new_angle_delta)
 }
 
-pub fn scrolling_axis_scaling<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) -> bool{
+
+pub fn scrolling_axis_scaling<V: VectorTrait>(
+    input: &Input,
+    locked_axes: &Vec<VecIndex>,
+    snap: bool,
+    original_transform: &Transform<V>,
+    scale_delta: Scaling<V>,
+    transform: &mut Transform<V>
+) -> (bool, Scaling<V>) {
+    let mut new_scale_delta = scale_delta;
     let mut update = false;
-    if let Some((dx,dy)) = input.mouse.scroll_dpos {
-        if let Some(axis) = get_axis::<V>(input) {
-            let dscale = V::ones() + V::one_hot(axis) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-            transform.scale(Scaling::Vector(dscale));
-            update = true;
-        }
+    if let Some((dx, dy)) = input.mouse.scroll_dpos {
+        let dscale = match locked_axes.len() {
+            0 => V::zero(),
+            1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
+            2 => (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy) * input.get_dt() * MOUSE_SENSITIVITY,
+            _ => V::zero(),
+        };
+        let new_scale_delta_vec = match scale_delta {
+            Scaling::Scalar(f) =>V::ones() * f + dscale,
+            Scaling::Vector(v) => v + dscale,
+        }; 
+        new_scale_delta = Scaling::Vector(new_scale_delta_vec);
+        *transform = original_transform.clone();
+        transform.scale(
+            Scaling::Vector(
+                match snap {
+                    true => round_vec(new_scale_delta_vec),
+                    false => new_scale_delta_vec
+                }
+            )
+        );
+        update = true;
     }
-    return update
+    return (update, new_scale_delta)
 }
 
 // TODO rewrite update_camera transformations in terms of these methods; further decompose
