@@ -128,7 +128,7 @@ fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<
     }
     //spin unless turning or sliding
     if V::DIM == 4 && any_slide_turn == false {
-        camera.spin(transform,0,2,0.05*dt);
+        //camera.spin(transform,0,2,0.05*dt);
     }
     //         //reset orientation
     //         if !input.pressed.space {

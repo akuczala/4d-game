@@ -180,7 +180,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube : &Shape<V>, wall_length : Fie
             _ => panic!("build corridor cross expected DefaultLines") //don't bother handling the other cases
             };
             //let face_scales = linspace(0.1,0.9,5).collect();
-            let face_scales = vec![0.9];
+            let face_scales = vec![0.95];
             face.texture = draw::Texture::make_tile_texture(&face_scales,
             & match V::DIM {
                 3 => vec![3, 1],

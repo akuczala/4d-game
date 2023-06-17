@@ -8,7 +8,7 @@ use glutin::event::VirtualKeyCode as VKC;
 use crate::geometry::transform::Scaling;
 
 use super::{ShapeManipulationState, ToggleKeys};
-use super::key_map::{MOVE_FORWARDS, MOVE_BACKWARDS, MOVE_KEYMAP, AXIS_KEYMAP, SNAPPING};
+use super::key_map::{MOVE_FORWARDS, MOVE_BACKWARDS, MOVE_KEYMAP, AXIS_KEYMAP, SNAPPING, RESET_ORIENTATION};
 
 const SPEED : Field = 1.5;
 const ANG_SPEED : Field = 1.5*PI/3.0;
@@ -126,7 +126,7 @@ pub fn set_axes(toggle_keys: &mut ToggleKeys, locked_axes: &mut Vec<VecIndex>, d
     //     }
     // }
     for (key_code, ax) in AXIS_KEYMAP.iter() {
-        if toggle_keys.state(*key_code) {
+        if toggle_keys.state(*key_code) && *ax < dim {
             if locked_axes.contains(ax) {
                 locked_axes.retain(|x| *x != *ax);
             } else {
@@ -151,6 +151,18 @@ fn round_angle(angle: Field) -> Field {
 
 pub fn snapping_enabled(input: &Input) -> bool {
     input.helper.key_held(SNAPPING)
+}
+
+pub fn reset_orientation_and_scale<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) {
+    if input.helper.key_held(RESET_ORIENTATION) {
+        *transform = Transform::new(Some(transform.pos), None, None);
+    }
+}
+
+pub fn pos_to_grid<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) {
+    if input.helper.key_held(SNAPPING) && input.helper.key_held(VKC::LShift) {
+        transform.pos = round_vec(transform.pos)
+    }
 }
 
 
@@ -258,10 +270,9 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(
     let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
     if dx != 0.0 && dy != 0.0 {
         let dscale = match locked_axes.len() {
-            0 => V::zero(),
             1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
             2 => (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy) * input.get_dt() * MOUSE_SENSITIVITY,
-            _ => V::zero(),
+            _ => V::ones() * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
         };
         let new_scale_delta_vec = match scale_delta {
             Scaling::Scalar(f) =>V::ones() * f + dscale,

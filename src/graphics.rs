@@ -9,6 +9,9 @@ use glium::vertex::Vertex;
 pub use graphics2d::Graphics2d;
 pub use graphics3d::Graphics3d;
 
+use crate::constants::BACKGROUND_COLOR;
+use crate::constants::LINE_THICKNESS_3D;
+use crate::constants::LINE_THICKNESS_4D;
 use crate::draw::{DrawLine, DrawVertex};
 use crate::geometry::shape::VertIndex;
 use crate::vector::VectorTrait;
@@ -164,13 +167,12 @@ pub trait Graphics<V : VectorTrait> {
             ],
             aspect : (width as f32)/(height as f32),
             thickness : match V::DIM {
-                2 =>0.01, 3 => 0.04,
+                2 =>LINE_THICKNESS_3D, 3 => LINE_THICKNESS_4D,
                 _ => panic!("Invalid dimension")} as f32,
             miter : 1,
         };
         //target.clear_color(0.0,0.0,0.0,1.0);
-        let gray = 0.01;
-        target.clear_color(gray,gray,gray,1.0);
+        target.clear_color(BACKGROUND_COLOR[0],BACKGROUND_COLOR[1], BACKGROUND_COLOR[2],BACKGROUND_COLOR[3]);
         target.draw(self.get_vertex_buffer(),
             &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
             self.get_program(),

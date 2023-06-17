@@ -1,4 +1,4 @@
-use super::input_to_transform::{set_axes, snapping_enabled, axis_rotation};
+use super::input_to_transform::{set_axes, snapping_enabled, axis_rotation, reset_orientation_and_scale, pos_to_grid};
 use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
@@ -100,6 +100,8 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
         if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
             let selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
             set_manipulation_mode(&mut input, &mut manip_state, selected_transform);
+            reset_orientation_and_scale(&input, selected_transform);
+            pos_to_grid(&input, selected_transform);
             match (&mut input).movement_mode {
                 MovementMode::Shape(_) => manipulate_shape(
                     &mut input,
@@ -148,6 +150,7 @@ pub fn manipulate_shape<V: VectorTrait>(
     transform: &mut Transform<V>,
 ) {
     //println!("scroll diff {:?}",input.helper.scroll_diff());
+    
     set_axes(&mut input.toggle_keys, &mut manip_state.locked_axes, V::DIM);
     manip_state.snap = snapping_enabled(input);
     //let new_mode;
@@ -211,12 +214,14 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
     fn run(&mut self, (input, player, shape_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) {
         if input.helper.mouse_held(0) {
             let maybe_target = maybe_target_storage.get(player.0).expect("Player has no target component");
+            let selected = maybe_selected_storage.get_mut(player.0).expect("Player has no selection component");
             if let MaybeTarget(Some(target)) = maybe_target  {
-                let selected = maybe_selected_storage.get_mut(player.0).expect("Player has no selection component");
                 // let selected_bbox =  bbox_storage.get(target.entity).expect("Target entity has no bbox");
                 // selected.0 = Some(Selected::new_from_bbox(target.entity, selected_bbox));
                 let selected_shape =  shape_storage.get(target.entity).expect("Target entity has no shape");
                 selected.0 = Some(Selected::new_from_shape(target.entity, selected_shape));
+            } else {
+                selected.0 = None
             }
         }
     }

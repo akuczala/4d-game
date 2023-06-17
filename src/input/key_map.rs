@@ -13,6 +13,8 @@ pub const FREE_MODE: VKC = VKC::F;
 pub const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::Key1, 0), (VKC::Key2, 1), (VKC::Key3, 2), (VKC::Key4, 3)];
 
 pub const CREATE_SHAPE: VKC = VKC::Period;
+pub const RESET_ORIENTATION: VKC = VKC::Comma;
+
 
 pub const TOGGLE_CLIPPING: VKC = VKC::C;
 

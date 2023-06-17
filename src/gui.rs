@@ -139,7 +139,7 @@ impl UIArgs{
                         let selected_transform = transforms.get(selected.entity).expect("Nope");
                         //let (frame, scaling) = selected_transform.decompose_rotation_scaling();
                         let (frame, scaling) = (selected_transform.frame, selected_transform.scale);
-                        let bbox_info = format!("target ({}) bbox: {:?}\n",selected.entity.id(), *selected_bbox);
+                        //let bbox_info = format!("target ({}) bbox: {:?}\n",selected.entity.id(), *selected_bbox);
                         let frame_info = format!("target frame: {}\n, {}\n{:?}\n",selected.entity.id(), frame, scaling);
 
                         let manip_state = world.read_resource::<ShapeManipulationState<V>>();
