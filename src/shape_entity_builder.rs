@@ -1,5 +1,5 @@
 use crate::vector::VectorTrait;
-use crate::components::{Shape,ShapeType,Transform,Transformable,Convex,BBall,ShapeClipState,HasBBox, ShapeLabel};
+use crate::components::{Shape,ShapeType,Transform,Transformable,Convex,BBall,ShapeClipState,HasBBox, ShapeLabel, SingleFace};
 use crate::draw::{Texture,TextureMapping, ShapeTexture, FaceTexture};
 use crate::geometry::shape::{buildshapes, RefShapes};
 use crate::graphics::colors::Color;
@@ -11,39 +11,28 @@ use crate::geometry::transform::Scaling;
 pub struct ShapeEntityBuilder<V: VectorTrait> {
     pub shape: Shape<V>, // remove this field?
     shape_type: ShapeType<V>,
-    shape_label: Option<ShapeLabel>, // TODO: make this mandatory
+    shape_label: ShapeLabel,
     pub transformation: Transform<V>,
     pub shape_texture: ShapeTexture<V>,
 }
 impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
-    pub fn new_face_shape(sub_shape: Shape<V::SubV>, two_sided: bool) -> Self {
-        let (shape, single_face) = buildshapes::convex_shape_to_face_shape(sub_shape, two_sided);
-        let shape_texture = ShapeTexture::new_default(shape.verts.len());
+    pub fn new_face_from_ref_shape(ref_shapes: &RefShapes<V>, single_face: SingleFace<V>, label: ShapeLabel) -> Self {
+        let ref_shape = ref_shapes.get_unwrap(&label);
+        let shape_texture = ShapeTexture::new_default(ref_shape.verts.len());
         Self{
-            shape,
+            shape: ref_shape.clone(),
             shape_type: ShapeType::SingleFace(single_face),
-            shape_label: None,
+            shape_label: label,
             transformation: Transform::identity(),
             shape_texture
         }
     }
-    pub fn new_convex_shape(shape: Shape<V>) -> Self {
-        let convex = Convex::new(&shape);
-        let shape_texture = ShapeTexture::new_default(shape.verts.len());
-        Self{
-            shape,
-            shape_type: ShapeType::Convex(convex),
-            shape_label: None,
-            transformation: Transform::identity(),
-            shape_texture
-        }
-    }
-    pub fn convex_from_ref_shape(ref_shapes: &RefShapes<V>, label: ShapeLabel) -> Self {
+    pub fn new_convex_from_ref_shape(ref_shapes: &RefShapes<V>, label: ShapeLabel) -> Self {
         let ref_shape = ref_shapes.get_unwrap(&label);
         Self {
             shape: ref_shape.clone(),
             shape_type: ShapeType::Convex(Convex::new(ref_shape)),
-            shape_label: Some(label),
+            shape_label: label,
             transformation: Transform::identity(),
             shape_texture: ShapeTexture::new_default(ref_shape.verts.len())
         }
@@ -90,7 +79,7 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
             .with(transformation)
             .with(shape_type)
             .with(shape)
-            .maybe_with(shape_label)
+            .with(shape_label)
             .with(shape_texture)
             .with(ShapeClipState::<V>::default())
     }
@@ -114,9 +103,7 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
         lazy.insert(e, shape);
         lazy.insert(e, shape_texture);
         lazy.insert(e, ShapeClipState::<V>::default());
-        if let Some(label) = shape_label {
-            lazy.insert(e, label)
-        }
+        lazy.insert(e, shape_label)
     }
 }
 impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V> {

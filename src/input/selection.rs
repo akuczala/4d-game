@@ -86,7 +86,6 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
         Write<'a,Input>, // need write only for snapping
         Write<'a, ShapeManipulationState<V>>,
         ReadExpect<'a,Player>,
-        ReadStorage<'a, Camera<V>>,
         WriteStorage<'a,Transform<V>>,
         ReadStorage<'a,MaybeSelected<V>>,
     );
@@ -94,7 +93,6 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
         mut input,
         mut manip_state,
         player,
-        camera,
         mut transform_storage,
         maybe_selected_storage
     ) : Self::SystemData) {
@@ -273,7 +271,7 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
             let shape_pos = pos + dir * 2.0;
             let e = entities.create();
             let shape_label = ShapeLabel("Cube".to_string());
-            ShapeEntityBuilder::convex_from_ref_shape(
+            ShapeEntityBuilder::new_convex_from_ref_shape(
                 &ref_shapes,
                 shape_label,
             )
@@ -317,7 +315,7 @@ impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
             input.toggle_keys.remove(DUPLICATE_SHAPE);
             let e = entities.create();
             let shape_label = shape_label_storage.get(selected_entity).unwrap().clone();
-            ShapeEntityBuilder::convex_from_ref_shape(&ref_shapes, shape_label)
+            ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label)
                 .with_transform(read_transform.get(selected_entity).unwrap().clone())
                 .insert(e, &lazy);
             lazy.insert(e, StaticCollider);

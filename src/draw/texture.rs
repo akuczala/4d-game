@@ -11,7 +11,7 @@ use specs::{Component, DenseVecStorage};
 
 #[derive(Clone, Component)]
 pub struct ShapeTexture<V: VectorTrait> {
-	pub face_textures: Vec<FaceTexture<V>>
+	pub face_textures: Vec<FaceTexture<V>> // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
 impl<V: VectorTrait> ShapeTexture<V> {
 	pub fn new_default(n_faces: usize) -> Self {
@@ -150,9 +150,7 @@ pub struct TextureMapping {
 	pub frame_vertis : Vec<VertIndex>,
 	pub origin_verti : VertIndex
 }
-impl Default for TextureMapping {
-	fn default() -> Self { Self{frame_vertis : Vec::new(), origin_verti : 0} } //this is pretty sloppy
-}
+
 impl TextureMapping {
 
 	pub fn draw_lines<V : VectorTrait>(&self, shape : &Shape<V>,
@@ -230,11 +228,13 @@ pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V>) -> Shape
     shape_texture
 }
 
+// TODO: this really only needs the number of faces.
+// in fact we don't really need any arguments - we know the number of faces from V::DIM
 pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V> {
 	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
 	ShapeTexture{
 		face_textures: shape.faces.iter().zip(&face_colors).map(
-			|(face, &color)| FaceTexture {
+			|(_face, &color)| FaceTexture {
 				texture: Texture::DefaultLines{color : color.set_alpha(0.5)},
 				texture_mapping: None
 			}
