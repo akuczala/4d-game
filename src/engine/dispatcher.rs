@@ -1,5 +1,6 @@
 use crate::draw::DrawSelectionBox;
 use crate::ecs_utils::ModSystem;
+use crate::input::DuplicateShapeSystem;
 use crate::systems::*;
 use crate::vector::VectorTrait;
 use specs::prelude::*;
@@ -101,6 +102,7 @@ fn add_game_steps<'a, 'b, V: VectorTrait>(
             "create_shape",
             &[]
         )
+        .with(DuplicateShapeSystem(ph), "duplicate_shape", &[])
         .with(CoinSpinningSystem(ph), "coin_spinning", &[])
         .with(
             TransformShapeSystem(ModSystem::typed_default(ph)),

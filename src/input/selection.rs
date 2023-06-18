@@ -1,8 +1,8 @@
 use super::input_to_transform::{set_axes, snapping_enabled, axis_rotation, reset_orientation_and_scale, pos_to_grid};
-use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE};
+use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE, DUPLICATE_SHAPE};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
-use crate::geometry::transform::Scaling;
+use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
 use crate::shape_entity_builder::ShapeEntityBuilder;
 use crate::spatial_hash::{SpatialHash, SpatialHashSet};
@@ -19,7 +19,7 @@ use winit_input_helper::WinitInputHelper;
 use specs::prelude::*;
 
 use crate::vector::{VectorTrait,Field,VecIndex};
-use crate::components::*;
+use crate::{components::*, camera};
 
 use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
@@ -86,28 +86,37 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
         Write<'a,Input>, // need write only for snapping
         Write<'a, ShapeManipulationState<V>>,
         ReadExpect<'a,Player>,
+        ReadStorage<'a, Camera<V>>,
         WriteStorage<'a,Transform<V>>,
-        ReadStorage<'a,MaybeSelected<V>>
+        ReadStorage<'a,MaybeSelected<V>>,
     );
     fn run(&mut self, (
         mut input,
         mut manip_state,
         player,
+        camera,
         mut transform_storage,
         maybe_selected_storage
     ) : Self::SystemData) {
         let maybe_selected= maybe_selected_storage.get(player.0).unwrap();
         if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
+            // TODO: It's annoying that I have to clone the camera's transform when we know that it is distinct from selected_transform.
+            // how to convince rust of this?
+            let camera_transform = transform_storage.get(player.0).unwrap().clone(); 
             let selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
             set_manipulation_mode(&mut input, &mut manip_state, selected_transform);
+            cancel_manipulation(&mut input, &mut manip_state, selected_transform);
             reset_orientation_and_scale(&input, selected_transform);
             pos_to_grid(&input, selected_transform);
             match (&mut input).movement_mode {
-                MovementMode::Shape(_) => manipulate_shape(
-                    &mut input,
-                    &mut manip_state,
-                    selected_transform
-                ),
+                MovementMode::Shape(_) => {
+                    manipulate_shape(
+                        &mut input,
+                        &mut manip_state,
+                        selected_transform,
+                        &camera_transform,
+                    );
+                },
                 _ => ()
             }
         }
@@ -120,7 +129,7 @@ pub const MODE_KEYMAP: [(VKC, ShapeMovementMode); 4] = [
     (FREE_MODE, ShapeMovementMode::Free)
 ];
 
-pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mut ShapeManipulationState<V>, shape_transform: &mut Transform<V>) {
+pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mut ShapeManipulationState<V>, shape_transform: &Transform<V>) {
     for &(key, mode) in MODE_KEYMAP.iter() {
         // use key_held here instead of released or pressed because the latter don't seem to work outside of Input.listen_inputs
         if input.helper.key_held(key) {
@@ -134,8 +143,14 @@ pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mu
             manip_state.original_transform = shape_transform.clone();
             manip_state.locked_axes = Vec::new();
         }
+        if input.helper.mouse_held(0) {
+            // back to player movement mode?
+            // will this cause annoying accidental selections?
+        }
     }
-    // cancel transform
+}
+
+pub fn cancel_manipulation<V: VectorTrait>(input: &mut Input, manip_state: &ShapeManipulationState<V>, shape_transform: &mut Transform<V>) {
     if let MovementMode::Shape(_) = input.movement_mode {
         if input.helper.key_held(CANCEL_MANIPULATION) {
             *shape_transform = manip_state.original_transform;
@@ -148,9 +163,9 @@ pub fn manipulate_shape<V: VectorTrait>(
     input: &mut Input,
     manip_state: &mut ShapeManipulationState<V>,
     transform: &mut Transform<V>,
+    camera_transform: &Transform<V>,
 ) {
-    //println!("scroll diff {:?}",input.helper.scroll_diff());
-    
+    // TODO: align movement with camera frame
     set_axes(&mut input.toggle_keys, &mut manip_state.locked_axes, V::DIM);
     manip_state.snap = snapping_enabled(input);
     //let new_mode;
@@ -163,7 +178,8 @@ pub fn manipulate_shape<V: VectorTrait>(
                 manip_state.snap,
                 &manip_state.original_transform, 
                 pos_delta,
-                transform
+                transform,
+                camera_transform,
             );
             (u, ShapeManipulationMode::Translate(d))
         },
@@ -211,8 +227,8 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
         ReadStorage<'a,MaybeTarget<V>>,
         WriteStorage<'a,MaybeSelected<V>>
     );
-    fn run(&mut self, (input, player, shape_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) {
-        if input.helper.mouse_held(0) {
+    fn run(&mut self, (input, player, shape_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) { 
+        if let (true, &MovementMode::Player(_)) = (input.helper.mouse_held(0), &input.movement_mode) {
             let maybe_target = maybe_target_storage.get(player.0).expect("Player has no target component");
             let selected = maybe_selected_storage.get_mut(player.0).expect("Player has no selection component");
             if let MaybeTarget(Some(target)) = maybe_target  {
@@ -247,7 +263,7 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
             read_transform,
             entities
         ): Self::SystemData) {
-        //not sure why this key press is so unreliable
+        
         if input.toggle_keys.state(CREATE_SHAPE) {
             println!("shape created");
             input.toggle_keys.remove(CREATE_SHAPE);
@@ -264,6 +280,51 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
             )
             .with_transform(Transform::pos(shape_pos))
             .with_scale(Scaling::Scalar(0.5))
+            .insert(e, &lazy);
+            lazy.insert(e, StaticCollider);
+            lazy.insert(e, shape_label);
+            // TODO: add to spatial hash set (use BBox hash system)
+            
+        }
+    }
+}
+
+pub struct DuplicateShapeSystem<V: VectorTrait>(pub PhantomData<V>);
+impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
+    type SystemData = (
+        WriteExpect<'a, Input>,
+        ReadExpect<'a, Player>,
+        ReadStorage<'a, MaybeSelected<V>>,
+        ReadExpect<'a, RefShapes<V>>,
+        Read<'a, LazyUpdate>,
+        ReadStorage<'a, Transform<V>>,
+        ReadStorage<'a, ShapeLabel>,
+        Entities<'a>,
+    );
+
+    fn run(
+        &mut self, (
+            mut input,
+            player ,
+            maybe_selected_storage,
+            ref_shapes,
+            lazy,
+            read_transform,
+            shape_label_storage,
+            entities
+        ): Self::SystemData) {
+        
+        if let (true, &Some(Selected{entity: selected_entity, ..})) = (input.toggle_keys.state(DUPLICATE_SHAPE), &maybe_selected_storage.get(player.0).unwrap().0) {
+            println!("shape duplicated");
+            input.toggle_keys.remove(DUPLICATE_SHAPE);
+            let e = entities.create();
+            let shape_label = shape_label_storage.get(selected_entity).unwrap().clone();
+            ShapeEntityBuilder::new_convex_shape(
+                ref_shapes.get(&shape_label)
+                .expect(&format!("Ref shape {} not found", shape_label))
+                .clone()
+            )
+            .with_transform(read_transform.get(selected_entity).unwrap().clone())
             .insert(e, &lazy);
             lazy.insert(e, StaticCollider);
             lazy.insert(e, shape_label);

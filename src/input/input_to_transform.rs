@@ -165,6 +165,9 @@ pub fn pos_to_grid<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) 
     }
 }
 
+pub fn mouse_to_space<V: VectorTrait>((dx, dy): (f32, f32), camera_transform: &Transform<V>) -> V {
+    camera_transform.frame[0] * dx - camera_transform.frame[1] * dy
+}
 
 pub fn scrolling_axis_translation<V: VectorTrait>(
     input: &Input,
@@ -172,18 +175,19 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
     snap: bool,
     original_transform: &Transform<V>,
     pos_delta: V,
-    transform: &mut Transform<V>
+    transform: &mut Transform<V>,
+    camera_transform: &Transform<V>,
 ) -> (bool, V) {
     let mut new_pos_delta = pos_delta;
     let mut update = false;
     let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
     if dx != 0.0 && dy != 0.0 {
         let dpos = match locked_axes.len() {
-            0 => V::zero(),
-            1 => V::one_hot(locked_axes[0]) * (dx + dy),
-            2 => V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy,
+            0 => mouse_to_space((dx, dy), camera_transform) * input.get_dt() * MOUSE_SENSITIVITY,
+            1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
+            2 => (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy) * input.get_dt() * MOUSE_SENSITIVITY,
             _ => V::zero(),
-        } * input.get_dt() * MOUSE_SENSITIVITY;
+        } ;
         new_pos_delta = pos_delta + dpos; 
         *transform = original_transform.clone();
         transform.translate(
@@ -253,7 +257,7 @@ pub fn axis_rotation<V: VectorTrait>(
     }
     
     return (update, new_angle_delta)
-}
+} 
 
 
 pub fn scrolling_axis_scaling<V: VectorTrait>(
