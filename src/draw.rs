@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use specs::prelude::*;
 
 use clipping::{ClipState,clip_line_plane, clip_line_cube};
-pub use texture::{Texture, TextureMapping};
+pub use texture::{Texture, TextureMapping, ShapeTexture, FaceTexture};
 
 use crate::components::*;
 use crate::geometry::Face;
@@ -11,7 +11,7 @@ use crate::geometry::{Line, Shape, shape::VertIndex};
 use crate::graphics::colors::*;
 use crate::vector::{Field, VectorTrait};
 
-mod texture;
+pub mod texture;
 pub mod clipping;
 
 extern crate map_in_place;
@@ -286,26 +286,35 @@ pub struct CalcShapesLinesSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
 	type SystemData = (
 		ReadStorage<'a,Shape<V>>,
-		ReadStorage<'a,ShapeClipState<V>>,
-		ReadExpect<'a,Vec<Field>>,
-		ReadExpect<'a,ClipState<V>>,
-		WriteExpect<'a,DrawLineList<V>>
+		ReadStorage<'a, ShapeTexture<V>>,
+		ReadStorage<'a, ShapeClipState<V>>,
+		ReadExpect<'a, Vec<Field>>,
+		ReadExpect<'a, ClipState<V>>,
+		WriteExpect<'a, DrawLineList<V>>
 	);
 
 	fn run(&mut self, (
 		shapes,
+		shape_textures,
 		shape_clip_states,
 		face_scale,
 		clip_state,
 		mut lines
 	) : Self::SystemData) {
-			lines.0 = calc_shapes_lines(&shapes, &shape_clip_states, &face_scale, &clip_state);
+			lines.0 = calc_shapes_lines(
+				&shapes,
+				&shape_textures,
+				&shape_clip_states,
+				&face_scale,
+				&clip_state
+			);
 		}
 
 }
 
 pub fn calc_shapes_lines<V>(
 	shapes : &ReadStorage<Shape<V>>,
+	shape_textures: &ReadStorage<ShapeTexture<V>>,
 	shape_clip_states : &ReadStorage<ShapeClipState<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
@@ -324,11 +333,11 @@ where V : VectorTrait
 	let mut lines : Vec<Option<DrawLine<V>>> = Vec::new();
 	
 	//compute lines for each shape
-	for (shape,shape_clip_state) in (shapes,shape_clip_states).join() {
+	for (shape, shape_texture, shape_clip_state) in (shapes, shape_textures, shape_clip_states).join() {
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
-		for (face, &visible) in shape.faces.iter().zip(shape_clip_state.face_visibility.iter()) {
-			shape_lines.append(&mut face.texture_mapping.draw(face, &shape, &face_scale, visible))
+		for (face, &visible, face_texture) in izip!(shape.faces.iter(), shape_clip_state.face_visibility.iter(), shape_texture.face_textures.iter()) {
+			shape_lines.append(&mut face_texture.draw(face, &shape, &face_scale, visible))
 		}
 
 		//clip these lines and append to list

@@ -7,6 +7,73 @@ use crate::graphics::colors::*;
 
 
 use itertools::Itertools;
+use specs::{Component, DenseVecStorage};
+
+#[derive(Clone, Component)]
+pub struct ShapeTexture<V: VectorTrait> {
+	pub face_textures: Vec<FaceTexture<V>>
+}
+impl<V: VectorTrait> ShapeTexture<V> {
+	pub fn new_default(n_faces: usize) -> Self {
+		Self { face_textures: (0..n_faces).map(|_| Default::default()).collect() }
+	}
+	pub fn with_color(mut self, color : Color) -> Self {
+        for face in &mut self.face_textures {
+            face.set_color(color);
+        }
+        self
+    }
+	pub fn with_texture(mut self, face_texture: FaceTexture<V>) -> Self {
+		for face in self.face_textures.iter_mut() {
+			*face = face_texture.clone();
+		}
+		self
+	}
+}
+
+#[derive(Clone)]
+pub struct FaceTexture<V: VectorTrait> {
+	pub texture: Texture<V::SubV>,
+	pub texture_mapping: Option<TextureMapping>
+}
+impl<V: VectorTrait> Default for FaceTexture<V>{
+	fn default() -> Self {
+		Self {
+			texture: Default::default(),
+			texture_mapping: Default::default()
+		}
+	}
+}
+impl<V: VectorTrait> FaceTexture<V> {
+	pub fn set_color(&mut self, color : Color) {
+        take_mut::take(&mut self.texture,|tex| tex.set_color(color));
+    }
+    // pub fn set_texture(&mut self, texture: Texture<V::SubV>, texture_mapping: Option<TextureMapping>) {
+    //     self.texture = texture;
+    //     self.texture_mapping = texture_mapping;
+	// }
+    // pub fn with_texture(mut self, texture: Texture<V::SubV>, texture_mapping: Option<TextureMapping>) -> Self {
+    //     self.set_texture(texture, texture_mapping);
+    //     self
+    // }
+	pub fn draw(
+		&self,
+		face: &Face<V>,
+		shape : &Shape<V>,
+		face_scales : &Vec<Field>,
+		visible: bool,
+	) -> Vec<Option<DrawLine<V>>>{
+		if !visible {
+			return Vec::new();
+		}
+		match &self.texture {
+			Texture::DefaultLines{color} => draw_default_lines(face, shape, *color, face_scales),
+			Texture::Lines{lines,color} => self.texture_mapping.as_ref().unwrap().draw_lines(shape,lines,*color),
+			Texture::DrawLines(draw_lines) => self.texture_mapping.as_ref().unwrap().draw_drawlines(draw_lines)
+	
+		}
+	}
+}
 
 #[derive(Clone)]
 pub enum Texture<V : VectorTrait> {
@@ -87,40 +154,7 @@ impl Default for TextureMapping {
 	fn default() -> Self { Self{frame_vertis : Vec::new(), origin_verti : 0} } //this is pretty sloppy
 }
 impl TextureMapping {
-	pub fn draw<V : VectorTrait>(&self, face : &Face<V>, shape : &Shape<V>, face_scales : &Vec<Field>, visible: bool,
-	) -> Vec<Option<DrawLine<V>>>{
-		if !visible {
-			return Vec::new();
-		}
-		match &face.texture {
-			Texture::DefaultLines{color} => self.draw_default_lines(face,shape,*color,face_scales),
-			Texture::Lines{lines,color} => self.draw_lines(shape,lines,*color),
-			Texture::DrawLines(draw_lines) => self.draw_drawlines(draw_lines)
 
-		}
-		
-	}
-	pub fn draw_default_lines<V : VectorTrait>(
-		&self, face : &Face<V>, shape : &Shape<V>,
-		color : Color, face_scales : &Vec<Field>) -> Vec<Option<DrawLine<V>>> {
-		let mut lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
-		for &face_scale in face_scales {
-			let scale_point = |v| V::linterp(face.center(),v,face_scale);
-			for edgei in &face.edgeis {
-				let edge = &shape.edges[*edgei];
-				lines.push(
-					Some(DrawLine{
-						line : Line(
-						shape.verts[edge.0],
-						shape.verts[edge.1])
-						.map(scale_point),
-						color : color
-						})
-				);
-			}
-		}
-		lines
-	}
 	pub fn draw_lines<V : VectorTrait>(&self, shape : &Shape<V>,
 		lines : &Vec<Line<V::SubV>>, color : Color) -> Vec<Option<DrawLine<V>>> {
 		let origin = shape.verts[self.origin_verti];
@@ -159,4 +193,59 @@ impl TextureMapping {
 		// }
 		TextureMapping{origin_verti,frame_vertis : sorted_frame_vertis}
 	}
+}
+
+
+
+pub fn draw_default_lines<V : VectorTrait>(
+	face : &Face<V>,
+	shape : &Shape<V>,
+	color : Color,
+	face_scales : &Vec<Field>
+) -> Vec<Option<DrawLine<V>>> {
+	let mut lines : Vec<Option<DrawLine<V>>> = Vec::with_capacity(face.edgeis.len()*face_scales.len());
+	for &face_scale in face_scales {
+		let scale_point = |v| V::linterp(face.center(),v,face_scale);
+		for edgei in &face.edgeis {
+			let edge = &shape.edges[*edgei];
+			lines.push(
+				Some(DrawLine{
+					line : Line(
+					shape.verts[edge.0],
+					shape.verts[edge.1])
+					.map(scale_point),
+					color : color
+					})
+			);
+		}
+	}
+	lines
+}
+
+pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V>) -> ShapeTexture<V> {
+	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
+    for (face, &color) in shape_texture.face_textures.iter_mut().zip(&face_colors) {
+        face.texture = Texture::DefaultLines{color : color.set_alpha(0.5)};
+    }
+    shape_texture
+}
+
+pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V> {
+	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
+	ShapeTexture{
+		face_textures: shape.faces.iter().zip(&face_colors).map(
+			|(face, &color)| FaceTexture {
+				texture: Texture::DefaultLines{color : color.set_alpha(0.5)},
+				texture_mapping: None
+			}
+		).collect()
+	}
+}
+
+pub fn color_duocylinder<V: VectorTrait>(shape_texture : &mut ShapeTexture<V>, m : usize, n : usize) {
+    for (i, face) in itertools::enumerate(shape_texture.face_textures.iter_mut()) {
+        let iint = i as i32;
+        let color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);
+        face.texture = Texture::DefaultLines{color};
+    }
 }

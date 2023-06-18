@@ -22,7 +22,7 @@ use crate::vector::{VectorTrait,Field,VecIndex};
 use crate::{components::*, camera};
 
 use glutin::event::{Event,WindowEvent};
-use crate::geometry::shape::RefShapes;
+use crate::geometry::shape::{RefShapes, self};
 use crate::input::input_to_transform::{scrolling_axis_scaling, scrolling_axis_translation, update_transform};
 use crate::input::ShapeMovementMode::Scale;
 
@@ -273,16 +273,14 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
             let shape_pos = pos + dir * 2.0;
             let e = entities.create();
             let shape_label = ShapeLabel("Cube".to_string());
-            ShapeEntityBuilder::new_convex_shape(
-                ref_shapes.get(&shape_label)
-                .expect(&format!("Ref shape {} not found", shape_label))
-                .clone()
+            ShapeEntityBuilder::convex_from_ref_shape(
+                &ref_shapes,
+                shape_label,
             )
             .with_transform(Transform::pos(shape_pos))
             .with_scale(Scaling::Scalar(0.5))
             .insert(e, &lazy);
             lazy.insert(e, StaticCollider);
-            lazy.insert(e, shape_label);
             // TODO: add to spatial hash set (use BBox hash system)
             
         }
@@ -319,15 +317,10 @@ impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
             input.toggle_keys.remove(DUPLICATE_SHAPE);
             let e = entities.create();
             let shape_label = shape_label_storage.get(selected_entity).unwrap().clone();
-            ShapeEntityBuilder::new_convex_shape(
-                ref_shapes.get(&shape_label)
-                .expect(&format!("Ref shape {} not found", shape_label))
-                .clone()
-            )
-            .with_transform(read_transform.get(selected_entity).unwrap().clone())
-            .insert(e, &lazy);
+            ShapeEntityBuilder::convex_from_ref_shape(&ref_shapes, shape_label)
+                .with_transform(read_transform.get(selected_entity).unwrap().clone())
+                .insert(e, &lazy);
             lazy.insert(e, StaticCollider);
-            lazy.insert(e, shape_label);
             // TODO: add to spatial hash set (use BBox hash system)
             
         }

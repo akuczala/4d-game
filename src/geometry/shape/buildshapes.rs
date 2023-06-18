@@ -36,14 +36,8 @@ impl<V: VectorTrait> ShapeBuilder<V> {
 			3=> build_prism_3d(0.1, 0.025, 10),
 			4=> build_duoprism_4d([0.1, 0.025], [[0, 1], [2, 3]], [10, 4]),
 			_ => panic!("build_coin not supported in {} dim",{V::DIM})
-		}.with_color(YELLOW);
+		};
 		Self::new(coin)
-	}
-	pub fn with_texture(mut self, texture: Texture<V::SubV>, texture_mapping: TextureMapping) -> Self {
-		for face in self.shape.faces.iter_mut() {
-			face.set_texture(texture.clone(), texture_mapping.clone());
-		}
-		self
 	}
 	pub fn stretch(mut self, scales: Scaling<V>) -> Self {
 		self.shape.modify(&Transform::identity().with_scale(scales));
@@ -269,13 +263,6 @@ pub fn build_duoprism_4d<V: VectorTrait>(
 
 }
 
-pub fn color_cube< V: VectorTrait>(mut cube : Shape<V>) -> Shape<V> {
-	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
-    for (face, &color) in cube.faces.iter_mut().zip(&face_colors) {
-        face.texture = Texture::DefaultLines{color : color.set_alpha(0.5)};
-    }
-    cube
-}
 
 pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	let mut new_shape = shape.clone();
@@ -284,12 +271,4 @@ pub fn invert_normals<V : VectorTrait>(shape : &Shape<V>) -> Shape<V> {
 	}
 	new_shape.update_from_ref(&shape,&Transform::identity());
 	new_shape
-}
-
-pub fn color_duocylinder<V: VectorTrait>(shape : &mut Shape<V>, m : usize, n : usize) {
-    for (i, face) in itertools::enumerate(shape.faces.iter_mut()) {
-        let iint = i as i32;
-        let color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);
-        face.texture = Texture::DefaultLines{color};
-    }
 }

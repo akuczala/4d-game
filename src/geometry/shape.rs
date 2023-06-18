@@ -36,6 +36,9 @@ impl<V: VectorTrait> RefShapes<V> {
     pub fn get(&self, key: &ShapeLabel) -> Option<&Shape<V>> {
         self.0.get(key)
     }
+    pub fn get_unwrap(&self, key: &ShapeLabel) -> &Shape<V> {
+        self.get(key).expect(&format!("Ref shape {} not found", key))
+    }
     pub fn insert(&mut self, key: ShapeLabel, value: Shape<V>) -> Option<Shape<V>> {
         self.0.insert(key, value)
     }
@@ -155,12 +158,6 @@ impl <V : VectorTrait> Shape<V> {
             face.geometry.center = transform.transform_vec(&ref_face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
         }
-    }
-    pub fn with_color(mut self, color : Color) -> Self {
-        for face in &mut self.faces {
-            face.set_color(color);
-        }
-        self
     }
 }
 // impl<V: VectorTrait> Transformable<V> for Shape<V> {

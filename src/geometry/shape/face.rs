@@ -4,13 +4,10 @@ use crate::graphics::colors::Color;
 use itertools::Itertools;
 
 use crate::draw::{Texture,TextureMapping};
-
+// TODO: move texture + texture mapping to separate component entirely
 #[derive(Clone)]
 pub struct Face<V : VectorTrait> {
     pub geometry: FaceGeometry<V>,
-
-    pub texture : Texture<V::SubV>,
-    pub texture_mapping : TextureMapping,
 
     pub edgeis : Vec<EdgeIndex>,
     pub vertis: Vec<VertIndex>
@@ -34,9 +31,6 @@ impl<V : VectorTrait> Face<V> {
                 },
                 center : V::zero(),
             },
-            //change texture to reference
-            texture : Default::default(),
-            texture_mapping : Default::default(),
 
             edgeis : edgeis,
             vertis : Vec::new() 
@@ -57,17 +51,6 @@ impl<V : VectorTrait> Face<V> {
         for verti in vertis.iter().unique() {
             self.vertis.push(*verti);
         }
-    }
-    pub fn set_color(&mut self, color : Color) {
-        take_mut::take(&mut self.texture,|tex| tex.set_color(color));
-    }
-    pub fn set_texture(&mut self, texture: Texture<V::SubV>, texture_mapping: TextureMapping) {
-        self.texture = texture;
-        self.texture_mapping = texture_mapping;
-    }
-    pub fn with_texture(mut self, texture: Texture<V::SubV>, texture_mapping: TextureMapping) -> Self {
-        self.set_texture(texture, texture_mapping);
-        self
     }
     // convenience getters
     pub fn plane(&self) -> &Plane<V> {
