@@ -3,6 +3,7 @@ use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MOD
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
 use crate::draw::ShapeTexture;
+use crate::ecs_utils::Componentable;
 use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
 use crate::shape_entity_builder::ShapeEntityBuilder;
@@ -19,7 +20,7 @@ use winit_input_helper::WinitInputHelper;
 
 use specs::prelude::*;
 
-use crate::vector::{VectorTrait,Field,VecIndex};
+use crate::vector::{VectorTrait,Field,VecIndex, MatrixTrait};
 use crate::{components::*, camera};
 
 use glutin::event::{Event,WindowEvent};
@@ -64,7 +65,11 @@ impl<V: VectorTrait> Default for ShapeManipulationMode<V, V::M> {
 // todo: adding an "update" flag for shapes will reduce number of updates needed, and decouple some of this stuff
 // e.g. update transform -> update shape -> update shape clip state
 pub struct ManipulateSelectedShapeSystem<V>(pub PhantomData<V>);
-impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
+impl <'a,V, M> System<'a> for ManipulateSelectedShapeSystem<V>
+where
+        V: VectorTrait<M=M> + Componentable,
+        M: Componentable
+{
     type SystemData = (
         Write<'a,Input>, // need write only for snapping
         Write<'a, ShapeManipulationState<V, V::M>>,
@@ -200,7 +205,8 @@ pub fn manipulate_shape<V: VectorTrait>(
     }
 }
 pub struct SelectTargetSystem<V>(pub PhantomData<V>);
-impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
+impl <'a,V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V>
+{
     type SystemData = (
         Read<'a,Input>,
         ReadExpect<'a,Player>,
@@ -225,7 +231,11 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
 }
 
 pub struct CreateShapeSystem<V>(pub PhantomData<V>);
-impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
+impl <'a,V, M> System<'a> for CreateShapeSystem<V>
+where
+        V: VectorTrait<M=M> + Componentable,
+        M: Componentable
+{
     type SystemData = (
         WriteExpect<'a, Input>,
         ReadExpect<'a, Player>,
@@ -269,7 +279,11 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
 }
 
 pub struct DuplicateShapeSystem<V>(pub PhantomData<V>);
-impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
+impl <'a, V, M> System<'a> for DuplicateShapeSystem<V>
+where
+        V: VectorTrait<M=M> + Componentable,
+        M: Componentable
+{
     type SystemData = (
         WriteExpect<'a, Input>,
         ReadExpect<'a, Player>,

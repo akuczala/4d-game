@@ -1,6 +1,6 @@
 
 
-use specs::{FlaggedStorage, VecStorage, Component};
+use specs::{FlaggedStorage, VecStorage, Component, HashMapStorage};
 
 use crate::coin::Coin;
 use crate::draw::ShapeTexture;
@@ -53,4 +53,12 @@ impl Component for Coin {
 
 impl<V: Componentable> Component for MoveNext<V> {
     type Storage = DefaultStorage<Self>;
+}
+
+impl<V: Componentable> Component for MaybeTarget<V> {
+    type Storage = HashMapStorage<Self>;
+}
+
+impl<V: Componentable> Component for MaybeSelected<V> {
+    type Storage = HashMapStorage<Self>;
 }

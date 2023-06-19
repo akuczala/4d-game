@@ -109,7 +109,11 @@ impl<V : VectorTrait> DrawLineList<V> {
 
 //would be nicer to move lines out of read_in_lines rather than clone them
 pub struct TransformDrawLinesSystem<V : VectorTrait>(pub PhantomData<V>);
-impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
+impl<'a, V, M> System<'a> for TransformDrawLinesSystem<V>
+where
+	V: VectorTrait<M=M> + Componentable,
+	M: Componentable
+{
     type SystemData = (
 		ReadExpect<'a,DrawLineList<V>>,
 		WriteExpect<'a,DrawLineList<V::SubV>>,
@@ -162,11 +166,15 @@ pub fn transform_draw_line<V : VectorTrait>(
 // }
 
 pub struct DrawCursorSystem<V>(pub PhantomData<V>);
-impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
+impl<'a, V, U> System<'a> for DrawCursorSystem<V>
+where
+	V: VectorTrait<SubV=U> + Componentable,
+	U: Componentable
+{
     type SystemData = (
 		ReadStorage<'a,Cursor>,
-		ReadStorage<'a,Shape<V::SubV>>,
-		WriteExpect<'a,DrawLineList<V::SubV>>
+		ReadStorage<'a,Shape<U>>,
+		WriteExpect<'a,DrawLineList<U>>
 	);
 
     fn run(&mut self, (cursors, shapes, mut draw_lines) : Self::SystemData) {
@@ -180,7 +188,8 @@ impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
 }
 
 pub struct DrawSelectionBox<V>(pub PhantomData<V>);
-impl<'a,V : VectorTrait> System<'a> for DrawSelectionBox<V> {
+impl<'a,V : VectorTrait + Componentable> System<'a> for DrawSelectionBox<V>
+{
 	type SystemData = (
 		ReadStorage<'a,MaybeSelected<V>>,
 		WriteExpect<'a,DrawLineList<V>>
@@ -208,7 +217,11 @@ impl<'a,V : VectorTrait> System<'a> for DrawSelectionBox<V> {
 
 pub struct VisibilitySystem<V>(pub PhantomData<V>);
 
-impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
+impl<'a, V, M> System<'a> for VisibilitySystem<V>
+where
+	V: VectorTrait<M=M> + Componentable,
+	M: Componentable
+{
 	type SystemData = (
 		ReadStorage<'a,Shape<V>>,
 		WriteStorage<'a,ShapeClipState<V>>,

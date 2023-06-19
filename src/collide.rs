@@ -41,7 +41,11 @@ impl<V: VectorTrait> Transformable<V> for MoveNext<V> {
 //print entities in the same cell as the player's bbox
 pub struct MovePlayerSystem<V>(pub PhantomData<V>);
 
-impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
+impl<'a, V, M> System<'a> for MovePlayerSystem<V>
+where
+	V: VectorTrait<M=M> + Componentable,
+	M: Componentable
+{
 
 	type SystemData = (
 		ReadExpect<'a,Player>,
@@ -66,7 +70,7 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 	}
 }
 
-impl<V: VectorTrait> HasBBox<V> for Shape<V> {
+impl<V: VectorTrait + Componentable> HasBBox<V> for Shape<V> {
 	fn calc_bbox(&self) -> BBox<V> {
 		let verts = &self.verts;
 
@@ -133,8 +137,16 @@ fn get_bbox_cells<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet<V,Ent
 //add an update_bbox marker
 pub struct UpdatePlayerBBox<V>(pub PhantomData<V>);
 
-impl<'a, V : Componentable + VectorTrait> System<'a> for UpdatePlayerBBox<V> {
-	type SystemData = (ReadExpect<'a,Player>,WriteStorage<'a,BBox<V>>,ReadStorage<'a,Transform<V, V::M>>);
+impl<'a, V, M> System<'a> for UpdatePlayerBBox<V>
+where
+	V: VectorTrait<M=M> + Componentable,
+	M: Componentable
+{
+	type SystemData = (
+		ReadExpect<'a,Player>,
+		WriteStorage<'a,BBox<V>>,
+		ReadStorage<'a,Transform<V, V::M>>
+	);
 
 	fn run(&mut self, (player, mut write_bbox, transform) : Self::SystemData) {
 		let pos = transform.get(player.0).unwrap().pos;
@@ -146,7 +158,11 @@ impl<'a, V : Componentable + VectorTrait> System<'a> for UpdatePlayerBBox<V> {
 //print entities in the same cell as the player's bbox
 pub struct CollisionTestSystem<V>(pub PhantomData<V>);
 
-impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
+impl<'a, V, M> System<'a> for CollisionTestSystem<V>
+where
+	V: VectorTrait<M=M> + Componentable,
+	M: Componentable
+{
 
 	type SystemData = (
 		ReadExpect<'a,Input>,
@@ -186,9 +202,18 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 //need only run these systems when the player is moving
 pub struct PlayerCollisionDetectionSystem<V>(pub PhantomData<V>);
 
-impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
+impl<'a, V, M> System<'a> for PlayerCollisionDetectionSystem<V>
+where
+	V: VectorTrait<M=M> + Componentable,
+	M: Componentable
+{
 
-	type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,BBox<V>>,WriteStorage<'a,InPlayerCell>,ReadExpect<'a,SpatialHashSet<V,Entity>>);
+	type SystemData = (
+		ReadExpect<'a,Player>,
+		ReadStorage<'a,BBox<V>>,
+		WriteStorage<'a,InPlayerCell>,
+		ReadExpect<'a,SpatialHashSet<V,Entity>>
+	);
 
 	fn run(&mut self, (player, bbox, mut in_cell, hash) : Self::SystemData) {
 		in_cell.clear(); //clear previously marked
@@ -201,7 +226,11 @@ impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 }
 
 pub struct PlayerStaticCollisionSystem<V>(pub PhantomData<V>);
-impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
+impl<'a, V, M> System<'a> for PlayerStaticCollisionSystem<V>
+where
+	V: VectorTrait<M=M> + Componentable,
+	M: Componentable
+{
 
 	type SystemData = (
 		ReadExpect<'a,Player>,

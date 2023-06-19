@@ -4,7 +4,9 @@ use specs::{ReadStorage, WriteStorage, World, System};
 use specs::prelude::*;
 
 use crate::components::{BBox, HasBBox, ShapeLabel, ShapeType, ShapeClipState};
+use crate::ecs_utils::Componentable;
 use crate::geometry::shape::RefShapes;
+use crate::vector::MatrixTrait;
 use crate::{vector::VectorTrait, ecs_utils::ModSystem, components::{Shape, Transform, BBall}};
 
 //TODO: we don't always need to update all of this when a shape gets mutated - e.g. spinning coins do not change any of these components.
@@ -14,7 +16,11 @@ use crate::{vector::VectorTrait, ecs_utils::ModSystem, components::{Shape, Trans
 pub struct UpdateBBallSystem<V>(pub ModSystem<V>);
 
 
-impl<'a, V: VectorTrait> System<'a> for UpdateBBallSystem<V> {
+impl<'a, V, M> System<'a> for UpdateBBallSystem<V>
+where
+        V: VectorTrait<M=M> + Componentable,
+        M: MatrixTrait<V> + Componentable
+{
 
     type SystemData = (
         ReadStorage<'a, Shape<V>>,
@@ -47,7 +53,7 @@ impl<'a, V: VectorTrait> System<'a> for UpdateBBallSystem<V> {
 #[derive(Default)]
 pub struct UpdateBBoxSystem<V>(pub ModSystem<V>);
 
-impl<'a,V: VectorTrait> System<'a> for UpdateBBoxSystem<V> {
+impl<'a,V: VectorTrait + Componentable> System<'a> for UpdateBBoxSystem<V> {
 
 	type SystemData = (
 		ReadStorage<'a, Shape<V>>,
@@ -78,7 +84,11 @@ impl<'a,V: VectorTrait> System<'a> for UpdateBBoxSystem<V> {
 #[derive(Default)]
 pub struct UpdateStaticClippingSystem<V>(pub ModSystem<V>);
 
-impl<'a, V: VectorTrait> System<'a> for UpdateStaticClippingSystem<V> {
+impl<'a, V, M> System<'a> for UpdateStaticClippingSystem<V>
+where
+        V: VectorTrait<M=M> + Componentable,
+        M: MatrixTrait<V> + Componentable
+{
     type SystemData = (
         ReadStorage<'a, Shape<V>>,
         WriteStorage<'a, ShapeClipState<V>>,
@@ -125,12 +135,16 @@ impl<'a, V: VectorTrait> System<'a> for UpdateStaticClippingSystem<V> {
 #[derive(Default)]
 pub struct TransformShapeSystem<V>(pub ModSystem<V>);
 
-impl<'a,V: VectorTrait> System<'a> for TransformShapeSystem<V> {
+impl<'a, V, M> System<'a> for TransformShapeSystem<V>
+    where
+        V: VectorTrait<M=M> + Componentable,
+        M: MatrixTrait<V> + Componentable
+{
 
 	type SystemData = (
         ReadExpect<'a,RefShapes<V>>,
         ReadStorage<'a,ShapeLabel>,
-		ReadStorage<'a, Transform<V, V::M>>,
+		ReadStorage<'a, Transform<V, M>>,
 		WriteStorage<'a, Shape<V>>,
         WriteStorage<'a, ShapeType<V>>,
 	);

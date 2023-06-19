@@ -1,6 +1,7 @@
 use super::key_map::{MOVE_KEYMAP, MOVE_FORWARDS, MOVE_BACKWARDS};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY};
 
+use crate::ecs_utils::Componentable;
 use crate::player::Player;
 use std::marker::PhantomData;
 
@@ -21,7 +22,11 @@ use crate::geometry::shape::RefShapes;
 use crate::input::{PlayerMovementMode, ShapeMovementMode};
 
 pub struct UpdateCameraSystem<V>(pub PhantomData<V>);
-impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
+impl <'a, V, M> System<'a> for UpdateCameraSystem<V>
+where
+    V: VectorTrait<M=M> + Componentable,
+    M: Componentable
+{
     type SystemData = (
         Write<'a,Input>,
         WriteStorage<'a,Transform<V, V::M>>,

@@ -27,11 +27,11 @@ pub struct ClipState<V> {
 //could alternatively hold in a hash map over (entity,entity) pairs
 
 
-impl<V : VectorTrait> Default for ClipState<V> {
+impl<V> Default for ClipState<V> {
     fn default() -> Self {ClipState::new()}
 }
 
-impl<V : VectorTrait> ClipState<V> {
+impl<V> ClipState<V> {
     pub fn new() -> Self {
         //let shapes : Vec<&Shape<V>> = (&read_shapes).join().collect();
         ClipState {
@@ -60,7 +60,11 @@ impl<V : VectorTrait> ClipState<V> {
 }
 
 pub struct InFrontSystem<V>(pub PhantomData<V>);
-impl<'a,V : VectorTrait + Componentable> System<'a> for InFrontSystem<V> {
+impl<'a, V, M> System<'a> for InFrontSystem<V>
+where
+    V: VectorTrait<M=M> + Componentable,
+    M: Componentable
+{
     type SystemData = (
         ReadStorage<'a,Shape<V>>,
         ReadStorage<'a, BBall<V>>,

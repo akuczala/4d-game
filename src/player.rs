@@ -1,3 +1,4 @@
+use crate::ecs_utils::Componentable;
 use crate::geometry::Line;
 use crate::components::*;
 use crate::vector::{Field,VectorTrait};
@@ -32,7 +33,11 @@ const MAX_TARGET_DIST : Field = 10.;
 
 pub struct ShapeTargetingSystem<V>(pub PhantomData<V>);
 
-impl<'a,V : VectorTrait> System<'a> for ShapeTargetingSystem<V> {
+impl<'a,V, M> System<'a> for ShapeTargetingSystem<V>
+where
+        V: VectorTrait<M=M> + Componentable,
+        M: Componentable
+{
 	type SystemData = (
 		ReadExpect<'a,Player>,
 		ReadStorage<'a,Transform<V, V::M>>,
@@ -54,12 +59,8 @@ impl<'a,V : VectorTrait> System<'a> for ShapeTargetingSystem<V> {
 #[storage(HashMapStorage)]
 pub struct Cursor;
 
-#[derive(Component)]
-#[storage(HashMapStorage)]
 pub struct MaybeTarget<V>(pub Option<Target<V>>);
 
-#[derive(Component)]
-#[storage(HashMapStorage)]
 pub struct MaybeSelected<V>(pub Option<Selected<V>>);
 
 pub struct Selected<V> {
@@ -96,7 +97,9 @@ pub struct Target<V> {
 
 }
 
-fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>,Entity)>>(transform : &Transform<V, V::M>, iter : I) -> MaybeTarget<V> {
+fn shape_targeting<'a, V : VectorTrait, I>(transform : &Transform<V, V::M>, iter : I) -> MaybeTarget<V>
+where I: std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>, Entity)>
+{
 	let pos = transform.pos;
 	let dir = transform.frame[-1];
 	let ray = Line(pos, pos + dir*MAX_TARGET_DIST);

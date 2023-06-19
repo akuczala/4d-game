@@ -6,6 +6,7 @@ pub mod key_map; // this can be private when we're not debugging
 pub use selection::*;
 pub use update_camera::*;
 
+use crate::ecs_utils::Componentable;
 use crate::player::Player;
 use std::collections::HashSet;
 use std::marker::PhantomData;
@@ -156,9 +157,9 @@ impl Input {
 
 
 pub struct PrintDebugSystem<V>(pub PhantomData<V>);
-impl <'a,V : VectorTrait> System<'a> for PrintDebugSystem<V> {
+impl <'a,V : VectorTrait + Componentable> System<'a> for PrintDebugSystem<V> {
 
-    type SystemData = (Write<'a,Input>,Write<'a,ClipState<V>>);
+    type SystemData = (Write<'a, Input>, Write<'a, ClipState<V>>);
 
     fn run(&mut self, (mut input, mut clip_state) : Self::SystemData) {
         print_debug::<V>(&mut input,&mut clip_state);
