@@ -100,7 +100,11 @@ pub fn barycenter<V: VectorTrait>(vlist : &Vec<V>) -> V
 {
     vlist.iter().fold(V::zero(),|sum,val| sum + *val)/(vlist.len() as Field)
 }
-pub fn barycenter_iter<'a, V: VectorTrait, I: Iterator<Item=&'a V>>(viter : I) -> V
+pub fn barycenter_iter<V, I>(viter: I) -> V
+where
+    V: VectorTrait,
+    for<'a> &'a I: Iterator<Item=&'a V>,
+    
 {
     let (sum, len) = viter.fold(
         (V::zero(), 0),
