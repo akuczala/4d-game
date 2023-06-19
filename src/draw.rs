@@ -6,6 +6,7 @@ use clipping::{ClipState,clip_line_plane, clip_line_cube};
 pub use texture::{Texture, TextureMapping, ShapeTexture, FaceTexture};
 
 use crate::components::*;
+use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{Line, Shape, shape::VertIndex};
 use crate::graphics::colors::*;
@@ -281,7 +282,7 @@ pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>,camera_pos : V, two_si
 
 pub struct CalcShapesLinesSystem<V>(pub PhantomData<V>);
 
-impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
+impl<'a,V : VectorTrait + Componentable> System<'a> for CalcShapesLinesSystem<V>  {
 	type SystemData = (
 		ReadStorage<'a,Shape<V>>,
 		ReadStorage<'a, ShapeTexture<V>>,
@@ -310,15 +311,13 @@ impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
 
 }
 
-pub fn calc_shapes_lines<V>(
+pub fn calc_shapes_lines<V: Componentable>(
 	shapes : &ReadStorage<Shape<V>>,
 	shape_textures: &ReadStorage<ShapeTexture<V>>,
 	shape_clip_states : &ReadStorage<ShapeClipState<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
 	)  -> Vec<Option<DrawLine<V>>>
-
-where V : VectorTrait
 {
 	//DEBUG: list entities in front of each shape
 	// for (i,(sh,s)) in (shapes, shape_clip_states).join().enumerate() {

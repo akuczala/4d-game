@@ -50,3 +50,7 @@ impl<V: Componentable, M: Componentable> Component for Camera<V, M> {
 impl Component for Coin {
     type Storage = DefaultStorage<Self>;
 }
+
+impl<V: Componentable> Component for MoveNext<V> {
+    type Storage = DefaultStorage<Self>;
+}

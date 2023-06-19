@@ -60,7 +60,7 @@ impl<V : VectorTrait> ClipState<V> {
 }
 
 pub struct InFrontSystem<V>(pub PhantomData<V>);
-impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
+impl<'a,V : VectorTrait + Componentable> System<'a> for InFrontSystem<V> {
     type SystemData = (
         ReadStorage<'a,Shape<V>>,
         ReadStorage<'a, BBall<V>>,

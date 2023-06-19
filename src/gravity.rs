@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use specs::prelude::*;
 use specs::{System,WriteStorage,Read};
+use crate::ecs_utils::Componentable;
 use crate::vector::VectorTrait;
 use crate::components::MoveNext;
 use crate::input::Input;
@@ -8,7 +9,7 @@ use crate::input::Input;
 
 pub struct PlayerGravitySystem<V>(pub PhantomData<V>);
 
-impl<'a, V : VectorTrait> System<'a> for PlayerGravitySystem<V> {
+impl<'a, V : VectorTrait + Componentable> System<'a> for PlayerGravitySystem<V> {
 
     type SystemData = (
         Read<'a,Input>,

@@ -155,7 +155,7 @@ impl Input {
 
 
 
-pub struct PrintDebugSystem<V : VectorTrait>(pub PhantomData<V>);
+pub struct PrintDebugSystem<V>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for PrintDebugSystem<V> {
 
     type SystemData = (Write<'a,Input>,Write<'a,ClipState<V>>);

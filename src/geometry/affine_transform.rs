@@ -2,14 +2,14 @@ use crate::vector::{Field, VectorTrait, MatrixTrait};
 
 use super::transform::Scaling;
 
-pub struct AffineTransform<V: VectorTrait>{
+pub struct AffineTransform<V, M>{
     pub pos: V,
-    pub frame: V::M,
+    pub frame: M,
 }
 // todo figure out how to "snap" Affinetransforms to e.g. integer scales, deg of rotation, grid pos
 
 // TODO improve performance by creating fewer structs? or does the compiler do that
-impl<V: VectorTrait> AffineTransform<V> {
+impl<V: VectorTrait> AffineTransform<V, V::M> {
     pub fn identity() -> Self {
         Self{
             pos: V::zero(),
@@ -43,7 +43,7 @@ impl<V: VectorTrait> AffineTransform<V> {
             Scaling::Vector(V::from_iter(norms.iter()))
         )
     }
-    pub fn unshear(&self) -> AffineTransform<V> {
+    pub fn unshear(&self) -> AffineTransform<V, V::M> {
         let (rotation, scaling) = self.decompose_rotation_scaling();
         AffineTransform::new(Some(self.pos), Some(rotation.dot(scaling.get_mat())))
     }
@@ -51,27 +51,27 @@ impl<V: VectorTrait> AffineTransform<V> {
     pub fn transform_vec(&self, &vec: &V) -> V {
         self.frame * vec + self.pos
     }
-    pub fn set_transform(&mut self, transform: AffineTransform<V>) {
+    pub fn set_transform(&mut self, transform: AffineTransform<V, V::M>) {
         self.pos = transform.pos;
         self.frame = transform.frame;
     }
     //  T1 = A1 v + p1 and T2 compose as affine transformations:
     // T1 T2 v = T1 (A2 v + p2) = A1 (A2 v + p2) + p1 = (A1 A2) v + (A1 p2 + p1)
 
-    pub fn apply_self_on_left(&mut self, transformation: AffineTransform<V>) {
+    pub fn apply_self_on_left(&mut self, transformation: AffineTransform<V, V::M>) {
         let other = transformation;
         self.pos = self.pos + self.frame * other.pos;
         self.frame = self.frame.dot(other.frame);
     }
-    pub fn apply_self_on_right(&mut self, transformation: AffineTransform<V>) {
+    pub fn apply_self_on_right(&mut self, transformation: AffineTransform<V, V::M>) {
         let other = transformation;
         self.pos = other.pos + other.frame * self.pos;
         self.frame = other.frame.dot(self.frame);
     }
-    pub fn compose(&mut self, transformation: AffineTransform<V>) {
+    pub fn compose(&mut self, transformation: AffineTransform<V, V::M>) {
         self.apply_self_on_left(transformation) //scale composition commutes
     }
-    pub fn with_transform(mut self, transformation: AffineTransform<V>) -> Self {
+    pub fn with_transform(mut self, transformation: AffineTransform<V, V::M>) -> Self {
         self.compose(transformation); self
     }
     pub fn with_translation(mut self, pos_delta: V) -> Self {

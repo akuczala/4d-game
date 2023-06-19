@@ -9,7 +9,7 @@ use crate::vector::VectorTrait;
 pub trait Componentable: 'static + Sync + Send {}
 pub trait VecComp: VectorTrait + Componentable {}
 #[derive(Default)]
-pub struct ModSystem<V: Componentable> {
+pub struct ModSystem<V> {
     pub ph: PhantomData<V>,
     pub modified: BitSet,
     pub reader_id: Option<ReaderId<ComponentEvent>>

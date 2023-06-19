@@ -11,7 +11,7 @@ use crate::draw::{Texture,TextureMapping};
 use std::marker::PhantomData;
 
 #[derive(Clone)]
-pub struct ShapeBuilder<V : VectorTrait>{
+pub struct ShapeBuilder<V>{
 	pub shape: Shape<V>,
 }
 impl<V: VectorTrait> ShapeBuilder<V> {

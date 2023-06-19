@@ -1,5 +1,6 @@
 
 use crate::draw::clipping::ShapeClipState;
+use crate::ecs_utils::Componentable;
 use crate::spatial_hash::SpatialHashSet;
 use specs::prelude::*;
 
@@ -19,8 +20,8 @@ impl DeletedEntities {
 	}
 }
 
-pub struct ShapeCleanupSystem<V : VectorTrait>(pub PhantomData<V>);
-impl<'a, V : VectorTrait> System<'a> for ShapeCleanupSystem<V> {
+pub struct ShapeCleanupSystem<V>(pub PhantomData<V>);
+impl<'a, V : Componentable> System<'a> for ShapeCleanupSystem<V> {
 	type SystemData = (Write<'a,DeletedEntities>,WriteStorage<'a,ShapeClipState<V>>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
 
 	fn run(&mut self, (mut deleted, mut shape_clip, mut hash) : Self::SystemData) {

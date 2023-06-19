@@ -63,7 +63,7 @@ impl<V: VectorTrait> Default for ShapeManipulationMode<V, V::M> {
 
 // todo: adding an "update" flag for shapes will reduce number of updates needed, and decouple some of this stuff
 // e.g. update transform -> update shape -> update shape clip state
-pub struct ManipulateSelectedShapeSystem<V: VectorTrait>(pub PhantomData<V>);
+pub struct ManipulateSelectedShapeSystem<V>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
     type SystemData = (
         Write<'a,Input>, // need write only for snapping
@@ -199,7 +199,7 @@ pub fn manipulate_shape<V: VectorTrait>(
         
     }
 }
-pub struct SelectTargetSystem<V: VectorTrait>(pub PhantomData<V>);
+pub struct SelectTargetSystem<V>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
     type SystemData = (
         Read<'a,Input>,
@@ -224,7 +224,7 @@ impl <'a,V : VectorTrait> System<'a> for SelectTargetSystem<V> {
     }
 }
 
-pub struct CreateShapeSystem<V: VectorTrait>(pub PhantomData<V>);
+pub struct CreateShapeSystem<V>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
     type SystemData = (
         WriteExpect<'a, Input>,
@@ -268,7 +268,7 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
     }
 }
 
-pub struct DuplicateShapeSystem<V: VectorTrait>(pub PhantomData<V>);
+pub struct DuplicateShapeSystem<V>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
     type SystemData = (
         WriteExpect<'a, Input>,

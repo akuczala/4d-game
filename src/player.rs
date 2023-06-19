@@ -30,7 +30,7 @@ pub fn build_player<V : VectorTrait>(world : &mut World, transform: &Transform<V
 
 const MAX_TARGET_DIST : Field = 10.;
 
-pub struct ShapeTargetingSystem<V :VectorTrait>(pub PhantomData<V>);
+pub struct ShapeTargetingSystem<V>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for ShapeTargetingSystem<V> {
 	type SystemData = (

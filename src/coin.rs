@@ -1,4 +1,5 @@
 use crate::cleanup::DeletedEntities;
+use crate::ecs_utils::Componentable;
 use crate::vector::{VectorTrait,Field};
 use crate::components::*;
 use core::marker::PhantomData;
@@ -14,8 +15,8 @@ pub struct Coin;
 
 const SPIN_SPEED : Field = 2.0;
 
-pub struct CoinSpinningSystem<V : VectorTrait>(pub PhantomData<V>);
-impl <'a,V : VectorTrait> System<'a> for CoinSpinningSystem<V> {
+pub struct CoinSpinningSystem<V>(pub PhantomData<V>);
+impl <'a,V : VectorTrait + Componentable> System<'a> for CoinSpinningSystem<V> {
 
     type SystemData = (
 		ReadStorage<'a,Coin>,

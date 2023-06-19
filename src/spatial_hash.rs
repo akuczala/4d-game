@@ -5,7 +5,7 @@ use crate::vector::{VectorTrait,Field};
 pub type HashInt = u32;
 
 //NOTE: V here is "VALUE" not vector
-pub struct SpatialHash<K : VectorTrait, V> {
+pub struct SpatialHash<K, V> {
 	map : HashMap<HashInt, V>,
 	min : K,
 	max : K,
@@ -89,7 +89,7 @@ impl<K : VectorTrait, V : std::fmt::Display> std::fmt::Display for SpatialHash<K
 }
 
 //in the case where each key is a set of T, we can cumulatively add, remove elements
-pub struct SpatialHashSet<K : VectorTrait, T>(pub SpatialHash<K, HashSet<T>>)
+pub struct SpatialHashSet<K, T>(pub SpatialHash<K, HashSet<T>>)
 	where T : Eq + Hash; //must have these traits to be put in hash set
 
 impl <K : VectorTrait, T> SpatialHashSet<K, T>

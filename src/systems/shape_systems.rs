@@ -11,7 +11,7 @@ use crate::{vector::VectorTrait, ecs_utils::ModSystem, components::{Shape, Trans
 // maybe we can include a marker or something to indicate that these shapes should be excluded?
 // or something more sophisticated where we indicate when pos and/or rotation have been updated?
 #[derive(Default)]
-pub struct UpdateBBallSystem<V: VectorTrait>(pub ModSystem<V>);
+pub struct UpdateBBallSystem<V>(pub ModSystem<V>);
 
 
 impl<'a, V: VectorTrait> System<'a> for UpdateBBallSystem<V> {
@@ -45,7 +45,7 @@ impl<'a, V: VectorTrait> System<'a> for UpdateBBallSystem<V> {
 }
 
 #[derive(Default)]
-pub struct UpdateBBoxSystem<V: VectorTrait>(pub ModSystem<V>);
+pub struct UpdateBBoxSystem<V>(pub ModSystem<V>);
 
 impl<'a,V: VectorTrait> System<'a> for UpdateBBoxSystem<V> {
 
@@ -76,7 +76,7 @@ impl<'a,V: VectorTrait> System<'a> for UpdateBBoxSystem<V> {
 
 // resets static separators when shape is mutated
 #[derive(Default)]
-pub struct UpdateStaticClippingSystem<V: VectorTrait>(pub ModSystem<V>);
+pub struct UpdateStaticClippingSystem<V>(pub ModSystem<V>);
 
 impl<'a, V: VectorTrait> System<'a> for UpdateStaticClippingSystem<V> {
     type SystemData = (
@@ -123,7 +123,7 @@ impl<'a, V: VectorTrait> System<'a> for UpdateStaticClippingSystem<V> {
 }
 
 #[derive(Default)]
-pub struct TransformShapeSystem<V: VectorTrait>(pub ModSystem<V>);
+pub struct TransformShapeSystem<V>(pub ModSystem<V>);
 
 impl<'a,V: VectorTrait> System<'a> for TransformShapeSystem<V> {
 

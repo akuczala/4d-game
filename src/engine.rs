@@ -26,7 +26,7 @@ use crate::geometry::shape::{RefShapes};
 use crate::components::*;
 
 
-pub struct EngineD<V : VectorTrait, G : Graphics<V::SubV>> {
+pub struct EngineD<V, G> {
     pub world : World,
     pub cur_lines_length : usize,
     graphics : G,

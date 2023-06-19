@@ -1,5 +1,6 @@
 pub mod bbox;
 
+use crate::ecs_utils::Componentable;
 use crate::input::Input;
 use crate::input::key_map::PRINT_DEBUG;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
@@ -23,10 +24,8 @@ pub struct StaticCollider;
 #[storage(HashMapStorage)]
 pub struct InPlayerCell;
 
-#[derive(Component)]
-#[storage(VecStorage)]
 pub struct MoveNext<V>{pub next_dpos : Option<V>, pub can_move : Option<bool>}
-impl<V : VectorTrait> Default for MoveNext<V> {
+impl<V> Default for MoveNext<V> {
 	fn default() -> Self {
 		Self{next_dpos : None, can_move : None}
 	}
@@ -109,7 +108,7 @@ pub fn create_spatial_hash<V : VectorTrait>(world : &mut World) {
 //for static objects, it is cheap to hash the volume since we need only do it once
 pub struct BBoxHashingSystem<V>(pub PhantomData<V>);
 
-impl<'a,V : VectorTrait> System<'a> for BBoxHashingSystem<V> {
+impl<'a,V : Componentable> System<'a> for BBoxHashingSystem<V> {
 
 	type SystemData = (ReadStorage<'a,BBox<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
 
@@ -134,7 +133,7 @@ fn get_bbox_cells<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet<V,Ent
 //add an update_bbox marker
 pub struct UpdatePlayerBBox<V>(pub PhantomData<V>);
 
-impl<'a, V : VectorTrait> System<'a> for UpdatePlayerBBox<V> {
+impl<'a, V : Componentable + VectorTrait> System<'a> for UpdatePlayerBBox<V> {
 	type SystemData = (ReadExpect<'a,Player>,WriteStorage<'a,BBox<V>>,ReadStorage<'a,Transform<V, V::M>>);
 
 	fn run(&mut self, (player, mut write_bbox, transform) : Self::SystemData) {
