@@ -15,18 +15,18 @@ use crate::draw::{self, ShapeTexture, FaceTexture, Texture};
 use crate::collide::{StaticCollider};
 use colored::Color::Magenta;
 
-pub fn insert_wall<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V>) {
+pub fn insert_wall<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V, V::M>) {
     shape_builder.build(world)
         .with(StaticCollider)
         .build();
 }
-pub fn insert_coin<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V>) {
+pub fn insert_coin<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V, V::M>) {
     shape_builder.build(world)
         .with(Coin)
         .build();
 }
 
-fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V>, world: &mut World) {
+fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V, V::M>, world: &mut World) {
     let theta = PI/6.0;
     let cos = theta.cos();
     let sin = theta.sin();
@@ -96,7 +96,7 @@ pub fn build_test_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefS
     let wall_label = ShapeLabel("Wall".to_string());
     let (wall, wall_single_face) = convex_shape_to_face_shape(sub_wall.clone(), true);
     ref_shapes.insert(wall_label.clone(), wall);
-    let build_shape: ShapeEntityBuilder<V>= ShapeEntityBuilder::new_face_from_ref_shape(
+    let build_shape: ShapeEntityBuilder<V, V::M>= ShapeEntityBuilder::new_face_from_ref_shape(
         ref_shapes, wall_single_face, wall_label.clone())
         .with_face_texture(
             FaceTexture{
@@ -120,7 +120,7 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefSh
     ref_shapes.insert(wall_label.clone(), wall);
     
     
-    let wall_builder: ShapeEntityBuilder<V>= ShapeEntityBuilder::new_face_from_ref_shape(
+    let wall_builder: ShapeEntityBuilder<V, V::M>= ShapeEntityBuilder::new_face_from_ref_shape(
         ref_shapes, wall_single_face, wall_label.clone()
     ).with_face_texture(
         FaceTexture {
@@ -176,7 +176,7 @@ pub fn build_scene<V: VectorTrait>(world : &mut World) {
     world.insert(ref_shapes);
 }
 
-pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V>, wall_length : Field) -> Vec<ShapeEntityBuilder<V>> {
+pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V, V::M>, wall_length : Field) -> Vec<ShapeEntityBuilder<V, V::M>> {
 
     // todo figure out why texture is now off after changes to transform
     pub fn build_texture<V : VectorTrait>(shape : &Shape<V>, scale: &Scaling<V>) -> ShapeTexture<V> {
@@ -218,9 +218,9 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
         _ => panic!("Invalid dimension for build_corridor_cross")
     };
     
-    let mut shape_builders : Vec<ShapeEntityBuilder<V>> = Vec::new();
+    let mut shape_builders : Vec<ShapeEntityBuilder<V, V::M>> = Vec::new();
     //corridor walls
-    let mut walls1 : Vec<ShapeEntityBuilder<V>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
+    let mut walls1 : Vec<ShapeEntityBuilder<V, V::M>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
         .map(|(s1,s2,(ax1,ax2))|
             cube_builder.clone()
             .with_translation(
@@ -252,7 +252,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
                 );
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
-    let mut floors_long : Vec<ShapeEntityBuilder<V>> = iproduct!(axes.clone(),signs.iter())
+    let mut floors_long : Vec<ShapeEntityBuilder<V, V::M>> = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)|
             cube_builder.clone()
                 .with_translation(V::one_hot(i)*(wall_length+corr_width)*(*sign)/2.0
@@ -261,7 +261,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
                 .stretch(&(V::one_hot(i)*(wall_length-corr_width) + V::ones()*corr_width
                     ))
                 ).collect();
-    let mut ceilings_long : Vec<ShapeEntityBuilder<V>> = floors_long.iter()
+    let mut ceilings_long : Vec<ShapeEntityBuilder<V, V::M>> = floors_long.iter()
         .map(|block| block.clone().with_translation(
             V::one_hot(1)*(wall_height+corr_width)
         ))
@@ -308,7 +308,7 @@ pub fn build_lvl_1<V : VectorTrait>(world : &mut World, ref_shapes: &mut RefShap
     let cube_builder = ShapeEntityBuilder::new_convex_from_ref_shape(ref_shapes, cube_label.clone());
 
     let wall_length = 3.0;
-    let walls : Vec<ShapeEntityBuilder<V>> = build_corridor_cross(&cube_builder, wall_length);
+    let walls : Vec<ShapeEntityBuilder<V, V::M>> = build_corridor_cross(&cube_builder, wall_length);
 
     for wall in walls.into_iter() {
         insert_wall(world,wall)

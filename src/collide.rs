@@ -25,14 +25,14 @@ pub struct InPlayerCell;
 
 #[derive(Component)]
 #[storage(VecStorage)]
-pub struct MoveNext<V : VectorTrait>{pub next_dpos : Option<V>, pub can_move : Option<bool>}
+pub struct MoveNext<V>{pub next_dpos : Option<V>, pub can_move : Option<bool>}
 impl<V : VectorTrait> Default for MoveNext<V> {
 	fn default() -> Self {
 		Self{next_dpos : None, can_move : None}
 	}
 }
 impl<V: VectorTrait> Transformable<V> for MoveNext<V> {
-	fn transform(&mut self, transform: Transform<V>) {
+	fn transform(&mut self, transform: Transform<V, V::M>) {
 		self.next_dpos = match self.next_dpos {
 			Some(v) => Some(v + transform.pos),
 			None => Some(transform.pos)
@@ -47,8 +47,8 @@ impl<'a, V : VectorTrait> System<'a> for MovePlayerSystem<V> {
 	type SystemData = (
 		ReadExpect<'a,Player>,
 		WriteStorage<'a,MoveNext<V>>,
-		WriteStorage<'a,Transform<V>>,
-		WriteStorage<'a,Camera<V>>,
+		WriteStorage<'a,Transform<V, V::M>>,
+		WriteStorage<'a,Camera<V, V::M>>,
 	);
 
 	fn run(&mut self, (player, mut write_move_next, mut transforms, mut cameras) : Self::SystemData) {
@@ -135,7 +135,7 @@ fn get_bbox_cells<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet<V,Ent
 pub struct UpdatePlayerBBox<V>(pub PhantomData<V>);
 
 impl<'a, V : VectorTrait> System<'a> for UpdatePlayerBBox<V> {
-	type SystemData = (ReadExpect<'a,Player>,WriteStorage<'a,BBox<V>>,ReadStorage<'a,Transform<V>>);
+	type SystemData = (ReadExpect<'a,Player>,WriteStorage<'a,BBox<V>>,ReadStorage<'a,Transform<V, V::M>>);
 
 	fn run(&mut self, (player, mut write_bbox, transform) : Self::SystemData) {
 		let pos = transform.get(player.0).unwrap().pos;
@@ -152,7 +152,7 @@ impl<'a, V : VectorTrait> System<'a> for CollisionTestSystem<V> {
 	type SystemData = (
 		ReadExpect<'a,Input>,
 		ReadExpect<'a,Player>,
-		ReadStorage<'a,Transform<V>>,
+		ReadStorage<'a,Transform<V, V::M>>,
 		ReadStorage<'a,Shape<V>>,
 		ReadStorage<'a,ShapeType<V>>,
 		ReadStorage<'a,BBox<V>>,
@@ -201,12 +201,12 @@ impl<'a, V : VectorTrait> System<'a> for PlayerCollisionDetectionSystem<V> {
 	}
 }
 
-pub struct PlayerStaticCollisionSystem<V :VectorTrait>(pub PhantomData<V>);
+pub struct PlayerStaticCollisionSystem<V>(pub PhantomData<V>);
 impl<'a, V : VectorTrait> System<'a> for PlayerStaticCollisionSystem<V> {
 
 	type SystemData = (
 		ReadExpect<'a,Player>,
-		ReadStorage<'a,Transform<V>>,
+		ReadStorage<'a,Transform<V, V::M>>,
 		WriteStorage<'a,MoveNext<V>>,
 		ReadStorage<'a,Shape<V>>,
 		ReadStorage<'a,ShapeType<V>>,

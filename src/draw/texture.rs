@@ -9,8 +9,8 @@ use crate::graphics::colors::*;
 use itertools::Itertools;
 use specs::{Component, DenseVecStorage};
 
-#[derive(Clone, Component)]
-pub struct ShapeTexture<V: VectorTrait> {
+#[derive(Clone)]
+pub struct ShapeTexture<V> {
 	pub face_textures: Vec<FaceTexture<V>> // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
 impl<V: VectorTrait> ShapeTexture<V> {
@@ -32,8 +32,8 @@ impl<V: VectorTrait> ShapeTexture<V> {
 }
 
 #[derive(Clone)]
-pub struct FaceTexture<V: VectorTrait> {
-	pub texture: Texture<V::SubV>,
+pub struct FaceTexture<V> {
+	pub texture: Texture<V>,
 	pub texture_mapping: Option<TextureMapping>
 }
 impl<V: VectorTrait> Default for FaceTexture<V>{
@@ -76,7 +76,7 @@ impl<V: VectorTrait> FaceTexture<V> {
 }
 
 #[derive(Clone)]
-pub enum Texture<V : VectorTrait> {
+pub enum Texture<V> {
 	DefaultLines{color : Color},
 	Lines{lines : Vec<Line<V>>, color : Color},
 	DrawLines(Vec<DrawLine<V>>), // I don't remember what this one is for

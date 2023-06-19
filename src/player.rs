@@ -13,7 +13,7 @@ use crate::geometry::transform::Scaling;
 
 pub struct Player(pub Entity); //specifies entity of player
 
-pub fn build_player<V : VectorTrait>(world : &mut World, transform: &Transform<V>) {
+pub fn build_player<V : VectorTrait>(world : &mut World, transform: &Transform<V, V::M>) {
 	let camera = Camera::new(&transform);
 	let player_entity = world.create_entity()
 		.with(transform.clone())
@@ -35,7 +35,7 @@ pub struct ShapeTargetingSystem<V :VectorTrait>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for ShapeTargetingSystem<V> {
 	type SystemData = (
 		ReadExpect<'a,Player>,
-		ReadStorage<'a,Transform<V>>,
+		ReadStorage<'a,Transform<V, V::M>>,
 		ReadStorage<'a,Shape<V>>,
 		ReadStorage<'a,ShapeType<V>>,
 		ReadStorage<'a,ShapeClipState<V>>,
@@ -56,13 +56,13 @@ pub struct Cursor;
 
 #[derive(Component)]
 #[storage(HashMapStorage)]
-pub struct MaybeTarget<V : VectorTrait>(pub Option<Target<V>>);
+pub struct MaybeTarget<V>(pub Option<Target<V>>);
 
 #[derive(Component)]
 #[storage(HashMapStorage)]
-pub struct MaybeSelected<V: VectorTrait>(pub Option<Selected<V>>);
+pub struct MaybeSelected<V>(pub Option<Selected<V>>);
 
-pub struct Selected<V: VectorTrait> {
+pub struct Selected<V> {
 	pub entity: Entity,
 	pub selection_box_shape: Shape<V>,
 }
@@ -88,7 +88,7 @@ impl<V: VectorTrait> Selected<V> {
 	// }
 }
 
-pub struct Target<V : VectorTrait> {
+pub struct Target<V> {
 	pub entity : Entity,
 	pub distance : Field,
 	pub point : V,
@@ -96,7 +96,7 @@ pub struct Target<V : VectorTrait> {
 
 }
 
-fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>,Entity)>>(transform : &Transform<V>, iter : I) -> MaybeTarget<V> {
+fn shape_targeting<'a, V : VectorTrait, I : std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>,Entity)>>(transform : &Transform<V, V::M>, iter : I) -> MaybeTarget<V> {
 	let pos = transform.pos;
 	let dir = transform.frame[-1];
 	let ray = Line(pos, pos + dir*MAX_TARGET_DIST);

@@ -8,14 +8,14 @@ use specs::prelude::*;
 use crate::geometry::transform::Scaling;
 
 #[derive(Clone)]
-pub struct ShapeEntityBuilder<V: VectorTrait> {
+pub struct ShapeEntityBuilder<V, M> {
     pub shape: Shape<V>, // remove this field?
     shape_type: ShapeType<V>,
     shape_label: ShapeLabel,
-    pub transformation: Transform<V>,
+    pub transformation: Transform<V, M>,
     pub shape_texture: ShapeTexture<V>,
 }
-impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
+impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::M> {
     pub fn new_face_from_ref_shape(ref_shapes: &RefShapes<V>, single_face: SingleFace<V>, label: ShapeLabel) -> Self {
         let ref_shape = ref_shapes.get_unwrap(&label);
         let shape_texture = ShapeTexture::new_default(ref_shape.verts.len());
@@ -106,8 +106,8 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
         lazy.insert(e, shape_label)
     }
 }
-impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V> {
-    fn transform(&mut self, transformation: Transform<V>) {
+impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V, V::M> {
+    fn transform(&mut self, transformation: Transform<V, V::M>) {
         self.transformation = self.transformation.with_transform(transformation);
     }
 }

@@ -32,7 +32,6 @@ where V: VectorTrait
 
 #[derive(Clone)]
 pub struct DrawLine<V>
-where V : VectorTrait
 {
 	pub line : Line<V>,
 	pub color : Color,
@@ -72,15 +71,14 @@ where V : VectorTrait
 	}
 	v.project()*focal/z
 }
-fn view_transform<V>(transform : &Transform<V>, point : V) -> V
-where V : VectorTrait
+fn view_transform<V: VectorTrait>(transform : &Transform<V, V::M>, point : V) -> V
 {
 	transform.frame * (point - transform.pos)
 }
 //this takes a Option<Line> and returns Option<Line>
 //can likely remove camera here by calculating the plane from the transform, unless you want the
 //camera's plane to differ from its position/heading
-pub fn transform_line<V>(line : Option<Line<V>>, transform : &Transform<V>, camera: &Camera<V>) -> Option<Line<V::SubV>>
+pub fn transform_line<V: VectorTrait>(line : Option<Line<V>>, transform : &Transform<V, V::M>, camera: &Camera<V, V::M>) -> Option<Line<V::SubV>>
 where V : VectorTrait
 {
 	let clipped_line = match line {Some(l) => clip_line_plane(l,&camera.plane,Z_NEAR), None => None};
@@ -95,7 +93,7 @@ where V : VectorTrait
 	clip_proj_line
 }
 
-pub struct DrawLineList<V : VectorTrait>(pub Vec<Option<DrawLine<V>>>);
+pub struct DrawLineList<V>(pub Vec<Option<DrawLine<V>>>);
 impl<V : VectorTrait> DrawLineList<V> {
 	pub fn len(&self) -> usize {
 		self.0.len()
@@ -114,8 +112,8 @@ impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
     type SystemData = (
 		ReadExpect<'a,DrawLineList<V>>,
 		WriteExpect<'a,DrawLineList<V::SubV>>,
-		ReadStorage<'a,Camera<V>>,
-		ReadStorage<'a,Transform<V>>,
+		ReadStorage<'a,Camera<V, V::M>>,
+		ReadStorage<'a,Transform<V, V::M>>,
 		ReadExpect<'a,Player>);
 
     fn run(&mut self, (read_in_lines, mut write_out_lines, camera, transform, player) : Self::SystemData) {
@@ -132,8 +130,8 @@ impl<'a,V : VectorTrait> System<'a> for TransformDrawLinesSystem<V> {
 //would probably benefit from something monad-like
 pub fn transform_draw_line<V : VectorTrait>(
 	option_draw_line : Option<DrawLine<V>>,
-	transform: &Transform<V>,
-	camera : &Camera<V>) -> Option<DrawLine<V::SubV>> {
+	transform: &Transform<V, V::M>,
+	camera : &Camera<V, V::M>) -> Option<DrawLine<V::SubV>> {
 	match option_draw_line {
 			Some(draw_line) => {
 				let transformed_line = transform_line(Some(draw_line.line),&transform,&camera);
@@ -162,7 +160,7 @@ pub fn transform_draw_line<V : VectorTrait>(
 //     }
 // }
 
-pub struct DrawCursorSystem<V : VectorTrait>(pub PhantomData<V>);
+pub struct DrawCursorSystem<V>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
     type SystemData = (
 		ReadStorage<'a,Cursor>,
@@ -180,7 +178,7 @@ impl<'a,V : VectorTrait> System<'a> for DrawCursorSystem<V> {
     }
 }
 
-pub struct DrawSelectionBox<V : VectorTrait>(pub PhantomData<V>);
+pub struct DrawSelectionBox<V>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for DrawSelectionBox<V> {
 	type SystemData = (
 		ReadStorage<'a,MaybeSelected<V>>,
@@ -207,14 +205,14 @@ impl<'a,V : VectorTrait> System<'a> for DrawSelectionBox<V> {
 //either way, we need to modify the method to write to an existing line buffer rather than allocating new Vecs
 
 
-pub struct VisibilitySystem<V : VectorTrait>(pub PhantomData<V>);
+pub struct VisibilitySystem<V>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for VisibilitySystem<V>  {
 	type SystemData = (
 		ReadStorage<'a,Shape<V>>,
 		WriteStorage<'a,ShapeClipState<V>>,
 		ReadStorage<'a,ShapeType<V>>,
-		ReadStorage<'a,Transform<V>>,
+		ReadStorage<'a,Transform<V, V::M>>,
 		ReadExpect<'a,Player>,
 		ReadExpect<'a,ClipState<V>>
 	);
@@ -281,7 +279,7 @@ pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>,camera_pos : V, two_si
         )
     }
 
-pub struct CalcShapesLinesSystem<V : VectorTrait>(pub PhantomData<V>);
+pub struct CalcShapesLinesSystem<V>(pub PhantomData<V>);
 
 impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
 	type SystemData = (

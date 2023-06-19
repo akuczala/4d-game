@@ -34,11 +34,8 @@ const FROM_ITER_ERROR_MESSAGE: &str = "Invalid index in from iter";
 //consider using #![feature(associated_consts)]
 //to define vector dimension (might not need to explicity use feature?)
 
-//the 'static lifetime here tells the compiler that any type with the vector trait
-//does not hold any references that might require lifetimes
-
 // TODO: check if we really need all these bounds
-pub trait VectorTrait: Copy + Display + Sync + Send + std::fmt::Debug + 'static +
+pub trait VectorTrait: Copy + Display + std::fmt::Debug +
     Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
     Mul<Field,Output=Self> + Div<Field,Output=Self> +
     Index<VecIndex,Output=Field> + IndexMut<VecIndex>
@@ -112,7 +109,7 @@ pub fn barycenter_iter<'a, V: VectorTrait, I: Iterator<Item=&'a V>>(viter : I) -
 }
 
 // TODO: check if we really need all these bounds
-pub trait MatrixTrait<V : VectorTrait>: Display + Copy + Sync + Send + 'static +
+pub trait MatrixTrait<V : VectorTrait>: Display + Copy +
     Add<Output=Self> + Sub<Output=Self> 
 //+ Mul<Field,Output=Self> + Mul<Self,Output=Self>
  + Mul<V,Output=V> //weirdly only the last Mul is remembered

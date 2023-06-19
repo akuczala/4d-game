@@ -6,7 +6,7 @@ use itertools::Itertools;
 use crate::draw::{Texture,TextureMapping};
 // TODO: move texture + texture mapping to separate component entirely
 #[derive(Clone)]
-pub struct Face<V : VectorTrait> {
+pub struct Face<V> {
     pub geometry: FaceGeometry<V>,
 
     pub edgeis : Vec<EdgeIndex>,
@@ -15,7 +15,7 @@ pub struct Face<V : VectorTrait> {
 }
 
 #[derive(Clone)]
-pub struct FaceGeometry<V: VectorTrait> {
+pub struct FaceGeometry<V> {
     pub plane: Plane<V>,
     pub center : V,
 }

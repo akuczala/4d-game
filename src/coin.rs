@@ -10,8 +10,6 @@ use crate::geometry::shape::RefShapes;
 #[derive(Default,Debug)]
 pub struct CoinsCollected(pub u32);
 
-#[derive(Component)]
-#[storage(VecStorage)]
 pub struct Coin;
 
 const SPIN_SPEED : Field = 2.0;
@@ -22,7 +20,7 @@ impl <'a,V : VectorTrait> System<'a> for CoinSpinningSystem<V> {
     type SystemData = (
 		ReadStorage<'a,Coin>,
 		ReadExpect<'a,Input>,
-		WriteStorage<'a,Transform<V>>
+		WriteStorage<'a,Transform<V, V::M>>
 	);
 
     fn run(&mut self, (
@@ -44,7 +42,7 @@ pub struct PlayerCoinCollisionSystem<V : VectorTrait>(pub PhantomData<V>);
 impl<'a, V : VectorTrait> System<'a> for PlayerCoinCollisionSystem<V> {
 	type SystemData = (
 		ReadExpect<'a,Player>,
-		ReadStorage<'a,Transform<V>>,
+		ReadStorage<'a,Transform<V, V::M>>,
 		ReadStorage<'a,Coin>,
 		ReadStorage<'a,InPlayerCell>,
 		ReadStorage<'a,Shape<V>>,

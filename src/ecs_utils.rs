@@ -4,15 +4,19 @@ use specs::{BitSet, ReaderId, shrev::EventChannel, storage::ComponentEvent};
 
 use crate::vector::VectorTrait;
 
+//the 'static lifetime here tells the compiler that any type with the vector trait
+//does not hold any references that might require lifetimes
+pub trait Componentable: 'static + Sync + Send {}
+pub trait VecComp: VectorTrait + Componentable {}
 #[derive(Default)]
-pub struct ModSystem<V: VectorTrait> {
+pub struct ModSystem<V: Componentable> {
     pub ph: PhantomData<V>,
     pub modified: BitSet,
     pub reader_id: Option<ReaderId<ComponentEvent>>
 }
 
 
-impl<V: VectorTrait> ModSystem<V> {
+impl<V: VectorTrait + Componentable> ModSystem<V> {
     pub fn typed_default(ph: PhantomData<V>) -> Self {
         Self {
             ph,

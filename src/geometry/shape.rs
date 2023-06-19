@@ -7,6 +7,7 @@ pub mod buildshapes;
 
 use std::collections::hash_map::Values;
 use std::collections::HashMap;
+use crate::ecs_utils::Componentable;
 use crate::graphics::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait, Field, barycenter};
@@ -30,7 +31,7 @@ impl Display for ShapeLabel {
     }
 }
 
-pub struct RefShapes<V: VectorTrait>(HashMap<ShapeLabel,Shape<V>>);
+pub struct RefShapes<V>(HashMap<ShapeLabel,Shape<V>>);
 impl<V: VectorTrait> RefShapes<V> {
     pub fn new() -> Self {
         Self::default()
@@ -60,9 +61,8 @@ impl<V: VectorTrait> Default for RefShapes<V> {
 pub trait ShapeTypeTrait<V: VectorTrait> {
     fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool, face_visibility: &Vec<bool>) -> Vec<V>;
 }
-#[derive(Component,Clone)]
-#[storage(VecStorage)]
-pub enum ShapeType<V: VectorTrait> {
+
+pub enum ShapeType<V> {
     Convex(convex::Convex),
     SingleFace(single_face::SingleFace<V>)
 }
@@ -88,13 +88,10 @@ impl fmt::Display for Edge {
 }
 
 #[derive(Clone)]
-pub struct Shape<V : VectorTrait> {
+pub struct Shape<V> {
     pub verts : Vec<V>,
     pub edges : Vec<Edge>,
     pub faces : Vec<Face<V>>
-}
-impl<V: VectorTrait> Component for Shape<V> {
-    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
 }
 
 impl <V : VectorTrait> Shape<V> {
@@ -139,7 +136,7 @@ impl <V : VectorTrait> Shape<V> {
          self.faces.iter().enumerate().map(|(i,f)| (i, f.plane().point_signed_distance(point)))
             .fold((0,f32::NEG_INFINITY),|(i1,a),(i2,b)| match a > b {true => (i1,a), false => (i2,b)})
     }
-    pub fn modify(&mut self, transform: &Transform<V>) {
+    pub fn modify(&mut self, transform: &Transform<V, V::M>) {
         for v in self.verts.iter_mut() {
             *v = transform.transform_vec(v);
         }
@@ -149,7 +146,7 @@ impl <V : VectorTrait> Shape<V> {
             face.geometry.plane.threshold = face.normal().dot(face.center());
         }
     }
-    pub fn update_from_ref(&mut self, ref_shape: &Shape<V>, transform: &Transform<V>) {
+    pub fn update_from_ref(&mut self, ref_shape: &Shape<V>, transform: &Transform<V, V::M>) {
         for (v,vr) in self.verts.iter_mut().zip(ref_shape.verts.iter()) {
             *v = transform.transform_vec(vr);
         }

@@ -3,12 +3,12 @@ use specs::{Component};
 use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field, rotation_matrix, Vec4};
 
 pub trait Transformable<V: VectorTrait> {
-    fn with_transform(mut self, transformation: Transform<V>) -> Self
+    fn with_transform(mut self, transformation: Transform<V, V::M>) -> Self
         where Self: std::marker::Sized {
         self.transform(transformation);
         self
     }
-    fn transform(&mut self, transformation: Transform<V>);
+    fn transform(&mut self, transformation: Transform<V, V::M>);
     fn translate(&mut self, pos: V) {
         self.transform(Transform::pos(pos))
     }
@@ -38,7 +38,7 @@ pub trait Transformable<V: VectorTrait> {
 }
 
 #[derive(Copy,Clone, Debug)]
-pub enum Scaling<V: VectorTrait> {
+pub enum Scaling<V> {
     Scalar(Field),
     Vector(V),
 }
@@ -81,18 +81,16 @@ impl<V: VectorTrait> Scaling<V> {
 // orthogonal. This might help us where the code assumes "frame" is orthogonal
 
 // todo: there is a nice way to "compose" rotations and scalings, see blender
-pub struct Transform<V: VectorTrait>{
+pub struct Transform<V, M>{
     pub pos: V,
-    pub frame: V::M,
+    pub frame: M,
     pub scale: Scaling<V>,
 }
-impl<V: VectorTrait> Component for Transform<V> {
-    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
-}
+
 // todo figure out how to "snap" transforms to e.g. integer scales, deg of rotation, grid pos
 
 // TODO improve performance by creating fewer structs? or does the compiler do that
-impl<V: VectorTrait> Transform<V> {
+impl<V: VectorTrait> Transform<V, V::M> {
     pub fn identity() -> Self {
         Self{
             pos: V::zero(),
@@ -141,7 +139,7 @@ impl<V: VectorTrait> Transform<V> {
     pub fn transform_vec(&self, &vec: &V) -> V {
         self.frame * (self.scale.scale_vec(vec)) + self.pos
     }
-    pub fn set_transform(&mut self, transform: Transform<V>) {
+    pub fn set_transform(&mut self, transform: Transform<V, V::M>) {
         self.pos = transform.pos;
         self.frame = transform.frame;
         self.scale = transform.scale;
@@ -150,12 +148,12 @@ impl<V: VectorTrait> Transform<V> {
     //T1 T2 v = R1 R2 S1 S2 v + (p1 + p2)
     // are NOT composed like affine transformations
 
-    pub fn compose(&mut self, transformation: Transform<V>) {
+    pub fn compose(&mut self, transformation: Transform<V, V::M>) {
         self.pos = self.pos + transformation.pos;
         self.frame = self.frame.dot(transformation.frame);
         self.scale = self.scale.compose(&transformation.scale); //scale composition commutes
     }
-    pub fn with_transform(mut self, transformation: Transform<V>) -> Self {
+    pub fn with_transform(mut self, transformation: Transform<V, V::M>) -> Self {
         self.compose(transformation); self
     }
     pub fn with_translation(mut self, pos_delta: V) -> Self {

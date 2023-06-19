@@ -1,6 +1,7 @@
 pub mod bball;
 
 use std::collections::{HashSet,HashMap};
+use crate::ecs_utils::Componentable;
 use crate::player::Player;
 use crate::vector::{VectorTrait,Field};
 
@@ -14,7 +15,7 @@ use std::marker::PhantomData;
 
 use self::bball::BBall;
 
-pub struct ClipState<V : VectorTrait> {
+pub struct ClipState<V> {
     //pub in_front : Vec<Vec<bool>>,
     //pub separators : Vec<Vec<Separator<V>>>,
     //pub in_front : HashSet<(Entity,Entity)>, //needs to be cleared whenever # shapes changes
@@ -58,14 +59,14 @@ impl<V : VectorTrait> ClipState<V> {
     // }
 }
 
-pub struct InFrontSystem<V : VectorTrait>(pub PhantomData<V>);
+pub struct InFrontSystem<V>(pub PhantomData<V>);
 impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
     type SystemData = (
         ReadStorage<'a,Shape<V>>,
         ReadStorage<'a, BBall<V>>,
         WriteStorage<'a, ShapeClipState<V>>,
         Entities<'a>,
-        ReadStorage<'a, Transform<V>>,
+        ReadStorage<'a, Transform<V, V::M>>,
         ReadExpect<'a, Player>
     );
 
@@ -79,7 +80,7 @@ impl<'a,V : VectorTrait> System<'a> for InFrontSystem<V> {
 //a disadvantage here is that we have no guarantee that the processed entities have the ShapeClipState component
 //and that we have to iterate over all entities with the Shape component, instead of just those with both Shape and ShapeClipState
 //but for now, every shape has a ShapeClipState.
-pub fn calc_in_front<V : VectorTrait>(
+pub fn calc_in_front<V : VectorTrait + Componentable>(
         read_shapes : & ReadStorage<Shape<V>>,
         read_bballs: &ReadStorage<BBall<V>>,
         shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
@@ -100,16 +101,14 @@ pub fn calc_in_front<V : VectorTrait>(
         }
     }
 }
-
-#[derive(Component)]
-#[storage(VecStorage)]
-pub struct ShapeClipState<V : VectorTrait> {
+pub struct ShapeClipState<V> {
     pub in_front : HashSet<Entity>,
     pub separators : HashMap<Entity,Separator<V>>,
     pub boundaries : Vec<Plane<V>>,
     pub transparent: bool,
     pub face_visibility: Vec<bool>
 }
+
 impl<V : VectorTrait> Default for ShapeClipState<V> {
    fn default() -> Self {
         Self{
@@ -147,13 +146,13 @@ impl<V : VectorTrait> ShapeClipState<V> {
     }
 }
 #[derive(Clone,Copy)]
-pub struct InFrontArg<'a, V : VectorTrait>{
+pub struct InFrontArg<'a, V>{
     shape : &'a Shape<V>,
     bball: &'a BBall<V>,
     entity : Entity,
 }
 
-pub fn calc_in_front_pair<'a,V :VectorTrait>(
+pub fn calc_in_front_pair<'a,V :VectorTrait + Componentable>(
     a : InFrontArg<'a,V>,
     b : InFrontArg<'a,V>,
     shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
@@ -403,7 +402,7 @@ pub enum Separation {
     S2Front
 }
 #[derive(Debug,Clone,Copy)]
-pub enum Separator<V : VectorTrait> {
+pub enum Separator<V> {
     Unknown,
     Normal{
         normal : V,

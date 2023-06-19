@@ -20,12 +20,12 @@ use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
 use crate::input::{PlayerMovementMode, ShapeMovementMode};
 
-pub struct UpdateCameraSystem<V : VectorTrait>(pub PhantomData<V>);
+pub struct UpdateCameraSystem<V>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
     type SystemData = (
         Write<'a,Input>,
-        WriteStorage<'a,Transform<V>>,
-        WriteStorage<'a,Camera<V>>,
+        WriteStorage<'a,Transform<V, V::M>>,
+        WriteStorage<'a,Camera<V, V::M>>,
         WriteStorage<'a,MoveNext<V>>,
         ReadExpect<'a,Player>
     );
@@ -40,7 +40,7 @@ impl <'a,V : VectorTrait> System<'a> for UpdateCameraSystem<V> {
     }
 }
 
-fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<V>, camera : &mut Camera<V>, move_next : &mut MoveNext<V>)
+fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<V, V::M>, camera : &mut Camera<V, V::M>, move_next : &mut MoveNext<V>)
 {
     //clear movement
     *move_next = MoveNext{ next_dpos: None, can_move: Some(true) };

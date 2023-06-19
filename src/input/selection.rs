@@ -29,13 +29,13 @@ use crate::input::ShapeMovementMode::Scale;
 
 // would have liked to make this part of the Input struct, but I don't feel like adding <V> to every input object.
 // Plus it is nice to keep Input dimension agnostic
-pub struct ShapeManipulationState<V: VectorTrait> {
+pub struct ShapeManipulationState<V, M> {
     pub locked_axes: Vec<VecIndex>,
-    pub mode: ShapeManipulationMode<V>,
+    pub mode: ShapeManipulationMode<V, M>,
     pub snap: bool,
-    pub original_transform: Transform<V>,
+    pub original_transform: Transform<V, M>,
 }
-impl<V: VectorTrait> Default for ShapeManipulationState<V> {
+impl<V: VectorTrait> Default for ShapeManipulationState<V, V::M> {
     fn default() -> Self {
         Self {
             locked_axes: Vec::new(),
@@ -48,13 +48,13 @@ impl<V: VectorTrait> Default for ShapeManipulationState<V> {
 }
 
 #[derive(Clone)]
-pub enum ShapeManipulationMode<V: VectorTrait> {
+pub enum ShapeManipulationMode<V, M> {
     Translate(V),
     Rotate(Field),
     Scale(Scaling<V>),
-    Free(Transform<V>)
+    Free(Transform<V, M>)
 }
-impl<V: VectorTrait> Default for ShapeManipulationMode<V> {
+impl<V: VectorTrait> Default for ShapeManipulationMode<V, V::M> {
     fn default() -> Self {
         Self::Translate(V::zero())
     }
@@ -67,9 +67,9 @@ pub struct ManipulateSelectedShapeSystem<V: VectorTrait>(pub PhantomData<V>);
 impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
     type SystemData = (
         Write<'a,Input>, // need write only for snapping
-        Write<'a, ShapeManipulationState<V>>,
+        Write<'a, ShapeManipulationState<V, V::M>>,
         ReadExpect<'a,Player>,
-        WriteStorage<'a,Transform<V>>,
+        WriteStorage<'a,Transform<V, V::M>>,
         ReadStorage<'a,MaybeSelected<V>>,
     );
     fn run(&mut self, (
@@ -84,7 +84,7 @@ impl <'a,V : VectorTrait> System<'a> for ManipulateSelectedShapeSystem<V> {
             // TODO: It's annoying that I have to clone the camera's transform when we know that it is distinct from selected_transform.
             // how to convince rust of this?
             let camera_transform = transform_storage.get(player.0).unwrap().clone(); 
-            let selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
+            let mut selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
             set_manipulation_mode(&mut input, &mut manip_state, selected_transform);
             cancel_manipulation(&mut input, &mut manip_state, selected_transform);
             reset_orientation_and_scale(&input, selected_transform);
@@ -110,7 +110,7 @@ pub const MODE_KEYMAP: [(VKC, ShapeMovementMode); 4] = [
     (FREE_MODE, ShapeMovementMode::Free)
 ];
 
-pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mut ShapeManipulationState<V>, shape_transform: &Transform<V>) {
+pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mut ShapeManipulationState<V, V::M>, shape_transform: &Transform<V, V::M>) {
     for &(key, mode) in MODE_KEYMAP.iter() {
         // use key_held here instead of released or pressed because the latter don't seem to work outside of Input.listen_inputs
         if input.helper.key_held(key) {
@@ -131,7 +131,7 @@ pub fn set_manipulation_mode<V: VectorTrait>(input: &mut Input, manip_state: &mu
     }
 }
 
-pub fn cancel_manipulation<V: VectorTrait>(input: &mut Input, manip_state: &ShapeManipulationState<V>, shape_transform: &mut Transform<V>) {
+pub fn cancel_manipulation<V: VectorTrait>(input: &mut Input, manip_state: &ShapeManipulationState<V, V::M>, shape_transform: &mut Transform<V, V::M>) {
     if let MovementMode::Shape(_) = input.movement_mode {
         if input.helper.key_held(CANCEL_MANIPULATION) {
             *shape_transform = manip_state.original_transform;
@@ -142,9 +142,9 @@ pub fn cancel_manipulation<V: VectorTrait>(input: &mut Input, manip_state: &Shap
 
 pub fn manipulate_shape<V: VectorTrait>(
     input: &mut Input,
-    manip_state: &mut ShapeManipulationState<V>,
-    transform: &mut Transform<V>,
-    camera_transform: &Transform<V>,
+    manip_state: &mut ShapeManipulationState<V, V::M>,
+    transform: &mut Transform<V, V::M>,
+    camera_transform: &Transform<V, V::M>,
 ) {
     // TODO: align movement with camera frame
     set_axes(&mut input.toggle_keys, &mut manip_state.locked_axes, V::DIM);
@@ -231,7 +231,7 @@ impl <'a,V : VectorTrait> System<'a> for CreateShapeSystem<V> {
         ReadExpect<'a, Player>,
         ReadExpect<'a, RefShapes<V>>,
         Read<'a, LazyUpdate>,
-        ReadStorage<'a, Transform<V>>,
+        ReadStorage<'a, Transform<V, V::M>>,
         Entities<'a>,
     );
 
@@ -276,7 +276,7 @@ impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
         ReadStorage<'a, MaybeSelected<V>>,
         ReadExpect<'a, RefShapes<V>>,
         Read<'a, LazyUpdate>,
-        ReadStorage<'a, Transform<V>>,
+        ReadStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, ShapeLabel>,
         ReadStorage<'a, ShapeTexture<V>>,
         Entities<'a>,

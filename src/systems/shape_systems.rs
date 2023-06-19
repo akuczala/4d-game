@@ -18,7 +18,7 @@ impl<'a, V: VectorTrait> System<'a> for UpdateBBallSystem<V> {
 
     type SystemData = (
         ReadStorage<'a, Shape<V>>,
-        ReadStorage<'a, Transform<V>>,
+        ReadStorage<'a, Transform<V, V::M>>,
         WriteStorage<'a, BBall<V>>
     );
 
@@ -130,7 +130,7 @@ impl<'a,V: VectorTrait> System<'a> for TransformShapeSystem<V> {
 	type SystemData = (
         ReadExpect<'a,RefShapes<V>>,
         ReadStorage<'a,ShapeLabel>,
-		ReadStorage<'a, Transform<V>>,
+		ReadStorage<'a, Transform<V, V::M>>,
 		WriteStorage<'a, Shape<V>>,
         WriteStorage<'a, ShapeType<V>>,
 	);
@@ -160,7 +160,7 @@ impl<'a,V: VectorTrait> System<'a> for TransformShapeSystem<V> {
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
         self.0.reader_id = Some(
-            WriteStorage::<Transform<V>>::fetch(&world).register_reader()
+            WriteStorage::<Transform<V, V::M>>::fetch(&world).register_reader()
         );
     }
 }

@@ -3,7 +3,7 @@ use crate::geometry::{Plane,Line,line_plane_intersect};
 use super::{VertIndex,Face,Shape};
 
 #[derive(Clone)]
-struct SubFace<V: VectorTrait>{
+struct SubFace<V>{
     vertis: Vec<VertIndex>, // list of vertis in each subface
     plane: Plane<V>
 }
@@ -36,10 +36,10 @@ impl<V: VectorTrait> SubFace<V> {
     }
 }
 #[derive(Clone)]
-struct SubFaces<V: VectorTrait>(Vec<SubFace<V>>);
+struct SubFaces<V>(Vec<SubFace<V>>);
 
 #[derive(Clone)]
-pub struct SingleFace<V: VectorTrait>{subfaces: SubFaces<V>, pub two_sided: bool}
+pub struct SingleFace<V>{subfaces: SubFaces<V>, pub two_sided: bool}
 impl<V: VectorTrait> SingleFace<V>{
     pub fn new(shape: &Shape<V>, subface_vertis: &Vec<Vec<VertIndex>>, two_sided: bool) -> Self {
         Self{

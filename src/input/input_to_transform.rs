@@ -17,7 +17,7 @@ pub fn get_slide_dpos<V: VectorTrait>(direction : V, time : Field) -> V {
     direction.normalize()*SPEED*time
 }
 
-fn mouse_rotation<V: VectorTrait>(input: &Input, dt: Field, transform: &mut Transform<V>) -> bool {
+fn mouse_rotation<V: VectorTrait>(input: &Input, dt: Field, transform: &mut Transform<V, V::M>) -> bool {
     let mut any_slide_turn = false;
     //mouse
     let (dmx, dmy) = input.mouse.mouse_dpos;
@@ -46,7 +46,7 @@ fn mouse_rotation<V: VectorTrait>(input: &Input, dt: Field, transform: &mut Tran
 fn forwards_backwards_movement<V: VectorTrait>(
     input: &Input,
     dt: Field,
-    transform: &mut Transform<V>
+    transform: &mut Transform<V, V::M>
 ) -> bool {
     let mut update = false;
     if input.helper.key_held(MOVE_FORWARDS) {
@@ -67,7 +67,7 @@ fn forwards_backwards_movement<V: VectorTrait>(
 fn sliding_and_turning<V: VectorTrait>(
     input: &Input,
     dt: Field,
-    transform: &mut Transform<V>
+    transform: &mut Transform<V, V::M>
 ) -> bool {
     let mut any_slide_turn = false;
     for &(key_minus, key_plus, axis) in MOVE_KEYMAP.iter() {
@@ -153,19 +153,19 @@ pub fn snapping_enabled(input: &Input) -> bool {
     input.helper.key_held(SNAPPING)
 }
 
-pub fn reset_orientation_and_scale<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) {
+pub fn reset_orientation_and_scale<V: VectorTrait>(input: &Input, transform: &mut Transform<V, V::M>) {
     if input.helper.key_held(RESET_ORIENTATION) {
         *transform = Transform::new(Some(transform.pos), None, None);
     }
 }
 
-pub fn pos_to_grid<V: VectorTrait>(input: &Input, transform: &mut Transform<V>) {
+pub fn pos_to_grid<V: VectorTrait>(input: &Input, transform: &mut Transform<V, V::M>) {
     if input.helper.key_held(SNAPPING) && input.helper.key_held(VKC::LShift) {
         transform.pos = round_vec(transform.pos)
     }
 }
 
-pub fn mouse_to_space<V: VectorTrait>((dx, dy): (f32, f32), camera_transform: &Transform<V>) -> V {
+pub fn mouse_to_space<V: VectorTrait>((dx, dy): (f32, f32), camera_transform: &Transform<V, V::M>) -> V {
     camera_transform.frame[0] * dx - camera_transform.frame[1] * dy
 }
 
@@ -173,10 +173,10 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
     input: &Input,
     locked_axes: &Vec<VecIndex>,
     snap: bool,
-    original_transform: &Transform<V>,
+    original_transform: &Transform<V, V::M>,
     pos_delta: V,
-    transform: &mut Transform<V>,
-    camera_transform: &Transform<V>,
+    transform: &mut Transform<V, V::M>,
+    camera_transform: &Transform<V, V::M>,
 ) -> (bool, V) {
     let mut new_pos_delta = pos_delta;
     let mut update = false;
@@ -206,9 +206,9 @@ pub fn axis_rotation<V: VectorTrait>(
     input: &Input,
     locked_axes: &Vec<VecIndex>,
     snap: bool,
-    original_transform: &Transform<V>,
+    original_transform: &Transform<V, V::M>,
     angle_delta: Field,
-    transform: &mut Transform<V>
+    transform: &mut Transform<V, V::M>
 ) -> (bool, Field) {
     let mut new_angle_delta = angle_delta;
     let mut update = false;
@@ -264,9 +264,9 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(
     input: &Input,
     locked_axes: &Vec<VecIndex>,
     snap: bool,
-    original_transform: &Transform<V>,
+    original_transform: &Transform<V, V::M>,
     scale_delta: Scaling<V>,
-    transform: &mut Transform<V>
+    transform: &mut Transform<V, V::M>
 ) -> (bool, Scaling<V>) {
     let mut new_scale_delta = scale_delta;
     let mut update = false;
@@ -301,7 +301,7 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(
 // (a bit tricky because of slight differences in rotations)
 pub fn update_transform<V : VectorTrait>(
     input : &Input,
-    transform: &mut Transform<V>) -> bool
+    transform: &mut Transform<V, V::M>) -> bool
 {
     //clear movement
     //*move_next = MoveNext{ next_dpos: None, can_move: Some(true) };

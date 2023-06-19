@@ -8,7 +8,7 @@ use std::fmt;
 use crate::vector::{VectorTrait,Field,is_close,barycenter};
 
 #[derive(Clone)]
-pub struct Line<V : VectorTrait>(pub V,pub V);
+pub struct Line<V>(pub V, pub V);
 impl<V : VectorTrait> fmt::Display for Line<V> {
         // This trait requires `fmt` with this exact signature.
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -24,7 +24,7 @@ impl<V : VectorTrait> Line<V> {
     }
 }
 #[derive(Clone)]
-pub struct Plane<V : VectorTrait> {
+pub struct Plane<V> {
     pub normal : V,
     pub threshold : Field
 }
