@@ -1,10 +1,12 @@
 use std::ops::{Add,Sub,Neg,Mul,Div,Index,IndexMut};
 use std::fmt;
 use std::slice::Iter;
+use serde::{Serialize, Deserialize};
+
 use crate::vector::{VecIndex, VectorTrait, Field, FROM_ITER_ERROR_MESSAGE};
 use super::Mat2;
 
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy,Clone,Debug, Serialize, Deserialize)]
 pub struct Vec2{pub arr : [Field ; 2]}
 impl Vec2 {
     pub fn new(v0 : Field, v1 : Field) -> Vec2

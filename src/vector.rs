@@ -3,6 +3,7 @@ pub mod mat2_tuple2; pub mod mat3_tuple2;
 pub mod mat4_tuple2;
 //pub mod vec4;
 use fmt::Display;
+use serde::{Serialize, Deserialize};
 use std::ops::{Add, Sub, Mul, Div, Index, IndexMut, Neg, Range};
 pub use vec2::Vec2;
 pub use vec3::Vec3;
@@ -35,6 +36,8 @@ const FROM_ITER_ERROR_MESSAGE: &str = "Invalid index in from iter";
 
 //the 'static lifetime here tells the compiler that any type with the vector trait
 //does not hold any references that might require lifetimes
+
+// TODO: check if we really need all these bounds
 pub trait VectorTrait: Copy + Display + Sync + Send + std::fmt::Debug + 'static +
     Add<Output=Self> + Sub<Output=Self> + Neg<Output=Self> +
     Mul<Field,Output=Self> + Div<Field,Output=Self> +
@@ -108,6 +111,7 @@ pub fn barycenter_iter<'a, V: VectorTrait, I: Iterator<Item=&'a V>>(viter : I) -
     sum/(len as Field)
 }
 
+// TODO: check if we really need all these bounds
 pub trait MatrixTrait<V : VectorTrait>: Display + Copy + Sync + Send + 'static +
     Add<Output=Self> + Sub<Output=Self> 
 //+ Mul<Field,Output=Self> + Mul<Self,Output=Self>

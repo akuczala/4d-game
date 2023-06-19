@@ -1,3 +1,5 @@
+use serde::{Serialize, Deserialize};
+
 use super::Vec4;
 use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field, Vec2, Mat2, Mat3};
 use std::ops::{Add, Sub, Mul, Index};
@@ -6,7 +8,7 @@ use std::slice::Iter;
 
 //column major
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Mat4(Vec4, Vec4, Vec4, Vec4);
 
 impl Mat4 {

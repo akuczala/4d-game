@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use super::Vec2;
 use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field};
 use std::ops::{Add, Sub, Mul, Index};
@@ -6,7 +8,7 @@ use std::slice::Iter;
 
 //column major
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Mat2(Vec2, Vec2);
 
 impl Mat2 {

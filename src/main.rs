@@ -35,6 +35,7 @@ mod cleanup;
 mod systems;
 mod components;
 mod ecs_utils;
+mod tests;
 //mod object;
 
 //NOTES:

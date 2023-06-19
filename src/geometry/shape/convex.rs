@@ -164,6 +164,6 @@ fn test_point_within2() {
         }
         println!("{}",line);
     }
-    assert!(false); //forces cargo test to print this
+    //assert!(false); //forces cargo test to print this
     //assert!(!shape.point_within(point,0.))
 }
