@@ -2,6 +2,7 @@ use super::input_to_transform::{set_axes, snapping_enabled, axis_rotation, reset
 use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE, DUPLICATE_SHAPE};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
+use crate::draw::ShapeTexture;
 use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
 use crate::shape_entity_builder::ShapeEntityBuilder;
@@ -58,24 +59,6 @@ impl<V: VectorTrait> Default for ShapeManipulationMode<V> {
         Self::Translate(V::zero())
     }
 }
-
-// product typy alternative to above
-// pub struct ShapeManipulationDelta<V: VectorTrait> {
-//     pos: V,
-//     angle: Field,
-//     scale: Scaling<V>,
-//     free: Transform<V>
-// }
-// impl<V: VectorTrait> Default for ShapeManipulationDelta<V> {
-//     fn default() -> Self {
-//         Self {
-//             pos: V::zero(),
-//             angle: 0.0,
-//             scale: Scaling::unit(),
-//             free: Transform::identity()
-//         }
-//     }
-// }
 
 
 // todo: adding an "update" flag for shapes will reduce number of updates needed, and decouple some of this stuff
@@ -295,6 +278,7 @@ impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Transform<V>>,
         ReadStorage<'a, ShapeLabel>,
+        ReadStorage<'a, ShapeTexture<V>>,
         Entities<'a>,
     );
 
@@ -307,6 +291,7 @@ impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
             lazy,
             read_transform,
             shape_label_storage,
+            shape_textures,
             entities
         ): Self::SystemData) {
         
@@ -317,10 +302,11 @@ impl <'a,V : VectorTrait> System<'a> for DuplicateShapeSystem<V> {
             let shape_label = shape_label_storage.get(selected_entity).unwrap().clone();
             ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label)
                 .with_transform(read_transform.get(selected_entity).unwrap().clone())
+                .with_texture(shape_textures.get(selected_entity).unwrap().clone())
                 .insert(e, &lazy);
             lazy.insert(e, StaticCollider);
             // TODO: add to spatial hash set (use BBox hash system)
-            
+            // TODO: copy all shape components to new entity?
         }
     }
 }

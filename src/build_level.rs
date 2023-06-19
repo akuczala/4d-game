@@ -11,7 +11,7 @@ use crate::geometry::shape::{RefShapes, ShapeLabel};
 use crate::constants::PI;
 use crate::geometry::{Shape};
 use crate::vector::{VectorTrait,Field};
-use crate::draw::{self, ShapeTexture, FaceTexture};
+use crate::draw::{self, ShapeTexture, FaceTexture, Texture};
 use crate::collide::{StaticCollider};
 use colored::Color::Magenta;
 
@@ -193,7 +193,10 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
                 3 => vec![3, 1],
                 4 => vec![3, 1, 1],
                 _ => panic!()
-            }).set_color(target_face_color);
+            })
+            //.merged_with(&draw::Texture::make_fuzz_texture(1000).set_color(target_face_color))
+            .set_color(target_face_color);
+
             // must use scaled verts to properly align textures
             let scaled_verts = shape.verts.iter().map(|v| scale.scale_vec(*v)).collect();
             face_texture.texture_mapping = Some(draw::TextureMapping::calc_cube_vertis(face,&scaled_verts,&shape.edges))
@@ -238,7 +241,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
 
     //end walls
     
-    let end_walls = iproduct!(axes.clone(),signs.iter())
+    let mut end_walls = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)|
             cube_builder.clone()
                 .with_translation(V::one_hot(i)*(wall_length+corr_width)*(*sign))

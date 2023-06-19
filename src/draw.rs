@@ -290,7 +290,7 @@ impl<'a,V : VectorTrait> System<'a> for CalcShapesLinesSystem<V>  {
 		ReadStorage<'a, ShapeClipState<V>>,
 		ReadExpect<'a, Vec<Field>>,
 		ReadExpect<'a, ClipState<V>>,
-		WriteExpect<'a, DrawLineList<V>>
+		WriteExpect<'a, DrawLineList<V>> // TODO: break up into components so that these can be processed more in parallel with par_iter?
 	);
 
 	fn run(&mut self, (

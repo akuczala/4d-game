@@ -79,7 +79,7 @@ impl<V: VectorTrait> FaceTexture<V> {
 pub enum Texture<V : VectorTrait> {
 	DefaultLines{color : Color},
 	Lines{lines : Vec<Line<V>>, color : Color},
-	DrawLines(Vec<DrawLine<V>>),
+	DrawLines(Vec<DrawLine<V>>), // I don't remember what this one is for
 }
 impl<V: VectorTrait> Default for Texture<V> {
 	fn default() -> Self { Self::DefaultLines{color : WHITE} }
@@ -94,7 +94,7 @@ impl<V: VectorTrait> Texture<V> {
 				),
 		}
 	}
-	pub fn make_tile_texture(scales : &Vec<Field>, n_divisions : &Vec<i32>) -> Texture<V> {
+	pub fn make_tile_texture(scales : &Vec<Field>, n_divisions : &Vec<i32>) -> Self {
 		if V::DIM != n_divisions.len() as VecIndex {
 			panic!("make_tile_texture: Expected n_divisions.len()={} but got {}", V::DIM, n_divisions.len());
 		}
@@ -142,6 +142,32 @@ impl<V: VectorTrait> Texture<V> {
 			.collect();
 		Texture::Lines{lines, color : DEFAULT_COLOR}
 
+	}
+	pub fn make_fuzz_texture(n: usize) -> Self {
+		fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
+			Line(pos, pos + V::ones() * 0.005)
+		}
+		fn random_point<V: VectorTrait>() -> V {
+			V::ones().map(|_| rand::random())
+		}
+		Texture::Lines {
+			lines: (0..n).map(|_| pointlike_line(random_point())).collect(),
+			color: DEFAULT_COLOR
+		}
+	}
+	pub fn merged_with(&self, texture: &Texture<V>) -> Texture<V> {
+		match (self, texture) {
+			(Texture::Lines{lines: lines_1, color}, Texture::Lines{lines: lines_2, ..}) => Texture::Lines{
+				lines: {
+					let mut lines = lines_1.clone();
+					lines.extend(lines_2.clone());
+					lines
+
+				},
+				color: *color
+			},
+			_ => panic!("Unsupported texture merge operation")
+		}
 	}
 }
 

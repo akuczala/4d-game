@@ -20,6 +20,7 @@ use crate::geometry::shape::face::FaceGeometry;
 use crate::geometry::transform::Scaling;
 
 // TODO: consider merging with Shape
+// might be a bad idea - could contain in larger struct?
 #[derive(Component,PartialEq,Eq,Hash,Clone)]
 #[storage(VecStorage)]
 pub struct ShapeLabel(pub String);
