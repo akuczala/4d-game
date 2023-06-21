@@ -231,10 +231,11 @@ impl <'a,V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V>
 }
 
 pub struct CreateShapeSystem<V>(pub PhantomData<V>);
-impl <'a,V, M> System<'a> for CreateShapeSystem<V>
+impl <'a,V, U, M> System<'a> for CreateShapeSystem<V>
 where
-        V: VectorTrait<M=M> + Componentable,
-        M: MatrixTrait<V> + Componentable
+	V: VectorTrait<M = M, SubV =U> + Componentable,
+	U: VectorTrait + Componentable,
+	M: Componentable + MatrixTrait<V>
 {
     type SystemData = (
         WriteExpect<'a, Input>,
@@ -279,10 +280,11 @@ where
 }
 
 pub struct DuplicateShapeSystem<V>(pub PhantomData<V>);
-impl <'a, V, M> System<'a> for DuplicateShapeSystem<V>
+impl <'a, V, U, M> System<'a> for DuplicateShapeSystem<V>
 where
-        V: VectorTrait<M=M> + Componentable,
-        M: Componentable + Clone
+        V: VectorTrait<M=M, SubV = U> + Componentable,
+        M: Componentable + Clone,
+        U: Componentable + VectorTrait
 {
     type SystemData = (
         WriteExpect<'a, Input>,

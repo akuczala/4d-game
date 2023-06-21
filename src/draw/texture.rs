@@ -10,7 +10,9 @@ use itertools::Itertools;
 use specs::{Component, DenseVecStorage};
 
 #[derive(Clone)]
-pub struct ShapeTexture<V> {
+
+// keep VectorTrait bound for now... 
+pub struct ShapeTexture<V: VectorTrait> {
 	pub face_textures: Vec<FaceTexture<V>> // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
 impl<V: VectorTrait> ShapeTexture<V> {
@@ -32,8 +34,8 @@ impl<V: VectorTrait> ShapeTexture<V> {
 }
 
 #[derive(Clone)]
-pub struct FaceTexture<V> {
-	pub texture: Texture<V>,
+pub struct FaceTexture<V: VectorTrait> {
+	pub texture: Texture<V::SubV>,
 	pub texture_mapping: Option<TextureMapping>
 }
 impl<V: VectorTrait> Default for FaceTexture<V>{
@@ -44,10 +46,7 @@ impl<V: VectorTrait> Default for FaceTexture<V>{
 		}
 	}
 }
-impl<U, V> FaceTexture<U>
-where
-	V: VectorTrait<SubV = U>,
-	U: VectorTrait
+impl<V: VectorTrait> FaceTexture<V>
 {
 	pub fn set_color(&mut self, color : Color) {
         take_mut::take(&mut self.texture,|tex| tex.set_color(color));
@@ -250,7 +249,7 @@ pub fn draw_default_lines<V : VectorTrait>(
 	lines
 }
 
-pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V::SubV>) -> ShapeTexture<V::SubV> {
+pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V>) -> ShapeTexture<V> {
 	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
     for (face, &color) in shape_texture.face_textures.iter_mut().zip(&face_colors) {
         face.texture = Texture::DefaultLines{color : color.set_alpha(0.5)};
@@ -260,7 +259,7 @@ pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V::SubV>) ->
 
 // TODO: this really only needs the number of faces.
 // in fact we don't really need any arguments - we know the number of faces from V::DIM
-pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::SubV> {
+pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V> {
 	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
 	ShapeTexture{
 		face_textures: shape.faces.iter().zip(&face_colors).map(
@@ -272,7 +271,7 @@ pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::
 	}
 }
 
-pub fn color_duocylinder<V: VectorTrait>(shape_texture : &mut ShapeTexture<V::SubV>, m : usize, n : usize) {
+pub fn color_duocylinder<V: VectorTrait>(shape_texture : &mut ShapeTexture<V>, m : usize, n : usize) {
     for (i, face) in itertools::enumerate(shape_texture.face_textures.iter_mut()) {
         let iint = i as i32;
         let color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);

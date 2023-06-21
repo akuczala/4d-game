@@ -17,6 +17,7 @@ pub use crate::geometry::{
 pub use crate::draw::{DrawLineList};
 pub use crate::draw::clipping::{ClipState, ShapeClipState, bball::BBall};
 pub use crate::collide::{InPlayerCell, bbox::BBox, bbox::HasBBox,MoveNext,StaticCollider};
+use crate::vector::VectorTrait;
 
 type DefaultStorage<V> = VecStorage<V>;
 
@@ -38,7 +39,12 @@ impl<V: Componentable> Component for ShapeType<V> {
 impl<V: Componentable> Component for ShapeClipState<V> {
 	type Storage = DefaultStorage<Self>;
 }
-impl<V: Componentable> Component for ShapeTexture<V> {
+impl<V, U, M> Component for ShapeTexture<V>
+where
+    V: VectorTrait<M = M, SubV = U> + Componentable,
+    U: Componentable,
+    M: Componentable
+{
 	type Storage = DefaultStorage<Self>;
 }
 impl<V: Componentable, M: Componentable> Component for Transform<V, M> {

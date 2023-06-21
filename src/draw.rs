@@ -296,7 +296,12 @@ pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>,camera_pos : V, two_si
 
 pub struct CalcShapesLinesSystem<V>(pub PhantomData<V>);
 
-impl<'a,V : VectorTrait + Componentable> System<'a> for CalcShapesLinesSystem<V>  {
+impl<'a, V, U, M> System<'a> for CalcShapesLinesSystem<V> 
+where
+	V: VectorTrait<M = M, SubV =U> + Componentable,
+	U: VectorTrait + Componentable,
+	M: Componentable
+{
 	type SystemData = (
 		ReadStorage<'a,Shape<V>>,
 		ReadStorage<'a, ShapeTexture<V>>,
@@ -325,13 +330,17 @@ impl<'a,V : VectorTrait + Componentable> System<'a> for CalcShapesLinesSystem<V>
 
 }
 
-pub fn calc_shapes_lines<V: Componentable + VectorTrait>(
+pub fn calc_shapes_lines<V, U, M>(
 	shapes : &ReadStorage<Shape<V>>,
 	shape_textures: &ReadStorage<ShapeTexture<V>>,
 	shape_clip_states : &ReadStorage<ShapeClipState<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
 	)  -> Vec<Option<DrawLine<V>>>
+where
+	V: VectorTrait<M = M, SubV =U> + Componentable,
+	U: VectorTrait + Componentable,
+	M: Componentable
 {
 	//DEBUG: list entities in front of each shape
 	// for (i,(sh,s)) in (shapes, shape_clip_states).join().enumerate() {

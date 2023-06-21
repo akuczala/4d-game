@@ -9,14 +9,14 @@ use specs::prelude::*;
 use crate::geometry::transform::Scaling;
 
 #[derive(Clone)]
-pub struct ShapeEntityBuilder<V, U, M> {
+pub struct ShapeEntityBuilder<V: VectorTrait> {
     pub shape: Shape<V>, // remove this field?
     shape_type: ShapeType<V>,
     shape_label: ShapeLabel,
-    pub transformation: Transform<V, M>,
-    pub shape_texture: ShapeTexture<U>,
+    pub transformation: Transform<V, V::M>,
+    pub shape_texture: ShapeTexture<V>,
 }
-impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::SubV, V::M> {
+impl<'a,V: VectorTrait> ShapeEntityBuilder<V> {
     pub fn new_face_from_ref_shape(ref_shapes: &RefShapes<V>, single_face: SingleFace<V>, label: ShapeLabel) -> Self {
         let ref_shape = ref_shapes.get_unwrap(&label);
         let shape_texture = ShapeTexture::new_default(ref_shape.verts.len());
@@ -38,17 +38,17 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::SubV, V::M> {
             shape_texture: ShapeTexture::new_default(ref_shape.verts.len())
         }
     }
-    pub fn with_texture(mut self, texture: ShapeTexture<V::SubV>) -> Self {
+    pub fn with_texture(mut self, texture: ShapeTexture<V>) -> Self {
 
 		self.shape_texture = texture;
 		self
 	}
-    pub fn with_face_texture(mut self, face_texture: FaceTexture<V::SubV>) -> Self {
+    pub fn with_face_texture(mut self, face_texture: FaceTexture<V>) -> Self {
         self.shape_texture = self.shape_texture.with_texture(face_texture);
         self
     }
     pub fn with_texturing_fn<F>(mut self, f: F) -> Self
-    where F: Fn(&Shape<V>) -> ShapeTexture<V::SubV> {
+    where F: Fn(&Shape<V>) -> ShapeTexture<V> {
         self.shape_texture = f(&self.shape);
         self
     }
@@ -62,11 +62,11 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::SubV, V::M> {
         self
     }
 }
-impl<'a, V, U, M> ShapeEntityBuilder<V, U, M>
+impl<'a, V, U, M> ShapeEntityBuilder<V>
 where
-    V: VectorTrait<M=M, SubV = U> + Componentable,
-    U: Componentable,
-    M: Componentable
+	V: VectorTrait<M = M, SubV =U> + Componentable,
+	U: VectorTrait + Componentable,
+	M: Componentable
 {
     pub fn build(self, world: &mut World) -> EntityBuilder {
         let Self{
@@ -114,7 +114,7 @@ where
         lazy.insert(e, shape_label)
     }
 }
-impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V, V::SubV, V::M> {
+impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V> {
     fn transform(&mut self, transformation: Transform<V, V::M>) {
         self.transformation = self.transformation.with_transform(transformation);
     }
