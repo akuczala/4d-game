@@ -44,14 +44,14 @@ pub struct MovePlayerSystem<V>(pub PhantomData<V>);
 impl<'a, V, M> System<'a> for MovePlayerSystem<V>
 where
 	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	M: Componentable + Clone
 {
 
 	type SystemData = (
 		ReadExpect<'a,Player>,
 		WriteStorage<'a,MoveNext<V>>,
-		WriteStorage<'a,Transform<V, V::M>>,
-		WriteStorage<'a,Camera<V, V::M>>,
+		WriteStorage<'a,Transform<V, M>>,
+		WriteStorage<'a,Camera<V, M>>,
 	);
 
 	fn run(&mut self, (player, mut write_move_next, mut transforms, mut cameras) : Self::SystemData) {
@@ -60,7 +60,7 @@ where
 		let camera = cameras.get_mut(player.0).unwrap();
 		match move_next {
 			MoveNext{next_dpos : Some(next_dpos), can_move : Some(true)} => {
-				*transform = transform.with_translation(*next_dpos);
+				transform.translate(*next_dpos);
 				camera.update(transform);
 			},
 			_ => (),

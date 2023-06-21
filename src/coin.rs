@@ -36,8 +36,8 @@ where
 
         for (_c, transform)
 		in (&read_coin, &mut write_transform).join() {
-			*transform = transform.with_rotation(0,-1,SPIN_SPEED*(input.frame_duration as Field));
-			*transform = transform.with_rotation(2,-1,0.345*SPIN_SPEED*(input.frame_duration as Field));
+			transform.rotate(0,-1,SPIN_SPEED*(input.frame_duration as Field));
+			transform.rotate(2,-1,0.345*SPIN_SPEED*(input.frame_duration as Field));
         }
 
     }

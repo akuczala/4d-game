@@ -346,11 +346,12 @@ pub fn clip_line<V : VectorTrait>(
 }
 
 //consider using parallel joins here
-pub fn clip_draw_lines<V : VectorTrait, I>(
+pub fn clip_draw_lines<'a, V : VectorTrait + 'a, I>(
     lines : Vec<Option<DrawLine<V>>>,
     clip_states_in_front : I
     ) ->  Vec<Option<DrawLine<V>>>
-where for<'a> &'a I : std::iter::Iterator<Item=&'a ShapeClipState<V>>
+//where for<'a> &'a I : std::iter::Iterator<Item=&'a ShapeClipState<V>>
+where I: std::iter::Iterator<Item=&'a ShapeClipState<V>>
 {
     let mut clipped_lines = lines;
 

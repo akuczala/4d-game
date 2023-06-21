@@ -272,7 +272,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
 
     //end walls
     
-    let mut end_walls = iproduct!(axes.clone(),signs.iter())
+    let end_walls = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)|
             cube_builder.clone()
                 .with_translation(V::one_hot(i)*(wall_length+corr_width)*(*sign))

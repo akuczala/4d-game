@@ -68,7 +68,7 @@ pub struct ManipulateSelectedShapeSystem<V>(pub PhantomData<V>);
 impl <'a,V, M> System<'a> for ManipulateSelectedShapeSystem<V>
 where
         V: VectorTrait<M=M> + Componentable,
-        M: Componentable
+        M: Componentable + Clone
 {
     type SystemData = (
         Write<'a,Input>, // need write only for snapping
@@ -89,7 +89,7 @@ where
             // TODO: It's annoying that I have to clone the camera's transform when we know that it is distinct from selected_transform.
             // how to convince rust of this?
             let camera_transform = transform_storage.get(player.0).unwrap().clone(); 
-            let mut selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
+            let selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
             set_manipulation_mode(&mut input, &mut manip_state, selected_transform);
             cancel_manipulation(&mut input, &mut manip_state, selected_transform);
             reset_orientation_and_scale(&input, selected_transform);

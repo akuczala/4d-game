@@ -101,9 +101,10 @@ pub struct Target<V> {
 
 }
 
-fn shape_targeting<V : VectorTrait, I>(transform : &Transform<V, V::M>, iter : I) -> MaybeTarget<V>
+fn shape_targeting<'a, V : VectorTrait + 'a, I>(transform : &Transform<V, V::M>, iter : I) -> MaybeTarget<V>
 where
-	for<'a> &'a I: std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>, Entity)>
+	//for<'a> &'a I: std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>, Entity)>
+	I: std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>, Entity)>
 {
 	let pos = transform.pos;
 	let dir = transform.frame[-1];
