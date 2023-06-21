@@ -234,7 +234,7 @@ pub struct CreateShapeSystem<V>(pub PhantomData<V>);
 impl <'a,V, M> System<'a> for CreateShapeSystem<V>
 where
         V: VectorTrait<M=M> + Componentable,
-        M: Componentable
+        M: MatrixTrait<V> + Componentable
 {
     type SystemData = (
         WriteExpect<'a, Input>,
@@ -282,7 +282,7 @@ pub struct DuplicateShapeSystem<V>(pub PhantomData<V>);
 impl <'a, V, M> System<'a> for DuplicateShapeSystem<V>
 where
         V: VectorTrait<M=M> + Componentable,
-        M: Componentable
+        M: Componentable + Clone
 {
     type SystemData = (
         WriteExpect<'a, Input>,
@@ -314,8 +314,9 @@ where
             input.toggle_keys.remove(DUPLICATE_SHAPE);
             let e = entities.create();
             let shape_label = shape_label_storage.get(selected_entity).unwrap().clone();
+            let transform: Transform<V, M> = read_transform.get(selected_entity).unwrap().clone();
             ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label)
-                .with_transform(read_transform.get(selected_entity).unwrap().clone())
+                .with_transform(transform)
                 .with_texture(shape_textures.get(selected_entity).unwrap().clone())
                 .insert(e, &lazy);
             lazy.insert(e, StaticCollider);

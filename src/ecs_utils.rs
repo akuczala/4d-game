@@ -2,12 +2,14 @@ use std::{marker::PhantomData, ops::Deref};
 
 use specs::{BitSet, ReaderId, shrev::EventChannel, storage::ComponentEvent};
 
-use crate::vector::VectorTrait;
+use crate::vector::{VectorTrait, Vec2, Vec3, Vec4, Mat2, Mat4, Mat3};
 
 //the 'static lifetime here tells the compiler that any type with the vector trait
 //does not hold any references that might require lifetimes
+
+// TODO: make sure all of these trait bounds are required
 pub trait Componentable: 'static + Sync + Send {}
-pub trait VecComp: VectorTrait + Componentable {}
+
 #[derive(Default)]
 pub struct ModSystem<V> {
     pub ph: PhantomData<V>,
@@ -38,3 +40,11 @@ impl<V: VectorTrait + Componentable> ModSystem<V> {
         }
     }
 }
+
+impl Componentable for Vec2 {}
+impl Componentable for Vec3 {}
+impl Componentable for Vec4 {}
+
+impl Componentable for Mat2 {}
+impl Componentable for Mat3 {}
+impl Componentable for Mat4 {}

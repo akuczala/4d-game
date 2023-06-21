@@ -108,11 +108,12 @@ impl<V : VectorTrait> DrawLineList<V> {
 }
 
 //would be nicer to move lines out of read_in_lines rather than clone them
-pub struct TransformDrawLinesSystem<V : VectorTrait>(pub PhantomData<V>);
-impl<'a, V, M> System<'a> for TransformDrawLinesSystem<V>
+pub struct TransformDrawLinesSystem<V>(pub PhantomData<V>);
+impl<'a, V, U, M> System<'a> for TransformDrawLinesSystem<V>
 where
-	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	V: VectorTrait<M = M, SubV = U> + Componentable,
+	U: Componentable,
+	M: Componentable,
 {
     type SystemData = (
 		ReadExpect<'a,DrawLineList<V>>,
@@ -169,7 +170,7 @@ pub struct DrawCursorSystem<V>(pub PhantomData<V>);
 impl<'a, V, U> System<'a> for DrawCursorSystem<V>
 where
 	V: VectorTrait<SubV=U> + Componentable,
-	U: Componentable
+	U: VectorTrait + Componentable
 {
     type SystemData = (
 		ReadStorage<'a,Cursor>,
@@ -324,7 +325,7 @@ impl<'a,V : VectorTrait + Componentable> System<'a> for CalcShapesLinesSystem<V>
 
 }
 
-pub fn calc_shapes_lines<V: Componentable>(
+pub fn calc_shapes_lines<V: Componentable + VectorTrait>(
 	shapes : &ReadStorage<Shape<V>>,
 	shape_textures: &ReadStorage<ShapeTexture<V>>,
 	shape_clip_states : &ReadStorage<ShapeClipState<V>>,

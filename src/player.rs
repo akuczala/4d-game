@@ -14,7 +14,11 @@ use crate::geometry::transform::Scaling;
 
 pub struct Player(pub Entity); //specifies entity of player
 
-pub fn build_player<V : VectorTrait>(world : &mut World, transform: &Transform<V, V::M>) {
+pub fn build_player<V, M>(world : &mut World, transform: &Transform<V, M>)
+where
+    V: VectorTrait<M = M> + Componentable,
+    M: Componentable + Clone,
+{
 	let camera = Camera::new(&transform);
 	let player_entity = world.create_entity()
 		.with(transform.clone())

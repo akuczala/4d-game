@@ -1,3 +1,4 @@
+use crate::ecs_utils::Componentable;
 use crate::vector::VectorTrait;
 use crate::components::{Shape,ShapeType,Transform,Transformable,Convex,BBall,ShapeClipState,HasBBox, ShapeLabel, SingleFace};
 use crate::draw::{Texture,TextureMapping, ShapeTexture, FaceTexture};
@@ -8,14 +9,14 @@ use specs::prelude::*;
 use crate::geometry::transform::Scaling;
 
 #[derive(Clone)]
-pub struct ShapeEntityBuilder<V, M> {
+pub struct ShapeEntityBuilder<V, U, M> {
     pub shape: Shape<V>, // remove this field?
     shape_type: ShapeType<V>,
     shape_label: ShapeLabel,
     pub transformation: Transform<V, M>,
-    pub shape_texture: ShapeTexture<V>,
+    pub shape_texture: ShapeTexture<U>,
 }
-impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::M> {
+impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::SubV, V::M> {
     pub fn new_face_from_ref_shape(ref_shapes: &RefShapes<V>, single_face: SingleFace<V>, label: ShapeLabel) -> Self {
         let ref_shape = ref_shapes.get_unwrap(&label);
         let shape_texture = ShapeTexture::new_default(ref_shape.verts.len());
@@ -37,17 +38,17 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::M> {
             shape_texture: ShapeTexture::new_default(ref_shape.verts.len())
         }
     }
-    pub fn with_texture(mut self, texture: ShapeTexture<V>) -> Self {
+    pub fn with_texture(mut self, texture: ShapeTexture<V::SubV>) -> Self {
 
 		self.shape_texture = texture;
 		self
 	}
-    pub fn with_face_texture(mut self, face_texture: FaceTexture<V>) -> Self {
+    pub fn with_face_texture(mut self, face_texture: FaceTexture<V::SubV>) -> Self {
         self.shape_texture = self.shape_texture.with_texture(face_texture);
         self
     }
     pub fn with_texturing_fn<F>(mut self, f: F) -> Self
-    where F: Fn(&Shape<V>) -> ShapeTexture<V> {
+    where F: Fn(&Shape<V>) -> ShapeTexture<V::SubV> {
         self.shape_texture = f(&self.shape);
         self
     }
@@ -60,6 +61,13 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::M> {
         self.transformation.scale(Scaling::Vector(*scales));
         self
     }
+}
+impl<'a, V, U, M> ShapeEntityBuilder<V, U, M>
+where
+    V: VectorTrait<M=M, SubV = U> + Componentable,
+    U: Componentable,
+    M: Componentable
+{
     pub fn build(self, world: &mut World) -> EntityBuilder {
         let Self{
             mut shape,
@@ -106,7 +114,7 @@ impl<'a,V: VectorTrait> ShapeEntityBuilder<V, V::M> {
         lazy.insert(e, shape_label)
     }
 }
-impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V, V::M> {
+impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V, V::SubV, V::M> {
     fn transform(&mut self, transformation: Transform<V, V::M>) {
         self.transformation = self.transformation.with_transform(transformation);
     }

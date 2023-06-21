@@ -124,7 +124,7 @@ impl<V : VectorTrait> Default for ShapeClipState<V> {
         }
     }
 }
-impl<V : VectorTrait> ShapeClipState<V> {
+impl<V : VectorTrait + Componentable> ShapeClipState<V> {
     pub fn in_front_debug(world : &World) -> String {
         let mut outstr = "In front debug \n".to_string();
         for (i,state) in world.read_storage::<ShapeClipState<V>>().join().enumerate() {

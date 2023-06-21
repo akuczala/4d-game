@@ -4,7 +4,9 @@ use dispatcher::get_engine_dispatcher_builder;
 use std::time::{Duration,Instant};
 use crate::FPSTimer;
 use crate::collide;
+use crate::ecs_utils::Componentable;
 use crate::input::ShapeManipulationState;
+use crate::vector::MatrixTrait;
 use specs::prelude::*;
 use glium::Display;
 use std::marker::PhantomData;
@@ -25,7 +27,7 @@ use crate::vector::{Vec3,Vec4,VecIndex,VectorTrait};
 use crate::geometry::shape::{RefShapes};
 use crate::components::*;
 
-
+// TODO: reduce number of generics needed by introducing a componentable-constrained trait?
 pub struct EngineD<V, G> {
     pub world : World,
     pub cur_lines_length : usize,
@@ -34,17 +36,22 @@ pub struct EngineD<V, G> {
     dispatcher : Dispatcher<'static,'static>,
     dummy : PhantomData<V>, //Forces EngineD to take V as a parameter
 }
-impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
+impl<V, U, M, G> EngineD<V,G>
+where
+    V: VectorTrait<M = M, SubV = U> + Componentable,
+    U: VectorTrait + Componentable,
+    M: MatrixTrait<V> + Componentable,
+    G: Graphics<U>,
 {
     pub fn new<F : Fn(&mut World)>(build_scene : F, graphics : G, maybe_gui : Option<crate::gui::System>) -> Self {
 
         let mut world = World::new();
-        let mut dispatcher = get_engine_dispatcher_builder::<V>().build();
+        let mut dispatcher = get_engine_dispatcher_builder::<V, U, M>().build();
 
         dispatcher.setup(&mut world);
 
         world.insert(Input::new());
-        world.insert(ShapeManipulationState::default() as ShapeManipulationState<V>);
+        world.insert(ShapeManipulationState::default() as ShapeManipulationState<V, M>);
 
         build_scene(&mut world);
 
@@ -138,7 +145,7 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
         //     mouse_pos : input.helper.mouse(),
 
         // };
-        let ui_args = UIArgs::new_debug::<V>(
+        let ui_args = UIArgs::new_debug::<V, M>(
             &self.world,
             frame_duration
         );
@@ -203,14 +210,20 @@ impl<V : VectorTrait, G : Graphics<V::SubV>> EngineD<V,G>
 
 }
 
-impl<V: VectorTrait, G: Graphics<V::SubV>> EngineD<V,G> {
+impl<V, U, M, G> EngineD<V,G>
+where
+    V: VectorTrait<M = M, SubV = U> + Componentable,
+    U: VectorTrait + Componentable,
+    M: MatrixTrait<V> + Componentable,
+    G: Graphics<U>,
+{
     fn init(display : &Display, gui : Option<crate::gui::System>) -> Self {
         println!("Starting {}d engine",V::DIM);
         //let game = Game::new(game::build_shapes_3d());
         let mut graphics = G::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
 
-        Self::new(crate::build_level::build_scene::<V>, graphics, gui)
+        Self::new(crate::build_level::build_scene::<V, U, M>, graphics, gui)
     }
 }
 

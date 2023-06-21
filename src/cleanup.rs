@@ -21,7 +21,7 @@ impl DeletedEntities {
 }
 
 pub struct ShapeCleanupSystem<V>(pub PhantomData<V>);
-impl<'a, V : Componentable> System<'a> for ShapeCleanupSystem<V> {
+impl<'a, V : Componentable + VectorTrait> System<'a> for ShapeCleanupSystem<V> {
 	type SystemData = (Write<'a,DeletedEntities>,WriteStorage<'a,ShapeClipState<V>>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
 
 	fn run(&mut self, (mut deleted, mut shape_clip, mut hash) : Self::SystemData) {

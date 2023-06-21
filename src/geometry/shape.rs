@@ -62,6 +62,7 @@ pub trait ShapeTypeTrait<V: VectorTrait> {
     fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool, face_visibility: &Vec<bool>) -> Vec<V>;
 }
 
+#[derive(Clone)]
 pub enum ShapeType<V> {
     Convex(convex::Convex),
     SingleFace(single_face::SingleFace<V>)

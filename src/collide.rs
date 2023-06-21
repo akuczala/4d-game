@@ -70,7 +70,7 @@ where
 	}
 }
 
-impl<V: VectorTrait + Componentable> HasBBox<V> for Shape<V> {
+impl<V: VectorTrait> HasBBox<V> for Shape<V> {
 	fn calc_bbox(&self) -> BBox<V> {
 		let verts = &self.verts;
 
@@ -85,7 +85,7 @@ impl<V: VectorTrait + Componentable> HasBBox<V> for Shape<V> {
 }
 
 
-pub fn create_spatial_hash<V : VectorTrait>(world : &mut World) {
+pub fn create_spatial_hash<V : VectorTrait + Componentable>(world : &mut World) {
 	//add bbox entities and initialize spatial hash set
     let (mut max, mut min) = (V::zero(), V::zero());
     let mut max_lengths = V::zero();
@@ -112,7 +112,7 @@ pub fn create_spatial_hash<V : VectorTrait>(world : &mut World) {
 //for static objects, it is cheap to hash the volume since we need only do it once
 pub struct BBoxHashingSystem<V>(pub PhantomData<V>);
 
-impl<'a,V : Componentable> System<'a> for BBoxHashingSystem<V> {
+impl<'a,V : VectorTrait + Componentable> System<'a> for BBoxHashingSystem<V> {
 
 	type SystemData = (ReadStorage<'a,BBox<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
 

@@ -21,6 +21,6 @@ impl<V: VectorTrait> BBox<V> {
 	}
 }
 
-pub trait HasBBox<V>: specs::Component {
+pub trait HasBBox<V> {
 	fn calc_bbox(&self) -> BBox<V>;
 }

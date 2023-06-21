@@ -1,24 +1,34 @@
 use crate::draw::DrawSelectionBox;
-use crate::ecs_utils::ModSystem;
+use crate::ecs_utils::{ModSystem, Componentable};
 use crate::input::DuplicateShapeSystem;
 use crate::systems::*;
-use crate::vector::VectorTrait;
+use crate::vector::{VectorTrait, MatrixTrait};
 use specs::prelude::*;
 use std::marker::PhantomData;
 
 // TODO: write in terms of larger blocks of systems
 // TODO: make system labels part of the system struct somehow
-pub fn get_engine_dispatcher_builder<'a, 'b, V: VectorTrait>() -> DispatcherBuilder<'a, 'b> {
-    let builder = add_draw_steps::<V>(DispatcherBuilder::new());
-    let builder = add_game_steps::<V>(builder);
+pub fn get_engine_dispatcher_builder<'a, 'b, V, U, M>() -> DispatcherBuilder<'a, 'b>
+where
+    V: VectorTrait<M = M, SubV = U> + Componentable,
+    U: VectorTrait + Componentable,
+    M: MatrixTrait<V> + Componentable,
+{
+    let builder = add_draw_steps::<V, U, M>(DispatcherBuilder::new());
+    let builder = add_game_steps::<V, U, M>(builder);
     builder
 }
 
 //start drawing phase. this is first so that we can do world.maintain() before we draw
 //for each shape, update clipping boundaries and face visibility
-fn add_draw_steps<'a, 'b, V: VectorTrait>(
+fn add_draw_steps<'a, 'b, V, U, M>(
     builder: DispatcherBuilder<'a, 'b>,
-) -> DispatcherBuilder<'a, 'b> {
+) -> DispatcherBuilder<'a, 'b>
+where
+    V: VectorTrait<M = M, SubV = U> + Componentable,
+    U: VectorTrait + Componentable,
+    M: MatrixTrait<V> + Componentable,
+{
     let ph = PhantomData::<V>;
     builder
         .with(VisibilitySystem(ph), "visibility", &[])
@@ -47,9 +57,14 @@ fn add_draw_steps<'a, 'b, V: VectorTrait>(
 }
 
 //start game update phase
-fn add_game_steps<'a, 'b, V: VectorTrait>(
+fn add_game_steps<'a, 'b, V, U, M>(
     builder: DispatcherBuilder<'a, 'b>,
-) -> DispatcherBuilder<'a, 'b> {
+) -> DispatcherBuilder<'a, 'b>
+where
+    V: VectorTrait<M = M, SubV = U> + Componentable,
+    U: VectorTrait + Componentable,
+    M: MatrixTrait<V> + Componentable,
+{
     let ph = PhantomData::<V>;
     builder
         .with(

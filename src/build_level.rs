@@ -1,5 +1,6 @@
 use crate::components::{Cursor,Transform};
 use crate::draw::texture::color_cube_texture;
+use crate::ecs_utils::Componentable;
 use crate::geometry::transform::{Transformable, Scaling};
 use crate::graphics::colors::*;
 use crate::coin::Coin;
@@ -15,18 +16,30 @@ use crate::draw::{self, ShapeTexture, FaceTexture, Texture};
 use crate::collide::{StaticCollider};
 use colored::Color::Magenta;
 
-pub fn insert_wall<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V, V::M>) {
+pub fn insert_wall<V, M>(world : &mut World, shape_builder : ShapeEntityBuilder<V, V::SubV, M>)
+where
+    V: VectorTrait<M = M> + Componentable,
+    M: Componentable,
+{
     shape_builder.build(world)
         .with(StaticCollider)
         .build();
 }
-pub fn insert_coin<V : VectorTrait>(world : &mut World, shape_builder : ShapeEntityBuilder<V, V::M>) {
+pub fn insert_coin<V, M>(world : &mut World, shape_builder : ShapeEntityBuilder<V, V::SubV, M>)
+where
+    V: VectorTrait<M = M> + Componentable,
+    M: Componentable,
+{
     shape_builder.build(world)
         .with(Coin)
         .build();
 }
 
-fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V, V::M>, world: &mut World) {
+fn build_test_walls<M, V>(build_shape: &ShapeEntityBuilder<V, V::SubV, M>, world: &mut World)
+where
+    V: VectorTrait<M = M> + Componentable,
+    M: Componentable + Clone,
+{
     let theta = PI/6.0;
     let cos = theta.cos();
     let sin = theta.sin();
@@ -86,7 +99,11 @@ fn build_test_walls<V: VectorTrait>(build_shape: &ShapeEntityBuilder<V, V::M>, w
         .with(StaticCollider)
         .build();
 }
-pub fn build_test_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefShapes<V>) {
+pub fn build_test_level<V, M>(world: &mut World, ref_shapes: &mut RefShapes<V>)
+    where
+        V: VectorTrait<M = M> + Componentable,
+        M: Componentable + Clone
+{
     let (n_divisions, frame_vertis) = match V::DIM {
         3 => (vec![4,4], vec![1,3]),
         4 => (vec![4,4,4], vec![1,3,4]),
@@ -96,7 +113,7 @@ pub fn build_test_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefS
     let wall_label = ShapeLabel("Wall".to_string());
     let (wall, wall_single_face) = convex_shape_to_face_shape(sub_wall.clone(), true);
     ref_shapes.insert(wall_label.clone(), wall);
-    let build_shape: ShapeEntityBuilder<V, V::M>= ShapeEntityBuilder::new_face_from_ref_shape(
+    let build_shape: ShapeEntityBuilder<V, V::SubV, V::M>= ShapeEntityBuilder::new_face_from_ref_shape(
         ref_shapes, wall_single_face, wall_label.clone())
         .with_face_texture(
             FaceTexture{
@@ -107,7 +124,11 @@ pub fn build_test_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefS
     build_test_walls(&build_shape, world);
 }
 
-pub fn build_fun_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefShapes<V>) {
+pub fn build_fun_level<V, M>(world: &mut World, ref_shapes: &mut RefShapes<V>)
+    where 
+    V: VectorTrait<M = M> + Componentable,
+    M: Componentable + Clone
+{
     let (n_divisions, frame_vertis) = match V::DIM {
         3 => (vec![4,4], vec![1,3]),
         4 => (vec![4,4,4], vec![1,3,4]),
@@ -120,7 +141,7 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefSh
     ref_shapes.insert(wall_label.clone(), wall);
     
     
-    let wall_builder: ShapeEntityBuilder<V, V::M>= ShapeEntityBuilder::new_face_from_ref_shape(
+    let wall_builder: ShapeEntityBuilder<V, V::SubV, V::M>= ShapeEntityBuilder::new_face_from_ref_shape(
         ref_shapes, wall_single_face, wall_label.clone()
     ).with_face_texture(
         FaceTexture {
@@ -166,9 +187,14 @@ pub fn build_fun_level<V: VectorTrait>(world: &mut World, ref_shapes: &mut RefSh
 
 }
 
-pub fn build_scene<V: VectorTrait>(world : &mut World) {
-    let mut ref_shapes = RefShapes::new();
-    build_lvl_1::<V>(world, &mut ref_shapes);
+pub fn build_scene<V, U, M>(world : &mut World)
+where
+    V: VectorTrait<M = M, SubV =U> + Componentable,
+    U: VectorTrait + Componentable,
+    M: Componentable + Clone
+{
+    let mut ref_shapes: RefShapes<V> = RefShapes::new();
+    build_lvl_1(world, &mut ref_shapes);
     //build_fun_level::<V>(world, &mut ref_shapes);
     //build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
@@ -176,10 +202,10 @@ pub fn build_scene<V: VectorTrait>(world : &mut World) {
     world.insert(ref_shapes);
 }
 
-pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V, V::M>, wall_length : Field) -> Vec<ShapeEntityBuilder<V, V::M>> {
+pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V, V::SubV, V::M>, wall_length : Field) -> Vec<ShapeEntityBuilder<V, V::SubV, V::M>> {
 
     // todo figure out why texture is now off after changes to transform
-    pub fn build_texture<V : VectorTrait>(shape : &Shape<V>, scale: &Scaling<V>) -> ShapeTexture<V> {
+    pub fn build_texture<V : VectorTrait>(shape : &Shape<V>, scale: &Scaling<V>) -> ShapeTexture<V::SubV> {
         let mut cube_texture = color_cube_texture(shape);
         for (face, face_texture) in shape.faces.iter().zip(cube_texture.face_textures.iter_mut()) {
             let target_face_color = match face_texture.texture {
@@ -218,9 +244,9 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
         _ => panic!("Invalid dimension for build_corridor_cross")
     };
     
-    let mut shape_builders : Vec<ShapeEntityBuilder<V, V::M>> = Vec::new();
+    let mut shape_builders : Vec<ShapeEntityBuilder<V, V::SubV, V::M>> = Vec::new();
     //corridor walls
-    let mut walls1 : Vec<ShapeEntityBuilder<V, V::M>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
+    let mut walls1 : Vec<ShapeEntityBuilder<V, V::SubV, V::M>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
         .map(|(s1,s2,(ax1,ax2))|
             cube_builder.clone()
             .with_translation(
@@ -252,7 +278,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
                 );
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
-    let mut floors_long : Vec<ShapeEntityBuilder<V, V::M>> = iproduct!(axes.clone(),signs.iter())
+    let mut floors_long : Vec<ShapeEntityBuilder<V, V::SubV, V::M>> = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)|
             cube_builder.clone()
                 .with_translation(V::one_hot(i)*(wall_length+corr_width)*(*sign)/2.0
@@ -261,7 +287,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
                 .stretch(&(V::one_hot(i)*(wall_length-corr_width) + V::ones()*corr_width
                     ))
                 ).collect();
-    let mut ceilings_long : Vec<ShapeEntityBuilder<V, V::M>> = floors_long.iter()
+    let mut ceilings_long : Vec<ShapeEntityBuilder<V, V::SubV, V::M>> = floors_long.iter()
         .map(|block| block.clone().with_translation(
             V::one_hot(1)*(wall_height+corr_width)
         ))
@@ -285,20 +311,33 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
     shape_builders
     
 }
-pub fn init_player<V: VectorTrait>(world: &mut World, pos: V) {
+pub fn init_player<V, U, M>(world: &mut World, pos: V)
+    where
+    V: VectorTrait<M = M, SubV =U> + Componentable,
+    U: VectorTrait + Componentable,
+    M: Componentable + Clone
+{
     let transform = Transform::identity().with_translation(pos);
     crate::player::build_player(world, &transform);
-    init_cursor::<V>(world);
+    init_cursor::<V, V::SubV>(world);
 
 }
-pub fn init_cursor<V: VectorTrait>(world: &mut World) {
+pub fn init_cursor<V, U>(world: &mut World)
+where
+    V: VectorTrait<SubV= U> + Componentable,
+    U: VectorTrait + Componentable
+{
     world.create_entity()
         .with(Cursor)
         .with(ShapeBuilder::<V::SubV>::build_cube(0.03).build())
         .build();
 }
 
-pub fn build_lvl_1<V : VectorTrait>(world : &mut World, ref_shapes: &mut RefShapes<V>) {
+pub fn build_lvl_1<V, M>(world : &mut World, ref_shapes: &mut RefShapes<V>)
+    where
+    V: VectorTrait<M = M> + Componentable,
+    M: Componentable + Clone
+{
     let cube = ShapeBuilder::<V>::build_cube(1.0).build();
     let coin: Shape<V> = ShapeBuilder::<V>::build_coin().build();
     let cube_label = ShapeLabel("Cube".to_string());
