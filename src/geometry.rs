@@ -2,6 +2,7 @@ pub mod buildfloor;
 pub mod shape;
 pub mod transform;
 mod affine_transform;
+use serde::{Deserialize, Serialize};
 pub use shape::{Shape,Face};
 pub use transform::{Transformable,Transform};
 use std::fmt;
@@ -23,7 +24,7 @@ impl<V : VectorTrait> Line<V> {
         Line(f(self.0),f(self.1))
     }
 }
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Plane<V> {
     pub normal : V,
     pub threshold : Field

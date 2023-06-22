@@ -278,7 +278,7 @@ pub fn clip_line_sphere<V :VectorTrait>(line : Line<V>, r : Field) -> Option<Lin
     }
     
 }
-pub enum ReturnLines<V : VectorTrait>
+pub enum ReturnLines<V>
 {
     TwoLines(Line<V>,Line<V>),
     OneLine(Line<V>),

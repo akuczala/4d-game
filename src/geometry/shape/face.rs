@@ -2,10 +2,11 @@ use super::{EdgeIndex,VertIndex,Edge};
 use crate::vector::{VectorTrait,Field};
 use crate::graphics::colors::Color;
 use itertools::Itertools;
+use serde::{Serialize, Deserialize};
 
 use crate::draw::{Texture,TextureMapping};
 // TODO: move texture + texture mapping to separate component entirely
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Face<V> {
     pub geometry: FaceGeometry<V>,
 
@@ -14,7 +15,7 @@ pub struct Face<V> {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct FaceGeometry<V> {
     pub plane: Plane<V>,
     pub center : V,

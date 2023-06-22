@@ -16,7 +16,7 @@ use crate::draw::{self, ShapeTexture, FaceTexture, Texture};
 use crate::collide::{StaticCollider};
 use colored::Color::Magenta;
 
-pub fn insert_wall<V, U, M>(world : &mut World, shape_builder : ShapeEntityBuilder<V>)
+pub fn insert_static_collider<V, U, M>(world : &mut World, shape_builder : ShapeEntityBuilder<V>)
 where
 	V: VectorTrait<M = M, SubV =U> + Componentable,
 	U: VectorTrait + Componentable,
@@ -128,11 +128,7 @@ where
     build_test_walls(&build_shape, world);
 }
 
-pub fn build_fun_level<V, U, M>(world: &mut World, ref_shapes: &mut RefShapes<V>)
-where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable + Clone
+pub fn build_fun_level<V: VectorTrait>(ref_shapes: &mut RefShapes<V>) -> Vec<ShapeEntityBuilder<V>>
 {
     let (n_divisions, frame_vertis) = match V::DIM {
         3 => (vec![4,4], vec![1,3]),
@@ -164,31 +160,31 @@ where
     // upper_floor_builder.build(world)
     //     .with(StaticCollider).build();
     let colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
+    let mut builders = Vec::new();
     // floors are all misaligned and the wrong size. did this ever work?
     for ((i,sign),color) in iproduct!(0..V::DIM, vec![-1,1]).zip(colors.into_iter()) {
         if !(i == 1 && sign == 1) {
             let float_sign = sign as Field;
-            let shape = wall_builder.clone()
+            let mut shape = wall_builder.clone()
                 .with_translation(V::one_hot(i) * float_sign * len/2.0);
-            match i == V::DIM-1 {
+            shape = match i == V::DIM-1 {
                 true => shape.with_rotation(1, i, -PI * (1.0 + float_sign) / 2.0),
                 false => shape.with_rotation(-1, i, -PI / 2.0 * float_sign)
-            }.with_color(color)
-                .build(world)
-                .with(StaticCollider).build();
+            }.with_color(color);
+            builders.push(shape);
         }
         if i != 1 {
             let float_sign = sign as Field;
-            let shape = upper_floor_builder.clone()
+            let mut shape = upper_floor_builder.clone()
                 .with_translation(V::one_hot(i) * float_sign * len*(1.5));
-            match i == V::DIM-1 {
+            shape = match i == V::DIM-1 {
                 true => shape,
                 false => shape.with_rotation(-1, i, -PI / 2.0 * float_sign)
-            }.with_color(color)
-                .build(world)
-                .with(StaticCollider).build();
+            }.with_color(color);
+            builders.push(shape);
         }
     }
+    builders
 
 }
 
@@ -199,8 +195,10 @@ where
     M: Componentable + Clone
 {
     let mut ref_shapes: RefShapes<V> = RefShapes::new();
-    build_lvl_1(world, &mut ref_shapes);
-    //build_fun_level::<V>(world, &mut ref_shapes);
+    //build_lvl_1(world, &mut ref_shapes);
+    for builder in build_fun_level::<V>(&mut ref_shapes) {
+        insert_static_collider(world, builder);
+    }
     //build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
     init_player(world, V::zero());
@@ -356,7 +354,7 @@ where
     let walls : Vec<ShapeEntityBuilder<V>> = build_corridor_cross(&cube_builder, wall_length);
 
     for wall in walls.into_iter() {
-        insert_wall(world,wall)
+        insert_static_collider(world,wall)
     }
     //let (m,n) = (4,4);
     //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])

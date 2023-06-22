@@ -4,10 +4,9 @@ use specs::{BitSet, ReaderId, shrev::EventChannel, storage::ComponentEvent};
 
 use crate::vector::{VectorTrait, Vec2, Vec3, Vec4, Mat2, Mat4, Mat3};
 
-//the 'static lifetime here tells the compiler that any type with the vector trait
+//the 'static lifetime here tells the compiler that any type with the componentable trait
 //does not hold any references that might require lifetimes
 
-// TODO: make sure all of these trait bounds are required
 pub trait Componentable: 'static + Sync + Send {}
 
 #[derive(Default)]

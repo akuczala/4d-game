@@ -7,22 +7,23 @@ pub mod buildshapes;
 
 use std::collections::hash_map::Values;
 use std::collections::HashMap;
-use crate::ecs_utils::Componentable;
 use crate::graphics::colors::Color;
 use crate::vector;
 use crate::vector::{VectorTrait, Field, barycenter};
 use super::{Line,Plane,line_plane_intersect,Transform,Transformable};
 pub use face::Face;
-pub use convex::Convex; pub use single_face::SingleFace;
+pub use convex::Convex;
+use serde::{Serialize, Deserialize};
+pub use single_face::SingleFace;
 
-use specs::{Component, VecStorage, FlaggedStorage};
+use specs::{Component, VecStorage};
 use std::fmt::{self, Display};
 use crate::geometry::shape::face::FaceGeometry;
 use crate::geometry::transform::Scaling;
 
 // TODO: consider merging with Shape
 // might be a bad idea - could contain in larger struct?
-#[derive(Component,PartialEq,Eq,Hash,Clone)]
+#[derive(Component, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 #[storage(VecStorage)]
 pub struct ShapeLabel(pub String);
 impl Display for ShapeLabel {
@@ -80,7 +81,7 @@ pub type VertIndex = usize;
 pub type EdgeIndex = usize;
 pub type FaceIndex = usize;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Edge(pub VertIndex,pub VertIndex);
 impl fmt::Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -88,7 +89,7 @@ impl fmt::Display for Edge {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Shape<V> {
     pub verts : Vec<V>,
     pub edges : Vec<Edge>,

@@ -1,8 +1,3 @@
-use std::marker::PhantomData;
-
-
-use crate::components::Shape;
-use crate::ecs_utils::{ModSystem, Componentable};
 use crate::vector::{VectorTrait, Field};
 
 //axis-aligned bounding box
