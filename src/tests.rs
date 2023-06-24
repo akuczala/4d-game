@@ -57,12 +57,7 @@ mod tests{
 
         let v = Vec3::new(1.0, 2.0, 3.0);
         generic(v);
-        // let serialized = serde_json::to_string(&v).unwrap();
-        // println!("serialized = {}", serialized);
 
-        // let deserialized: Vec3 = serde_json::from_str(&serialized).unwrap();
-        // println!("deserialized = {:?}", deserialized);
-        // assert!(Vec3::is_close(deserialized, v))
     }
 
     #[test]
@@ -74,7 +69,7 @@ mod tests{
         //let mut writer = Vec::new();
         let mut serializer = serde_json::Serializer::new(Vec::new());
         
-        let result = save_level::<Vec3>(
+        let result = save_level::<Vec3, Mat3>(
             &world,
             &mut serializer
         );
@@ -84,7 +79,7 @@ mod tests{
         };
         let mut deserialized_world = new_world();
         let mut deserializer = serde_json::Deserializer::from_str(&serialized);
-        let result = load_level::<Vec3>(&mut deserialized_world, &mut deserializer);
+        let result = load_level::<Vec3, Mat3>(&mut deserialized_world, &mut deserializer);
         if let Result::Err(_) = result {
             panic!("Boy did that go wrong");
         }
