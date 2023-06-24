@@ -1,9 +1,9 @@
 use std::convert::Infallible;
 
 use serde::{Serialize, de::DeserializeOwned, Serializer};
-use specs::{World, saveload::{SimpleMarker, SerializeComponents, DeserializeComponents, SimpleMarkerAllocator}, WorldExt, Entities, WriteStorage, Write};
+use specs::{World, saveload::{SimpleMarker, SerializeComponents, DeserializeComponents, SimpleMarkerAllocator}, WorldExt, Entities, WriteStorage, Write, ReadStorage, world::EntitiesRes};
 
-use crate::{vector::VectorTrait, ecs_utils::Componentable, components::Shape};
+use crate::{vector::VectorTrait, ecs_utils::Componentable, components::{Shape, ShapeLabel, ShapeType, SingleFace}};
 
 use serde_json::{Serializer as JSONSerializer, de::StrRead};
 pub struct Save;
@@ -22,14 +22,35 @@ type ReadBuffer<'a> = StrRead<'a>;
 type ComponentDeserializer<'a> = serde_json::Deserializer<ReadBuffer<'a>>;
 type DeseralizerReturns = SerializerReturns;
 
+type LevelSaveComponents<'a, V> = (
+    ReadStorage<'a, Shape<V>>,
+    ReadStorage<'a, ShapeLabel>,
+    //ReadStorage<'a, ShapeType<V>>,
+    //ReadStorage<'a, SingleFace<V>>,
+
+);
+
+type LevelLoadComponents<'a, V> = (
+    WriteStorage<'a, Shape<V>>,
+    WriteStorage<'a, ShapeLabel>,
+    //WriteStorage<'a, ShapeType<V>>,
+    //WriteStorage<'a, SingleFace<V>>,
+    
+);
+
 pub fn save_level<V>(world: &World, serializer: &mut ComponentSerializer) -> SerializerReturns
 where
     V: Componentable + Serialize + DeserializeOwned + Clone
 {
+    let (
+        save_storage,
+        entities,
+        markers
+    ) = world.system_data::<(LevelSaveComponents<V>, Entities, ReadStorage<SaveMarker>)>();
     SerializeComponents::<Infallible, SaveMarker>::serialize(
-        &(world.read_component::<Shape<V>>(),),
-        &world.entities(),
-        &world.read_component::<SaveMarker>(),
+        &save_storage,
+        &entities,
+        &markers,
         serializer
     )
     // save components  
@@ -43,18 +64,18 @@ where
 {
     //let mut shape_storage = world.write_component::<Shape<V>>();
     let (
+        mut load_storage,
         entities,
         mut marker_storage,
         mut marker_allocator,
-        shape_storage,
     ) = world.system_data::<(
+        LevelLoadComponents<V>,
         Entities,
         WriteStorage<SaveMarker>,
-        Write<SaveMarkerAllocator>,
-        WriteStorage<Shape<V>>,
+        Write<SaveMarkerAllocator>
     )>();
     DeserializeComponents::<Infallible, SaveMarker>::deserialize(
-        &mut (shape_storage,),
+        &mut load_storage,
         &entities,
         &mut marker_storage,
         &mut marker_allocator,
