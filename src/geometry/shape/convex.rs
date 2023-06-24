@@ -140,6 +140,7 @@ fn test_point_within() {
 }
 
 //prints points at different distances from prism
+// TODO: check that the boundary between 2 and 3 in the printout is supposed to be uneven. Was it always like that?
 #[test]
 fn test_point_within2() {
     use colored::*;

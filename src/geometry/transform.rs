@@ -1,3 +1,4 @@
+use serde::{Serialize, Deserialize};
 use specs::prelude::*;
 use specs::{Component};
 use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field, rotation_matrix, Vec4};
@@ -37,7 +38,7 @@ pub trait Transformable<V: VectorTrait> {
     }
 }
 
-#[derive(Copy,Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Scaling<V> {
     Scalar(Field),
     Vector(V),
@@ -81,7 +82,7 @@ impl<V: VectorTrait> Scaling<V> {
 // orthogonal. This might help us where the code assumes "frame" is orthogonal
 
 // todo: there is a nice way to "compose" rotations and scalings, see blender
-#[derive(Clone,Copy)]
+#[derive(Clone,Copy, Serialize, Deserialize)]
 pub struct Transform<V, M>{
     pub pos: V,
     pub frame: M,

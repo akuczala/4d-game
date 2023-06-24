@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 itertools = "0.10.5"
 glium = "0.32.1"
 winit_input_helper = "0.13.0"
@@ -16,7 +17,7 @@ cgmath = "0.18.0"
 colored = "2.0.0"
 take_mut = "0.2.2"
 map_in_place = "0.1.0"
-specs = { version = "0.18.0", features = ["specs-derive","shred-derive"] }
+specs = { version = "0.18.0", features = ["specs-derive", "shred-derive", "serde"] }
 imgui = "0.11.0"
 imgui-glium-renderer = "0.11.0"
 imgui-winit-support = "0.11.0"

@@ -1,5 +1,5 @@
 mod dispatcher;
-use dispatcher::get_engine_dispatcher_builder;
+pub use dispatcher::get_engine_dispatcher_builder; // TODO: revert to private
 
 use std::time::{Duration,Instant};
 use crate::FPSTimer;

@@ -1,4 +1,5 @@
 use crate::ecs_utils::Componentable;
+use crate::saveload::SaveMarker;
 use crate::vector::VectorTrait;
 use crate::components::{Shape,ShapeType,Transform,Transformable,Convex,BBall,ShapeClipState,HasBBox, ShapeLabel, SingleFace};
 use crate::draw::{Texture,TextureMapping, ShapeTexture, FaceTexture};
@@ -6,6 +7,7 @@ use crate::geometry::shape::{buildshapes, RefShapes};
 use crate::graphics::colors::Color;
 
 use specs::prelude::*;
+use specs::saveload::MarkedBuilder;
 use crate::geometry::transform::Scaling;
 
 #[derive(Clone)]
@@ -90,6 +92,7 @@ where
             .with(shape_label)
             .with(shape_texture)
             .with(ShapeClipState::<V>::default())
+            .marked::<SaveMarker>()
     }
     pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>) {
         let Self{
@@ -112,6 +115,7 @@ where
         lazy.insert(e, shape_texture);
         lazy.insert(e, ShapeClipState::<V>::default());
         lazy.insert(e, shape_label)
+        // TODO: mark with SaveMarker
     }
 }
 impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V> {

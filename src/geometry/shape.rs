@@ -16,7 +16,7 @@ pub use convex::Convex;
 use serde::{Serialize, Deserialize};
 pub use single_face::SingleFace;
 
-use specs::{Component, VecStorage};
+use specs::{Component, VecStorage, ConvertSaveload};
 use std::fmt::{self, Display};
 use crate::geometry::shape::face::FaceGeometry;
 use crate::geometry::transform::Scaling;
@@ -32,6 +32,7 @@ impl Display for ShapeLabel {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct RefShapes<V>(HashMap<ShapeLabel,Shape<V>>);
 impl<V: VectorTrait> RefShapes<V> {
     pub fn new() -> Self {
@@ -63,6 +64,9 @@ pub trait ShapeTypeTrait<V: VectorTrait> {
     fn line_intersect(&self, shape: &Shape<V>, line : &Line<V>, visible_only : bool, face_visibility: &Vec<bool>) -> Vec<V>;
 }
 
+// TODO: rework how ShapeType, Shape, Convex, and SingleFace work.
+// do we really need BOTH a ShapeType + Shape for each entity? Can we combine these into a single ADT?
+// is there a more general struct we could use to capture both cases?
 #[derive(Clone)]
 pub enum ShapeType<V> {
     Convex(convex::Convex),
