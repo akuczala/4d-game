@@ -1,11 +1,15 @@
 mod dispatcher;
-pub use dispatcher::get_engine_dispatcher_builder; // TODO: revert to private
+pub use dispatcher::get_engine_dispatcher_builder;
+use specs::saveload; // TODO: revert to private
 
 use std::time::{Duration,Instant};
 use crate::FPSTimer;
 use crate::collide;
 use crate::ecs_utils::Componentable;
 use crate::input::ShapeManipulationState;
+use crate::saveload::Save;
+use crate::saveload::SaveMarker;
+use crate::saveload::SaveMarkerAllocator;
 use crate::vector::MatrixTrait;
 use specs::prelude::*;
 use glium::Display;
@@ -46,6 +50,11 @@ where
     pub fn new<F : Fn(&mut World)>(build_scene : F, graphics : G, maybe_gui : Option<crate::gui::System>) -> Self {
 
         let mut world = World::new();
+
+        // TODO: rm these when they are registered as part of a save/load system
+        world.register::<SaveMarker>();
+        world.insert::<SaveMarkerAllocator>(SaveMarkerAllocator::default());
+
         let mut dispatcher = get_engine_dispatcher_builder::<V, U, M>().build();
 
         dispatcher.setup(&mut world);

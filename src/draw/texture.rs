@@ -12,10 +12,10 @@ use specs::{Component, DenseVecStorage};
 #[derive(Clone)]
 
 // keep VectorTrait bound for now... 
-pub struct ShapeTexture<V: VectorTrait> {
-	pub face_textures: Vec<FaceTexture<V>> // TODO: replace with a hashmap or vec padded by None to allow defaults?
+pub struct ShapeTexture<U> {
+	pub face_textures: Vec<FaceTexture<U>> // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
-impl<V: VectorTrait> ShapeTexture<V> {
+impl<U> ShapeTexture<U> {
 	pub fn new_default(n_faces: usize) -> Self {
 		Self { face_textures: (0..n_faces).map(|_| Default::default()).collect() }
 	}
@@ -25,7 +25,9 @@ impl<V: VectorTrait> ShapeTexture<V> {
         }
         self
     }
-	pub fn with_texture(mut self, face_texture: FaceTexture<V>) -> Self {
+}
+impl<U: Clone> ShapeTexture<U> {
+	pub fn with_texture(mut self, face_texture: FaceTexture<U>) -> Self {
 		for face in self.face_textures.iter_mut() {
 			*face = face_texture.clone();
 		}
@@ -34,11 +36,11 @@ impl<V: VectorTrait> ShapeTexture<V> {
 }
 
 #[derive(Clone)]
-pub struct FaceTexture<V: VectorTrait> {
-	pub texture: Texture<V::SubV>,
+pub struct FaceTexture<U> {
+	pub texture: Texture<U>,
 	pub texture_mapping: Option<TextureMapping>
 }
-impl<V: VectorTrait> Default for FaceTexture<V>{
+impl<U> Default for FaceTexture<U>{
 	fn default() -> Self {
 		Self {
 			texture: Default::default(),
@@ -46,37 +48,31 @@ impl<V: VectorTrait> Default for FaceTexture<V>{
 		}
 	}
 }
-impl<V: VectorTrait> FaceTexture<V>
+impl<U> FaceTexture<U>
 {
 	pub fn set_color(&mut self, color : Color) {
         take_mut::take(&mut self.texture,|tex| tex.set_color(color));
     }
-    // pub fn set_texture(&mut self, texture: Texture<V::SubV>, texture_mapping: Option<TextureMapping>) {
-    //     self.texture = texture;
-    //     self.texture_mapping = texture_mapping;
-	// }
-    // pub fn with_texture(mut self, texture: Texture<V::SubV>, texture_mapping: Option<TextureMapping>) -> Self {
-    //     self.set_texture(texture, texture_mapping);
-    //     self
-    // }
-	pub fn draw(
-		&self,
-		face: &Face<V>,
-		shape : &Shape<V>,
-		face_scales : &Vec<Field>,
-		visible: bool,
-	) -> Vec<Option<DrawLine<V>>>{
-		if !visible {
-			return Vec::new();
-		}
-		match &self.texture {
-			Texture::DefaultLines{color} => draw_default_lines(face, shape, *color, face_scales),
-			Texture::Lines{lines,color} => self.texture_mapping.as_ref().unwrap().draw_lines(shape,lines,*color),
-			Texture::DrawLines(draw_lines) => self.texture_mapping.as_ref().unwrap().draw_drawlines(draw_lines)
-	
-		}
+}
+// this was originally a method of FaceTexture, but I didn't know how to tell rust that U = V::SubV
+pub fn draw_face_texture<V: VectorTrait>(
+	face_texture: &FaceTexture<V::SubV>,
+	face: &Face<V>,
+	shape: &Shape<V>,
+	face_scales : &Vec<Field>,
+	visible: bool
+) -> Vec<Option<DrawLine<V>>>{
+	if !visible {
+		return Vec::new();
+	}
+	match &face_texture.texture {
+		Texture::DefaultLines{color} => draw_default_lines(face, shape, *color, face_scales),
+		Texture::Lines{lines,color} => face_texture.texture_mapping.as_ref().unwrap().draw_lines(shape,lines,*color),
+		Texture::DrawLines(draw_lines) => face_texture.texture_mapping.as_ref().unwrap().draw_drawlines(draw_lines)
+
 	}
 }
+
 
 #[derive(Clone)]
 pub enum Texture<V> {
@@ -84,10 +80,10 @@ pub enum Texture<V> {
 	Lines{lines : Vec<Line<V>>, color : Color},
 	DrawLines(Vec<DrawLine<V>>), // I don't remember what this one is for
 }
-impl<V: VectorTrait> Default for Texture<V> {
+impl<V> Default for Texture<V> {
 	fn default() -> Self { Self::DefaultLines{color : WHITE} }
 }
-impl<V: VectorTrait> Texture<V> {
+impl<V> Texture<V> {
 	pub fn set_color(self, color : Color) -> Self {
 		match self {
 			Texture::DefaultLines{..} => Texture::DefaultLines{color},
@@ -97,6 +93,8 @@ impl<V: VectorTrait> Texture<V> {
 				),
 		}
 	}
+}
+impl<V: VectorTrait> Texture<V> {
 	pub fn make_tile_texture(scales : &Vec<Field>, n_divisions : &Vec<i32>) -> Self {
 		if V::DIM != n_divisions.len() as VecIndex {
 			panic!("make_tile_texture: Expected n_divisions.len()={} but got {}", V::DIM, n_divisions.len());
@@ -249,7 +247,7 @@ pub fn draw_default_lines<V : VectorTrait>(
 	lines
 }
 
-pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V>) -> ShapeTexture<V> {
+pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V::SubV>) -> ShapeTexture<V::SubV> {
 	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
     for (face, &color) in shape_texture.face_textures.iter_mut().zip(&face_colors) {
         face.texture = Texture::DefaultLines{color : color.set_alpha(0.5)};
@@ -259,7 +257,7 @@ pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V>) -> Shape
 
 // TODO: this really only needs the number of faces.
 // in fact we don't really need any arguments - we know the number of faces from V::DIM
-pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V> {
+pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::SubV> {
 	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
 	ShapeTexture{
 		face_textures: shape.faces.iter().zip(&face_colors).map(
@@ -271,7 +269,7 @@ pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V> 
 	}
 }
 
-pub fn color_duocylinder<V: VectorTrait>(shape_texture : &mut ShapeTexture<V>, m : usize, n : usize) {
+pub fn color_duocylinder<V: VectorTrait>(shape_texture : &mut ShapeTexture<V::SubV>, m : usize, n : usize) {
     for (i, face) in itertools::enumerate(shape_texture.face_textures.iter_mut()) {
         let iint = i as i32;
         let color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);

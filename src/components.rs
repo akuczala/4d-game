@@ -39,11 +39,7 @@ impl<V: Componentable> Component for ShapeType<V> {
 impl<V: Componentable> Component for ShapeClipState<V> {
 	type Storage = DefaultStorage<Self>;
 }
-impl<V, U, M> Component for ShapeTexture<V>
-where
-    V: VectorTrait<M = M, SubV = U> + Componentable,
-    U: Componentable,
-    M: Componentable
+impl<U: Componentable> Component for ShapeTexture<U>
 {
 	type Storage = DefaultStorage<Self>;
 }

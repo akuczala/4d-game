@@ -294,7 +294,7 @@ where
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, ShapeLabel>,
-        ReadStorage<'a, ShapeTexture<V>>,
+        ReadStorage<'a, ShapeTexture<U>>,
         Entities<'a>,
     );
 

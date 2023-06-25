@@ -12,6 +12,8 @@ use crate::geometry::{Line, Shape, shape::VertIndex};
 use crate::graphics::colors::*;
 use crate::vector::{Field, VectorTrait};
 
+use self::texture::draw_face_texture;
+
 pub mod texture;
 pub mod clipping;
 
@@ -304,7 +306,7 @@ where
 {
 	type SystemData = (
 		ReadStorage<'a,Shape<V>>,
-		ReadStorage<'a, ShapeTexture<V>>,
+		ReadStorage<'a, ShapeTexture<U>>,
 		ReadStorage<'a, ShapeClipState<V>>,
 		ReadExpect<'a, Vec<Field>>,
 		ReadExpect<'a, ClipState<V>>,
@@ -332,7 +334,7 @@ where
 
 pub fn calc_shapes_lines<V, U, M>(
 	shapes : &ReadStorage<Shape<V>>,
-	shape_textures: &ReadStorage<ShapeTexture<V>>,
+	shape_textures: &ReadStorage<ShapeTexture<U>>,
 	shape_clip_states : &ReadStorage<ShapeClipState<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
@@ -357,7 +359,7 @@ where
 		let mut shape_lines : Vec<Option<DrawLine<V>>> = Vec::new();
 		//get lines from each face
 		for (face, &visible, face_texture) in izip!(shape.faces.iter(), shape_clip_state.face_visibility.iter(), shape_texture.face_textures.iter()) {
-			shape_lines.append(&mut face_texture.draw(face, &shape, &face_scale, visible))
+			shape_lines.append(&mut draw_face_texture::<V>(&face_texture, face, &shape, &face_scale, visible))
 		}
 
 		//clip these lines and append to list
