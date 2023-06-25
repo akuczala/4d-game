@@ -5,7 +5,7 @@ use crate::geometry::transform::{Transformable, Scaling};
 use crate::graphics::colors::*;
 use crate::coin::Coin;
 use specs::prelude::*;
-use crate::shape_entity_builder::ShapeEntityBuilder;
+use crate::shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV};
 use crate::vector::{Vec2,Vec3,Vec4};
 use crate::geometry::shape::buildshapes::{build_duoprism_4d, ShapeBuilder, build_prism_2d, convex_shape_to_face_shape};
 use crate::geometry::shape::{RefShapes, ShapeLabel};
@@ -128,7 +128,7 @@ where
     build_test_walls(&build_shape, world);
 }
 
-pub fn build_fun_level<V: VectorTrait>(ref_shapes: &mut RefShapes<V>) -> Vec<ShapeEntityBuilder<V, V::SubV, V::M>>
+pub fn build_fun_level<V: VectorTrait>(ref_shapes: &mut RefShapes<V>) -> Vec<ShapeEntityBuilderV<V>>
 {
     let (n_divisions, frame_vertis) = match V::DIM {
         3 => (vec![4,4], vec![1,3]),
@@ -205,7 +205,7 @@ where
     world.insert(ref_shapes);
 }
 
-pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V, V::SubV, V::M>, wall_length : Field) -> Vec<ShapeEntityBuilder<V, V::SubV, V::M>> {
+pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilderV<V>, wall_length : Field) -> Vec<ShapeEntityBuilderV<V>> {
 
     // todo figure out why texture is now off after changes to transform
     pub fn build_texture<V : VectorTrait>(shape : &Shape<V>, scale: &Scaling<V>) -> ShapeTexture<V::SubV> {
@@ -247,9 +247,9 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
         _ => panic!("Invalid dimension for build_corridor_cross")
     };
     
-    let mut shape_builders : Vec<ShapeEntityBuilder<V, V::SubV, V::M>> = Vec::new();
+    let mut shape_builders : Vec<ShapeEntityBuilderV<V>> = Vec::new();
     //corridor walls
-    let mut walls1 : Vec<ShapeEntityBuilder<V, V::SubV, V::M>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
+    let mut walls1 : Vec<ShapeEntityBuilderV<V>> = iproduct!(signs.iter(),signs.iter(),axis_pairs.iter())
         .map(|(s1,s2,(ax1,ax2))|
             cube_builder.clone()
             .with_translation(
@@ -281,7 +281,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
                 );
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
-    let mut floors_long : Vec<ShapeEntityBuilder<V, V::SubV, V::M>> = iproduct!(axes.clone(),signs.iter())
+    let mut floors_long : Vec<ShapeEntityBuilderV<V>> = iproduct!(axes.clone(),signs.iter())
         .map(|(i,sign)|
             cube_builder.clone()
                 .with_translation(V::one_hot(i)*(wall_length+corr_width)*(*sign)/2.0
@@ -290,7 +290,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilder<V
                 .stretch(&(V::one_hot(i)*(wall_length-corr_width) + V::ones()*corr_width
                     ))
                 ).collect();
-    let mut ceilings_long : Vec<ShapeEntityBuilder<V, V::SubV, V::M>> = floors_long.iter()
+    let mut ceilings_long : Vec<ShapeEntityBuilderV<V>> = floors_long.iter()
         .map(|block| block.clone().with_translation(
             V::one_hot(1)*(wall_height+corr_width)
         ))

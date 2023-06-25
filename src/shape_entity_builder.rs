@@ -18,7 +18,11 @@ pub struct ShapeEntityBuilder<V, U, M> {
     pub transformation: Transform<V, M>,
     pub shape_texture: ShapeTexture<U>,
 }
-impl<'a, V: VectorTrait> ShapeEntityBuilder<V, V::SubV, V::M> {
+
+//shorthand
+pub type ShapeEntityBuilderV<V> = ShapeEntityBuilder<V, <V as VectorTrait>::SubV, <V as VectorTrait>::M>;
+
+impl<'a, V: VectorTrait> ShapeEntityBuilderV<V> {
     pub fn new_face_from_ref_shape(ref_shapes: &RefShapes<V>, single_face: SingleFace<V>, label: ShapeLabel) -> Self {
         let ref_shape = ref_shapes.get_unwrap(&label);
         let shape_texture = ShapeTexture::new_default(ref_shape.verts.len());
@@ -118,7 +122,7 @@ where
         // TODO: mark with SaveMarker
     }
 }
-impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilder<V, V::SubV, V::M> {
+impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilderV<V> {
     fn transform(&mut self, transformation: Transform<V, V::M>) {
         self.transformation = self.transformation.with_transform(transformation);
     }
