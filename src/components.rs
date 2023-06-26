@@ -3,7 +3,8 @@
 use specs::{FlaggedStorage, VecStorage, Component, HashMapStorage};
 
 use crate::coin::Coin;
-use crate::draw::ShapeTexture;
+use crate::draw::draw_line_collection::DrawLineCollection;
+use crate::draw::{ShapeTexture};
 use crate::ecs_utils::Componentable;
 //resources
 pub use crate::player::{Player};
@@ -62,5 +63,8 @@ impl<V: Componentable> Component for MaybeTarget<V> {
 }
 
 impl<V: Componentable> Component for MaybeSelected<V> {
+    type Storage = HashMapStorage<Self>;
+}
+impl<V: Componentable> Component for DrawLineCollection<V> {
     type Storage = HashMapStorage<Self>;
 }

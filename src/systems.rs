@@ -6,10 +6,24 @@ pub use crate::draw::{
 	TransformDrawLinesSystem,
 	DrawCursorSystem,
 	DrawSelectionBox,
+	draw_line_collection::DrawLineCollectionSystem
 };
 pub use crate::draw::clipping::{InFrontSystem};
-pub use self::shape_systems::{UpdateBBallSystem, UpdateBBoxSystem, TransformShapeSystem, UpdateStaticClippingSystem};
-pub use crate::input::{UpdateCameraSystem,PrintDebugSystem,SelectTargetSystem,ManipulateSelectedShapeSystem, CreateShapeSystem, DuplicateShapeSystem};
+pub use self::shape_systems::{
+	UpdateBBallSystem,
+	UpdateBBoxSystem,
+	TransformShapeSystem,
+	UpdateStaticClippingSystem
+};
+pub use crate::input::{
+	UpdateCameraSystem,
+	PrintDebugSystem,
+	SelectTargetSystem,
+	ManipulateSelectedShapeSystem,
+	CreateShapeSystem,
+	DuplicateShapeSystem,
+	UpdateSelectionBox
+};
 pub use crate::player::{ShapeTargetingSystem};
 pub use crate::collide::{
 	PlayerCollisionDetectionSystem,

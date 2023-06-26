@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use specs::{ReadStorage, WriteStorage, World, System};
 use specs::prelude::*;
 
-use crate::components::{BBox, HasBBox, ShapeLabel, ShapeType, ShapeClipState};
+use crate::components::{BBox, HasBBox, ShapeLabel, ShapeType, ShapeClipState, MaybeSelected, Player};
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::RefShapes;
 use crate::vector::MatrixTrait;

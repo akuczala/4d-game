@@ -1,5 +1,7 @@
 use crate::components::{Cursor,Transform};
+use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::color_cube_texture;
+use crate::draw::visual_aids::calc_grid_lines;
 use crate::ecs_utils::Componentable;
 use crate::geometry::transform::{Transformable, Scaling};
 use crate::graphics::colors::*;
@@ -195,12 +197,24 @@ where
     M: Componentable + Clone
 {
     let mut ref_shapes: RefShapes<V> = RefShapes::new();
-    build_lvl_1(world, &mut ref_shapes);
+    let cube = ShapeBuilder::<V>::build_cube(1.0).build();
+    let cube_label = ShapeLabel("Cube".to_string());
+    ref_shapes.insert(cube_label.clone(), cube);
+
+    //build_lvl_1(world, &mut ref_shapes, &cube_label);
     // for builder in build_fun_level::<V>(&mut ref_shapes) {
     //     insert_static_collider(world, builder);
     // }
     //build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
+    world.create_entity().with(
+        DrawLineCollection::from_lines(
+            calc_grid_lines(
+                V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 5
+            ),
+            WHITE.set_alpha(0.2)
+        )
+    ).build();
     init_player(world, V::zero());
     world.insert(ref_shapes);
 }
@@ -336,17 +350,14 @@ where
         .build();
 }
 
-pub fn build_lvl_1<V, U, M>(world : &mut World, ref_shapes: &mut RefShapes<V>)
+pub fn build_lvl_1<V, U, M>(world : &mut World, ref_shapes: &mut RefShapes<V>, cube_label: &ShapeLabel)
 where
 	V: VectorTrait<M = M, SubV =U> + Componentable,
 	U: VectorTrait + Componentable,
 	M: Componentable
 {
-    let cube = ShapeBuilder::<V>::build_cube(1.0).build();
     let coin: Shape<V> = ShapeBuilder::<V>::build_coin().build();
-    let cube_label = ShapeLabel("Cube".to_string());
     let coin_label = ShapeLabel("Coin".to_string());
-    ref_shapes.insert(cube_label.clone(), cube);
     ref_shapes.insert(coin_label.clone(), coin);
     let cube_builder = ShapeEntityBuilder::new_convex_from_ref_shape(ref_shapes, cube_label.clone());
 

@@ -3,7 +3,7 @@ use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MOD
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
 use crate::draw::ShapeTexture;
-use crate::ecs_utils::Componentable;
+use crate::ecs_utils::{Componentable, ModSystem};
 use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
 use crate::shape_entity_builder::ShapeEntityBuilder;
@@ -96,7 +96,7 @@ where
             pos_to_grid(&input, selected_transform);
             match (&mut input).movement_mode {
                 MovementMode::Shape(_) => {
-                    manipulate_shape(
+                    let update = manipulate_shape(
                         &mut input,
                         &mut manip_state,
                         selected_transform,
@@ -150,7 +150,7 @@ pub fn manipulate_shape<V: VectorTrait>(
     manip_state: &mut ShapeManipulationState<V, V::M>,
     transform: &mut Transform<V, V::M>,
     camera_transform: &Transform<V, V::M>,
-) {
+) -> bool {
     // TODO: align movement with camera frame
     set_axes(&mut input.toggle_keys, &mut manip_state.locked_axes, V::DIM);
     manip_state.snap = snapping_enabled(input);
@@ -200,9 +200,7 @@ pub fn manipulate_shape<V: VectorTrait>(
         }
     };
     manip_state.mode = new_mode;
-    if update {
-        
-    }
+    return update
 }
 pub struct SelectTargetSystem<V>(pub PhantomData<V>);
 impl <'a,V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V>
@@ -326,4 +324,43 @@ where
             // TODO: copy all shape components to new entity?
         }
     }
+}
+
+pub struct UpdateSelectionBox<V>(pub ModSystem<V>);
+
+impl<'a, V> System<'a> for UpdateSelectionBox<V>
+where V: Componentable + Clone
+{
+    type SystemData = (
+        ReadExpect<'a, Player>,
+        ReadStorage<'a, Shape<V>>,
+        WriteStorage<'a, MaybeSelected<V>>,
+    );
+
+    fn run(
+        &mut self,
+        (
+            player,
+            read_shapes,
+            mut write_maybe_selected,
+        ): Self::SystemData
+    ) {
+        if let Some(MaybeSelected(Some(selected))) = write_maybe_selected.get_mut(player.0) {
+            for event in read_shapes.channel().read(self.0.reader_id.as_mut().unwrap()) {
+                match event {
+                    ComponentEvent::Modified(id) => if *id == selected.entity.id() {
+                        selected.selection_box_shape = read_shapes.get(selected.entity).unwrap().clone()
+                    },
+                    _ => {}
+                }
+            }
+        }
+    }
+    fn setup(&mut self, world: &mut World) {
+        Self::SystemData::setup(world);
+        self.0.reader_id = Some(
+            WriteStorage::<Shape<V>>::fetch(&world).register_reader()
+        );
+    }
+
 }

@@ -7,9 +7,12 @@ mod tests{
 
     use crate::{vector::{VectorTrait, Vec3, is_close, Vec2, Mat3}, geometry::shape::{buildshapes::ShapeBuilder, RefShapes}, components::{Shape, ShapeLabel, Transform}, build_level::build_lvl_1, saveload::{save_level, SaveMarker, Save, load_level}, engine::get_engine_dispatcher_builder};
 
+    fn get_cube_label() -> ShapeLabel {
+        ShapeLabel("Cube".to_string())
+    }
     fn build_ref_shapes<V: VectorTrait>() -> RefShapes<V> {
         let mut ref_shapes = RefShapes::new();
-        ref_shapes.insert(ShapeLabel("Cube".to_string()), ShapeBuilder::build_cube(1.0).build());
+        ref_shapes.insert(get_cube_label(), ShapeBuilder::build_cube(1.0).build());
         ref_shapes.insert(ShapeLabel("Coin".to_string()), ShapeBuilder::build_coin().build());
         ref_shapes
     }
@@ -64,7 +67,7 @@ mod tests{
     fn serialize_world() {
         let mut ref_shapes = build_ref_shapes::<Vec3>();
         let mut world = new_world();
-        build_lvl_1(&mut world, &mut ref_shapes);
+        build_lvl_1(&mut world, &mut ref_shapes, &get_cube_label());
         let initial_count = world.read_component::<Shape<Vec3>>().count();
         //let mut writer = Vec::new();
         let mut serializer = serde_json::Serializer::new(Vec::new());

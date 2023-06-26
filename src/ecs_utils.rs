@@ -17,7 +17,7 @@ pub struct ModSystem<V> {
 }
 
 
-impl<V: VectorTrait + Componentable> ModSystem<V> {
+impl<V: Componentable> ModSystem<V> {
     pub fn typed_default(ph: PhantomData<V>) -> Self {
         Self {
             ph,

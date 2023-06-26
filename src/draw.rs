@@ -1,8 +1,12 @@
 use std::marker::PhantomData;
 
+use itertools::Itertools;
+use rand::seq::IteratorRandom;
+use serde::__private::de;
 use specs::prelude::*;
 
 use clipping::{ClipState,clip_line_plane, clip_line_cube};
+use specs::rayon::iter::Chain;
 pub use texture::{Texture, TextureMapping, ShapeTexture, FaceTexture};
 
 use crate::components::*;
@@ -10,12 +14,14 @@ use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{Line, Shape, shape::VertIndex};
 use crate::graphics::colors::*;
-use crate::vector::{Field, VectorTrait};
+use crate::vector::{Field, VectorTrait, linspace, VecIndex};
 
 use self::texture::draw_face_texture;
 
 pub mod texture;
 pub mod clipping;
+pub mod draw_line_collection;
+pub mod visual_aids;
 
 extern crate map_in_place;
 
@@ -419,4 +425,3 @@ pub fn draw_wireframe_with_normals<V: VectorTrait>(
 	draw_lines
 
 }
-

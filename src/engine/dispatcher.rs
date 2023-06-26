@@ -42,6 +42,7 @@ where
         )
         //draw selection box in the space
         .with(DrawSelectionBox(ph), "draw_selection_box", &["in_front"])
+        .with(DrawLineCollectionSystem(ph), "line_selection_system", &["in_front"])
         //project lines
         .with(
             TransformDrawLinesSystem(ph),
@@ -52,7 +53,7 @@ where
         .with(
             DrawCursorSystem(ph),
             "draw_cursor",
-            &["calc_shapes_lines", "draw_selection_box"],
+            &["calc_shapes_lines", "draw_selection_box", "line_selection_system"],
         )
 }
 
@@ -124,6 +125,7 @@ where
             "transform_shapes",
             &["manipulate_selected", "coin_spinning"],
         )
+        .with(UpdateSelectionBox(ModSystem::typed_default(ph)), "update_selection_box", &["transform_shapes"])
         .with(UpdatePlayerBBox(ph), "update_player_bbox", &["move_player"]) //merge with above
         .with(
             UpdateBBoxSystem(ModSystem::typed_default(ph)),
