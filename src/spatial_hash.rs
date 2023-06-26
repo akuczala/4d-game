@@ -5,6 +5,7 @@ use crate::vector::{VectorTrait,Field};
 pub type HashInt = u32;
 
 //NOTE: V here is "VALUE" not vector
+//TODO: use BTree Hash?
 pub struct SpatialHash<K, V> {
 	map : HashMap<HashInt, V>,
 	min : K,

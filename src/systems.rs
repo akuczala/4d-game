@@ -22,6 +22,7 @@ pub use crate::input::{
 	ManipulateSelectedShapeSystem,
 	CreateShapeSystem,
 	DuplicateShapeSystem,
+	DeleteShapeSystem,
 	UpdateSelectionBox
 };
 pub use crate::player::{ShapeTargetingSystem};

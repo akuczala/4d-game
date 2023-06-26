@@ -13,6 +13,8 @@ pub const FREE_MODE: VKC = VKC::F;
 pub const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::Key1, 0), (VKC::Key2, 1), (VKC::Key3, 2), (VKC::Key4, 3)];
 
 pub const CREATE_SHAPE: VKC = VKC::Period;
+// TODO: store combos in toggle keys so we can use shift-period or other combo to delete
+pub const DELETE_SHAPE: VKC = VKC::Semicolon;
 pub const DUPLICATE_SHAPE: VKC = VKC::Slash;
 pub const RESET_ORIENTATION: VKC = VKC::Comma;
 
@@ -36,4 +38,12 @@ pub const MOVE_BACKWARDS: VKC = VKC::S;
 
 pub const PRINT_DEBUG: VKC = VKC::Space;
 
-pub const TOGGLEABLE_KEYS: [VKC; 6] = [AXIS_KEYMAP[0].0, AXIS_KEYMAP[1].0, AXIS_KEYMAP[2].0, AXIS_KEYMAP[3].0, CREATE_SHAPE, DUPLICATE_SHAPE];
+pub const TOGGLEABLE_KEYS: [VKC; 7] = [
+    AXIS_KEYMAP[0].0,
+    AXIS_KEYMAP[1].0,
+    AXIS_KEYMAP[2].0,
+    AXIS_KEYMAP[3].0,
+    CREATE_SHAPE,
+    DUPLICATE_SHAPE,
+    DELETE_SHAPE,
+    ];

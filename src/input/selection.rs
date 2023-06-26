@@ -1,8 +1,10 @@
 use super::input_to_transform::{set_axes, snapping_enabled, axis_rotation, reset_orientation_and_scale, pos_to_grid};
-use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE, DUPLICATE_SHAPE};
+use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MODE, FREE_MODE, CREATE_SHAPE, DUPLICATE_SHAPE, DELETE_SHAPE};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
+use crate::cleanup::DeletedEntities;
 use crate::draw::ShapeTexture;
+use crate::draw::texture::{color_cube, color_cube_texture};
 use crate::ecs_utils::{Componentable, ModSystem};
 use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
@@ -96,7 +98,7 @@ where
             pos_to_grid(&input, selected_transform);
             match (&mut input).movement_mode {
                 MovementMode::Shape(_) => {
-                    let update = manipulate_shape(
+                    manipulate_shape(
                         &mut input,
                         &mut manip_state,
                         selected_transform,
@@ -268,7 +270,8 @@ where
                 shape_label,
             )
             .with_transform(Transform::pos(shape_pos))
-            .with_scale(Scaling::Scalar(0.5))
+            .with_scale(Scaling::Scalar(1.0))
+            .with_texturing_fn(color_cube_texture)
             .insert(e, &lazy);
             lazy.insert(e, StaticCollider);
             // TODO: add to spatial hash set (use BBox hash system)
@@ -326,6 +329,42 @@ where
     }
 }
 
+pub struct DeleteShapeSystem<V>(pub PhantomData<V>);
+
+impl <'a, V> System<'a> for DeleteShapeSystem<V>
+where V: Componentable
+{
+    type SystemData = (
+        ReadExpect<'a, Player>,
+        WriteStorage<'a, MaybeSelected<V>>,
+        WriteExpect<'a, Input>,
+        Write<'a, DeletedEntities>,
+        Entities<'a>
+    );
+
+    fn run(
+        &mut self,
+        (
+            player,
+            mut write_maybe_selected,
+            mut input,
+            mut deleted_entities,
+            entities
+        ): Self::SystemData
+    ) {
+        if input.toggle_keys.state(DELETE_SHAPE) {
+            println!("Delete shape");
+            let mut maybe_selected = write_maybe_selected.get_mut(player.0).unwrap();
+            if let Some(selected) = &maybe_selected.0 {
+                let e = selected.entity;
+                deleted_entities.add(e);
+                entities.delete(e).unwrap();
+                maybe_selected.0 = None;
+            }
+            input.toggle_keys.remove(DELETE_SHAPE);
+        }
+    }
+}
 pub struct UpdateSelectionBox<V>(pub ModSystem<V>);
 
 impl<'a, V> System<'a> for UpdateSelectionBox<V>

@@ -14,9 +14,10 @@ use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{Line, Shape, shape::VertIndex};
 use crate::graphics::colors::*;
-use crate::vector::{Field, VectorTrait, linspace, VecIndex};
+use crate::vector::{Field, VectorTrait, linspace, VecIndex, barycenter};
 
 use self::texture::draw_face_texture;
+use self::visual_aids::{draw_wireframe, draw_axes};
 
 pub mod texture;
 pub mod clipping;
@@ -209,9 +210,14 @@ impl<'a,V : VectorTrait + Componentable> System<'a> for DrawSelectionBox<V>
 
 		for maybe_selected in (&selected_storage).join() {
 			if let MaybeSelected(Some(selected)) = maybe_selected {
-				for line in draw_wireframe(&selected.selection_box_shape,WHITE).into_iter() {
-					draw_lines.0.push(line);
-				}
+				draw_lines.0.extend(
+					draw_wireframe(&selected.selection_box_shape,WHITE)
+				);
+				draw_lines.0.extend(
+					draw_axes(barycenter(&selected.selection_box_shape.verts), 1.0)
+					.into_iter()
+					.map(Option::Some)
+				)
 			}
 
 		}
@@ -387,41 +393,4 @@ where
 	}
 	lines
 	
-}
-
-pub fn draw_wireframe<V>(//display : &glium::Display,
-	shape : &Shape<V>, color : Color) -> Vec<Option<DrawLine<V>>>
-where V: VectorTrait
-{
-	//concatenate vertex indices from each edge to get list
-	//of indices for drawing lines
-	let mut vertis : Vec<VertIndex> = Vec::new(); 
-    for edge in shape.edges.iter() {
-        vertis.push(edge.0);
-        vertis.push(edge.1);
-    }
-
-    let lines : Vec<Option<Line<V>>> = vertis.chunks(2)
-    	.map(|pair| Some(Line(shape.verts[pair[0]],shape.verts[pair[1]]))).collect();
-    
-    let draw_lines = lines.into_iter().map(|opt_line| opt_line
-    	.map(|line| DrawLine{line,color})).collect();
-
-    draw_lines
-
-}
-pub fn draw_wireframe_with_normals<V: VectorTrait>(
-						 shape : &Shape<V>, color : Color) -> Vec<Option<DrawLine<V>>>
-{
-	let mut draw_lines = draw_wireframe(shape, color);
-	draw_lines.extend(
-		shape.faces.iter().map(|face|
-			Some(DrawLine{
-				line: Line(face.center(), face.center() + face.normal()/2.0),
-				color
-			})
-		)
-	);
-	draw_lines
-
 }
