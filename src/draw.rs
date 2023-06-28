@@ -16,6 +16,7 @@ use crate::geometry::{Line, Shape, shape::VertIndex};
 use crate::graphics::colors::*;
 use crate::vector::{Field, VectorTrait, linspace, VecIndex, barycenter};
 
+use self::clipping::{clip_line_cylinder, clip_line_sphere, clip_line_tube};
 use self::texture::draw_face_texture;
 use self::visual_aids::{draw_wireframe, draw_axes};
 
@@ -32,6 +33,18 @@ const SMALL_Z : Field = 0.001;
 const Z_NEAR : Field = 0.1; 
 
 const CLIP_SPHERE_RADIUS : Field = 0.5;
+
+const VIEWPORT_SHAPE: ViewportShape = ViewportShape::Cylinder;
+
+#[derive(Clone, Copy)]
+pub enum ViewportShape {
+	Cube,
+	Sphere,
+	Cylinder,
+	Tube,
+	None
+}
+
 #[derive(Clone,Copy)]
 pub struct DrawVertex<V>
 where V: VectorTrait
@@ -91,7 +104,7 @@ fn view_transform<V: VectorTrait>(transform : &Transform<V, V::M>, point : V) ->
 pub fn transform_line<V: VectorTrait>(line : Option<Line<V>>, transform : &Transform<V, V::M>, camera: &Camera<V, V::M>) -> Option<Line<V::SubV>>
 where V : VectorTrait
 {
-	let clipped_line = match line {Some(l) => clip_line_plane(l,&camera.plane,Z_NEAR), None => None};
+	let clipped_line = line.and_then(|l| clip_line_plane(l,&camera.plane,Z_NEAR));
 
 	let view_line = clipped_line
 		.map(|l| l
@@ -99,7 +112,15 @@ where V : VectorTrait
 	let proj_line = view_line
 		.map(|l| l
 		.map(project));
-	let clip_proj_line = match proj_line {Some(l) => clip_line_cube(l,CLIP_SPHERE_RADIUS), None => None};
+	let clip_proj_line = proj_line.and_then(
+		|l| match VIEWPORT_SHAPE {
+			ViewportShape::Cube => clip_line_cube(l,CLIP_SPHERE_RADIUS),
+			ViewportShape::Sphere => clip_line_sphere(l,CLIP_SPHERE_RADIUS),
+			ViewportShape::Cylinder => clip_line_cylinder(l,CLIP_SPHERE_RADIUS, CLIP_SPHERE_RADIUS),
+			ViewportShape::Tube => clip_line_tube(l, CLIP_SPHERE_RADIUS),
+			ViewportShape::None => Some(l),
+		} 
+	);
 	clip_proj_line
 }
 

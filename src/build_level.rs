@@ -210,7 +210,7 @@ where
     world.create_entity().with(
         DrawLineCollection::from_lines(
             calc_grid_lines(
-                V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 5
+                V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 2
             ),
             WHITE.set_alpha(0.2)
         )

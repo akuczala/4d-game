@@ -6,22 +6,37 @@ use serde::{Deserialize, Serialize};
 pub use shape::{Shape,Face};
 pub use transform::{Transformable,Transform};
 use std::fmt;
-use crate::vector::{VectorTrait,Field,is_close,barycenter};
+use crate::vector::{VectorTrait,Field,is_close,barycenter, scalar_linterp};
 
 #[derive(Clone)]
 pub struct Line<V>(pub V, pub V);
-impl<V : VectorTrait> fmt::Display for Line<V> {
+impl<V : fmt::Display> fmt::Display for Line<V> {
         // This trait requires `fmt` with this exact signature.
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 write!(f, "Line({},{})", self.0,self.1)
         }
 }
-impl<V : VectorTrait> Line<V> {
+impl<V: Copy> Line<V> {
     pub fn map<F,U>(&self, f : F) -> Line<U>
-    where U : VectorTrait,
-    F : Fn(V) -> U
-    {
+    where F: Fn(V) -> U {
         Line(f(self.0),f(self.1))
+    }
+    pub fn zip_map<F, U: Copy, W>(&self, other: Line<U>, f: F) -> Line<W>
+    where F: Fn(V, U) -> W {
+        Line(f(self.0, other.0), f(self.1, other.1))
+    }
+}
+impl<V: VectorTrait> Line<V> {
+    pub fn is_close(&self, other: &Line<V>) -> bool {
+        V::is_close(self.0, other.0) && V::is_close(self.1, other.1)
+    }
+    pub fn linterp(&self, t: Field) -> V {
+        V::linterp(self.0, self.1, t)
+    }
+}
+impl Line<Field> {
+    pub fn linterp(&self, t: Field) -> Field {
+        scalar_linterp(self.0, self.1, t)
     }
 }
 #[derive(Clone, Serialize, Deserialize)]
@@ -66,7 +81,7 @@ impl<V: VectorTrait> Plane<V> {
         )
     }
 }
-impl<V : VectorTrait> fmt::Display for Plane<V> {
+impl<V : fmt::Display> fmt::Display for Plane<V> {
         // This trait requires `fmt` with this exact signature.
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 write!(f, "n={},th={}", self.normal,self.threshold)
@@ -98,43 +113,98 @@ pub struct Sphere<V : VectorTrait>{pos : V, radius : Field}
 
 
 //returns either none or pair of intersecting points
-//note that tm and p are NOT bound between 0 and 1
+
 pub fn sphere_line_intersect<V : VectorTrait>(line : Line<V>, r : Field) -> Option<Line<V>> {
-
+        fn t_in_range(t: Field) -> bool {
+            0.0 < t && t < 1.0
+        }
         let v0 = line.0;
-        let v1 = line.1;
-        let dv = v1 - v0;
-        let dv_norm = dv.norm();
-        let dv = dv / dv_norm;
-
-        //in our case, sphere center is the origin
-        let v0_rel = v0;  // - sphere_center
-        let v0r_dv = v0_rel.dot(dv);
-
-        let discr = (v0r_dv)*(v0r_dv) - v0_rel.dot(v0_rel) + r * r;
-
-        //print('discr',discr)
-        //no intersection with line
-        if discr < 0. {
-            return None;
-        }
-                
-
-        let sqrt_discr = discr.sqrt();
-        let tm = -v0r_dv - sqrt_discr;
-        let tp = -v0r_dv + sqrt_discr;
-
-        //print('tm,tp',tm,tp)
-        //no intersection with line segment
-        if tm > dv_norm && tp > dv_norm {
-            return None;
-        }
-        if tm < 0. && tp < 0. {
-            return None;
-        }
-        let intersect_points = Line(v0 + dv*tm, v0 + dv*tp);
-        
-        Some(intersect_points)
+        let dv = line.1 - line.0;
+        // shouldn't this return None if the line segment is within the sphere?
+        // not what we want, but is how im understanding this
+        sphere_t_intersect_infinite_normed(line, r).filter(
+            |Line(tm, tp)| !((*tm < 0.0 && *tp < 0.0) || (*tm > 1.0 && *tp > 1.0))
+        ).map(
+            |Line(tm, tp)| Line(v0 + dv * tm, v0 + dv * tp)
+        )
 }
 
+// returns either none or (pair of roots, normed dv)
+//note that tm and tp are NOT bound between 0 and 1
+// tm and tp are in units of distance; the line segment goes from t=0 to t=dv.norm()
+// this fn returns None if the segment is completely outside the sphere, and returns both tm and tp if it is
+// inside or partially inside
+pub fn sphere_t_intersect<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<Field>> {
+    let v0 = line.0;
+    let v1 = line.1;
+    let dv = v1 - v0;
+    let dv_norm = dv.norm();
+    let dv = dv / dv_norm;
 
+    let v0r_dv = v0.dot(dv);
+
+    let discr = (v0r_dv)*(v0r_dv) - v0.dot(v0) + r * r;
+
+    //no intersection with line
+    if discr < 0. {
+        return None;
+    }
+            
+
+    let sqrt_discr = discr.sqrt();
+    let tm = -v0r_dv - sqrt_discr;
+    let tp = -v0r_dv + sqrt_discr;
+
+    //print('tm,tp',tm,tp)
+    //no intersection with line segment
+    if tm > dv_norm && tp > dv_norm {
+        return None;
+    }
+    if tm < 0. && tp < 0. {
+        return None;
+    }
+    Some(Line(tm, tp))
+}
+
+// normalize t from 0 to 1 (line.0 to line.1)
+// returns None only if inifinte extended line does not intersect sphere
+// we really only need v0 and (v1 - v0) as arguments
+pub fn sphere_t_intersect_infinite_normed<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<Field>> {
+    let v0 = line.0;
+    let v1 = line.1;
+    let dv = v1 - v0;
+    let dv_norm = dv.norm();
+    let dv = dv / dv_norm;
+
+    let v0r_dv = v0.dot(dv);
+
+    let discr = (v0r_dv)*(v0r_dv) - v0.dot(v0) + r * r;
+
+    //no intersection with line
+    if discr < 0. {
+        return None;
+    }
+            
+
+    let sqrt_discr = discr.sqrt();
+    let tm = (-v0r_dv - sqrt_discr) / dv_norm;
+    let tp = (-v0r_dv + sqrt_discr) / dv_norm;
+
+    Some(Line(tm, tp))
+}
+
+#[test]
+fn test_sphere_t_infinite_normed() {
+    use crate::vector::Vec2;
+    let line = Line(Vec2::new(-0.3333, -1.0), Vec2::new(-0.3333, 1.666));
+    let roots = sphere_t_intersect_infinite_normed(line, 0.5);
+    println!("{}", roots.unwrap())
+}
+
+#[test]
+fn test_sphere_line_intersect() {
+    use crate::vector::Vec2;
+    let line = Line(Vec2::new(-0.2, -0.2), Vec2::new(0.2, 0.2));
+    let v = sphere_line_intersect(line, 0.5);
+    println!("{}", v.unwrap())
+}

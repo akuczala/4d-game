@@ -3,10 +3,10 @@ pub mod bball;
 use std::collections::{HashSet,HashMap};
 use crate::ecs_utils::Componentable;
 use crate::player::Player;
-use crate::vector::{VectorTrait,Field};
+use crate::vector::{VectorTrait,Field, VecIndex};
 
-use crate::geometry::{Line,Plane};
-use crate::draw::DrawLine;
+use crate::geometry::{Line,Plane, sphere_line_intersect, sphere_t_intersect, sphere_t_intersect_infinite_normed};
+use crate::draw::{DrawLine, project};
 use crate::components::{Transform,Shape};
 
 use specs::prelude::*;
@@ -243,14 +243,18 @@ pub fn clip_line_cube<V : VectorTrait>(line : Line<V>, r : Field) -> Option<Line
         )
         .flatten();
     //successively clip on each plane
-    let mut clip_line = Some(line);
+    let mut clipped_line = Some(line);
     for plane in planes_iter {
-        clip_line = match clip_line {
-            Some(line) => clip_line_plane(line,&plane,0.),
-            None => None,
-        }
+        clipped_line = clipped_line.and_then(|line| clip_line_plane(line,&plane,0.));
     }
-    clip_line
+    clipped_line
+    // todo: fold
+    // planes_iter.fold(
+    //     Some(line), 
+    //     |clipped, plane| clipped.and_then(
+    //         |line| clip_line_plane(line, &plane, 0.0)
+    //     )
+    // )
 }
 pub fn clip_line_sphere<V :VectorTrait>(line : Line<V>, r : Field) -> Option<Line<V>> {
     let v0 = line.0;
@@ -264,20 +268,138 @@ pub fn clip_line_sphere<V :VectorTrait>(line : Line<V>, r : Field) -> Option<Lin
     }
 
     let intersect = crate::geometry::sphere_line_intersect(line, r);
-    match &intersect {
-        None => None,
-        Some(ref iline) => {
-            if !v0_in_sphere && !v1_in_sphere {
-                intersect
-            } else if !v0_in_sphere && v1_in_sphere {
-                Some(Line(iline.0, v1))
-            } else {
-                Some(Line(v0, iline.1))
-            }
-        }
-    }
+    intersect.and_then(
+        |iline: Line<V>| match (v0_in_sphere, v1_in_sphere) {
+            (false, false) => Some(iline),
+            (false, true) => Some(Line(iline.0, v1)),
+            (true, false) => Some(Line(v0, iline.1)),
+            (true, true) => Some(iline) // will never reach this case (handled above)
+        } 
+    )
     
 }
+pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> Option<Line<V>> {
+    // yes this is lame
+    if V::DIM != 3 {
+        return clip_line_cube(line, r)
+    }
+    // below only works for 3D
+
+    //first clip with planes on top and bottom
+    let long_axis = 1;
+    let planes_iter = ([-1., 1.]).iter()
+        .map(move |&sign| Plane{normal : V::one_hot(long_axis)*sign, threshold : -h});
+    let mut clipped_line = Some(line);
+    for plane in planes_iter {
+        clipped_line = clipped_line.and_then(|line| clip_line_plane(line,&plane,0.));
+    }
+    clipped_line.and_then(|l: Line<V>| clip_line_tube(l, r))
+    //clipped_line
+    // project line to 2D, clip by circle, and then project back up
+    // clipped_line.and_then(
+    //     |line|  {
+    //         let proj_line: Line<V::SubV> = line.map(|p| V::SubV::from_iter(vec![p[0],p[2]].iter()));
+    //         let clipped_proj_line = clip_line_sphere(proj_line, r);
+    //         clipped_proj_line.map(
+    //             |cline| cline.zip_map(
+    //                 line,
+    //                 |cline_p, line_p| V::from_iter(vec![
+    //                     cline_p[0], line_p[1], cline_p[1]
+    //                 ].iter())
+    //             )
+    //         )
+    //     }
+    // )
+}
+
+// clip line in infinite cylinder
+pub fn clip_line_tube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>> {
+    if V::DIM < 3 {
+        return clip_line_cube(line, r) // this isn't quite right but whatevs
+    }
+    fn build_vec<V: VectorTrait>(u: V::SubV, a: Field, long_axis: VecIndex) -> V {
+        let mut u_iter = u.iter();
+        V::from_iter(
+            (0..V::DIM).map(
+                |i| if i == long_axis {
+                    a
+                } else {
+                    *u_iter.next().unwrap()
+                }
+            )
+            .collect::<Vec<Field>>().iter()
+        )
+    }
+    let long_axis = 1;
+    // this kind of shit, where we're just dropping an index, should be a library fn
+    // this is also probably not very fast
+    let proj_line: Line<V::SubV> = line.map(
+        |p| V::SubV::from_iter(
+            (0..V::DIM).filter(|&i| i != long_axis).map(|i| p[i]).collect::<Vec<Field>>().iter()
+        )
+    );
+    let perp = line.map(|p| p[long_axis]);
+    let t_roots = sphere_t_intersect_infinite_normed(proj_line.clone(), r);
+    fn t_in_range(t: Field) -> bool {
+        0.0 < t && t < 1.0
+    }
+    //println!("t_roots: {}",t_roots.clone().unwrap());
+    t_roots
+    .filter(
+        // eliminate lines segments outside the circle entirely
+        |Line(tm, tp)| !((*tm < 0.0 && *tp < 0.0) || (*tm > 1.0 && *tp > 1.0)) 
+    )
+    .map(
+        |Line(tm, tp)| match (t_in_range(tm), t_in_range(tp)) {
+            // line segment passes all the way through the circle
+            (true, true) => Line(
+                build_vec(proj_line.linterp(tm), perp.linterp(tm), long_axis),
+                build_vec(proj_line.linterp(tp), perp.linterp(tp), long_axis)
+            ),
+            // second point in sphere
+            (true, false) => Line(
+                build_vec(proj_line.linterp(tm), perp.linterp(tm), long_axis),
+                line.1
+            ),
+            // first point in sphere
+            (false, true) => Line(
+                line.0,
+                build_vec(proj_line.linterp(tp), perp.linterp(tp), long_axis)
+            ),
+            // line segment contained within the circle (intersection points outside (0,1))
+            (false, false) => line
+        }
+    )
+}
+
+#[test]
+fn test_clip_line_cylinder() {
+    use crate::vector::Vec3;
+    let line = Line(Vec3::new(0.5, 0.6, 0.7), Vec3::new(-0.4, -0.8, -0.9));
+    let clipped_line = clip_line_cylinder(line.clone(), 1.0, 1.0);
+    println!("clipped line {:}", clipped_line.clone().unwrap());
+    assert!(clipped_line.unwrap().is_close(&line));
+
+    // this test is bad and it should feel bad (not how clipping in a cylinder works)
+    let line = Line(Vec3::new(-2.0, 0.5, 0.0), Vec3::new(2.0, 0.8, 0.0));
+    let clipped_line = clip_line_cylinder(line.clone(), 1.0, 1.0);
+    let expected_line = Line(Vec3::new(-1.0, 0.5, 0.0), Vec3::new(1.0, 0.8, 0.0));
+    println!("clipped line {:}", clipped_line.clone().unwrap());
+    assert!(clipped_line.unwrap().is_close(&expected_line));
+}
+
+#[test]
+fn test_tube_clipping() {
+    use crate::vector::Vec3;
+    //let line = Line(Vec3::new(-0.3333, -1.0, -0.333), Vec3::new(-0.3333, 1.666, 0.333));
+    let line = Line(
+        Vec3::new(-1.0, 2.0, 1.0),
+        Vec3::new(0.4, -1.0, 0.1)
+    );
+    let clipped_line = clip_line_tube(line, 0.5);
+    println!("{}", clipped_line.unwrap())
+}
+
 pub enum ReturnLines<V>
 {
     TwoLines(Line<V>,Line<V>),
