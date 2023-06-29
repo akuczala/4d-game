@@ -5,17 +5,8 @@ mod tests{
     use serde::{Serialize, Deserialize, de::DeserializeOwned};
     use specs::{World, WorldExt, saveload::{SimpleMarkerAllocator, SerializeComponents}};
 
-    use crate::{vector::{VectorTrait, Vec3, is_close, Vec2, Mat3}, geometry::shape::{buildshapes::ShapeBuilder, RefShapes}, components::{Shape, ShapeLabel, Transform}, build_level::build_lvl_1, saveload::{save_level, SaveMarker, Save, load_level}, engine::get_engine_dispatcher_builder};
+    use crate::{vector::{VectorTrait, Vec3, is_close, Vec2, Mat3}, geometry::shape::{buildshapes::ShapeBuilder, RefShapes}, components::{Shape, ShapeLabel, Transform}, build_level::{build_lvl_1, build_shape_library}, saveload::{save_level, SaveMarker, Save, load_level}, engine::get_engine_dispatcher_builder, constants::CUBE_LABEL_STR};
 
-    fn get_cube_label() -> ShapeLabel {
-        ShapeLabel("Cube".to_string())
-    }
-    fn build_ref_shapes<V: VectorTrait>() -> RefShapes<V> {
-        let mut ref_shapes = RefShapes::new();
-        ref_shapes.insert(get_cube_label(), ShapeBuilder::build_cube(1.0).build());
-        ref_shapes.insert(ShapeLabel("Coin".to_string()), ShapeBuilder::build_coin().build());
-        ref_shapes
-    }
 
     fn new_world() -> World {
         let mut world = World::new();
@@ -51,7 +42,7 @@ mod tests{
             test_json(shape.clone());
 
             
-            test_json(build_ref_shapes::<V>());
+            test_json(build_shape_library::<V>());
 
             let transform: Transform<V, V::M> = Transform::identity().with_rotation(0, 1, 0.1);
             test_json(transform);
@@ -65,9 +56,9 @@ mod tests{
 
     #[test]
     fn serialize_world() {
-        let mut ref_shapes = build_ref_shapes::<Vec3>();
+        let mut ref_shapes = build_shape_library::<Vec3>();
         let mut world = new_world();
-        build_lvl_1(&mut world, &mut ref_shapes, &get_cube_label());
+        build_lvl_1(&mut world, &mut ref_shapes);
         let initial_count = world.read_component::<Shape<Vec3>>().count();
         //let mut writer = Vec::new();
         let mut serializer = serde_json::Serializer::new(Vec::new());

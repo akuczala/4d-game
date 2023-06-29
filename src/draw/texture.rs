@@ -1,5 +1,6 @@
 use super::{DrawLine};
 
+use crate::constants::N_FUZZ_LINES;
 use crate::vector::{VectorTrait,Field,VecIndex};
 use crate::geometry::{Line,shape::{VertIndex,Shape,Face,Edge}};
 
@@ -30,6 +31,23 @@ impl<U: Clone> ShapeTexture<U> {
 	pub fn with_texture(mut self, face_texture: FaceTexture<U>) -> Self {
 		for face in self.face_textures.iter_mut() {
 			*face = face_texture.clone();
+		}
+		self
+	}
+	pub fn map_textures<F>(mut self, f: F) -> Self
+	where F: Fn(FaceTexture<U>) -> FaceTexture<U> {
+		for face in self.face_textures.iter_mut() {
+			take_mut::take(face, |face| f(face));
+		}
+		self
+	}
+	pub fn zip_textures_with<I, T, F>(mut self, iter: I, f: F) -> Self
+	where
+		F: Fn(FaceTexture<U>, T) -> FaceTexture<U>,
+		I: Iterator<Item = T>,
+	{
+		for (face, item) in self.face_textures.iter_mut().zip(iter) {
+			take_mut::take(face, |face| f(face, item));
 		}
 		self
 	}
@@ -95,6 +113,12 @@ impl<V> Texture<V> {
 	}
 }
 impl<V: VectorTrait> Texture<V> {
+	pub fn make_single_tile_texture(color: Color) -> Self {
+		Texture::make_tile_texture(
+			&vec![0.9], 
+			&(0..V::DIM).map(|_| 1).collect_vec()
+		).set_color(color)
+	}
 	pub fn make_tile_texture(scales : &Vec<Field>, n_divisions : &Vec<i32>) -> Self {
 		if V::DIM != n_divisions.len() as VecIndex {
 			panic!("make_tile_texture: Expected n_divisions.len()={} but got {}", V::DIM, n_divisions.len());
@@ -158,6 +182,12 @@ impl<V: VectorTrait> Texture<V> {
 	}
 	pub fn merged_with(&self, texture: &Texture<V>) -> Texture<V> {
 		match (self, texture) {
+			(Texture::DefaultLines { color: color_1 }, other) => {
+				Texture::make_single_tile_texture(*color_1).merged_with(other)
+			}
+			(_, Texture::DefaultLines { color: color_2 }) => {
+				self.merged_with(&Texture::make_single_tile_texture(*color_2))
+			}
 			(Texture::Lines{lines: lines_1, color}, Texture::Lines{lines: lines_2, ..}) => Texture::Lines{
 				lines: {
 					let mut lines = lines_1.clone();
@@ -267,6 +297,18 @@ pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::
 			}
 		).collect()
 	}
+}
+
+pub fn fuzzy_color_cube_texture<V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::SubV> {
+	color_cube_texture(shape).zip_textures_with(
+		shape.faces.iter(),
+		|face_tex, face| FaceTexture {
+			texture: face_tex.texture.merged_with(
+				&Texture::make_fuzz_texture(N_FUZZ_LINES)
+			),
+			texture_mapping: Some(TextureMapping::calc_cube_vertis(face, &shape.verts, &shape.edges))
+		}
+	)
 }
 
 pub fn color_duocylinder<V: VectorTrait>(shape_texture : &mut ShapeTexture<V::SubV>, m : usize, n : usize) {

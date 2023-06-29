@@ -4,7 +4,7 @@ use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMov
 
 use crate::cleanup::DeletedEntities;
 use crate::draw::ShapeTexture;
-use crate::draw::texture::{color_cube, color_cube_texture};
+use crate::draw::texture::{color_cube, color_cube_texture, fuzzy_color_cube_texture};
 use crate::ecs_utils::{Componentable, ModSystem};
 use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
@@ -271,7 +271,7 @@ where
             )
             .with_transform(Transform::pos(shape_pos))
             .with_scale(Scaling::Scalar(1.0))
-            .with_texturing_fn(color_cube_texture)
+            .with_texturing_fn(fuzzy_color_cube_texture)
             .insert(e, &lazy);
             lazy.insert(e, StaticCollider);
             // TODO: add to spatial hash set (use BBox hash system)

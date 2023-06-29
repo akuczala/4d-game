@@ -31,6 +31,11 @@ impl Display for ShapeLabel {
         write!(f, "ShapeLabel({})", self.0)
     }
 }
+impl ShapeLabel {
+    pub fn from_str(str: &str) -> Self {
+        ShapeLabel(str.to_string())
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct RefShapes<V>(HashMap<ShapeLabel,Shape<V>>);

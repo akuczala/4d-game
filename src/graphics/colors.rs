@@ -1,10 +1,10 @@
 #[derive(Copy,Clone)]
 pub struct Color(pub [f32 ; 4]);
 impl Color {
-	pub fn get_arr(&self) -> &[f32 ; 4] {
+	pub const fn get_arr(&self) -> &[f32 ; 4] {
 		&self.0
 	}
-	pub fn set_alpha(self, alpha : f32) -> Color {
+	pub const fn set_alpha(self, alpha : f32) -> Color {
 		let mut arr = *self.get_arr();
 		arr[3] = alpha;
 		Color(arr)

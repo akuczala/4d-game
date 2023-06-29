@@ -10,6 +10,7 @@ use specs::rayon::iter::Chain;
 pub use texture::{Texture, TextureMapping, ShapeTexture, FaceTexture};
 
 use crate::components::*;
+use crate::constants::SELECTION_COLOR;
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{Line, Shape, shape::VertIndex};
@@ -232,7 +233,7 @@ impl<'a,V : VectorTrait + Componentable> System<'a> for DrawSelectionBox<V>
 		for maybe_selected in (&selected_storage).join() {
 			if let MaybeSelected(Some(selected)) = maybe_selected {
 				draw_lines.0.extend(
-					draw_wireframe(&selected.selection_box_shape,WHITE)
+					draw_wireframe(&selected.selection_box_shape, SELECTION_COLOR)
 				);
 				draw_lines.0.extend(
 					draw_axes(barycenter(&selected.selection_box_shape.verts), 1.0)
