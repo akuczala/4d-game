@@ -201,20 +201,20 @@ where
     let cube_label = ShapeLabel("Cube".to_string());
     ref_shapes.insert(cube_label.clone(), cube);
 
-    //build_lvl_1(world, &mut ref_shapes, &cube_label);
+    build_lvl_1(world, &mut ref_shapes, &cube_label);
     // for builder in build_fun_level::<V>(&mut ref_shapes) {
     //     insert_static_collider(world, builder);
     // }
     //build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
-    world.create_entity().with(
-        DrawLineCollection::from_lines(
-            calc_grid_lines(
-                V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 2
-            ),
-            WHITE.set_alpha(0.2)
-        )
-    ).build();
+    // world.create_entity().with(
+    //     DrawLineCollection::from_lines(
+    //         calc_grid_lines(
+    //             V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 2
+    //         ),
+    //         WHITE.set_alpha(0.2)
+    //     )
+    // ).build();
     init_player(world, V::zero());
     world.insert(ref_shapes);
 }
@@ -237,7 +237,7 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilderV<
                 4 => vec![3, 1, 1],
                 _ => panic!()
             })
-            //.merged_with(&draw::Texture::make_fuzz_texture(1000).set_color(target_face_color))
+            .merged_with(&draw::Texture::make_fuzz_texture(1000).set_color(target_face_color))
             .set_color(target_face_color);
 
             // must use scaled verts to properly align textures

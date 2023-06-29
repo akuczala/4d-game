@@ -5,7 +5,7 @@ use crate::ecs_utils::Componentable;
 use crate::player::Player;
 use crate::vector::{VectorTrait,Field, VecIndex};
 
-use crate::geometry::{Line,Plane, sphere_line_intersect, sphere_t_intersect, sphere_t_intersect_infinite_normed};
+use crate::geometry::{Line,Plane, sphere_line_intersect, sphere_t_intersect_infinite_normed};
 use crate::draw::{DrawLine, project};
 use crate::components::{Transform,Shape};
 
@@ -280,10 +280,10 @@ pub fn clip_line_sphere<V :VectorTrait>(line : Line<V>, r : Field) -> Option<Lin
 }
 pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> Option<Line<V>> {
     // yes this is lame
-    if V::DIM != 3 {
+    if V::DIM < 3 {
         return clip_line_cube(line, r)
     }
-    // below only works for 3D
+    // below only works for > 2D
 
     //first clip with planes on top and bottom
     let long_axis = 1;
@@ -294,22 +294,6 @@ pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> 
         clipped_line = clipped_line.and_then(|line| clip_line_plane(line,&plane,0.));
     }
     clipped_line.and_then(|l: Line<V>| clip_line_tube(l, r))
-    //clipped_line
-    // project line to 2D, clip by circle, and then project back up
-    // clipped_line.and_then(
-    //     |line|  {
-    //         let proj_line: Line<V::SubV> = line.map(|p| V::SubV::from_iter(vec![p[0],p[2]].iter()));
-    //         let clipped_proj_line = clip_line_sphere(proj_line, r);
-    //         clipped_proj_line.map(
-    //             |cline| cline.zip_map(
-    //                 line,
-    //                 |cline_p, line_p| V::from_iter(vec![
-    //                     cline_p[0], line_p[1], cline_p[1]
-    //                 ].iter())
-    //             )
-    //         )
-    //     }
-    // )
 }
 
 // clip line in infinite cylinder

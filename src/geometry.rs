@@ -88,6 +88,10 @@ impl<V : fmt::Display> fmt::Display for Plane<V> {
         }
 }
 
+fn is_point_in_sphere<V: VectorTrait>(r: Field, p: V) -> bool {
+    p.norm_sq() < r * r
+}
+
 
 pub fn point_plane_normal_axis<V : VectorTrait>(point : &V, plane : &Plane<V>) -> Field {
     return plane.threshold - point.dot(plane.normal)
@@ -134,6 +138,7 @@ pub fn sphere_line_intersect<V : VectorTrait>(line : Line<V>, r : Field) -> Opti
 // tm and tp are in units of distance; the line segment goes from t=0 to t=dv.norm()
 // this fn returns None if the segment is completely outside the sphere, and returns both tm and tp if it is
 // inside or partially inside
+// not used
 pub fn sphere_t_intersect<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<Field>> {
     let v0 = line.0;
     let v1 = line.1;
@@ -169,11 +174,21 @@ pub fn sphere_t_intersect<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Lin
 // normalize t from 0 to 1 (line.0 to line.1)
 // returns None only if inifinte extended line does not intersect sphere
 // we really only need v0 and (v1 - v0) as arguments
+// returns Line(0, 1) if v0 == v1
 pub fn sphere_t_intersect_infinite_normed<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<Field>> {
     let v0 = line.0;
     let v1 = line.1;
     let dv = v1 - v0;
     let dv_norm = dv.norm();
+
+    // handle degenerate case
+    if is_close(dv_norm, 0.0) {
+        return if is_point_in_sphere(r, v0) {
+            Some(Line(0.0, 1.0)) // not really any good value to put here
+        } else {
+            None
+        }
+    }
     let dv = dv / dv_norm;
 
     let v0r_dv = v0.dot(dv);
@@ -184,7 +199,6 @@ pub fn sphere_t_intersect_infinite_normed<V: VectorTrait>(line: Line<V>, r: Fiel
     if discr < 0. {
         return None;
     }
-            
 
     let sqrt_discr = discr.sqrt();
     let tm = (-v0r_dv - sqrt_discr) / dv_norm;
