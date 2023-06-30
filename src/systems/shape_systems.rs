@@ -16,10 +16,10 @@ use crate::{vector::VectorTrait, ecs_utils::ModSystem, components::{Shape, Trans
 pub struct UpdateBBallSystem<V>(pub ModSystem<V>);
 
 
-impl<'a, V, M> System<'a> for UpdateBBallSystem<V>
+impl<'a, V> System<'a> for UpdateBBallSystem<V>
 where
-        V: VectorTrait<M=M> + Componentable,
-        M: MatrixTrait<V> + Componentable
+        V: VectorTrait + Componentable,
+        V::M: Componentable
 {
 
     type SystemData = (
@@ -84,10 +84,10 @@ impl<'a,V: VectorTrait + Componentable> System<'a> for UpdateBBoxSystem<V> {
 #[derive(Default)]
 pub struct UpdateStaticClippingSystem<V>(pub ModSystem<V>);
 
-impl<'a, V, M> System<'a> for UpdateStaticClippingSystem<V>
+impl<'a, V> System<'a> for UpdateStaticClippingSystem<V>
 where
-        V: VectorTrait<M=M> + Componentable,
-        M: MatrixTrait<V> + Componentable
+        V: VectorTrait + Componentable,
+        V::M: Componentable
 {
     type SystemData = (
         ReadStorage<'a, Shape<V>>,
@@ -135,16 +135,16 @@ where
 #[derive(Default)]
 pub struct TransformShapeSystem<V>(pub ModSystem<V>);
 
-impl<'a, V, M> System<'a> for TransformShapeSystem<V>
+impl<'a, V> System<'a> for TransformShapeSystem<V>
     where
-        V: VectorTrait<M=M> + Componentable,
-        M: MatrixTrait<V> + Componentable
+        V: VectorTrait + Componentable,
+        V::M: Componentable
 {
 
 	type SystemData = (
         ReadExpect<'a,RefShapes<V>>,
         ReadStorage<'a,ShapeLabel>,
-		ReadStorage<'a, Transform<V, M>>,
+		ReadStorage<'a, Transform<V, V::M>>,
 		WriteStorage<'a, Shape<V>>,
         WriteStorage<'a, ShapeType<V>>,
 	);
