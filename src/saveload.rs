@@ -41,16 +41,16 @@ type LevelLoadComponents<'a, V, M> = (
     
 );
 
-pub fn save_level<V, M>(world: &World, serializer: &mut ComponentSerializer) -> SerializerReturns
+pub fn save_level<V>(world: &World, serializer: &mut ComponentSerializer) -> SerializerReturns
 where
-    V: Componentable + Serialize + DeserializeOwned + Clone,
-    M: Componentable + Serialize + DeserializeOwned + Clone
+    V: VectorTrait + Componentable + Serialize + DeserializeOwned,
+    V::M: Componentable + Serialize + DeserializeOwned
 {
     let (
         save_storage,
         entities,
         markers
-    ) = world.system_data::<(LevelSaveComponents<V, M>, Entities, ReadStorage<SaveMarker>)>();
+    ) = world.system_data::<(LevelSaveComponents<V, V::M>, Entities, ReadStorage<SaveMarker>)>();
     SerializeComponents::<Infallible, SaveMarker>::serialize(
         &save_storage,
         &entities,
@@ -61,10 +61,10 @@ where
     // save ref shapes + other resources
 }
 
-pub fn load_level<V, M>(world: &mut World, deserializer: &mut ComponentDeserializer) -> DeseralizerReturns
+pub fn load_level<V>(world: &mut World, deserializer: &mut ComponentDeserializer) -> DeseralizerReturns
 where
-    V: Componentable + Serialize + DeserializeOwned + Clone,
-    M: Componentable + Serialize + DeserializeOwned + Clone
+    V: Componentable + Serialize + DeserializeOwned + VectorTrait,
+    V::M: Componentable + Serialize + DeserializeOwned + Clone
 {
     let (
         mut load_storage,
@@ -72,7 +72,7 @@ where
         mut marker_storage,
         mut marker_allocator,
     ) = world.system_data::<(
-        LevelLoadComponents<V, M>,
+        LevelLoadComponents<V, V::M>,
         Entities,
         WriteStorage<SaveMarker>,
         Write<SaveMarkerAllocator>
@@ -87,5 +87,9 @@ where
 }
 
 fn mark_components(world: &mut World) {
+    todo!()
+}
+
+pub fn write_to_save_file() {
     todo!()
 }

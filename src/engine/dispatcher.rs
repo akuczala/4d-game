@@ -8,26 +8,26 @@ use std::marker::PhantomData;
 
 // TODO: write in terms of larger blocks of systems
 // TODO: make system labels part of the system struct somehow
-pub fn get_engine_dispatcher_builder<'a, 'b, V, U, M>() -> DispatcherBuilder<'a, 'b>
+pub fn get_engine_dispatcher_builder<'a, 'b, V>() -> DispatcherBuilder<'a, 'b>
 where
-    V: VectorTrait<M = M, SubV = U> + Componentable,
-    U: VectorTrait + Componentable,
-    M: MatrixTrait<V> + Componentable,
+    V: VectorTrait + Componentable,
+    V::SubV: Componentable,
+    V::M: Componentable,
 {
-    let builder = add_draw_steps::<V, U, M>(DispatcherBuilder::new());
-    let builder = add_game_steps::<V, U, M>(builder);
+    let builder = add_draw_steps::<V>(DispatcherBuilder::new());
+    let builder = add_game_steps::<V>(builder);
     builder
 }
 
 //start drawing phase. this is first so that we can do world.maintain() before we draw
 //for each shape, update clipping boundaries and face visibility
-fn add_draw_steps<'a, 'b, V, U, M>(
+fn add_draw_steps<'a, 'b, V>(
     builder: DispatcherBuilder<'a, 'b>,
 ) -> DispatcherBuilder<'a, 'b>
 where
-    V: VectorTrait<M = M, SubV = U> + Componentable,
-    U: VectorTrait + Componentable,
-    M: MatrixTrait<V> + Componentable,
+    V: VectorTrait + Componentable,
+    V::SubV: Componentable,
+    V::M: Componentable,
 {
     let ph = PhantomData::<V>;
     builder
@@ -62,13 +62,13 @@ where
 }
 
 //start game update phase
-fn add_game_steps<'a, 'b, V, U, M>(
+fn add_game_steps<'a, 'b, V>(
     builder: DispatcherBuilder<'a, 'b>,
 ) -> DispatcherBuilder<'a, 'b>
 where
-    V: VectorTrait<M = M, SubV = U> + Componentable,
-    U: VectorTrait + Componentable,
-    M: MatrixTrait<V> + Componentable,
+    V: VectorTrait + Componentable,
+    V::SubV: Componentable,
+    V::M: Componentable,
 {
     let ph = PhantomData::<V>;
     builder

@@ -105,10 +105,10 @@ pub enum UIArgs{
     }
 }
 impl UIArgs{
-    pub fn new_debug<V, M>(world : &World, frame_duration : FPSFloat) -> Self
+    pub fn new_debug<V>(world : &World, frame_duration : FPSFloat) -> Self
         where
-        V: VectorTrait<M = M> + Componentable,
-        M: Componentable + MatrixTrait<V>,
+        V: VectorTrait + Componentable,
+        V::M: Componentable
     {
         let mut debug_text = "".to_string();
 
@@ -120,7 +120,7 @@ impl UIArgs{
         let maybe_selected = maybe_selected_storage.get(player.0).expect("player has no selection component");
 
         let shapes = world.read_component::<Shape<V>>();
-        let transforms = world.read_component::<Transform<V, M>>();
+        let transforms = world.read_component::<Transform<V, V::M>>();
         let mut normals: Vec<V> = vec![];
         for shape in (&shapes).join() {
             for face in shape.faces.iter() {
@@ -147,7 +147,7 @@ impl UIArgs{
                         //let bbox_info = format!("target ({}) bbox: {:?}\n",selected.entity.id(), *selected_bbox);
                         let frame_info = format!("target frame: {}\n, {}\n{:?}\n",selected.entity.id(), frame, scaling);
 
-                        let manip_state = world.read_resource::<ShapeManipulationState<V, M>>();
+                        let manip_state = world.read_resource::<ShapeManipulationState<V, V::M>>();
                         let manip_info = match manip_state.mode {
                             ShapeManipulationMode::Translate(v) => format!("Translate: {}", v),
                             ShapeManipulationMode::Rotate(a) => format!("Rotate: {:.2}", a),

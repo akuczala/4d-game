@@ -16,10 +16,10 @@ pub struct Coin;
 const SPIN_SPEED : Field = 2.0;
 
 pub struct CoinSpinningSystem<V>(pub PhantomData<V>);
-impl <'a, V, M> System<'a> for CoinSpinningSystem<V>
+impl <'a, V> System<'a> for CoinSpinningSystem<V>
 where
-	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::M: Componentable
 {
 
     type SystemData = (
@@ -45,10 +45,10 @@ where
 
 pub struct PlayerCoinCollisionSystem<V>(pub PhantomData<V>);
 
-impl<'a, V, M> System<'a> for PlayerCoinCollisionSystem<V>
+impl<'a, V> System<'a> for PlayerCoinCollisionSystem<V>
 where
-	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::M: Componentable
 {
 	type SystemData = (
 		ReadExpect<'a,Player>,

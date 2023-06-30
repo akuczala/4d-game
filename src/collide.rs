@@ -41,17 +41,17 @@ impl<V: VectorTrait> Transformable<V> for MoveNext<V> {
 //print entities in the same cell as the player's bbox
 pub struct MovePlayerSystem<V>(pub PhantomData<V>);
 
-impl<'a, V, M> System<'a> for MovePlayerSystem<V>
+impl<'a, V> System<'a> for MovePlayerSystem<V>
 where
-	V: VectorTrait<M=M> + Componentable,
-	M: Componentable + Clone
+	V: VectorTrait + Componentable,
+	V::M: Componentable + Clone
 {
 
 	type SystemData = (
 		ReadExpect<'a,Player>,
 		WriteStorage<'a,MoveNext<V>>,
-		WriteStorage<'a,Transform<V, M>>,
-		WriteStorage<'a,Camera<V, M>>,
+		WriteStorage<'a,Transform<V, V::M>>,
+		WriteStorage<'a,Camera<V, V::M>>,
 	);
 
 	fn run(&mut self, (player, mut write_move_next, mut transforms, mut cameras) : Self::SystemData) {
@@ -137,10 +137,10 @@ fn get_bbox_cells<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet<V,Ent
 //add an update_bbox marker
 pub struct UpdatePlayerBBox<V>(pub PhantomData<V>);
 
-impl<'a, V, M> System<'a> for UpdatePlayerBBox<V>
+impl<'a, V> System<'a> for UpdatePlayerBBox<V>
 where
-	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::M: Componentable
 {
 	type SystemData = (
 		ReadExpect<'a,Player>,
@@ -158,10 +158,10 @@ where
 //print entities in the same cell as the player's bbox
 pub struct CollisionTestSystem<V>(pub PhantomData<V>);
 
-impl<'a, V, M> System<'a> for CollisionTestSystem<V>
+impl<'a, V> System<'a> for CollisionTestSystem<V>
 where
-	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::M: Componentable
 {
 
 	type SystemData = (
@@ -202,10 +202,10 @@ where
 //need only run these systems when the player is moving
 pub struct PlayerCollisionDetectionSystem<V>(pub PhantomData<V>);
 
-impl<'a, V, M> System<'a> for PlayerCollisionDetectionSystem<V>
+impl<'a, V> System<'a> for PlayerCollisionDetectionSystem<V>
 where
-	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::M: Componentable
 {
 
 	type SystemData = (
@@ -226,10 +226,10 @@ where
 }
 
 pub struct PlayerStaticCollisionSystem<V>(pub PhantomData<V>);
-impl<'a, V, M> System<'a> for PlayerStaticCollisionSystem<V>
+impl<'a, V> System<'a> for PlayerStaticCollisionSystem<V>
 where
-	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::M: Componentable
 {
 
 	type SystemData = (

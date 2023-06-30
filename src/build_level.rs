@@ -18,32 +18,32 @@ use crate::draw::{self, ShapeTexture, FaceTexture, Texture};
 use crate::collide::{StaticCollider};
 use colored::Color::Magenta;
 
-pub fn insert_static_collider<V, U, M>(world : &mut World, shape_builder : ShapeEntityBuilder<V, U, M>)
+pub fn insert_static_collider<V>(world : &mut World, shape_builder : ShapeEntityBuilderV<V>)
 where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable
+    V: VectorTrait + Componentable,
+    V::SubV: VectorTrait + Componentable,
+    V::M: Componentable
 {
     shape_builder.build(world)
         .with(StaticCollider)
         .build();
 }
-pub fn insert_coin<V, U, M>(world : &mut World, shape_builder : ShapeEntityBuilder<V, U, M>)
+pub fn insert_coin<V>(world : &mut World, shape_builder : ShapeEntityBuilderV<V>)
 where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable
+    V: VectorTrait + Componentable,
+    V::SubV: VectorTrait + Componentable,
+    V::M: Componentable
 {
     shape_builder.build(world)
         .with(Coin)
         .build();
 }
 
-fn build_test_walls<M, U, V>(build_shape: &ShapeEntityBuilder<V, U, M>, world: &mut World)
+fn build_test_walls<V>(build_shape: &ShapeEntityBuilderV<V>, world: &mut World)
 where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable + Clone
+    V: VectorTrait + Componentable,
+    V::SubV: VectorTrait + Componentable,
+    V::M: Componentable + Clone
 {
     let theta = PI/6.0;
     let cos = theta.cos();
@@ -104,11 +104,11 @@ where
         .with(StaticCollider)
         .build();
 }
-pub fn build_test_level<V, U, M>(world: &mut World, ref_shapes: &mut RefShapes<V>)
+pub fn build_test_level<V>(world: &mut World, ref_shapes: &mut RefShapes<V>)
 where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable + Clone
+    V: VectorTrait + Componentable,
+    V::SubV: VectorTrait + Componentable,
+    V::M: Componentable + Clone
 {
     let (n_divisions, frame_vertis) = match V::DIM {
         3 => (vec![4,4], vec![1,3]),
@@ -119,7 +119,7 @@ where
     let wall_label = ShapeLabel("Wall".to_string());
     let (wall, wall_single_face) = convex_shape_to_face_shape(sub_wall.clone(), true);
     ref_shapes.insert(wall_label.clone(), wall);
-    let build_shape: ShapeEntityBuilder<V, U, M>= ShapeEntityBuilder::new_face_from_ref_shape(
+    let build_shape: ShapeEntityBuilderV<V> = ShapeEntityBuilder::new_face_from_ref_shape(
         ref_shapes, wall_single_face, wall_label.clone())
         .with_face_texture(
             FaceTexture{
@@ -199,20 +199,20 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     ref_shapes
 }
 
-pub fn build_scene<V, U, M>(world : &mut World)
+pub fn build_scene<V>(world : &mut World)
 where
-    V: VectorTrait<M = M, SubV =U> + Componentable,
-    U: VectorTrait + Componentable,
-    M: Componentable + Clone
+    V: VectorTrait + Componentable,
+    V::SubV: VectorTrait + Componentable,
+    V::M: Componentable + Clone
 {
-    let mut ref_shapes = build_shape_library::<V>();
-    //build_lvl_1(world, &mut ref_shapes);
+    let ref_shapes = build_shape_library::<V>();
+    build_lvl_1(world, &ref_shapes);
     // for builder in build_fun_level::<V>(&mut ref_shapes) {
     //     insert_static_collider(world, builder);
     // }
     //build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
-    build_empty_level::<V>(world);
+    //build_empty_level::<V>(world);
     init_player(world, V::zero());
     world.insert(ref_shapes);
 }
@@ -337,21 +337,21 @@ pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilderV<
     shape_builders
     
 }
-pub fn init_player<V, U, M>(world: &mut World, pos: V)
+pub fn init_player<V>(world: &mut World, pos: V)
     where
-    V: VectorTrait<M = M, SubV =U> + Componentable,
-    U: VectorTrait + Componentable,
-    M: Componentable + Clone
+    V: VectorTrait + Componentable,
+    V::SubV: VectorTrait + Componentable,
+    V::M: Componentable + Clone
 {
     let transform = Transform::identity().with_translation(pos);
     crate::player::build_player(world, &transform);
-    init_cursor::<V, V::SubV>(world);
+    init_cursor::<V>(world);
 
 }
-pub fn init_cursor<V, U>(world: &mut World)
+pub fn init_cursor<V>(world: &mut World)
 where
-    V: VectorTrait<SubV= U> + Componentable,
-    U: VectorTrait + Componentable
+    V: VectorTrait + Componentable,
+    V::SubV: VectorTrait + Componentable
 {
     world.create_entity()
         .with(Cursor)
@@ -359,11 +359,11 @@ where
         .build();
 }
 
-pub fn build_lvl_1<V, U, M>(world : &mut World, ref_shapes: &mut RefShapes<V>)
+pub fn build_lvl_1<V>(world : &mut World, ref_shapes: &RefShapes<V>)
 where
-    V: VectorTrait<M = M, SubV =U> + Componentable,
-    U: VectorTrait + Componentable,
-    M: Componentable + Clone
+    V: VectorTrait + Componentable,
+    V::SubV: VectorTrait + Componentable,
+    V::M: Componentable + Clone
 {
     let cube_builder = ShapeEntityBuilder::new_convex_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR));
 

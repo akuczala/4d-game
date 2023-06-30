@@ -14,10 +14,10 @@ use crate::geometry::transform::Scaling;
 
 pub struct Player(pub Entity); //specifies entity of player
 
-pub fn build_player<V, M>(world : &mut World, transform: &Transform<V, M>)
+pub fn build_player<V>(world : &mut World, transform: &Transform<V, V::M>)
 where
-    V: VectorTrait<M = M> + Componentable,
-    M: Componentable + Clone,
+    V: VectorTrait + Componentable,
+    V::M: Componentable + Clone,
 {
 	let camera = Camera::new(&transform);
 	let player_entity = world.create_entity()
@@ -37,10 +37,10 @@ const MAX_TARGET_DIST : Field = 10.;
 
 pub struct ShapeTargetingSystem<V>(pub PhantomData<V>);
 
-impl<'a,V, M> System<'a> for ShapeTargetingSystem<V>
+impl<'a, V> System<'a> for ShapeTargetingSystem<V>
 where
-        V: VectorTrait<M=M> + Componentable,
-        M: Componentable
+        V: VectorTrait + Componentable,
+        V::M: Componentable
 {
 	type SystemData = (
 		ReadExpect<'a,Player>,

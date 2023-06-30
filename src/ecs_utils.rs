@@ -9,6 +9,8 @@ use crate::vector::{VectorTrait, Vec2, Vec3, Vec4, Mat2, Mat4, Mat3};
 
 pub trait Componentable: 'static + Sync + Send {}
 
+//pub trait VectorComponentable: 
+
 #[derive(Default)]
 pub struct ModSystem<V> {
     pub ph: PhantomData<V>,

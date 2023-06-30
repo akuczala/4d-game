@@ -68,11 +68,11 @@ impl<'a, V: VectorTrait> ShapeEntityBuilderV<V> {
         self
     }
 }
-impl<'a, V, U, M> ShapeEntityBuilder<V, U, M>
+impl<'a, V> ShapeEntityBuilderV<V>
 where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::SubV: VectorTrait + Componentable,
+	V::M: Componentable
 {
     pub fn build(self, world: &mut World) -> EntityBuilder {
         let Self{

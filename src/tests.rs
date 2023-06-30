@@ -13,7 +13,7 @@ mod tests{
         world.register::<SaveMarker>();
         //world.write_resource::<SimpleMarkerAllocator<Save>>();
         world.insert::<SimpleMarkerAllocator<Save>>(SimpleMarkerAllocator::default());
-        let mut dispatcher = get_engine_dispatcher_builder::<Vec3, Vec2, Mat3>().build();
+        let mut dispatcher = get_engine_dispatcher_builder::<Vec3>().build();
         dispatcher.setup(&mut world);
         world
     }
@@ -63,7 +63,7 @@ mod tests{
         //let mut writer = Vec::new();
         let mut serializer = serde_json::Serializer::new(Vec::new());
         
-        let result = save_level::<Vec3, Mat3>(
+        let result = save_level::<Vec3>(
             &world,
             &mut serializer
         );
@@ -73,7 +73,7 @@ mod tests{
         };
         let mut deserialized_world = new_world();
         let mut deserializer = serde_json::Deserializer::from_str(&serialized);
-        let result = load_level::<Vec3, Mat3>(&mut deserialized_world, &mut deserializer);
+        let result = load_level::<Vec3>(&mut deserialized_world, &mut deserializer);
         if let Result::Err(_) = result {
             panic!("Boy did that go wrong");
         }

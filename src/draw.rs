@@ -140,11 +140,11 @@ impl<V : VectorTrait> DrawLineList<V> {
 
 //would be nicer to move lines out of read_in_lines rather than clone them
 pub struct TransformDrawLinesSystem<V>(pub PhantomData<V>);
-impl<'a, V, U, M> System<'a> for TransformDrawLinesSystem<V>
+impl<'a, V> System<'a> for TransformDrawLinesSystem<V>
 where
-	V: VectorTrait<M = M, SubV = U> + Componentable,
-	U: Componentable,
-	M: Componentable,
+	V: VectorTrait + Componentable,
+	V::SubV: Componentable,
+	V::M: Componentable,
 {
     type SystemData = (
 		ReadExpect<'a,DrawLineList<V>>,
@@ -198,15 +198,15 @@ pub fn transform_draw_line<V : VectorTrait>(
 // }
 
 pub struct DrawCursorSystem<V>(pub PhantomData<V>);
-impl<'a, V, U> System<'a> for DrawCursorSystem<V>
+impl<'a, V> System<'a> for DrawCursorSystem<V>
 where
-	V: VectorTrait<SubV=U> + Componentable,
-	U: VectorTrait + Componentable
+	V: VectorTrait + Componentable,
+	V::SubV: Componentable
 {
     type SystemData = (
 		ReadStorage<'a,Cursor>,
-		ReadStorage<'a,Shape<U>>,
-		WriteExpect<'a,DrawLineList<U>>
+		ReadStorage<'a,Shape<V::SubV>>,
+		WriteExpect<'a,DrawLineList<V::SubV>>
 	);
 
     fn run(&mut self, (cursors, shapes, mut draw_lines) : Self::SystemData) {
@@ -257,7 +257,7 @@ pub struct VisibilitySystem<V>(pub PhantomData<V>);
 impl<'a, V, M> System<'a> for VisibilitySystem<V>
 where
 	V: VectorTrait<M=M> + Componentable,
-	M: Componentable
+	V::M: Componentable
 {
 	type SystemData = (
 		ReadStorage<'a,Shape<V>>,
@@ -332,15 +332,15 @@ pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>,camera_pos : V, two_si
 
 pub struct CalcShapesLinesSystem<V>(pub PhantomData<V>);
 
-impl<'a, V, U, M> System<'a> for CalcShapesLinesSystem<V> 
+impl<'a, V> System<'a> for CalcShapesLinesSystem<V> 
 where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::SubV: Componentable,
+	V::M: Componentable
 {
 	type SystemData = (
 		ReadStorage<'a,Shape<V>>,
-		ReadStorage<'a, ShapeTexture<U>>,
+		ReadStorage<'a, ShapeTexture<V::SubV>>,
 		ReadStorage<'a, ShapeClipState<V>>,
 		ReadExpect<'a, Vec<Field>>,
 		ReadExpect<'a, ClipState<V>>,
@@ -366,17 +366,17 @@ where
 
 }
 
-pub fn calc_shapes_lines<V, U, M>(
+pub fn calc_shapes_lines<V>(
 	shapes : &ReadStorage<Shape<V>>,
-	shape_textures: &ReadStorage<ShapeTexture<U>>,
+	shape_textures: &ReadStorage<ShapeTexture<V::SubV>>,
 	shape_clip_states : &ReadStorage<ShapeClipState<V>>,
 	face_scale : &Vec<Field>,
 	clip_state : &ClipState<V>,
 	)  -> Vec<Option<DrawLine<V>>>
 where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable
+	V: VectorTrait + Componentable,
+	V::SubV: Componentable,
+	V::M: Componentable
 {
 	//DEBUG: list entities in front of each shape
 	// for (i,(sh,s)) in (shapes, shape_clip_states).join().enumerate() {

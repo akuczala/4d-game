@@ -40,12 +40,12 @@ pub struct EngineD<V, G> {
     dispatcher : Dispatcher<'static,'static>,
     dummy : PhantomData<V>, //Forces EngineD to take V as a parameter
 }
-impl<V, U, M, G> EngineD<V,G>
+impl<V, G> EngineD<V,G>
 where
-    V: VectorTrait<M = M, SubV = U> + Componentable,
-    U: VectorTrait + Componentable,
-    M: MatrixTrait<V> + Componentable,
-    G: Graphics<U>,
+    V: VectorTrait + Componentable,
+    V::SubV: Componentable,
+    V::M: Componentable,
+    G: Graphics<V::SubV>,
 {
     pub fn new<F : Fn(&mut World)>(build_scene : F, graphics : G, maybe_gui : Option<crate::gui::System>) -> Self {
 
@@ -55,12 +55,12 @@ where
         world.register::<SaveMarker>();
         world.insert::<SaveMarkerAllocator>(SaveMarkerAllocator::default());
 
-        let mut dispatcher = get_engine_dispatcher_builder::<V, U, M>().build();
+        let mut dispatcher = get_engine_dispatcher_builder::<V>().build();
 
         dispatcher.setup(&mut world);
 
         world.insert(Input::new());
-        world.insert(ShapeManipulationState::default() as ShapeManipulationState<V, M>);
+        world.insert(ShapeManipulationState::default() as ShapeManipulationState<V, V::M>);
 
         build_scene(&mut world);
 
@@ -154,7 +154,7 @@ where
         //     mouse_pos : input.helper.mouse(),
 
         // };
-        let ui_args = UIArgs::new_debug::<V, M>(
+        let ui_args = UIArgs::new_debug::<V>(
             &self.world,
             frame_duration
         );
@@ -219,12 +219,12 @@ where
 
 }
 
-impl<V, U, M, G> EngineD<V,G>
+impl<V, G> EngineD<V, G>
 where
-    V: VectorTrait<M = M, SubV = U> + Componentable,
-    U: VectorTrait + Componentable,
-    M: MatrixTrait<V> + Componentable,
-    G: Graphics<U>,
+    V: VectorTrait + Componentable,
+    V::SubV: Componentable,
+    V::M: Componentable,
+    G: Graphics<V::SubV>,
 {
     fn init(display : &Display, gui : Option<crate::gui::System>) -> Self {
         println!("Starting {}d engine",V::DIM);
@@ -232,7 +232,7 @@ where
         let mut graphics = G::new(display);
         graphics.new_vertex_buffer_from_lines(&vec![],display);
 
-        Self::new(crate::build_level::build_scene::<V, U, M>, graphics, gui)
+        Self::new(crate::build_level::build_scene::<V>, graphics, gui)
     }
 }
 
