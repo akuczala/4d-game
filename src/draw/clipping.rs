@@ -365,10 +365,10 @@ fn test_clip_line_cylinder() {
     assert!(clipped_line.unwrap().is_close(&line));
 
     // this test is bad and it should feel bad (not how clipping in a cylinder works)
-    let line = Line(Vec3::new(-2.0, 0.5, 0.0), Vec3::new(2.0, 0.8, 0.0));
-    let clipped_line = clip_line_cylinder(line.clone(), 1.0, 1.0);
-    let expected_line = Line(Vec3::new(-1.0, 0.5, 0.0), Vec3::new(1.0, 0.8, 0.0));
-    println!("clipped line {:}", clipped_line.clone().unwrap());
+    // let line = Line(Vec3::new(-2.0, 0.5, 0.0), Vec3::new(2.0, 0.8, 0.0));
+    // let clipped_line = clip_line_cylinder(line.clone(), 1.0, 1.0);
+    // let expected_line = Line(Vec3::new(-1.0, 0.5, 0.0), Vec3::new(1.0, 0.8, 0.0));
+    // println!("clipped line {:}", clipped_line.clone().unwrap());
     //assert!(clipped_line.unwrap().is_close(&expected_line));
 }
 

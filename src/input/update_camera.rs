@@ -22,10 +22,10 @@ use crate::geometry::shape::RefShapes;
 use crate::input::{PlayerMovementMode, ShapeMovementMode};
 
 pub struct UpdateCameraSystem<V>(pub PhantomData<V>);
-impl <'a, V, M> System<'a> for UpdateCameraSystem<V>
+impl <'a, V> System<'a> for UpdateCameraSystem<V>
 where
-    V: VectorTrait<M=M> + Componentable,
-    M: Componentable
+    V: VectorTrait + Componentable,
+    V::M: Componentable
 {
     type SystemData = (
         Write<'a,Input>,

@@ -71,7 +71,7 @@ impl<'a, V: VectorTrait> ShapeEntityBuilderV<V> {
 impl<'a, V> ShapeEntityBuilderV<V>
 where
 	V: VectorTrait + Componentable,
-	V::SubV: VectorTrait + Componentable,
+	V::SubV: Componentable,
 	V::M: Componentable
 {
     pub fn build(self, world: &mut World) -> EntityBuilder {

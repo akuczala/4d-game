@@ -67,10 +67,10 @@ impl<V: VectorTrait> Default for ShapeManipulationMode<V, V::M> {
 // todo: adding an "update" flag for shapes will reduce number of updates needed, and decouple some of this stuff
 // e.g. update transform -> update shape -> update shape clip state
 pub struct ManipulateSelectedShapeSystem<V>(pub PhantomData<V>);
-impl <'a,V, M> System<'a> for ManipulateSelectedShapeSystem<V>
+impl <'a, V> System<'a> for ManipulateSelectedShapeSystem<V>
 where
-        V: VectorTrait<M=M> + Componentable,
-        M: Componentable + Clone
+        V: VectorTrait + Componentable,
+        V::M: Componentable + Clone
 {
     type SystemData = (
         Write<'a,Input>, // need write only for snapping
@@ -231,11 +231,11 @@ impl <'a,V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V>
 }
 
 pub struct CreateShapeSystem<V>(pub PhantomData<V>);
-impl <'a,V, U, M> System<'a> for CreateShapeSystem<V>
+impl <'a,V> System<'a> for CreateShapeSystem<V>
 where
-	V: VectorTrait<M = M, SubV =U> + Componentable,
-	U: VectorTrait + Componentable,
-	M: Componentable + MatrixTrait<V>
+	V: VectorTrait + Componentable,
+	V::SubV: Componentable,
+	V::M: Componentable
 {
     type SystemData = (
         WriteExpect<'a, Input>,
@@ -284,7 +284,7 @@ pub struct DuplicateShapeSystem<V>(pub PhantomData<V>);
 impl <'a, V, U, M> System<'a> for DuplicateShapeSystem<V>
 where
         V: VectorTrait<M=M, SubV = U> + Componentable,
-        M: Componentable + Clone,
+        V::M: Componentable + Clone,
         U: Componentable + VectorTrait
 {
     type SystemData = (
