@@ -8,7 +8,7 @@ pub const LINE_THICKNESS_4D: f32 = 0.02;
 pub const DARK_TINT: f32 = 0.01;
 pub const BACKGROUND_COLOR: [f32 ; 4] = [DARK_TINT, DARK_TINT, DARK_TINT, 1.0];
 
-pub const N_FUZZ_LINES: usize = 1000;
+pub const N_FUZZ_LINES: usize = 200;
 
 pub const SELECTION_COLOR: Color = WHITE.set_alpha(0.2);
 

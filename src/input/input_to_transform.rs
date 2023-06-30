@@ -1,4 +1,5 @@
 use std::f32::consts::PI;
+use std::ops::{Index, IndexMut};
 use crate::components::*;
 use crate::input::{Input, MOUSE_SENSITIVITY, MovementMode, ShapeMovementMode};
 use crate::vector::{VectorTrait,Field,VecIndex};
@@ -169,6 +170,25 @@ pub fn mouse_to_space<V: VectorTrait>((dx, dy): (f32, f32), camera_transform: &T
     camera_transform.frame[0] * dx - camera_transform.frame[1] * dy
 }
 
+pub fn clear_components<V: IndexMut<VecIndex, Output = Field>> (axes: &Vec<VecIndex>, mut v: V) -> V {
+    for ax in axes {
+        v[*ax] = 0.0
+    }
+    v
+}
+
+pub fn apply_locked_axes<V: VectorTrait>(locked_axes: &Vec<VecIndex>, mut defaults: V, v: V) -> V {
+    // if no axes specified, transform all
+    if locked_axes.is_empty() {
+        return v
+    }
+    for ax in locked_axes {
+        defaults[*ax] = v[*ax]
+    }
+    defaults
+}
+
+// TODO: make it easier to translate objects along axis perpendicular to camera
 pub fn scrolling_axis_translation<V: VectorTrait>(
     input: &Input,
     locked_axes: &Vec<VecIndex>,
@@ -181,13 +201,12 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
     let mut new_pos_delta = pos_delta;
     let mut update = false;
     let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
-    if dx != 0.0 && dy != 0.0 {
-        let dpos = match locked_axes.len() {
-            0 => mouse_to_space((dx, dy), camera_transform) * input.get_dt() * MOUSE_SENSITIVITY,
-            1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
-            2 => (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy) * input.get_dt() * MOUSE_SENSITIVITY,
-            _ => V::zero(),
-        } ;
+    if dx != 0.0 || dy != 0.0 {
+        let dpos = apply_locked_axes(
+            locked_axes, 
+            V::zero(),
+            mouse_to_space((dx, dy), camera_transform) * input.get_dt() * MOUSE_SENSITIVITY
+        );
         new_pos_delta = pos_delta + dpos; 
         *transform = original_transform.clone();
         transform.translate(
@@ -213,7 +232,7 @@ pub fn axis_rotation<V: VectorTrait>(
     let mut new_angle_delta = angle_delta;
     let mut update = false;
     let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
-    if dx != 0.0 && dy != 0.0 {
+    if dx != 0.0 || dy != 0.0 {
         match locked_axes.len() {
             2 => {
                 let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
@@ -266,13 +285,14 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(
     snap: bool,
     original_transform: &Transform<V, V::M>,
     scale_delta: Scaling<V>,
-    transform: &mut Transform<V, V::M>
+    transform: &mut Transform<V, V::M>,
+    camera_transform: &Transform<V, V::M>,
 ) -> (bool, Scaling<V>) {
     let mut new_scale_delta = scale_delta;
     let mut update = false;
     
     let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
-    if dx != 0.0 && dy != 0.0 {
+    if dx != 0.0 || dy != 0.0 {
         let dscale = match locked_axes.len() {
             1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
             2 => (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy) * input.get_dt() * MOUSE_SENSITIVITY,

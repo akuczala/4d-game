@@ -153,7 +153,6 @@ pub fn manipulate_shape<V: VectorTrait>(
     transform: &mut Transform<V, V::M>,
     camera_transform: &Transform<V, V::M>,
 ) -> bool {
-    // TODO: align movement with camera frame
     set_axes(&mut input.toggle_keys, &mut manip_state.locked_axes, V::DIM);
     manip_state.snap = snapping_enabled(input);
     //let new_mode;
@@ -189,7 +188,8 @@ pub fn manipulate_shape<V: VectorTrait>(
                 manip_state.snap,
                 &manip_state.original_transform,
                 scale_delta,
-                transform
+                transform,
+                camera_transform
             );
             (u, ShapeManipulationMode::Scale(new_scale_delta))
         },

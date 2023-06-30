@@ -206,13 +206,13 @@ where
     M: Componentable + Clone
 {
     let mut ref_shapes = build_shape_library::<V>();
-    build_lvl_1(world, &mut ref_shapes);
+    //build_lvl_1(world, &mut ref_shapes);
     // for builder in build_fun_level::<V>(&mut ref_shapes) {
     //     insert_static_collider(world, builder);
     // }
     //build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
-    //build_empty_level::<V>(world);
+    build_empty_level::<V>(world);
     init_player(world, V::zero());
     world.insert(ref_shapes);
 }
