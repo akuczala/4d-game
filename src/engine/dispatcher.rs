@@ -1,4 +1,3 @@
-use crate::draw::DrawSelectionBox;
 use crate::ecs_utils::{ModSystem, Componentable};
 use crate::input::DuplicateShapeSystem;
 use crate::systems::*;
@@ -41,7 +40,6 @@ where
             &["in_front"],
         )
         //draw selection box in the space
-        .with(DrawSelectionBox(ph), "draw_selection_box", &["in_front"])
         .with(
             DrawLineCollectionSystem(ph),
             "line_collection_system",
@@ -51,13 +49,13 @@ where
         .with(
             TransformDrawLinesSystem(ph),
             "transform_draw_lines",
-            &["calc_shapes_lines", "draw_selection_box"],
+            &["calc_shapes_lines"],
         )
         // draw the cursor on the d - 1 screen
         .with(
             DrawCursorSystem(ph),
             "draw_cursor",
-            &["calc_shapes_lines", "draw_selection_box", "line_collection_system"],
+            &["calc_shapes_lines", "line_collection_system"],
         )
 }
 

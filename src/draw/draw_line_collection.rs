@@ -12,6 +12,13 @@ impl<V> DrawLineCollection<V> {
 	pub fn from_lines(lines: Vec<Line<V>>, color: Color) -> Self {
 		Self(lines.into_iter().map(|line| DrawLine{line, color}).collect())
 	}
+
+	pub(crate) fn extend<I>(mut self, iter: I) -> Self
+	where I: Iterator<Item = DrawLine<V>>
+	{
+		self.0.extend(iter);
+		self
+	}
 }
 
 

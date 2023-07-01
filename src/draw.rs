@@ -19,7 +19,7 @@ use crate::vector::{Field, VectorTrait, linspace, VecIndex, barycenter};
 
 use self::clipping::{clip_line_cylinder, clip_line_sphere, clip_line_tube};
 use self::texture::draw_face_texture;
-use self::visual_aids::{draw_wireframe, draw_axes};
+use self::visual_aids::{draw_axes, calc_wireframe_lines};
 
 pub mod texture;
 pub mod clipping;
@@ -204,39 +204,15 @@ where
     fn run(&mut self, (cursors, shapes, mut draw_lines) : Self::SystemData) {
     	//write new vec of draw lines to DrawLineList
     	for (_,shape) in (&cursors,&shapes).join() {
-    		for line in draw_wireframe(shape,WHITE).into_iter() {
-    			draw_lines.0.push(line);
+    		for line in calc_wireframe_lines(shape).into_iter() {
+    			draw_lines.0.push(
+					Some(DrawLine { line, color: WHITE })
+				);
     		}
     	}
     }
 }
 
-pub struct DrawSelectionBox<V>(pub PhantomData<V>);
-impl<'a,V : VectorTrait + Componentable> System<'a> for DrawSelectionBox<V>
-{
-	type SystemData = (
-		ReadStorage<'a,MaybeSelected<V>>,
-		WriteExpect<'a,DrawLineList<V>>
-	);
-
-	fn run(&mut self, (selected_storage, mut draw_lines) : Self::SystemData) {
-		//write new vec of draw lines to DrawLineList
-
-		for maybe_selected in (&selected_storage).join() {
-			if let MaybeSelected(Some(selected)) = maybe_selected {
-				draw_lines.0.extend(
-					draw_wireframe(&selected.selection_box_shape, SELECTION_COLOR)
-				);
-				draw_lines.0.extend(
-					draw_axes(barycenter(&selected.selection_box_shape.verts), 1.0)
-					.into_iter()
-					.map(Option::Some)
-				)
-			}
-
-		}
-	}
-}
 
 //in this implementation, the length of the vec is always
 //the same, and invisible faces are just sequences of None

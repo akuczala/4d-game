@@ -26,7 +26,7 @@ where
 	    .with(camera) //decompose
 	    .with(MoveNext::<V>::default())
 	    .with(MaybeTarget::<V>(None))
-		.with(MaybeSelected::<V>(None))
+		.with(MaybeSelected(None))
 	    .build();
 
     world.insert(Player(player_entity));
@@ -65,32 +65,17 @@ pub struct Cursor;
 
 pub struct MaybeTarget<V>(pub Option<Target<V>>);
 
-pub struct MaybeSelected<V>(pub Option<Selected<V>>);
+#[derive(Component)]
+pub struct MaybeSelected(pub Option<Selected>);
 
-pub struct Selected<V> {
+pub struct Selected {
 	pub entity: Entity,
-	pub selection_box_shape: Shape<V>,
+	//pub selection_box_shape: Shape<V>,
 }
-impl<V: VectorTrait> Selected<V> {
-	pub fn new_from_bbox(entity: Entity, bbox: &BBox<V>) -> Self {
-		Self::new_from_shape(entity, &Self::make_selection_box(bbox))
+impl Selected {
+	pub fn new(entity: Entity) -> Self {
+		Selected{entity}
 	}
-	pub fn new_from_shape(entity: Entity, shape: &Shape<V>) -> Self {
-		Selected{
-			entity,
-			selection_box_shape: shape.clone()
-		}
-	}
-	fn make_selection_box(bbox: &BBox<V>) -> Shape<V> {
-		let bbox_lengths = bbox.max - bbox.min;
-		let mut shape: Shape<V> = ShapeBuilder::build_cube(1.0)
-			.stretch(Scaling::Vector(bbox_lengths)).build();
-		shape.update_from_ref(&shape.clone(),&Transform::pos(bbox.center()));
-		shape
-	}
-	// fn update_selection_box(&mut self, bbox: &BBox<V>) {
-	// 	//would like to update selection box shape without having to make a new one
-	// }
 }
 
 pub struct Target<V> {

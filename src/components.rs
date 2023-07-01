@@ -62,9 +62,6 @@ impl<V: Componentable> Component for MaybeTarget<V> {
     type Storage = HashMapStorage<Self>;
 }
 
-impl<V: Componentable> Component for MaybeSelected<V> {
-    type Storage = HashMapStorage<Self>;
-}
 impl<V: Componentable> Component for DrawLineCollection<V> {
     type Storage = HashMapStorage<Self>;
 }

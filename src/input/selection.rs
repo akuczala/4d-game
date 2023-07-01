@@ -3,8 +3,11 @@ use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MOD
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
 use crate::cleanup::DeletedEntities;
+use crate::constants::SELECTION_COLOR;
 use crate::draw::ShapeTexture;
+use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube, color_cube_texture, fuzzy_color_cube_texture};
+use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
 use crate::ecs_utils::{Componentable, ModSystem};
 use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
@@ -22,7 +25,7 @@ use winit_input_helper::WinitInputHelper;
 
 use specs::prelude::*;
 
-use crate::vector::{VectorTrait,Field,VecIndex, MatrixTrait};
+use crate::vector::{VectorTrait,Field,VecIndex, MatrixTrait, barycenter};
 use crate::{components::*, camera};
 
 use glutin::event::{Event,WindowEvent};
@@ -76,8 +79,8 @@ where
         Write<'a,Input>, // need write only for snapping
         Write<'a, ShapeManipulationState<V, V::M>>,
         ReadExpect<'a,Player>,
-        WriteStorage<'a,Transform<V, V::M>>,
-        ReadStorage<'a,MaybeSelected<V>>,
+        WriteStorage<'a, Transform<V, V::M>>,
+        ReadStorage<'a, MaybeSelected>,
     );
     fn run(&mut self, (
         mut input,
@@ -210,22 +213,26 @@ impl <'a,V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V>
     type SystemData = (
         Read<'a,Input>,
         ReadExpect<'a,Player>,
-        ReadStorage<'a,Shape<V>>,
         ReadStorage<'a,MaybeTarget<V>>,
-        WriteStorage<'a,MaybeSelected<V>>
+        WriteStorage<'a,MaybeSelected>,
+        WriteStorage<'a, DrawLineCollection<V>>
     );
-    fn run(&mut self, (input, player, shape_storage, maybe_target_storage, mut maybe_selected_storage) : Self::SystemData) { 
+    fn run(
+        &mut self,
+        (
+            input,
+            player,
+            maybe_target_storage,
+            mut maybe_selected_storage,
+            mut write_draw_line_collection
+        ) : Self::SystemData) { 
         if let (true, &MovementMode::Player(_)) = (input.helper.mouse_held(0), &input.movement_mode) {
             let maybe_target = maybe_target_storage.get(player.0).expect("Player has no target component");
             let selected = maybe_selected_storage.get_mut(player.0).expect("Player has no selection component");
-            if let MaybeTarget(Some(target)) = maybe_target  {
-                // let selected_bbox =  bbox_storage.get(target.entity).expect("Target entity has no bbox");
-                // selected.0 = Some(Selected::new_from_bbox(target.entity, selected_bbox));
-                let selected_shape =  shape_storage.get(target.entity).expect("Target entity has no shape");
-                selected.0 = Some(Selected::new_from_shape(target.entity, selected_shape));
-            } else {
-                selected.0 = None
+            if let Some(Selected { entity }) = selected.0 {
+                write_draw_line_collection.remove(entity);
             }
+            selected.0 = maybe_target.0.as_ref().map(|target| Selected::new(target.entity))
         }
     }
 }
@@ -290,7 +297,7 @@ where
     type SystemData = (
         WriteExpect<'a, Input>,
         ReadExpect<'a, Player>,
-        ReadStorage<'a, MaybeSelected<V>>,
+        ReadStorage<'a, MaybeSelected>,
         ReadExpect<'a, RefShapes<V>>,
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Transform<V, V::M>>,
@@ -336,7 +343,7 @@ where V: Componentable
 {
     type SystemData = (
         ReadExpect<'a, Player>,
-        WriteStorage<'a, MaybeSelected<V>>,
+        WriteStorage<'a, MaybeSelected>,
         WriteExpect<'a, Input>,
         Write<'a, DeletedEntities>,
         Entities<'a>
@@ -368,12 +375,13 @@ where V: Componentable
 pub struct UpdateSelectionBox<V>(pub ModSystem<V>);
 
 impl<'a, V> System<'a> for UpdateSelectionBox<V>
-where V: Componentable + Clone
+where V: Componentable + VectorTrait
 {
     type SystemData = (
         ReadExpect<'a, Player>,
         ReadStorage<'a, Shape<V>>,
-        WriteStorage<'a, MaybeSelected<V>>,
+        WriteStorage<'a, MaybeSelected>,
+        WriteStorage<'a, DrawLineCollection<V>>,
     );
 
     fn run(
@@ -382,13 +390,17 @@ where V: Componentable + Clone
             player,
             read_shapes,
             mut write_maybe_selected,
+            mut write_draw_line_collection,
         ): Self::SystemData
     ) {
         if let Some(MaybeSelected(Some(selected))) = write_maybe_selected.get_mut(player.0) {
             for event in read_shapes.channel().read(self.0.reader_id.as_mut().unwrap()) {
                 match event {
                     ComponentEvent::Modified(id) => if *id == selected.entity.id() {
-                        selected.selection_box_shape = read_shapes.get(selected.entity).unwrap().clone()
+                        write_draw_line_collection.insert(
+                            selected.entity,
+                            selection_box(read_shapes.get(selected.entity).unwrap())
+                        ).expect("Couldn't add selection box!");
                     },
                     _ => {}
                 }
@@ -402,4 +414,13 @@ where V: Componentable + Clone
         );
     }
 
+}
+
+pub fn selection_box<V: VectorTrait>(shape: &Shape<V>) -> DrawLineCollection<V> {
+    DrawLineCollection::from_lines(
+        calc_wireframe_lines(shape),
+        SELECTION_COLOR
+    ).extend(
+        draw_axes(barycenter(&shape.verts), 1.0)
+    )
 }

@@ -5,7 +5,6 @@ pub use crate::draw::{
 	CalcShapesLinesSystem,
 	TransformDrawLinesSystem,
 	DrawCursorSystem,
-	DrawSelectionBox,
 	draw_line_collection::DrawLineCollectionSystem
 };
 pub use crate::draw::clipping::{InFrontSystem};
