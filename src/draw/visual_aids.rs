@@ -79,3 +79,7 @@ pub fn draw_axes<'a, V: VectorTrait + 'a>(center: V, len: Field) -> impl Iterato
 			}
 		)
 }
+
+pub fn draw_stars<V: VectorTrait>() {
+	
+}

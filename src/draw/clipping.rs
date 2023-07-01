@@ -9,8 +9,7 @@ use crate::geometry::{Line,Plane, sphere_line_intersect, sphere_t_intersect_infi
 use crate::draw::{DrawLine, project};
 use crate::components::{Transform,Shape};
 
-use specs::prelude::*;
-use specs::{Component,VecStorage};
+use specs::{Component,VecStorage, Entity, WriteStorage};
 use std::marker::PhantomData;
 
 use self::bball::BBall;
@@ -58,56 +57,9 @@ impl<V> ClipState<V> {
     //         println!("");
     // }
 }
-
-pub struct InFrontSystem<V>(pub PhantomData<V>);
-impl<'a, V> System<'a> for InFrontSystem<V>
-where
-    V: VectorTrait+ Componentable,
-    V::M: Componentable
-{
-    type SystemData = (
-        ReadStorage<'a,Shape<V>>,
-        ReadStorage<'a, BBall<V>>,
-        WriteStorage<'a, ShapeClipState<V>>,
-        Entities<'a>,
-        ReadStorage<'a, Transform<V, V::M>>,
-        ReadExpect<'a, Player>
-    );
-
-    fn run(&mut self, (shape_data, bball_data, mut shape_clip_state,entities,transform,player) : Self::SystemData) {
-        calc_in_front(&shape_data, &bball_data,&mut shape_clip_state,&entities,&transform.get(player.0).unwrap().pos);
-    }
-}
-
-
-//i've avoiding double mutable borrowing here by passing the entire shape_clip_states to calc_in_front_pair
-//a disadvantage here is that we have no guarantee that the processed entities have the ShapeClipState component
-//and that we have to iterate over all entities with the Shape component, instead of just those with both Shape and ShapeClipState
-//but for now, every shape has a ShapeClipState.
-pub fn calc_in_front<V : VectorTrait + Componentable>(
-        read_shapes : & ReadStorage<Shape<V>>,
-        read_bballs: &ReadStorage<BBall<V>>,
-        shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
-        entities : &Entities,
-        origin : &V,
-    ) {
-    //collect a vec of references to shapes
-    //let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
-    //loop over unique pairs
-    for (shape1, bball1, e1) in (read_shapes, read_bballs, &*entities).join() {
-        for (shape2, bball2, e2) in (read_shapes, read_bballs, &*entities).join().filter(|(_sh,_bb,e)| *e > e1) {
-            calc_in_front_pair(
-                InFrontArg{shape : &shape1, bball: &bball1, entity : e1},
-                InFrontArg{shape : &shape2, bball: &bball2, entity : e2},
-                shape_clip_states,
-                origin
-                )
-        }
-    }
-}
 pub struct ShapeClipState<V> {
     pub in_front : HashSet<Entity>,
-    pub separators : HashMap<Entity,Separator<V>>,
+    pub separators : HashMap<Entity, Separator<V>>,
     pub boundaries : Vec<Plane<V>>,
     pub transparent: bool,
     pub face_visibility: Vec<bool>
@@ -125,14 +77,14 @@ impl<V : VectorTrait> Default for ShapeClipState<V> {
     }
 }
 impl<V : VectorTrait + Componentable> ShapeClipState<V> {
-    pub fn in_front_debug(world : &World) -> String {
-        let mut outstr = "In front debug \n".to_string();
-        for (i,state) in world.read_storage::<ShapeClipState<V>>().join().enumerate() {
-            outstr = format!("{}entity {}",outstr,i);
-            outstr = format!("{} \n {}",outstr,state.this_in_front_debug());
-        }
-        outstr
-    }
+    // pub fn in_front_debug(world : &World) -> String {
+    //     let mut outstr = "In front debug \n".to_string();
+    //     for (i,state) in world.read_storage::<ShapeClipState<V>>().join().enumerate() {
+    //         outstr = format!("{}entity {}",outstr,i);
+    //         outstr = format!("{} \n {}",outstr,state.this_in_front_debug());
+    //     }
+    //     outstr
+    // }
     pub fn this_in_front_debug(&self) -> String{
         use itertools::Itertools;
         let mut outstr = "".to_string();
@@ -151,9 +103,9 @@ impl<V : VectorTrait> ShapeClipState<V> {
 }
 #[derive(Clone,Copy)]
 pub struct InFrontArg<'a, V>{
-    shape : &'a Shape<V>,
-    bball: &'a BBall<V>,
-    entity : Entity,
+    pub shape : &'a Shape<V>,
+    pub bball: &'a BBall<V>,
+    pub entity : Entity,
 }
 
 pub fn calc_in_front_pair<'a,V :VectorTrait + Componentable>(

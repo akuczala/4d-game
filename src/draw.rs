@@ -3,14 +3,14 @@ use std::marker::PhantomData;
 use itertools::Itertools;
 use rand::seq::IteratorRandom;
 use serde::__private::de;
-use specs::prelude::*;
 
 use clipping::{ClipState,clip_line_plane, clip_line_cube};
+use specs::{ReadStorage, Join};
 use specs::rayon::iter::Chain;
 pub use texture::{Texture, TextureMapping, ShapeTexture, FaceTexture};
 
 use crate::components::*;
-use crate::constants::{SELECTION_COLOR, SMALL_Z, Z0, VIEWPORT_SHAPE, CLIP_SPHERE_RADIUS, Z_NEAR};
+use crate::constants::{SELECTION_COLOR, SMALL_Z, Z0, VIEWPORT_SHAPE, CLIP_SPHERE_RADIUS, Z_NEAR, CURSOR_COLOR};
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{Line, Shape, shape::VertIndex};
@@ -25,6 +25,7 @@ pub mod texture;
 pub mod clipping;
 pub mod draw_line_collection;
 pub mod visual_aids;
+pub mod systems;
 
 extern crate map_in_place;
 
@@ -130,29 +131,7 @@ impl<V : VectorTrait> DrawLineList<V> {
 	}
 }
 
-//would be nicer to move lines out of read_in_lines rather than clone them
-pub struct TransformDrawLinesSystem<V>(pub PhantomData<V>);
-impl<'a, V> System<'a> for TransformDrawLinesSystem<V>
-where
-	V: VectorTrait + Componentable,
-	V::SubV: Componentable,
-	V::M: Componentable,
-{
-    type SystemData = (
-		ReadExpect<'a,DrawLineList<V>>,
-		WriteExpect<'a,DrawLineList<V::SubV>>,
-		ReadStorage<'a,Camera<V, V::M>>,
-		ReadStorage<'a,Transform<V, V::M>>,
-		ReadExpect<'a,Player>);
 
-    fn run(&mut self, (read_in_lines, mut write_out_lines, camera, transform, player) : Self::SystemData) {
-    	//write new vec of draw lines to DrawLineList
-    	write_out_lines.0 = read_in_lines.0.iter()
-    	.map(|line| transform_draw_line(line.clone(),&transform.get(player.0).unwrap(), &camera.get(player.0).unwrap()))
-    	.collect();
-
-    }
-}
 //apply transform line to the lines in draw_lines
 //need to do nontrivial destructuring and reconstructing
 //in order to properly handle Option
@@ -173,86 +152,11 @@ pub fn transform_draw_line<V : VectorTrait>(
 		}
 }
 
-// pub struct DrawTargetSystem<V : VectorTrait>(pub PhantomData<V>);
-// impl<'a,V : VectorTrait> System<'a> for DrawTargetSystem<V> {
-//     type SystemData = (ReadExpect<'a,Player>,ReadStorage<'a,MaybeTarget<V>>,WriteExpect<'a,DrawLineList<V>>);
 
-//     fn run(&mut self, (player, maybe_target, mut draw_lines) : Self::SystemData) {
-//     	//write new vec of draw lines to DrawLineList
-//     	if let Some(target) = maybe_target.get(player.0).unwrap().0 {
-// 	    		for line in draw_wireframe(&crate::geometry::buildshapes::build_cube_3d(0.04),WHITE).into_iter() {
-// 	    			draw_lines.0.push(line);
-// 	    		}
-    	
-//     	}
-    	
-//     }
-// }
-
-pub struct DrawCursorSystem<V>(pub PhantomData<V>);
-impl<'a, V> System<'a> for DrawCursorSystem<V>
-where
-	V: VectorTrait + Componentable,
-	V::SubV: Componentable
-{
-    type SystemData = (
-		ReadStorage<'a,Cursor>,
-		ReadStorage<'a,Shape<V::SubV>>,
-		WriteExpect<'a,DrawLineList<V::SubV>>
-	);
-
-    fn run(&mut self, (cursors, shapes, mut draw_lines) : Self::SystemData) {
-    	//write new vec of draw lines to DrawLineList
-    	for (_,shape) in (&cursors,&shapes).join() {
-    		for line in calc_wireframe_lines(shape).into_iter() {
-    			draw_lines.0.push(
-					Some(DrawLine { line, color: WHITE })
-				);
-    		}
-    	}
-    }
+pub fn draw_cursor<U: VectorTrait>(shape: &Shape<U>) -> impl Iterator<Item = Option<DrawLine<U>>> {
+	calc_wireframe_lines(shape).into_iter().map(|line| Some(DrawLine { line, color: CURSOR_COLOR }))
 }
 
-
-//in this implementation, the length of the vec is always
-//the same, and invisible faces are just sequences of None
-//seems to be significantly slower than not padding and just changing the buffer when needed
-//either way, we need to modify the method to write to an existing line buffer rather than allocating new Vecs
-
-
-pub struct VisibilitySystem<V>(pub PhantomData<V>);
-
-impl<'a, V> System<'a> for VisibilitySystem<V>
-where
-	V: VectorTrait + Componentable,
-	V::M: Componentable
-{
-	type SystemData = (
-		ReadStorage<'a,Shape<V>>,
-		WriteStorage<'a,ShapeClipState<V>>,
-		ReadStorage<'a,ShapeType<V>>,
-		ReadStorage<'a,Transform<V, V::M>>,
-		ReadExpect<'a,Player>,
-		ReadExpect<'a,ClipState<V>>
-	);
-
-	fn run(
-		&mut self, (
-			shapes,
-			mut shape_clip_states,
-			shape_types,
-			transform,
-			player,
-			clip_state
-		) : Self::SystemData) {
-
-		for (shape,shape_clip_state, shape_type) in (&shapes, &mut shape_clip_states, &shape_types).join() {
-
-			update_shape_visibility(transform.get(player.0).unwrap().pos, shape, shape_clip_state, shape_type, &clip_state)
-		}
-	}
-
-}
 
 //updates clipping boundaries and face visibility based on normals
 // mutated: shape_clip_state boundaries and face_visibility
@@ -297,42 +201,6 @@ pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>,camera_pos : V, two_si
             face.plane().point_signed_distance(camera_pos) > 0.0
         )
     }
-
-pub struct CalcShapesLinesSystem<V>(pub PhantomData<V>);
-
-impl<'a, V> System<'a> for CalcShapesLinesSystem<V> 
-where
-	V: VectorTrait + Componentable,
-	V::SubV: Componentable,
-	V::M: Componentable
-{
-	type SystemData = (
-		ReadStorage<'a,Shape<V>>,
-		ReadStorage<'a, ShapeTexture<V::SubV>>,
-		ReadStorage<'a, ShapeClipState<V>>,
-		ReadExpect<'a, Vec<Field>>,
-		ReadExpect<'a, ClipState<V>>,
-		WriteExpect<'a, DrawLineList<V>> // TODO: break up into components so that these can be processed more in parallel with par_iter?
-	);
-
-	fn run(&mut self, (
-		shapes,
-		shape_textures,
-		shape_clip_states,
-		face_scale,
-		clip_state,
-		mut lines
-	) : Self::SystemData) {
-			lines.0 = calc_shapes_lines(
-				&shapes,
-				&shape_textures,
-				&shape_clip_states,
-				&face_scale,
-				&clip_state
-			);
-		}
-
-}
 
 pub fn calc_shapes_lines<V>( 
 	shapes : &ReadStorage<Shape<V>>,

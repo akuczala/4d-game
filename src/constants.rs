@@ -11,6 +11,7 @@ pub const BACKGROUND_COLOR: [f32 ; 4] = [DARK_TINT, DARK_TINT, DARK_TINT, 1.0];
 pub const N_FUZZ_LINES: usize = 500;
 
 pub const SELECTION_COLOR: Color = WHITE.set_alpha(0.2);
+pub const CURSOR_COLOR: Color = WHITE;
 
 
 pub const CUBE_LABEL_STR: &str = "Cube";
