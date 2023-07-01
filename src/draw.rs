@@ -10,7 +10,7 @@ use specs::rayon::iter::Chain;
 pub use texture::{Texture, TextureMapping, ShapeTexture, FaceTexture};
 
 use crate::components::*;
-use crate::constants::SELECTION_COLOR;
+use crate::constants::{SELECTION_COLOR, SMALL_Z, Z0, VIEWPORT_SHAPE, CLIP_SPHERE_RADIUS, Z_NEAR};
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{Line, Shape, shape::VertIndex};
@@ -28,14 +28,6 @@ pub mod visual_aids;
 
 extern crate map_in_place;
 
-const Z0 : Field = 0.0;
-
-const SMALL_Z : Field = 0.001;
-const Z_NEAR : Field = 0.1; 
-
-const CLIP_SPHERE_RADIUS : Field = 0.5;
-
-const VIEWPORT_SHAPE: ViewportShape = ViewportShape::Cylinder;
 
 #[derive(Clone, Copy)]
 pub enum ViewportShape {
@@ -254,9 +246,9 @@ impl<'a,V : VectorTrait + Componentable> System<'a> for DrawSelectionBox<V>
 
 pub struct VisibilitySystem<V>(pub PhantomData<V>);
 
-impl<'a, V, M> System<'a> for VisibilitySystem<V>
+impl<'a, V> System<'a> for VisibilitySystem<V>
 where
-	V: VectorTrait<M=M> + Componentable,
+	V: VectorTrait + Componentable,
 	V::M: Componentable
 {
 	type SystemData = (
@@ -366,7 +358,7 @@ where
 
 }
 
-pub fn calc_shapes_lines<V>(
+pub fn calc_shapes_lines<V>( 
 	shapes : &ReadStorage<Shape<V>>,
 	shape_textures: &ReadStorage<ShapeTexture<V::SubV>>,
 	shape_clip_states : &ReadStorage<ShapeClipState<V>>,
@@ -401,12 +393,14 @@ where
 			let clip_states_in_front = shape_clip_state.in_front.iter()
 				.map(|&e| match shape_clip_states.get(e) {
 					Some(s) => s,
-					None => panic!("Invalid entity {} found in shape_clip_state",e.id()),
+					None => panic!("Invalid entity {} found in shape_clip_state", e.id()),
 				});
 			//do clipping between all shapes
 			//let shapes_in_front = shapes.join().filter(|&s| (s as *const _ ) != (shape as *const _));
 			let mut clipped_lines = clipping::clip_draw_lines(
-				shape_lines, clip_states_in_front);
+				shape_lines,
+				clip_states_in_front
+			);
 			lines.append(&mut clipped_lines);
 		} else {
 			lines.append(&mut shape_lines);

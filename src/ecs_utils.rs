@@ -9,7 +9,10 @@ use crate::vector::{VectorTrait, Vec2, Vec3, Vec4, Mat2, Mat4, Mat3};
 
 pub trait Componentable: 'static + Sync + Send {}
 
-//pub trait VectorComponentable: 
+// pub trait VectorComponentable: VectorTrait + Componentable where
+//     <Self as VectorTrait>::SubV: Componentable,
+//     <Self as VectorTrait>::M: Componentable
+//     {}
 
 #[derive(Default)]
 pub struct ModSystem<V> {

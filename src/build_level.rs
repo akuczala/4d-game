@@ -2,7 +2,7 @@ use crate::components::{Cursor,Transform};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube_texture, fuzzy_color_cube_texture};
 use crate::draw::visual_aids::calc_grid_lines;
-use crate::ecs_utils::Componentable;
+use crate::ecs_utils::{Componentable};
 use crate::geometry::transform::{Transformable, Scaling};
 use crate::graphics::colors::*;
 use crate::coin::Coin;
@@ -43,7 +43,7 @@ fn build_test_walls<V>(build_shape: &ShapeEntityBuilderV<V>, world: &mut World)
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
-    V::M: Componentable + Clone
+    V::M: Componentable
 {
     let theta = PI/6.0;
     let cos = theta.cos();
@@ -108,7 +108,7 @@ pub fn build_test_level<V>(world: &mut World, ref_shapes: &mut RefShapes<V>)
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
-    V::M: Componentable + Clone
+    V::M: Componentable
 {
     let (n_divisions, frame_vertis) = match V::DIM {
         3 => (vec![4,4], vec![1,3]),
@@ -203,16 +203,16 @@ pub fn build_scene<V>(world : &mut World)
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
-    V::M: Componentable + Clone
+    V::M: Componentable
 {
     let ref_shapes = build_shape_library::<V>();
-    build_lvl_1(world, &ref_shapes);
+    //build_lvl_1(world, &ref_shapes);
     // for builder in build_fun_level::<V>(&mut ref_shapes) {
     //     insert_static_collider(world, builder);
     // }
     //build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
-    //build_empty_level::<V>(world);
+    build_empty_level::<V>(world);
     init_player(world, V::zero());
     world.insert(ref_shapes);
 }
@@ -341,7 +341,7 @@ pub fn init_player<V>(world: &mut World, pos: V)
     where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
-    V::M: Componentable + Clone
+    V::M: Componentable
 {
     let transform = Transform::identity().with_translation(pos);
     crate::player::build_player(world, &transform);
@@ -363,7 +363,7 @@ pub fn build_lvl_1<V>(world : &mut World, ref_shapes: &RefShapes<V>)
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
-    V::M: Componentable + Clone
+    V::M: Componentable
 {
     let cube_builder = ShapeEntityBuilder::new_convex_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR));
 

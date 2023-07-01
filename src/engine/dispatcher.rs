@@ -44,7 +44,7 @@ where
         .with(DrawSelectionBox(ph), "draw_selection_box", &["in_front"])
         .with(
             DrawLineCollectionSystem(ph),
-            "line_selection_system",
+            "line_collection_system",
             &["in_front"]
         )
         //project lines
@@ -57,7 +57,7 @@ where
         .with(
             DrawCursorSystem(ph),
             "draw_cursor",
-            &["calc_shapes_lines", "draw_selection_box", "line_selection_system"],
+            &["calc_shapes_lines", "draw_selection_box", "line_collection_system"],
         )
 }
 

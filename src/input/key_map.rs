@@ -23,7 +23,7 @@ pub const TOGGLE_CLIPPING: VKC = VKC::C;
 
 
 
-pub const QUIT: VKC = VKC::Escape;
+pub const QUIT: VKC = VKC::Key0;
 pub const TOGGLE_DIMENSION: VKC = VKC::Back;
 
 //(- key, + key, axis)
