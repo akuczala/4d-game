@@ -1,4 +1,6 @@
-use crate::{vector::{VectorTrait, Field, linspace}, geometry::{Line, shape::VertIndex}, graphics::colors::{Color, MAGENTA, RED, GREEN, CYAN}, components::Shape};
+use itertools::Itertools;
+
+use crate::{vector::{VectorTrait, Field, linspace, VecIndex}, geometry::{Line, shape::{VertIndex, buildshapes::{ShapeBuilder, convex_shape_to_face_shape}}}, graphics::colors::{Color, MAGENTA, RED, GREEN, CYAN}, components::{Shape, Transform}, constants::{HALF_PI, CARDINAL_COLORS}};
 
 use super::DrawLine;
 
@@ -80,6 +82,25 @@ pub fn draw_axes<'a, V: VectorTrait + 'a>(center: V, len: Field) -> impl Iterato
 		)
 }
 
-pub fn draw_stars<V: VectorTrait>() {
-	
+pub fn draw_stars<V: VectorTrait>() -> Vec<DrawLine<V>>{
+	iproduct!((0..V::DIM), [false, true])
+		.zip(CARDINAL_COLORS)
+		.flat_map(
+			|((axis, sign), color)| draw_star(axis, sign).into_iter()
+				.map(move |line| DrawLine{line, color})
+		)
+		.collect_vec()
+}
+
+fn draw_star<V: VectorTrait>(axis: VecIndex, sign: bool) -> Vec<Line<V>> {
+	let sub_cube: Shape<V::SubV> = ShapeBuilder::build_cube(1e3).build();
+	let (mut cube, _) = convex_shape_to_face_shape::<V>(sub_cube, true);
+	cube.update_from_ref(
+		&cube.clone(),
+		&Transform::identity()
+			.with_rotation(-1, axis, if axis != V::DIM {HALF_PI} else {0.0})
+			.with_translation(V::one_hot(axis) * if sign {1.0} else {-1.0} * 1e5)
+	);
+	calc_wireframe_lines(&cube)
+
 }

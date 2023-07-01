@@ -1,6 +1,6 @@
 use super::{DrawLine};
 
-use crate::constants::N_FUZZ_LINES;
+use crate::constants::{N_FUZZ_LINES, CARDINAL_COLORS};
 use crate::vector::{VectorTrait,Field,VecIndex};
 use crate::geometry::{Line,shape::{VertIndex,Shape,Face,Edge}};
 
@@ -277,8 +277,7 @@ pub fn draw_default_lines<V : VectorTrait>(
 }
 
 pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V::SubV>) -> ShapeTexture<V::SubV> {
-	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
-    for (face, &color) in shape_texture.face_textures.iter_mut().zip(&face_colors) {
+    for (face, &color) in shape_texture.face_textures.iter_mut().zip(&CARDINAL_COLORS) {
         face.texture = Texture::DefaultLines{color : color.set_alpha(0.5)};
     }
     shape_texture
@@ -287,9 +286,8 @@ pub fn color_cube< V: VectorTrait>(mut shape_texture : ShapeTexture<V::SubV>) ->
 // TODO: this really only needs the number of faces.
 // in fact we don't really need any arguments - we know the number of faces from V::DIM
 pub fn color_cube_texture< V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::SubV> {
-	let face_colors = vec![RED,GREEN,BLUE,CYAN,MAGENTA,YELLOW,ORANGE,WHITE];
 	ShapeTexture{
-		face_textures: shape.faces.iter().zip(&face_colors).map(
+		face_textures: shape.faces.iter().zip(&CARDINAL_COLORS).map(
 			|(_face, &color)| FaceTexture {
 				texture: Texture::DefaultLines{color : color.set_alpha(0.5)},
 				texture_mapping: None

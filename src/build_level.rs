@@ -1,7 +1,7 @@
 use crate::components::{Cursor,Transform};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube_texture, fuzzy_color_cube_texture};
-use crate::draw::visual_aids::calc_grid_lines;
+use crate::draw::visual_aids::{calc_grid_lines, draw_stars};
 use crate::ecs_utils::{Componentable};
 use crate::geometry::transform::{Transformable, Scaling};
 use crate::graphics::colors::*;
@@ -225,6 +225,9 @@ pub fn build_empty_level<V: VectorTrait + Componentable>(world: &mut World) {
             ),
             WHITE.set_alpha(0.2)
         )
+    ).build();
+    world.create_entity().with(
+        DrawLineCollection(draw_stars::<V>())
     ).build();
 }
 
