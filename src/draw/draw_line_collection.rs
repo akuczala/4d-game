@@ -35,24 +35,29 @@ where
 		mut lines
 	) : Self::SystemData) {
 		for lines_coll in line_collection_storage.join() {
-			lines.0.extend(draw_collection(lines_coll, &read_shape_clip_state, clip_state.clipping_enabled));
+			lines.0.extend(
+				draw_collection(
+					lines_coll,
+					clip_state.clipping_enabled.then_some((&read_shape_clip_state).join())
+				)
+			);
 		}
 	}
 }
 
-pub fn draw_collection<V: VectorTrait + Componentable>(
+pub fn draw_collection<'a, V: VectorTrait + 'a, I>(
 	lines_collection: &DrawLineCollection<V>,
-	read_shape_clip_state: &ReadStorage<ShapeClipState<V>>, // TODO: take iterator instead of readstorage?
-	clipping_enabled: bool
-) -> Vec<Option<DrawLine<V>>> {
+	shape_clip_state_iter: Option<I>, 
+) -> Vec<Option<DrawLine<V>>>
+where I: std::iter::Iterator<Item=&'a ShapeClipState<V>>
+{  // TODO: return iterator?
 	let lines = lines_collection.0.iter().map(|l| Some(l.clone())).collect(); // TODO: do we really need to clone here?
-	if clipping_enabled {
-		clip_draw_lines(
+	match shape_clip_state_iter {
+		Some(iter) => clip_draw_lines(
 			lines,
-			(&read_shape_clip_state).join()
-		) // TODO: return iterator?
-	} else {
-		lines
+			iter
+		),
+		None => lines,
 	}
 	
 }
