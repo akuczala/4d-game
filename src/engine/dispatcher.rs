@@ -1,5 +1,4 @@
 use crate::ecs_utils::{ModSystem, Componentable};
-use crate::input::DuplicateShapeSystem;
 use crate::systems::*;
 use crate::vector::{VectorTrait, MatrixTrait};
 use specs::prelude::*;

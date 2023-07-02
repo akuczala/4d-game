@@ -21,31 +21,7 @@ use glutin::event::{Event,WindowEvent};
 use crate::geometry::shape::RefShapes;
 use crate::input::{PlayerMovementMode, ShapeMovementMode};
 
-pub struct UpdateCameraSystem<V>(pub PhantomData<V>);
-impl <'a, V> System<'a> for UpdateCameraSystem<V>
-where
-    V: VectorTrait + Componentable,
-    V::M: Componentable
-{
-    type SystemData = (
-        Write<'a,Input>,
-        WriteStorage<'a,Transform<V, V::M>>,
-        WriteStorage<'a,Camera<V, V::M>>,
-        WriteStorage<'a,MoveNext<V>>,
-        ReadExpect<'a,Player>
-    );
-    fn run(&mut self, (mut input, mut transforms, mut cameras, mut move_nexts, player) : Self::SystemData) {
-        if input.is_camera_movement_enabled() {
-            update_camera(&mut input,
-                          &mut transforms.get_mut(player.0).unwrap(),
-                          &mut cameras.get_mut(player.0).unwrap(),
-                          &mut move_nexts.get_mut(player.0).unwrap()
-            );
-        }
-    }
-}
-
-fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<V, V::M>, camera : &mut Camera<V, V::M>, move_next : &mut MoveNext<V>)
+pub fn update_camera<V : VectorTrait>(input : &mut Input, transform: &mut Transform<V, V::M>, camera : &mut Camera<V, V::M>, move_next : &mut MoveNext<V>)
 {
     //clear movement
     *move_next = MoveNext{ next_dpos: None, can_move: Some(true) };

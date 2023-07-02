@@ -2,6 +2,7 @@ mod selection;
 mod update_camera;
 mod input_to_transform;
 pub mod key_map; // this can be private when we're not debugging
+pub mod systems;
 
 pub use selection::*;
 pub use update_camera::*;
@@ -151,18 +152,6 @@ impl Input {
             MovementMode::Shape(ShapeMovementMode::Free) => false,
             _ => true
         }
-    }
-}
-
-
-
-pub struct PrintDebugSystem<V>(pub PhantomData<V>);
-impl <'a,V : VectorTrait + Componentable> System<'a> for PrintDebugSystem<V> {
-
-    type SystemData = (Write<'a, Input>, Write<'a, ClipState<V>>);
-
-    fn run(&mut self, (mut input, mut clip_state) : Self::SystemData) {
-        print_debug::<V>(&mut input,&mut clip_state);
     }
 }
 

@@ -7,16 +7,7 @@ pub use self::shape_systems::{
 	TransformShapeSystem,
 	UpdateStaticClippingSystem
 };
-pub use crate::input::{
-	UpdateCameraSystem,
-	PrintDebugSystem,
-	SelectTargetSystem,
-	ManipulateSelectedShapeSystem,
-	CreateShapeSystem,
-	DuplicateShapeSystem,
-	DeleteShapeSystem,
-	UpdateSelectionBox
-};
+pub use crate::input::systems::*;
 pub use crate::player::{ShapeTargetingSystem};
 pub use crate::collide::{
 	PlayerCollisionDetectionSystem,

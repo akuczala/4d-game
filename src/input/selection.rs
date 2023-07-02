@@ -3,7 +3,7 @@ use super::key_map::{CANCEL_MANIPULATION, TRANSLATE_MODE, ROTATE_MODE, SCALE_MOD
 use super::{Input, MovementMode, MOUSE_SENSITIVITY, ShapeMovementMode, PlayerMovementMode};
 
 use crate::cleanup::DeletedEntities;
-use crate::constants::SELECTION_COLOR;
+use crate::constants::{SELECTION_COLOR, CUBE_LABEL_STR};
 use crate::draw::ShapeTexture;
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube, color_cube_texture, fuzzy_color_cube_texture};
@@ -11,7 +11,7 @@ use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
 use crate::ecs_utils::{Componentable, ModSystem};
 use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
-use crate::shape_entity_builder::ShapeEntityBuilder;
+use crate::shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV};
 use crate::spatial_hash::{SpatialHash, SpatialHashSet};
 use std::collections::HashMap;
 use std::marker::PhantomData;
@@ -21,9 +21,8 @@ use glutin::event::VirtualKeyCode as VKC;
 use glutin::event::{TouchPhase,MouseScrollDelta};
 use glutin::dpi::LogicalPosition;
 
+use specs::{WriteStorage, Entity};
 use winit_input_helper::WinitInputHelper;
-
-use specs::prelude::*;
 
 use crate::vector::{VectorTrait,Field,VecIndex, MatrixTrait, barycenter};
 use crate::{components::*, camera};
@@ -67,52 +66,6 @@ impl<V: VectorTrait> Default for ShapeManipulationMode<V, V::M> {
 }
 
 
-// todo: adding an "update" flag for shapes will reduce number of updates needed, and decouple some of this stuff
-// e.g. update transform -> update shape -> update shape clip state
-pub struct ManipulateSelectedShapeSystem<V>(pub PhantomData<V>);
-impl <'a, V> System<'a> for ManipulateSelectedShapeSystem<V>
-where
-        V: VectorTrait + Componentable,
-        V::M: Componentable + Clone
-{
-    type SystemData = (
-        Write<'a,Input>, // need write only for snapping
-        Write<'a, ShapeManipulationState<V, V::M>>,
-        ReadExpect<'a,Player>,
-        WriteStorage<'a, Transform<V, V::M>>,
-        ReadStorage<'a, MaybeSelected>,
-    );
-    fn run(&mut self, (
-        mut input,
-        mut manip_state,
-        player,
-        mut transform_storage,
-        maybe_selected_storage
-    ) : Self::SystemData) {
-        let maybe_selected= maybe_selected_storage.get(player.0).unwrap();
-        if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
-            // TODO: It's annoying that I have to clone the camera's transform when we know that it is distinct from selected_transform.
-            // how to convince rust of this?
-            let camera_transform = transform_storage.get(player.0).unwrap().clone(); 
-            let selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
-            set_manipulation_mode(&mut input, &mut manip_state, selected_transform);
-            cancel_manipulation(&mut input, &mut manip_state, selected_transform);
-            reset_orientation_and_scale(&input, selected_transform);
-            pos_to_grid(&input, selected_transform);
-            match (&mut input).movement_mode {
-                MovementMode::Shape(_) => {
-                    manipulate_shape(
-                        &mut input,
-                        &mut manip_state,
-                        selected_transform,
-                        &camera_transform,
-                    );
-                },
-                _ => ()
-            }
-        }
-    }
-}
 pub const MODE_KEYMAP: [(VKC, ShapeMovementMode); 4] = [
     (TRANSLATE_MODE, ShapeMovementMode::Translate),
     (ROTATE_MODE, ShapeMovementMode::Rotate),
@@ -148,6 +101,29 @@ pub fn cancel_manipulation<V: VectorTrait>(input: &mut Input, manip_state: &Shap
             input.movement_mode = MovementMode::Player(PlayerMovementMode::Mouse);
         }
     }
+}
+
+pub fn manipulate_shape_outer<V: VectorTrait>(
+    input: &mut Input,
+    manip_state: &mut ShapeManipulationState<V, V::M>,
+    selected_transform: &mut Transform<V, V::M>,
+    camera_transform: &Transform<V, V::M>
+) {
+    set_manipulation_mode(input, manip_state, selected_transform);
+            cancel_manipulation(input, manip_state, selected_transform);
+            reset_orientation_and_scale(&input, selected_transform);
+            pos_to_grid(&input, selected_transform);
+            match input.movement_mode {
+                MovementMode::Shape(_) => {
+                    manipulate_shape(
+                        input,
+                        manip_state,
+                        selected_transform,
+                        camera_transform,
+                    );
+                },
+                _ => ()
+            }
 }
 
 pub fn manipulate_shape<V: VectorTrait>(
@@ -206,214 +182,7 @@ pub fn manipulate_shape<V: VectorTrait>(
     manip_state.mode = new_mode;
     return update
 }
-pub struct SelectTargetSystem<V>(pub PhantomData<V>);
-impl <'a,V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V>
-{
-    type SystemData = (
-        Read<'a,Input>,
-        ReadExpect<'a,Player>,
-        ReadStorage<'a,MaybeTarget<V>>,
-        WriteStorage<'a,MaybeSelected>,
-        WriteStorage<'a, DrawLineCollection<V>>
-    );
-    fn run(
-        &mut self,
-        (
-            input,
-            player,
-            maybe_target_storage,
-            mut maybe_selected_storage,
-            mut write_draw_line_collection
-        ) : Self::SystemData) { 
-        if let (true, &MovementMode::Player(_)) = (input.helper.mouse_held(0), &input.movement_mode) {
-            let maybe_target = maybe_target_storage.get(player.0).expect("Player has no target component");
-            let selected = maybe_selected_storage.get_mut(player.0).expect("Player has no selection component");
-            if let Some(Selected { entity }) = selected.0 {
-                write_draw_line_collection.remove(entity);
-            }
-            selected.0 = maybe_target.0.as_ref().map(|target| Selected::new(target.entity))
-        }
-    }
-}
 
-pub struct CreateShapeSystem<V>(pub PhantomData<V>);
-impl <'a,V> System<'a> for CreateShapeSystem<V>
-where
-	V: VectorTrait + Componentable,
-	V::SubV: Componentable,
-	V::M: Componentable
-{
-    type SystemData = (
-        WriteExpect<'a, Input>,
-        ReadExpect<'a, Player>,
-        ReadExpect<'a, RefShapes<V>>,
-        Read<'a, LazyUpdate>,
-        ReadStorage<'a, Transform<V, V::M>>,
-        Entities<'a>,
-    );
-
-    fn run(
-        &mut self, (
-            mut input,
-            player ,
-            ref_shapes,
-            lazy,
-            read_transform,
-            entities
-        ): Self::SystemData) {
-        
-        if input.toggle_keys.state(CREATE_SHAPE) {
-            println!("shape created");
-            input.toggle_keys.remove(CREATE_SHAPE);
-            let player_transform = read_transform.get(player.0).unwrap();
-            let pos = player_transform.pos;
-            let dir = player_transform.frame[-1];
-            let shape_pos = pos + dir * 2.0;
-            let e = entities.create();
-            let shape_label = ShapeLabel("Cube".to_string());
-            ShapeEntityBuilder::new_convex_from_ref_shape(
-                &ref_shapes,
-                shape_label,
-            )
-            .with_transform(Transform::pos(shape_pos))
-            .with_scale(Scaling::Scalar(1.0))
-            .with_texturing_fn(fuzzy_color_cube_texture)
-            .insert(e, &lazy);
-            lazy.insert(e, StaticCollider);
-            // TODO: add to spatial hash set (use BBox hash system)
-            
-        }
-    }
-}
-
-pub struct DuplicateShapeSystem<V>(pub PhantomData<V>);
-impl <'a, V, U, M> System<'a> for DuplicateShapeSystem<V>
-where
-        V: VectorTrait<M=M, SubV = U> + Componentable,
-        V::M: Componentable + Clone,
-        U: Componentable + VectorTrait
-{
-    type SystemData = (
-        WriteExpect<'a, Input>,
-        ReadExpect<'a, Player>,
-        ReadStorage<'a, MaybeSelected>,
-        ReadExpect<'a, RefShapes<V>>,
-        Read<'a, LazyUpdate>,
-        ReadStorage<'a, Transform<V, V::M>>,
-        ReadStorage<'a, ShapeLabel>,
-        ReadStorage<'a, ShapeTexture<U>>,
-        Entities<'a>,
-    );
-
-    fn run(
-        &mut self, (
-            mut input,
-            player ,
-            maybe_selected_storage,
-            ref_shapes,
-            lazy,
-            read_transform,
-            shape_label_storage,
-            shape_textures,
-            entities
-        ): Self::SystemData) {
-        
-        if let (true, &Some(Selected{entity: selected_entity, ..})) = (input.toggle_keys.state(DUPLICATE_SHAPE), &maybe_selected_storage.get(player.0).unwrap().0) {
-            println!("shape duplicated");
-            input.toggle_keys.remove(DUPLICATE_SHAPE);
-            let e = entities.create();
-            let shape_label = shape_label_storage.get(selected_entity).unwrap().clone();
-            let transform: Transform<V, M> = read_transform.get(selected_entity).unwrap().clone();
-            ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label)
-                .with_transform(transform)
-                .with_texture(shape_textures.get(selected_entity).unwrap().clone())
-                .insert(e, &lazy);
-            lazy.insert(e, StaticCollider);
-            // TODO: add to spatial hash set (use BBox hash system)
-            // TODO: copy all shape components to new entity?
-        }
-    }
-}
-
-pub struct DeleteShapeSystem<V>(pub PhantomData<V>);
-
-impl <'a, V> System<'a> for DeleteShapeSystem<V>
-where V: Componentable
-{
-    type SystemData = (
-        ReadExpect<'a, Player>,
-        WriteStorage<'a, MaybeSelected>,
-        WriteExpect<'a, Input>,
-        Write<'a, DeletedEntities>,
-        Entities<'a>
-    );
-
-    fn run(
-        &mut self,
-        (
-            player,
-            mut write_maybe_selected,
-            mut input,
-            mut deleted_entities,
-            entities
-        ): Self::SystemData
-    ) {
-        if input.toggle_keys.state(DELETE_SHAPE) {
-            println!("Delete shape");
-            let mut maybe_selected = write_maybe_selected.get_mut(player.0).unwrap();
-            if let Some(selected) = &maybe_selected.0 {
-                let e = selected.entity;
-                deleted_entities.add(e);
-                entities.delete(e).unwrap();
-                maybe_selected.0 = None;
-            }
-            input.toggle_keys.remove(DELETE_SHAPE);
-        }
-    }
-}
-pub struct UpdateSelectionBox<V>(pub ModSystem<V>);
-
-impl<'a, V> System<'a> for UpdateSelectionBox<V>
-where V: Componentable + VectorTrait
-{
-    type SystemData = (
-        ReadExpect<'a, Player>,
-        ReadStorage<'a, Shape<V>>,
-        WriteStorage<'a, MaybeSelected>,
-        WriteStorage<'a, DrawLineCollection<V>>,
-    );
-
-    fn run(
-        &mut self,
-        (
-            player,
-            read_shapes,
-            mut write_maybe_selected,
-            mut write_draw_line_collection,
-        ): Self::SystemData
-    ) {
-        if let Some(MaybeSelected(Some(selected))) = write_maybe_selected.get_mut(player.0) {
-            for event in read_shapes.channel().read(self.0.reader_id.as_mut().unwrap()) {
-                match event {
-                    ComponentEvent::Modified(id) => if *id == selected.entity.id() {
-                        write_draw_line_collection.insert(
-                            selected.entity,
-                            selection_box(read_shapes.get(selected.entity).unwrap())
-                        ).expect("Couldn't add selection box!");
-                    },
-                    _ => {}
-                }
-            }
-        }
-    }
-    fn setup(&mut self, world: &mut World) {
-        Self::SystemData::setup(world);
-        self.0.reader_id = Some(
-            WriteStorage::<Shape<V>>::fetch(&world).register_reader()
-        );
-    }
-
-}
 
 pub fn selection_box<V: VectorTrait>(shape: &Shape<V>) -> DrawLineCollection<V> {
     DrawLineCollection::from_lines(
@@ -422,4 +191,81 @@ pub fn selection_box<V: VectorTrait>(shape: &Shape<V>) -> DrawLineCollection<V> 
     ).extend(
         draw_axes(barycenter(&shape.verts), 1.0)
     )
+}
+
+pub fn create_shape<V: VectorTrait>(
+    input: &mut Input,
+    ref_shapes: &RefShapes<V>,
+    player_transform: &Transform<V, V::M>
+) -> Option<ShapeEntityBuilderV<V>> {
+    if input.toggle_keys.state(CREATE_SHAPE) {
+        println!("shape created");
+        input.toggle_keys.remove(CREATE_SHAPE);
+        //let player_transform = 
+        let pos = player_transform.pos;
+        let dir = player_transform.frame[-1];
+        let shape_pos = pos + dir * 2.0;
+        let builder = ShapeEntityBuilder::new_convex_from_ref_shape(
+            &ref_shapes,
+            ShapeLabel::from_str(CUBE_LABEL_STR),
+        )
+        .with_transform(Transform::pos(shape_pos))
+        .with_scale(Scaling::Scalar(1.0))
+        .with_texturing_fn(fuzzy_color_cube_texture);
+        Some(builder)
+        // TODO: add to spatial hash set (use BBox hash system)
+        
+    } else {
+        None
+    }
+}
+
+pub fn duplicate_shape<V: VectorTrait>(
+    input: &mut Input,
+    ref_shapes: &RefShapes<V>,
+    shape_label: &ShapeLabel,
+    shape_transform: &Transform<V, V::M>,
+    shape_texture: &ShapeTexture<V::SubV>
+
+) -> Option<ShapeEntityBuilderV<V>> {
+    if input.toggle_keys.state(DUPLICATE_SHAPE) {
+        println!("shape duplicated");
+        input.toggle_keys.remove(DUPLICATE_SHAPE);
+        Some(
+            ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label.clone())
+            .with_transform(shape_transform.clone())
+            .with_texture(shape_texture.clone())
+        )
+        
+        // TODO: add to spatial hash set (use BBox hash system)
+        // TODO: copy all shape components to new entity?
+    } else {
+        None
+    }
+}
+
+pub fn delete_shape(
+    input: &mut Input,
+    maybe_selected: &mut MaybeSelected,
+    deleted_entities: &mut DeletedEntities
+
+) -> Option<Entity> {
+    if input.toggle_keys.state(DELETE_SHAPE) {
+        input.toggle_keys.remove(DELETE_SHAPE);
+        println!("Delete shape");
+        if let Some(selected) = &maybe_selected.0 {
+            let e = selected.entity;
+            deleted_entities.add(e);
+            maybe_selected.0 = None;
+            Some(e)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+pub fn update_selection_box() {
+    todo!()
 }

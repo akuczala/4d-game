@@ -3,8 +3,8 @@
 use specs::{FlaggedStorage, VecStorage, Component, HashMapStorage};
 
 use crate::coin::Coin;
-use crate::draw::draw_line_collection::DrawLineCollection;
-use crate::draw::{ShapeTexture};
+pub use crate::draw::draw_line_collection::DrawLineCollection;
+pub use crate::draw::{ShapeTexture};
 use crate::ecs_utils::Componentable;
 //resources
 pub use crate::player::{Player};
@@ -13,7 +13,8 @@ pub use crate::camera::{Camera};
 pub use crate::player::{MaybeTarget,MaybeSelected,Cursor,Selected};
 pub use crate::geometry::{
     transform::{Transform,Transformable},
-    shape::{Shape,ShapeType,ShapeTypeTrait,Convex,SingleFace,ShapeLabel}
+    shape::{Shape,ShapeType,ShapeTypeTrait,Convex,SingleFace,ShapeLabel},
+    shape::{RefShapes}
 };
 pub use crate::draw::{DrawLineList};
 pub use crate::draw::clipping::{ClipState, ShapeClipState, bball::BBall};
