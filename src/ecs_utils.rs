@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, ops::Deref};
 
-use specs::{BitSet, ReaderId, shrev::EventChannel, storage::ComponentEvent};
+use specs::{BitSet, ReaderId, shrev::{EventChannel, EventIterator}, storage::ComponentEvent};
 
 use crate::vector::{VectorTrait, Vec2, Vec3, Vec4, Mat2, Mat4, Mat3};
 
@@ -30,16 +30,27 @@ impl<V: Componentable> ModSystem<V> {
             reader_id: Default::default()
         }
     }
+    pub fn get_events<'a>(&'a mut self, channel: &'a EventChannel<ComponentEvent>) -> EventIterator<ComponentEvent> {
+        channel.read(self.reader_id.as_mut().unwrap())
+    }
     //I tried to make ReadStorage an argument here but the trait constraints were a nightmare
     pub fn gather_events(&mut self, channel: &EventChannel<ComponentEvent>)
-    //where C: Component<Storage = T>, T: Tracked
     {
         self.modified.clear();
-        let events = channel.read(self.reader_id.as_mut().unwrap());
-        for event in events {
+        for event in channel.read(self.reader_id.as_mut().unwrap()) {
             match event {
                 ComponentEvent::Modified(id) => {self.modified.add(*id);},
                 _ => (),
+            }
+        }
+    }
+    pub fn for_each_modified<F>(&mut self, channel: &EventChannel<ComponentEvent>, mut f: F)
+    where F: FnMut(&u32) -> ()
+    {
+        for event in self.get_events(channel) {
+            match event {
+            ComponentEvent::Modified(id) => f(id),
+            _ => ()
             }
         }
     }

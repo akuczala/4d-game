@@ -1,7 +1,7 @@
 use crate::ecs_utils::Componentable;
 use crate::saveload::SaveMarker;
 use crate::vector::VectorTrait;
-use crate::components::{Shape,ShapeType,Transform,Transformable,Convex,BBall,ShapeClipState,HasBBox, ShapeLabel, SingleFace};
+use crate::components::{Shape,ShapeType,Transform,Transformable,Convex,BBall,ShapeClipState,HasBBox, ShapeLabel, SingleFace, StaticCollider};
 use crate::draw::{Texture,TextureMapping, ShapeTexture, FaceTexture};
 use crate::geometry::shape::{buildshapes, RefShapes};
 use crate::graphics::colors::Color;
@@ -17,6 +17,7 @@ pub struct ShapeEntityBuilder<V, U, M> {
     shape_label: ShapeLabel,
     pub transformation: Transform<V, M>,
     pub shape_texture: ShapeTexture<U>,
+    static_collider: Option<StaticCollider>
 }
 
 //shorthand
@@ -31,7 +32,8 @@ impl<'a, V: VectorTrait> ShapeEntityBuilderV<V> {
             shape_type: ShapeType::SingleFace(single_face),
             shape_label: label,
             transformation: Transform::identity(),
-            shape_texture
+            shape_texture,
+            static_collider: None
         }
     }
     pub fn new_convex_from_ref_shape(ref_shapes: &RefShapes<V>, label: ShapeLabel) -> Self {
@@ -41,7 +43,8 @@ impl<'a, V: VectorTrait> ShapeEntityBuilderV<V> {
             shape_type: ShapeType::Convex(Convex::new(ref_shape)),
             shape_label: label,
             transformation: Transform::identity(),
-            shape_texture: ShapeTexture::new_default(ref_shape.verts.len())
+            shape_texture: ShapeTexture::new_default(ref_shape.verts.len()),
+            static_collider: None
         }
     }
     pub fn with_texture(mut self, texture: ShapeTexture<V::SubV>) -> Self {
@@ -63,6 +66,10 @@ impl<'a, V: VectorTrait> ShapeEntityBuilderV<V> {
 
         self
     }
+    pub fn with_collider(mut self, static_collider: Option<StaticCollider>) -> Self {
+        self.static_collider = static_collider;
+        self
+    }
     pub fn stretch(mut self, scales : &V) -> Self {
         self.transformation.scale(Scaling::Vector(*scales));
         self
@@ -80,7 +87,8 @@ where
             mut shape_type,
             shape_label,
             transformation,
-            shape_texture 
+            shape_texture ,
+            static_collider
         } = self;
         shape.update_from_ref(&shape.clone(),&transformation);
         match shape_type {
@@ -96,6 +104,7 @@ where
             .with(shape_label)
             .with(shape_texture)
             .with(ShapeClipState::<V>::default())
+            .maybe_with(static_collider)
             .marked::<SaveMarker>()
     }
     pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>) {
@@ -104,7 +113,8 @@ where
             mut shape_type,
             shape_label,
             transformation,
-            shape_texture
+            shape_texture,
+            static_collider,
         } = self;
         shape.update_from_ref(&shape.clone(),&transformation);
         match shape_type {
@@ -118,7 +128,9 @@ where
         lazy.insert(e, shape);
         lazy.insert(e, shape_texture);
         lazy.insert(e, ShapeClipState::<V>::default());
-        lazy.insert(e, shape_label)
+        lazy.insert(e, shape_label);
+        static_collider.map(|c| lazy.insert(e, c));
+        
         // TODO: mark with SaveMarker
     }
 }

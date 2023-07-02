@@ -130,9 +130,8 @@ where
             read_transform.get(player.0).unwrap(),
         ).map(
             |builder| {
-                let e = entities.create();
-                builder.insert(e, &lazy);
-            lazy.insert(e, StaticCollider);}
+                builder.insert(entities.create(), &lazy);
+            }    
         );
     }
 }
@@ -153,6 +152,7 @@ where
         ReadStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, ShapeLabel>,
         ReadStorage<'a, ShapeTexture<U>>,
+        ReadStorage<'a, StaticCollider>,
         Entities<'a>,
     );
 
@@ -166,6 +166,7 @@ where
             read_transform,
             shape_label_storage,
             shape_textures,
+            static_colliders,
             entities
         ): Self::SystemData) {
         
@@ -175,12 +176,11 @@ where
                 &ref_shapes,
                 shape_label_storage.get(selected_entity).unwrap(),
                 read_transform.get(selected_entity).unwrap(),
-                shape_textures.get(selected_entity).unwrap()
+                shape_textures.get(selected_entity).unwrap(),
+                static_colliders.get(selected_entity)
             ).map(
                 |builder| {
-                    let e = entities.create();
-                    builder.insert(e, &lazy);
-                    lazy.insert(e, StaticCollider);
+                    builder.insert(entities.create(), &lazy);
                 }
             );
         }
@@ -242,17 +242,23 @@ where V: Componentable + VectorTrait
         ): Self::SystemData
     ) {
         if let Some(MaybeSelected(Some(selected))) = write_maybe_selected.get_mut(player.0) {
-            for event in read_shapes.channel().read(self.0.reader_id.as_mut().unwrap()) {
-                match event {
-                    ComponentEvent::Modified(id) => if *id == selected.entity.id() {
+            self.0.for_each_modified(
+                read_shapes.channel(),
+                |id| {
+                    if *id == selected.entity.id() {
                         write_draw_line_collection.insert(
                             selected.entity,
                             selection_box(read_shapes.get(selected.entity).unwrap())
                         ).expect("Couldn't add selection box!");
-                    },
-                    _ => {}
+                    }
                 }
-            }
+            )
+            // for event in read_shapes.channel().read(self.0.reader_id.as_mut().unwrap()) {
+            //     match event {
+            //         ComponentEvent::Modified(id) => 
+            //         _ => {}
+            //     }
+            // }
         }
     }
     fn setup(&mut self, world: &mut World) {

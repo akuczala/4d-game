@@ -16,7 +16,7 @@ pub use self::bbox::{BBox, HasBBox};
 
 pub const PLAYER_COLLIDE_DISTANCE: Field = 0.2;
 
-#[derive(Component)]
+#[derive(Clone, Component)]
 #[storage(VecStorage)]
 pub struct StaticCollider;
 

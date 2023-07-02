@@ -212,6 +212,7 @@ pub fn create_shape<V: VectorTrait>(
             .with_transform(Transform::pos(shape_pos))
             .with_scale(Scaling::Scalar(1.0))
             .with_texturing_fn(fuzzy_color_cube_texture)
+            .with_collider(Some(StaticCollider))
             // TODO: add to spatial hash set (use BBox hash system)
         }
     )
@@ -222,7 +223,8 @@ pub fn duplicate_shape<V: VectorTrait>(
     ref_shapes: &RefShapes<V>,
     shape_label: &ShapeLabel,
     shape_transform: &Transform<V, V::M>,
-    shape_texture: &ShapeTexture<V::SubV>
+    shape_texture: &ShapeTexture<V::SubV>,
+    shape_collider: Option<&StaticCollider>,
 
 ) -> Option<ShapeEntityBuilderV<V>> {
     input.toggle_keys.trigger_once(
@@ -231,6 +233,7 @@ pub fn duplicate_shape<V: VectorTrait>(
         ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label.clone())
             .with_transform(shape_transform.clone())
             .with_texture(shape_texture.clone())
+            .with_collider(shape_collider.cloned())
         // TODO: add to spatial hash set (use BBox hash system)
         // TODO: copy all shape components to new entity?
         }
@@ -246,14 +249,13 @@ pub fn delete_shape(
     input.toggle_keys.trigger_once_bind(
         DELETE_SHAPE, || {
             println!("Delete shape");
-            if let Some(selected) = &maybe_selected.0 {
-                let e = selected.entity;
-                deleted_entities.add(e);
-                maybe_selected.0 = None;
-                Some(e)
-            } else {
-                None
-            }
+            maybe_selected.0.as_mut().map(
+                |selected| {
+                    let e = selected.entity;
+                    deleted_entities.add(e);
+                    e
+                }
+            )
         }
     )
 }
