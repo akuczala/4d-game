@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use crate::vector::scalar_linterp;
 
 #[derive(Copy,Clone)]
@@ -21,7 +19,7 @@ impl Color {
 
 pub fn blend(color_1: Color, color_2: Color, t: f32) -> Color {
 	Color::from_iter(
-		color_1.0.into_iter().zip(color_2.0.into_iter())
+		color_1.0.iter().zip(color_2.0.iter())
 			.map(|(c1, c2)| scalar_linterp(*c1, *c2, t))
 	)
 }

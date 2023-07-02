@@ -86,7 +86,7 @@ where
     )
 }
 
-fn mark_components(world: &mut World) {
+fn mark_components(_world: &mut World) {
     todo!()
 }
 
