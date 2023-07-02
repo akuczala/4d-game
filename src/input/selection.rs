@@ -198,26 +198,23 @@ pub fn create_shape<V: VectorTrait>(
     ref_shapes: &RefShapes<V>,
     player_transform: &Transform<V, V::M>
 ) -> Option<ShapeEntityBuilderV<V>> {
-    if input.toggle_keys.state(CREATE_SHAPE) {
-        println!("shape created");
-        input.toggle_keys.remove(CREATE_SHAPE);
-        //let player_transform = 
-        let pos = player_transform.pos;
-        let dir = player_transform.frame[-1];
-        let shape_pos = pos + dir * 2.0;
-        let builder = ShapeEntityBuilder::new_convex_from_ref_shape(
-            &ref_shapes,
-            ShapeLabel::from_str(CUBE_LABEL_STR),
-        )
-        .with_transform(Transform::pos(shape_pos))
-        .with_scale(Scaling::Scalar(1.0))
-        .with_texturing_fn(fuzzy_color_cube_texture);
-        Some(builder)
-        // TODO: add to spatial hash set (use BBox hash system)
-        
-    } else {
-        None
-    }
+    input.toggle_keys.trigger_once(
+        CREATE_SHAPE, || {
+            println!("shape created");
+            //let player_transform = 
+            let pos = player_transform.pos;
+            let dir = player_transform.frame[-1];
+            let shape_pos = pos + dir * 2.0;
+            ShapeEntityBuilder::new_convex_from_ref_shape(
+                &ref_shapes,
+                ShapeLabel::from_str(CUBE_LABEL_STR),
+            )
+            .with_transform(Transform::pos(shape_pos))
+            .with_scale(Scaling::Scalar(1.0))
+            .with_texturing_fn(fuzzy_color_cube_texture)
+            // TODO: add to spatial hash set (use BBox hash system)
+        }
+    )
 }
 
 pub fn duplicate_shape<V: VectorTrait>(
@@ -228,20 +225,16 @@ pub fn duplicate_shape<V: VectorTrait>(
     shape_texture: &ShapeTexture<V::SubV>
 
 ) -> Option<ShapeEntityBuilderV<V>> {
-    if input.toggle_keys.state(DUPLICATE_SHAPE) {
+    input.toggle_keys.trigger_once(
+        DUPLICATE_SHAPE, || {
         println!("shape duplicated");
-        input.toggle_keys.remove(DUPLICATE_SHAPE);
-        Some(
-            ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label.clone())
+        ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label.clone())
             .with_transform(shape_transform.clone())
             .with_texture(shape_texture.clone())
-        )
-        
         // TODO: add to spatial hash set (use BBox hash system)
         // TODO: copy all shape components to new entity?
-    } else {
-        None
-    }
+        }
+    )
 }
 
 pub fn delete_shape(
@@ -250,20 +243,19 @@ pub fn delete_shape(
     deleted_entities: &mut DeletedEntities
 
 ) -> Option<Entity> {
-    if input.toggle_keys.state(DELETE_SHAPE) {
-        input.toggle_keys.remove(DELETE_SHAPE);
-        println!("Delete shape");
-        if let Some(selected) = &maybe_selected.0 {
-            let e = selected.entity;
-            deleted_entities.add(e);
-            maybe_selected.0 = None;
-            Some(e)
-        } else {
-            None
+    input.toggle_keys.trigger_once_bind(
+        DELETE_SHAPE, || {
+            println!("Delete shape");
+            if let Some(selected) = &maybe_selected.0 {
+                let e = selected.entity;
+                deleted_entities.add(e);
+                maybe_selected.0 = None;
+                Some(e)
+            } else {
+                None
+            }
         }
-    } else {
-        None
-    }
+    )
 }
 
 pub fn update_selection_box() {

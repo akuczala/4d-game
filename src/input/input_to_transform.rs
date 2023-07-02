@@ -127,14 +127,16 @@ pub fn set_axes(toggle_keys: &mut ToggleKeys, locked_axes: &mut Vec<VecIndex>, d
     //     }
     // }
     for (key_code, ax) in AXIS_KEYMAP.iter() {
-        if toggle_keys.state(*key_code) && *ax < dim {
-            if locked_axes.contains(ax) {
-                locked_axes.retain(|x| *x != *ax);
-            } else {
-                locked_axes.push(*ax);
+        toggle_keys.trigger_once(
+            *key_code,
+            || if *ax < dim  {
+                if locked_axes.contains(ax) {
+                    locked_axes.retain(|x| *x != *ax);
+                } else {
+                    locked_axes.push(*ax);
+                }
             }
-            toggle_keys.remove(*key_code);
-        }
+        );
     }
 }
 fn round_to(x: Field, to: Field) -> Field {

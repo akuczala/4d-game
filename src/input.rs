@@ -102,11 +102,30 @@ impl ToggleKeys {
         }
         return update;
     }
-    pub fn state(&self, key: VKC) -> bool {
+    pub fn contains(&self, key: VKC) -> bool {
         self.0.contains(&key)
     }
     pub fn remove(&mut self, key: VKC) -> bool {
         self.0.remove(&key)
+    }
+    /// If contains key, remove key, run f, and return Some(result)
+    /// Otherwise return None
+    pub fn trigger_once<A, F>(&mut self, key: VKC, f: F) -> Option<A>
+    where F: FnOnce() -> A
+    {
+        self.trigger_once_bind(key, || Some(f()))
+    }
+    /// If contains key, remove key, run f and return result
+    /// Otherwise return None
+    pub fn trigger_once_bind<A, F>(&mut self, key: VKC, f: F) -> Option<A>
+    where F: FnOnce() -> Option<A>
+    {
+        if self.contains(key) {
+            self.remove(key);
+            f()
+        } else {
+            None
+        }
     }
 }
 
