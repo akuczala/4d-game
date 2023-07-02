@@ -90,6 +90,9 @@ pub trait VectorTrait: Copy + Display + std::fmt::Debug +
         fn elmt_mult(&self, rhs: Self) -> Self {
             self.zip_map(rhs, |x,y| x*y)
         }
+        fn random() -> Self {
+			Self::ones().map(|_| rand::random())
+		}
     }
 //impl<T> Foo for T where T: Clone + Mul<i64> + Add<i64> + ... {}
 

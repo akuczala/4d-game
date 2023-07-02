@@ -1,6 +1,8 @@
+use core::panic;
+
 use itertools::Itertools;
 
-use crate::{vector::{VectorTrait, Field, linspace, VecIndex}, geometry::{Line, shape::{VertIndex, buildshapes::{ShapeBuilder, convex_shape_to_face_shape}}}, graphics::colors::{Color, MAGENTA, RED, GREEN, CYAN}, components::{Shape, Transform}, constants::{HALF_PI, CARDINAL_COLORS}};
+use crate::{vector::{VectorTrait, Field, linspace, VecIndex}, geometry::{Line, shape::{VertIndex, buildshapes::{ShapeBuilder, convex_shape_to_face_shape, build_prism_2d}}}, graphics::colors::{Color, MAGENTA, RED, GREEN, CYAN, blend, BLUE}, components::{Shape, Transform, Transformable}, constants::{HALF_PI, CARDINAL_COLORS, ZERO, HALF}};
 
 use super::DrawLine;
 
@@ -98,9 +100,46 @@ fn draw_star<V: VectorTrait>(axis: VecIndex, sign: bool) -> Vec<Line<V>> {
 	cube.update_from_ref(
 		&cube.clone(),
 		&Transform::identity()
-			.with_rotation(-1, axis, if axis != V::DIM {HALF_PI} else {0.0})
+			.with_rotation(-1, axis, if axis != V::DIM {HALF_PI} else {ZERO})
 			.with_translation(V::one_hot(axis) * if sign {1.0} else {-1.0} * 1e5)
 	);
 	calc_wireframe_lines(&cube)
 
+}
+
+pub fn draw_horizon<V: VectorTrait>() -> Vec<Line<V>> {
+	calc_wireframe_lines(&(
+		match V::DIM {
+			3 => ShapeBuilder::build_prism(2, &vec![1e5], &vec![12])
+				.with_rotation(-1, 1, HALF_PI)
+				.build(),
+			4 => todo!(),
+			_ => panic!("draw_horizon not supported in {} dim", V::DIM)
+		}
+	))
+}
+
+pub fn draw_sky<V: VectorTrait>(n_pts: usize) -> Vec<DrawLine<V>> {
+	(0..n_pts).map(
+		|_| {
+			let pos = random_hemisphere_point(V::one_hot(1)) * 1e4;
+			DrawLine{
+				line: pointlike_sky_line(pos),
+				color: blend(CYAN, BLUE, pos.normalize().dot(V::one_hot(1)))
+			}
+		}
+	).collect_vec()
+}
+
+fn random_sphere_point<V: VectorTrait>() -> V {
+	(V::random() - V::ones() * HALF).normalize()
+}
+
+fn random_hemisphere_point<V: VectorTrait>(normal: V) -> V {
+	let v: V = random_sphere_point();
+	if v.dot(normal) > ZERO {v} else {-v}
+}
+
+fn pointlike_sky_line<V: VectorTrait>(pos: V) -> Line<V> {
+	Line(pos, pos + random_sphere_point::<V>() * 100.0)
 }

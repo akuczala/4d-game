@@ -2,7 +2,9 @@ pub use std::f32::consts::{PI,E};
 
 use crate::{components::ShapeLabel, graphics::colors::*, draw::ViewportShape, vector::Field};
 
-pub const HALF_PI: Field = PI / 2.0;
+pub const HALF_PI: Field = PI * HALF;
+pub const ZERO: Field = 0.0;
+pub const HALF: Field = 0.5;
 
 pub const LINE_THICKNESS_3D: f32 = 0.01;
 pub const LINE_THICKNESS_4D: f32 = 0.02;
@@ -21,7 +23,7 @@ pub const CURSOR_COLOR: Color = WHITE;
 pub const CUBE_LABEL_STR: &str = "Cube";
 pub const COIN_LABEL_STR: &str = "Coin";
 
-pub const Z0 : Field = 0.0;
+pub const Z0 : Field = ZERO;
 
 pub const SMALL_Z : Field = 0.001;
 pub const Z_NEAR : Field = 0.1; 

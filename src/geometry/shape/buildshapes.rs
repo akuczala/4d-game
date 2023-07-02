@@ -26,16 +26,27 @@ impl<V: VectorTrait> ShapeBuilder<V> {
 				let r = length/(2.0 as Field).sqrt();
 				build_duoprism_4d([r,r],[[0,1],[2,3]],[4,4])
 			}
-			_ => panic!("build_cube not supported in {} dim",{V::DIM})
+			_ => panic!("build_cube not supported in {} dim", V::DIM)
 		};
 		Self::new(cube)
+	}
+	pub fn build_prism(dim: VecIndex, lengths: &Vec<Field>, n_sides: &Vec<usize>) -> Self{
+		Self::new(
+			match dim {
+				2 => build_prism_2d(lengths[0], n_sides[0]),
+				3 => build_prism_3d(lengths[0], lengths[1], n_sides[0]),
+				4 => build_duoprism_4d([lengths[0], lengths[1]], [[0, 3], [1, 2]], [n_sides[0], n_sides[1]]),
+				_ => panic!("build_prism unsupported in {} dim", V::DIM)
+			}
+			
+		)
 	}
 	pub fn build_coin() -> Self {
 		let coin = match V::DIM {
 			2 => build_prism_2d(0.1, 10),
 			3=> build_prism_3d(0.1, 0.025, 10),
 			4=> build_duoprism_4d([0.1, 0.025], [[0, 1], [2, 3]], [10, 4]),
-			_ => panic!("build_coin not supported in {} dim",{V::DIM})
+			_ => panic!("build_coin not supported in {} dim", V::DIM)
 		};
 		Self::new(coin)
 	}
@@ -47,11 +58,12 @@ impl<V: VectorTrait> ShapeBuilder<V> {
 		self.shape
 	}
 }
-// impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
-// 	fn transform(&mut self, transformation: Transform<V>) {
-// 		self.shape.transform(transformation)
-// 	}
-// }
+
+impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
+	fn transform(&mut self, transformation: Transform<V, V::M>) {
+		self.shape.modify(&transformation)
+	}
+}
 
 pub fn convex_shape_to_face_shape<V: VectorTrait>(convex_shape: Shape<V::SubV>, two_sided: bool) -> (Shape<V>, SingleFace<V>) {
 	let face = Face::new(

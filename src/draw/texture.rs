@@ -168,14 +168,8 @@ impl<V: VectorTrait> Texture<V> {
 
 	}
 	pub fn make_fuzz_texture(n: usize) -> Self {
-		fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
-			Line(pos, pos + V::ones() * 0.005)
-		}
-		fn random_point<V: VectorTrait>() -> V {
-			V::ones().map(|_| rand::random())
-		}
 		Texture::Lines {
-			lines: (0..n).map(|_| pointlike_line(random_point())).collect(),
+			lines: (0..n).map(|_| pointlike_line(V::random())).collect(),
 			color: DEFAULT_COLOR
 		}
 	}
@@ -314,4 +308,8 @@ pub fn color_duocylinder<V: VectorTrait>(shape_texture : &mut ShapeTexture<V::Su
         let color = Color([((iint%(m as i32)) as f32)/(m as f32),(i as f32)/((m+n) as f32),1.0,1.0]);
         face.texture = Texture::DefaultLines{color};
     }
+}
+
+pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
+	Line(pos, pos + V::ones() * 0.005)
 }
