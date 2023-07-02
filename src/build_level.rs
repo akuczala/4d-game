@@ -218,20 +218,20 @@ where
 }
 
 pub fn build_empty_level<V: VectorTrait + Componentable>(world: &mut World) {
-    world.create_entity().with(
+    vec![
         DrawLineCollection::from_lines(
             calc_grid_lines(
                 V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 2
             ),
             WHITE.set_alpha(0.2)
-        )
-    ).build();
-    world.create_entity().with(
+        ),
+        DrawLineCollection(draw_sky::<V>()),
+        DrawLineCollection::from_lines(draw_horizon::<V>(), ORANGE.set_alpha(0.5)),
         DrawLineCollection(draw_stars::<V>())
-    ).build();
-    world.create_entity().with(
-        DrawLineCollection(draw_sky::<V>(2000))
-    ).build();
+
+    ].into_iter().for_each(
+        |dlc| {world.create_entity().with(dlc).build();}
+    );
 }
 
 pub fn build_corridor_cross<V : VectorTrait>(cube_builder: &ShapeEntityBuilderV<V>, wall_length : Field) -> Vec<ShapeEntityBuilderV<V>> {

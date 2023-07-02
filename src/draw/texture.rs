@@ -1,6 +1,7 @@
+use super::visual_aids::random_sphere_point;
 use super::{DrawLine};
 
-use crate::constants::{N_FUZZ_LINES, CARDINAL_COLORS};
+use crate::constants::{N_FUZZ_LINES, CARDINAL_COLORS, FACE_SCALE};
 use crate::vector::{VectorTrait,Field,VecIndex};
 use crate::geometry::{Line,shape::{VertIndex,Shape,Face,Edge}};
 
@@ -114,7 +115,7 @@ impl<V> Texture<V> {
 impl<V: VectorTrait> Texture<V> {
 	pub fn make_single_tile_texture(color: Color) -> Self {
 		Texture::make_tile_texture(
-			&vec![0.9], 
+			&vec![FACE_SCALE], 
 			&(0..V::DIM).map(|_| 1).collect_vec()
 		).set_color(color)
 	}
@@ -311,5 +312,5 @@ pub fn color_duocylinder<V: VectorTrait>(shape_texture : &mut ShapeTexture<V::Su
 }
 
 pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
-	Line(pos, pos + V::ones() * 0.005)
+	Line(pos, pos + random_sphere_point::<V>() * 0.005)
 }

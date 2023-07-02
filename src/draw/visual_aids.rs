@@ -2,9 +2,9 @@ use core::panic;
 
 use itertools::Itertools;
 
-use crate::{vector::{VectorTrait, Field, linspace, VecIndex}, geometry::{Line, shape::{VertIndex, buildshapes::{ShapeBuilder, convex_shape_to_face_shape, build_prism_2d}}}, graphics::colors::{Color, MAGENTA, RED, GREEN, CYAN, blend, BLUE}, components::{Shape, Transform, Transformable}, constants::{HALF_PI, CARDINAL_COLORS, ZERO, HALF}};
+use crate::{vector::{VectorTrait, Field, linspace, VecIndex}, geometry::{Line, shape::{VertIndex, buildshapes::{ShapeBuilder, convex_shape_to_face_shape, build_prism_2d}}}, graphics::colors::{Color, MAGENTA, RED, GREEN, CYAN, blend, BLUE}, components::{Shape, Transform, Transformable}, constants::{HALF_PI, CARDINAL_COLORS, ZERO, HALF, SKY_FUZZ_SIZE, SKY_DISTANCE, STAR_SIZE, N_SKY_FUZZ_LINES, N_HORIZON_FUZZ_LINES, AXES_COLORS}};
 
-use super::DrawLine;
+use super::{DrawLine, texture::pointlike_line};
 
 pub fn calc_grid_lines<V: VectorTrait>(center: V, cell_size: Field, n: usize) -> Vec<Line<V>> {
 	let axes = (0, 2, 3);
@@ -72,7 +72,7 @@ pub fn calc_normals_lines<V: VectorTrait>(shape : &Shape<V>) -> Vec<Line<V>>
 
 pub fn draw_axes<'a, V: VectorTrait + 'a>(center: V, len: Field) -> impl Iterator<Item = DrawLine<V>> {
 	(0..V::DIM)
-		.zip([RED, GREEN, CYAN, MAGENTA])
+		.zip(AXES_COLORS)
 		.map(
 			move |(i, color)| DrawLine{
 				line: Line(
@@ -95,34 +95,43 @@ pub fn draw_stars<V: VectorTrait>() -> Vec<DrawLine<V>>{
 }
 
 fn draw_star<V: VectorTrait>(axis: VecIndex, sign: bool) -> Vec<Line<V>> {
-	let sub_cube: Shape<V::SubV> = ShapeBuilder::build_cube(1e3).build();
+	let sub_cube: Shape<V::SubV> = ShapeBuilder::build_cube(STAR_SIZE).build();
 	let (mut cube, _) = convex_shape_to_face_shape::<V>(sub_cube, true);
 	cube.update_from_ref(
 		&cube.clone(),
 		&Transform::identity()
 			.with_rotation(-1, axis, if axis != V::DIM {HALF_PI} else {ZERO})
-			.with_translation(V::one_hot(axis) * if sign {1.0} else {-1.0} * 1e5)
+			.with_translation(V::one_hot(axis) * if sign {1.0} else {-1.0} * SKY_DISTANCE)
 	);
 	calc_wireframe_lines(&cube)
 
 }
 
 pub fn draw_horizon<V: VectorTrait>() -> Vec<Line<V>> {
-	calc_wireframe_lines(&(
-		match V::DIM {
-			3 => ShapeBuilder::build_prism(2, &vec![1e5], &vec![12])
+	
+	match V::DIM {
+		3 => calc_wireframe_lines(
+				&(ShapeBuilder::build_prism(2, &vec![SKY_DISTANCE], &vec![12]))
 				.with_rotation(-1, 1, HALF_PI)
-				.build(),
-			4 => todo!(),
-			_ => panic!("draw_horizon not supported in {} dim", V::DIM)
-		}
-	))
+				.build()
+		),
+		4 => {
+			(0..N_HORIZON_FUZZ_LINES).map(
+				|_| pointlike_sky_line(
+				{
+					let u = random_sphere_point::<V::SubV>() * SKY_DISTANCE;
+					V::from_iter(vec![u[0], ZERO, u[1], u[2]].iter())
+				})
+			).collect()
+		},
+		_ => panic!("draw_horizon not supported in {} dim", V::DIM)
+	}
 }
 
-pub fn draw_sky<V: VectorTrait>(n_pts: usize) -> Vec<DrawLine<V>> {
-	(0..n_pts).map(
+pub fn draw_sky<V: VectorTrait>() -> Vec<DrawLine<V>> {
+	(0..N_SKY_FUZZ_LINES).map(
 		|_| {
-			let pos = random_hemisphere_point(V::one_hot(1)) * 1e4;
+			let pos = random_hemisphere_point(V::one_hot(1)) * SKY_DISTANCE;
 			DrawLine{
 				line: pointlike_sky_line(pos),
 				color: blend(CYAN, BLUE, pos.normalize().dot(V::one_hot(1)))
@@ -131,7 +140,7 @@ pub fn draw_sky<V: VectorTrait>(n_pts: usize) -> Vec<DrawLine<V>> {
 	).collect_vec()
 }
 
-fn random_sphere_point<V: VectorTrait>() -> V {
+pub fn random_sphere_point<V: VectorTrait>() -> V {
 	(V::random() - V::ones() * HALF).normalize()
 }
 
@@ -140,6 +149,10 @@ fn random_hemisphere_point<V: VectorTrait>(normal: V) -> V {
 	if v.dot(normal) > ZERO {v} else {-v}
 }
 
+fn random_ball_point<V: VectorTrait>() -> V {
+	random_sphere_point::<V>() * rand::random::<Field>().sqrt()
+}
+
 fn pointlike_sky_line<V: VectorTrait>(pos: V) -> Line<V> {
-	Line(pos, pos + random_sphere_point::<V>() * 100.0)
+	Line(pos, pos + random_sphere_point::<V>() * SKY_FUZZ_SIZE)
 }

@@ -5,6 +5,7 @@ use specs::saveload; // TODO: revert to private
 use std::time::{Duration,Instant};
 use crate::FPSTimer;
 use crate::collide;
+use crate::constants::FACE_SCALE;
 use crate::ecs_utils::Componentable;
 use crate::input::ShapeManipulationState;
 use crate::saveload::Save;
@@ -80,7 +81,7 @@ where
         );
          //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
         let cur_lines_length = draw_lines.len();
-        let face_scales : Vec<crate::vector::Field> = vec![0.9];
+        let face_scales : Vec<crate::vector::Field> = vec![FACE_SCALE];
 
         world.insert(clip_state); // decompose into single entity properties
         world.insert(draw_lines); // unclear if this would be better as entities; might be able to thread

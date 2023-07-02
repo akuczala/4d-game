@@ -286,7 +286,6 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(
     original_transform: &Transform<V, V::M>,
     scale_delta: Scaling<V>,
     transform: &mut Transform<V, V::M>,
-    camera_transform: &Transform<V, V::M>,
 ) -> (bool, Scaling<V>) {
     let mut new_scale_delta = scale_delta;
     let mut update = false;

@@ -192,7 +192,6 @@ pub fn manipulate_shape<V: VectorTrait>(
                 &manip_state.original_transform,
                 scale_delta,
                 transform,
-                camera_transform
             );
             (u, ShapeManipulationMode::Scale(new_scale_delta))
         },
