@@ -1,4 +1,4 @@
-use crate::ecs_utils::{ModSystem, Componentable};
+use crate::ecs_utils::{ModSystem, Componentable, SystemName};
 use crate::systems::*;
 use crate::vector::{VectorTrait, MatrixTrait};
 use specs::prelude::*;
@@ -29,32 +29,39 @@ where
 {
     let ph = PhantomData::<V>;
     builder
-        .with(VisibilitySystem(ph), "visibility", &[])
+        .with(
+            VisibilitySystem(ph),
+            VisibilitySystem::NAME,
+            &[]
+        )
         //determine what shapes are in front of other shapes
-        .with(InFrontSystem(ph), "in_front", &["visibility"])
+        .with(
+            InFrontSystem(ph),
+            InFrontSystem::NAME,
+            &[VisibilitySystem::NAME])
         //calculate and clip lines for each shape
         .with(
             CalcShapesLinesSystem(ph),
-            "calc_shapes_lines",
-            &["in_front"],
+            CalcShapesLinesSystem::NAME,
+            &[InFrontSystem::NAME],
         )
         //draw selection box in the space
         .with(
             DrawLineCollectionSystem(ph),
-            "line_collection_system",
-            &["in_front"]
+            DrawLineCollectionSystem::NAME,
+            &[InFrontSystem::NAME]
         )
         //project lines
         .with(
             TransformDrawLinesSystem(ph),
-            "transform_draw_lines",
-            &["calc_shapes_lines"],
+            TransformDrawLinesSystem::NAME,
+            &[CalcShapesLinesSystem::NAME],
         )
         // draw the cursor on the d - 1 screen
         .with(
             DrawCursorSystem(ph),
-            "draw_cursor",
-            &["calc_shapes_lines", "line_collection_system"],
+            DrawCursorSystem::NAME,
+            &[CalcShapesLinesSystem::NAME, DrawLineCollectionSystem::NAME],
         )
 }
 
@@ -72,7 +79,7 @@ where
         .with(
             UpdateCameraSystem(ph),
             "update_camera",
-            &["calc_shapes_lines"],
+            &[CalcShapesLinesSystem::NAME],
         )
         .with(
             PlayerGravitySystem(ph),

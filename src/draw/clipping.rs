@@ -9,7 +9,7 @@ use crate::geometry::{Line,Plane, sphere_line_intersect, sphere_t_intersect_infi
 use crate::draw::{DrawLine, project};
 use crate::components::{Transform,Shape};
 
-use specs::{Component,VecStorage, Entity, WriteStorage};
+use specs::{Component,VecStorage, Entity, WriteStorage, ReadStorage, Entities, Join};
 use std::marker::PhantomData;
 
 use self::bball::BBall;
@@ -106,6 +106,32 @@ pub struct InFrontArg<'a, V>{
     pub shape : &'a Shape<V>,
     pub bball: &'a BBall<V>,
     pub entity : Entity,
+}
+
+//i've avoiding double mutable borrowing here by passing the entire shape_clip_states to calc_in_front_pair
+//a disadvantage here is that we have no guarantee that the processed entities have the ShapeClipState component
+//and that we have to iterate over all entities with the Shape component, instead of just those with both Shape and ShapeClipState
+//but for now, every shape has a ShapeClipState.
+pub fn calc_in_front<V : VectorTrait + Componentable>(
+    read_shapes : & ReadStorage<Shape<V>>,
+    read_bballs: &ReadStorage<BBall<V>>,
+    shape_clip_states : &mut WriteStorage<ShapeClipState<V>>,
+    entities : &Entities,
+    origin : &V,
+) {
+//collect a vec of references to shapes
+//let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
+//loop over unique pairs
+for (shape1, bball1, e1) in (read_shapes, read_bballs, &*entities).join() {
+    for (shape2, bball2, e2) in (read_shapes, read_bballs, &*entities).join().filter(|(_sh,_bb,e)| *e > e1) {
+        calc_in_front_pair(
+            InFrontArg{shape : &shape1, bball: &bball1, entity : e1},
+            InFrontArg{shape : &shape2, bball: &bball2, entity : e2},
+            shape_clip_states,
+            origin
+            )
+    }
+}
 }
 
 pub fn calc_in_front_pair<'a,V :VectorTrait + Componentable>(

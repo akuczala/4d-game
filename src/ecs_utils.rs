@@ -14,6 +14,9 @@ pub trait Componentable: 'static + Sync + Send {}
 //     <Self as VectorTrait>::M: Componentable
 //     {}
 
+pub trait SystemName {
+    const NAME: &'static str;
+}
 #[derive(Default)]
 pub struct ModSystem<V> {
     pub ph: PhantomData<V>,
