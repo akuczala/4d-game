@@ -206,7 +206,7 @@ where
     V::M: Componentable
 {
     let ref_shapes = build_shape_library::<V>();
-    //build_lvl_1(world, &ref_shapes);
+    build_lvl_1(world, &ref_shapes);
     // for builder in build_fun_level::<V>(&mut ref_shapes) {
     //     insert_static_collider(world, builder);
     // }

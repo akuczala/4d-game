@@ -1,5 +1,7 @@
 pub mod bbox;
+pub mod systems;
 
+use crate::constants::PLAYER_COLLIDE_DISTANCE;
 use crate::ecs_utils::Componentable;
 use crate::input::Input;
 use crate::input::key_map::PRINT_DEBUG;
@@ -13,8 +15,8 @@ use itertools::Itertools;
 use crate::geometry::transform::Scaling;
 
 pub use self::bbox::{BBox, HasBBox};
+use self::systems::BBoxHashingSystem;
 
-pub const PLAYER_COLLIDE_DISTANCE: Field = 0.2;
 
 #[derive(Clone, Component)]
 #[storage(VecStorage)]
@@ -36,37 +38,6 @@ impl<V: VectorTrait> Transformable<V> for MoveNext<V> {
 			Some(v) => Some(v + transform.pos),
 			None => Some(transform.pos)
 		};
-	}
-}
-//print entities in the same cell as the player's bbox
-pub struct MovePlayerSystem<V>(pub PhantomData<V>);
-
-impl<'a, V> System<'a> for MovePlayerSystem<V>
-where
-	V: VectorTrait + Componentable,
-	V::M: Componentable + Clone
-{
-
-	type SystemData = (
-		ReadExpect<'a,Player>,
-		WriteStorage<'a,MoveNext<V>>,
-		WriteStorage<'a,Transform<V, V::M>>,
-		WriteStorage<'a,Camera<V, V::M>>,
-	);
-
-	fn run(&mut self, (player, mut write_move_next, mut transforms, mut cameras) : Self::SystemData) {
-		let move_next = write_move_next.get_mut(player.0).unwrap();
-		let transform = transforms.get_mut(player.0).unwrap();
-		let camera = cameras.get_mut(player.0).unwrap();
-		match move_next {
-			MoveNext{next_dpos : Some(next_dpos), can_move : Some(true)} => {
-				transform.translate(*next_dpos);
-				camera.update(transform);
-			},
-			_ => (),
-		};
-		*move_next = MoveNext::default(); //clear movement
-
 	}
 }
 
@@ -107,25 +78,6 @@ pub fn create_spatial_hash<V : VectorTrait + Componentable>(world : &mut World) 
     BBoxHashingSystem(PhantomData::<V>).run_now(&world);
 }
 
-//enter each statically colliding entity into every cell containing its bbox volume (either 1, 2, 4 ... up to 2^d cells)
-//assuming that cells are large enough that all bboxes can fit in a cell
-//for static objects, it is cheap to hash the volume since we need only do it once
-pub struct BBoxHashingSystem<V>(pub PhantomData<V>);
-
-impl<'a,V : VectorTrait + Componentable> System<'a> for BBoxHashingSystem<V> {
-
-	type SystemData = (ReadStorage<'a,BBox<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
-
-	fn run(&mut self, (read_bbox, entities, mut write_hash) : Self::SystemData) {
-		let hash = &mut write_hash;
-		for (bbox, entity) in (&read_bbox,&*entities).join() {
-			for cell in get_bbox_cells(&bbox,hash).into_iter() {
-				hash.insert_at_cell(cell,entity);
-			}
-
-		}
-	}
-}
 fn get_bbox_cells<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet<V,Entity>) -> Vec<HashInt> {
 	let max_coords = hash.get_cell_coords(&bbox.max);
 	let min_coords = hash.get_cell_coords(&bbox.min);
@@ -133,146 +85,6 @@ fn get_bbox_cells<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet<V,Ent
 	get_dcoords_dcells(&dcoords,&hash.0.multiplier).into_iter()
 		.map(|dc| hash.hash(&bbox.min) + dc) //add min (base) cell
 		.collect()
-}
-//add an update_bbox marker
-pub struct UpdatePlayerBBox<V>(pub PhantomData<V>);
-
-impl<'a, V> System<'a> for UpdatePlayerBBox<V>
-where
-	V: VectorTrait + Componentable,
-	V::M: Componentable
-{
-	type SystemData = (
-		ReadExpect<'a,Player>,
-		WriteStorage<'a,BBox<V>>,
-		ReadStorage<'a,Transform<V, V::M>>
-	);
-
-	fn run(&mut self, (player, mut write_bbox, transform) : Self::SystemData) {
-		let pos = transform.get(player.0).unwrap().pos;
-		let mut bbox = write_bbox.get_mut(player.0).unwrap();
-		bbox.min = pos - V::constant(0.2);
-		bbox.max = pos + V::constant(-0.2);
-	}
-}
-//print entities in the same cell as the player's bbox
-pub struct CollisionTestSystem<V>(pub PhantomData<V>);
-
-impl<'a, V> System<'a> for CollisionTestSystem<V>
-where
-	V: VectorTrait + Componentable,
-	V::M: Componentable
-{
-
-	type SystemData = (
-		ReadExpect<'a,Input>,
-		ReadExpect<'a,Player>,
-		ReadStorage<'a,Transform<V, V::M>>,
-		ReadStorage<'a,Shape<V>>,
-		ReadStorage<'a,ShapeType<V>>,
-		ReadStorage<'a,BBox<V>>,
-		ReadExpect<'a,SpatialHashSet<V,Entity>>
-	);
-
-	fn run(&mut self, (input, player, transform, shapes, shape_types, bbox, hash) : Self::SystemData) {
-		use glium::glutin::event::VirtualKeyCode as VKC;
-		if input.helper.key_released(PRINT_DEBUG) {
-			//let mut out_string = "Entities: ".to_string();
-			let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
-			let player_pos = transform.get(player.0).unwrap().pos;
-			if entities_in_bbox.iter().any(
-				|&e| match shape_types.get(e).unwrap() {
-					ShapeType::Convex(_convex) => Convex::point_within(player_pos,0.1, &shapes.get(e).unwrap().faces),
-					_ => false,
-				}
-			) {
-				println!("in thing")
-			} else {
-				println!("not in thing")
-			}
-			// for e in entities_in_bbox {
-			// 	out_string = format!("{} {},", out_string, e.id())
-			// }
-			// println!("{}", out_string);
-		}
-
-	}
-}
-//stop movement through entities indexed in spatial hash set
-//need only run these systems when the player is moving
-pub struct PlayerCollisionDetectionSystem<V>(pub PhantomData<V>);
-
-impl<'a, V> System<'a> for PlayerCollisionDetectionSystem<V>
-where
-	V: VectorTrait + Componentable,
-	V::M: Componentable
-{
-
-	type SystemData = (
-		ReadExpect<'a,Player>,
-		ReadStorage<'a,BBox<V>>,
-		WriteStorage<'a,InPlayerCell>,
-		ReadExpect<'a,SpatialHashSet<V,Entity>>
-	);
-
-	fn run(&mut self, (player, bbox, mut in_cell, hash) : Self::SystemData) {
-		in_cell.clear(); //clear previously marked
-		//maybe we should use the anticipated player bbox here
-		let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(),&hash);
-		for &e in entities_in_bbox.iter() {
-			in_cell.insert(e, InPlayerCell).expect("PlayerCollisionDetectionSystem: entity in spatial hash doesn't exist");
-		}
-	}
-}
-
-pub struct PlayerStaticCollisionSystem<V>(pub PhantomData<V>);
-impl<'a, V> System<'a> for PlayerStaticCollisionSystem<V>
-where
-	V: VectorTrait + Componentable,
-	V::M: Componentable
-{
-
-	type SystemData = (
-		ReadExpect<'a,Player>,
-		ReadStorage<'a,Transform<V, V::M>>,
-		WriteStorage<'a,MoveNext<V>>,
-		ReadStorage<'a,Shape<V>>,
-		ReadStorage<'a,ShapeType<V>>,
-		ReadStorage<'a,StaticCollider>,
-		ReadStorage<'a,InPlayerCell>
-	);
-
-	fn run(&mut self, (player, transform, mut write_move_next, shape, shape_types, static_collider, in_cell) : Self::SystemData) {
-		let move_next = write_move_next.get_mut(player.0).unwrap();
-		match move_next {
-			MoveNext{next_dpos : Some(_next_dpos), can_move : Some(true)} => {
-				let pos = transform.get(player.0).unwrap().pos;
-				for (shape, shape_type, _, _) in (&shape, &shape_types, &static_collider, &in_cell).join() {
-
-					let next_dpos = move_next.next_dpos.unwrap();
-					//this is more convoluted than it needs to be
-					let (normal, dist) = shape.point_normal_distance(pos);
-					if match shape_type {
-						ShapeType::SingleFace(single_face) => if single_face.two_sided {
-							(dist.abs() < PLAYER_COLLIDE_DISTANCE) & (single_face.subface_normal_distance(pos).1 < PLAYER_COLLIDE_DISTANCE)
-						} else {
-							(dist < PLAYER_COLLIDE_DISTANCE) & (single_face.subface_normal_distance(pos).1 < PLAYER_COLLIDE_DISTANCE)
-						},
-						ShapeType::Convex(_) => dist < PLAYER_COLLIDE_DISTANCE }
-					{
-						//push player away along normal of nearest face (projects out -normal)
-						//but i use abs here to guarantee the face always repels the player
-						let new_dpos = next_dpos + (normal*dist.signum())*(normal.dot(next_dpos).abs());
-
-						move_next.next_dpos = Some(new_dpos);
-						//println!("{}",normal);
-					}
-				}
-				
-			},
-			_ => (),
-		}
-	}
 }
 
 //for simplicity, let's assume that every colliding entity has a bbox small enough that it can occupy up to 2^d cells.
@@ -289,6 +101,18 @@ fn get_entities_in_bbox<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet
 		.collect()
 
 }
+
+pub fn insert_static_bboxes<'a, V: VectorTrait + 'a, I>(hash: &mut SpatialHashSet<V, Entity>, bbox_entity_iter: I)
+where I: Iterator<Item = (&'a BBox<V>, Entity)>
+{
+	for (bbox, entity) in bbox_entity_iter {
+		for cell in get_bbox_cells(&bbox,hash).into_iter() {
+			hash.insert_at_cell(cell,entity);
+		}
+
+	}
+}
+
 fn get_bits(n : HashInt, n_bits : HashInt) -> impl Iterator<Item=HashInt> { //might be more sensible to be bool?
 	(0..n_bits).map(move |k| n.rotate_right(k)%2)
 }
@@ -312,6 +136,57 @@ fn get_dcoords_dcells(dcoords : &Vec<HashInt>, mult : &Vec<HashInt>) -> Vec<Hash
 		}
 		out_vec
 	}
+
+pub fn move_player<V: VectorTrait>(move_next: &mut MoveNext<V>, player_transform: &mut Transform<V, V::M>, camera: &mut Camera<V, V::M>) {
+	match move_next {
+		MoveNext{next_dpos : Some(next_dpos), can_move : Some(true)} => {
+			player_transform.translate(*next_dpos);
+			camera.update(player_transform);
+		},
+		_ => (),
+	};
+	*move_next = MoveNext::default(); //clear movement
+
+}
+
+pub fn update_player_bbox<V: VectorTrait>(player_bbox: &mut BBox<V>, player_pos: V) {
+	player_bbox.min = player_pos - V::constant(0.2);
+	player_bbox.max = player_pos + V::constant(-0.2);
+}
+
+pub fn check_player_static_collisions<'a, I, V: VectorTrait + 'a>(
+	move_next: &mut MoveNext<V>,
+	player_pos: V,
+	shape_iter: I
+) where I: Iterator<Item = (&'a Shape<V>, &'a ShapeType<V>)> {
+	match move_next {
+		MoveNext{next_dpos : Some(_next_dpos), can_move : Some(true)} => {
+			for (shape, shape_type) in shape_iter {
+
+				let next_dpos = move_next.next_dpos.unwrap();
+				//this is more convoluted than it needs to be
+				let (normal, dist) = shape.point_normal_distance(player_pos);
+				if match shape_type {
+					ShapeType::SingleFace(single_face) => if single_face.two_sided {
+						(dist.abs() < PLAYER_COLLIDE_DISTANCE) & (single_face.subface_normal_distance(player_pos).1 < PLAYER_COLLIDE_DISTANCE)
+					} else {
+						(dist < PLAYER_COLLIDE_DISTANCE) & (single_face.subface_normal_distance(player_pos).1 < PLAYER_COLLIDE_DISTANCE)
+					},
+					ShapeType::Convex(_) => dist < PLAYER_COLLIDE_DISTANCE }
+				{
+					//push player away along normal of nearest face (projects out -normal)
+					//but i use abs here to guarantee the face always repels the player
+					let new_dpos = next_dpos + (normal*dist.signum())*(normal.dot(next_dpos).abs());
+
+					move_next.next_dpos = Some(new_dpos);
+					//println!("{}",normal);
+				}
+			}
+			
+		},
+		_ => (),
+	}
+}
 
 #[test]
 fn dcoords_cells_test() {
