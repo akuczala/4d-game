@@ -146,6 +146,11 @@ where
             &["transform_shapes"],
         ) //if we had moving objects other than player
         .with(
+            BBoxHashingSystem(ModSystem::typed_default(ph)),
+            BBoxHashingSystem::NAME,
+            &["update_all_bbox"]
+        )
+        .with(
             UpdateBBallSystem(ModSystem::typed_default(ph)),
             "update_all_bball",
             &["transform_shapes"],
@@ -158,7 +163,7 @@ where
         .with(
             ShapeCleanupSystem(ph),
             "shape_cleanup",
-            &["player_coin_collision"],
+            &["delete_shape", BBoxHashingSystem::NAME],
         )
-        .with(PrintDebugSystem(ph), "print_debug", &["update_camera"])
+        //.with(PrintDebugSystem(ph), "print_debug", &["update_camera"])
 }

@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, ops::Deref};
 
-use specs::{BitSet, ReaderId, shrev::{EventChannel, EventIterator}, storage::ComponentEvent};
+use specs::{BitSet, ReaderId, shrev::{EventChannel, EventIterator}, storage::ComponentEvent, hibitset::BitSetOr};
 
 use crate::vector::{VectorTrait, Vec2, Vec3, Vec4, Mat2, Mat4, Mat3};
 
@@ -21,6 +21,7 @@ pub trait SystemName {
 pub struct ModSystem<V> {
     pub ph: PhantomData<V>,
     pub modified: BitSet,
+    pub inserted: BitSet,
     pub reader_id: Option<ReaderId<ComponentEvent>>
 }
 
@@ -30,7 +31,8 @@ impl<V: Componentable> ModSystem<V> {
         Self {
             ph,
             modified: Default::default(),
-            reader_id: Default::default()
+            reader_id: Default::default(),
+            inserted: Default::default(),
         }
     }
     pub fn get_events<'a>(&'a mut self, channel: &'a EventChannel<ComponentEvent>) -> EventIterator<ComponentEvent> {
@@ -40,12 +42,17 @@ impl<V: Componentable> ModSystem<V> {
     pub fn gather_events(&mut self, channel: &EventChannel<ComponentEvent>)
     {
         self.modified.clear();
+        self.inserted.clear();
         for event in channel.read(self.reader_id.as_mut().unwrap()) {
             match event {
                 ComponentEvent::Modified(id) => {self.modified.add(*id);},
+                ComponentEvent::Inserted(id) => {self.inserted.add(*id);}
                 _ => (),
             }
         }
+    }
+    pub fn modified_or_inserted(&self) -> BitSetOr<&BitSet, &BitSet> {
+        (&self.modified) | (&self.inserted)
     }
     pub fn for_each_modified<F>(&mut self, channel: &EventChannel<ComponentEvent>, mut f: F)
     where F: FnMut(&u32) -> ()

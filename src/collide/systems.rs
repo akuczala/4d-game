@@ -2,9 +2,9 @@ use std::marker::PhantomData;
 
 use::specs::prelude::*;
 
-use crate::{components::*, vector::VectorTrait, ecs_utils::Componentable, spatial_hash::{SpatialHashSet, HashInt}, input::{Input, key_map::PRINT_DEBUG}, collide::get_entities_in_bbox};
+use crate::{components::*, vector::VectorTrait, ecs_utils::{Componentable, SystemName, ModSystem}, spatial_hash::{SpatialHashSet, HashInt}, input::{Input, key_map::PRINT_DEBUG}, collide::get_entities_in_bbox};
 
-use super::{get_dcoords_dcells, get_bbox_cells, check_player_static_collisions, update_player_bbox, move_player, insert_static_bboxes};
+use super::{get_dcoords_dcells, get_bbox_cells, check_player_static_collisions, update_player_bbox, move_player, insert_static_bboxes, update_static_bboxes};
 
 pub struct MovePlayerSystem<V>(pub PhantomData<V>);
 
@@ -33,19 +33,32 @@ where
 //enter each statically colliding entity into every cell containing its bbox volume (either 1, 2, 4 ... up to 2^d cells)
 //assuming that cells are large enough that all bboxes can fit in a cell
 //for static objects, it is cheap to hash the volume since we need only do it once
-pub struct BBoxHashingSystem<V>(pub PhantomData<V>);
+pub struct BBoxHashingSystem<V>(pub ModSystem<V>);
 
 impl<'a,V : VectorTrait + Componentable> System<'a> for BBoxHashingSystem<V> {
 
-	type SystemData = (ReadStorage<'a,BBox<V>>,Entities<'a>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
+	type SystemData = (
+		ReadStorage<'a,BBox<V>>,
+		Entities<'a>,
+		WriteExpect<'a,SpatialHashSet<V,Entity>>
+	);
 
 	fn run(&mut self, (read_bbox, entities, mut write_hash) : Self::SystemData) {
-        insert_static_bboxes(
+		self.0.gather_events(read_bbox.channel());
+        update_static_bboxes(
             &mut write_hash, 
-            (&read_bbox,&*entities).join()
+            (&read_bbox,&*entities, self.0.modified_or_inserted()).join()
+				.map(|(b, e, _)| (b, e))
         )
 	}
+	fn setup(&mut self, world: &mut World) {
+        Self::SystemData::setup(world);
+        self.0.reader_id = Some(
+            WriteStorage::<BBox<V>>::fetch(&world).register_reader()
+        );
+	}
 }
+impl SystemName for BBoxHashingSystem<()> {const NAME: &'static str = "bbox_hashing";}
 
 //add an update_bbox marker
 pub struct UpdatePlayerBBox<V>(pub PhantomData<V>);

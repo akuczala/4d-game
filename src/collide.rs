@@ -2,7 +2,7 @@ pub mod bbox;
 pub mod systems;
 
 use crate::constants::PLAYER_COLLIDE_DISTANCE;
-use crate::ecs_utils::Componentable;
+use crate::ecs_utils::{Componentable, ModSystem};
 use crate::input::Input;
 use crate::input::key_map::PRINT_DEBUG;
 use crate::spatial_hash::{SpatialHashSet,HashInt};
@@ -65,6 +65,16 @@ pub fn create_spatial_hash<V : VectorTrait + Componentable>(world : &mut World) 
         max = max.zip_map(bbox.max,Field::max);
         max_lengths = max_lengths.zip_map(bbox.max - bbox.min,Field::max);
     }
+	// set default if there are no finite size bboxes in world
+	// if V::is_close(max, min) {
+	// 	min = V::ones() * (-50.0);
+	// 	max = V::ones() * (50.0);
+	// 	max_lengths = V::ones() * 10.0;
+	// }
+	min = V::ones() * (-50.0);
+	max = V::ones() * (50.0);
+	max_lengths = V::ones() * 5.0;
+
     //println!("Min/max: {},{}",min,max);
     //println!("Longest sides {}",max_lengths);
     world.insert(
@@ -75,7 +85,7 @@ pub fn create_spatial_hash<V : VectorTrait + Componentable>(world : &mut World) 
         )
     );
     //enter bboxes into hash set
-    BBoxHashingSystem(PhantomData::<V>).run_now(&world);
+    //BBoxHashingSystem(ModSystem::typed_default(PhantomData::<V>)).run_now(&world);
 }
 
 fn get_bbox_cells<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet<V,Entity>) -> Vec<HashInt> {
@@ -102,13 +112,26 @@ fn get_entities_in_bbox<V : VectorTrait>(bbox : &BBox<V>, hash : &SpatialHashSet
 
 }
 
+pub fn insert_static_bbox<V: VectorTrait>(hash: &mut SpatialHashSet<V, Entity>, bbox: &BBox<V>, entity: Entity) {
+	for cell in get_bbox_cells(bbox, hash) {
+		hash.insert_at_cell(cell, entity)
+	}
+}
+
 pub fn insert_static_bboxes<'a, V: VectorTrait + 'a, I>(hash: &mut SpatialHashSet<V, Entity>, bbox_entity_iter: I)
 where I: Iterator<Item = (&'a BBox<V>, Entity)>
 {
 	for (bbox, entity) in bbox_entity_iter {
-		for cell in get_bbox_cells(&bbox,hash).into_iter() {
-			hash.insert_at_cell(cell,entity);
-		}
+		insert_static_bbox(hash, bbox, entity)
+	}
+}
+
+pub fn update_static_bboxes<'a, V: VectorTrait + 'a, I>(hash: &mut SpatialHashSet<V, Entity>, bbox_entity_iter: I)
+where I: Iterator<Item = (&'a BBox<V>, Entity)>
+{
+	for (bbox, entity) in bbox_entity_iter {
+		hash.remove_from_all(&entity);
+		insert_static_bbox(hash, bbox, entity)
 
 	}
 }

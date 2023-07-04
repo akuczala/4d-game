@@ -50,6 +50,8 @@ where
     }
 }
 
+// TODO: similar to above
+/// update bbox whenever shape is accessed mutably
 #[derive(Default)]
 pub struct UpdateBBoxSystem<V>(pub ModSystem<V>);
 
@@ -80,7 +82,7 @@ impl<'a,V: VectorTrait + Componentable> System<'a> for UpdateBBoxSystem<V> {
     }
 }
 
-// resets static separators when shape is mutated
+/// resets static separators when shape is mutated
 #[derive(Default)]
 pub struct UpdateStaticClippingSystem<V>(pub ModSystem<V>);
 
@@ -132,6 +134,7 @@ where
     }
 }
 
+/// Updates shape components whenever the transform component is accessed mutably
 #[derive(Default)]
 pub struct TransformShapeSystem<V>(pub ModSystem<V>);
 

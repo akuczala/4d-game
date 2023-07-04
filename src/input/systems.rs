@@ -197,8 +197,7 @@ where V: Componentable
         ReadExpect<'a, Player>,
         WriteStorage<'a, MaybeSelected>,
         WriteExpect<'a, Input>,
-        Write<'a, DeletedEntities>,
-        Entities<'a>
+        Write<'a, DeletedEntities>
     );
 
     fn run(
@@ -208,15 +207,12 @@ where V: Componentable
             mut write_maybe_selected,
             mut input,
             mut deleted_entities,
-            entities
         ): Self::SystemData
     ) {
         delete_shape(
             &mut input,
             &mut write_maybe_selected.get_mut(player.0).unwrap(),
             &mut deleted_entities
-        ).map(
-            |e| entities.delete(e).unwrap()
         );
     }
 }

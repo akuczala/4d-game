@@ -61,7 +61,17 @@ where
 		Write<'a, CoinsCollected>
 	);
 
-	fn run(&mut self, (player, transform, coin, in_cell, shapes, entities, mut deleted, mut coins_collect) : Self::SystemData) {
+	fn run(
+		&mut self, (
+			player,
+			transform,
+			coin,
+			in_cell,
+			shapes,
+			entities,
+			mut deleted,
+			mut coins_collect
+		) : Self::SystemData) {
 		let pos = transform.get(player.0).unwrap().pos;
 
 		for (_, _, shape, e) in (&coin, &in_cell, &shapes, &entities).join() {
@@ -69,7 +79,6 @@ where
 			if shape.point_signed_distance(pos) < 0.1 {
 				coins_collect.0 += 1;
 				deleted.add(e);
-				entities.delete(e).unwrap();
 			}
 
 		}

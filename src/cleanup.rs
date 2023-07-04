@@ -22,9 +22,20 @@ impl DeletedEntities {
 
 pub struct ShapeCleanupSystem<V>(pub PhantomData<V>);
 impl<'a, V : Componentable + VectorTrait> System<'a> for ShapeCleanupSystem<V> {
-	type SystemData = (Write<'a,DeletedEntities>,WriteStorage<'a,ShapeClipState<V>>,WriteExpect<'a,SpatialHashSet<V,Entity>>);
+	type SystemData = (
+		Write<'a,DeletedEntities>,
+		WriteStorage<'a,ShapeClipState<V>>,
+		WriteExpect<'a,SpatialHashSet<V,Entity>>,
+		Entities<'a>,
+	);
 
-	fn run(&mut self, (mut deleted, mut shape_clip, mut hash) : Self::SystemData) {
+	fn run(
+		&mut self, (
+			mut deleted,
+			mut shape_clip,
+			mut hash,
+			entities,
+		) : Self::SystemData) {
 		let len = deleted.0.len();
 		for e in deleted.0.drain(0..len) {
 
@@ -35,6 +46,7 @@ impl<'a, V : Componentable + VectorTrait> System<'a> for ShapeCleanupSystem<V> {
 				clip.remove(&e);
 				
 			}
+			entities.delete(e).unwrap();
 			
 		}
 	}

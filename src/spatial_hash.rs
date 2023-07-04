@@ -151,7 +151,7 @@ impl <K : VectorTrait, T> SpatialHashSet<K, T>
 }
 use specs::Entity;
 impl<K : VectorTrait> SpatialHashSet<K, Entity> {
-	fn print(&self) {
+	pub fn print(&self) {
     	let mut out : String = "".to_owned();
     	for (key, val) in self.0.map.iter() {
     		out = format!("{} \n key: {} val: {}",out, key, hashset_string(val));

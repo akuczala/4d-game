@@ -8,7 +8,7 @@ use crate::draw::ShapeTexture;
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube, color_cube_texture, fuzzy_color_cube_texture};
 use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
-use crate::ecs_utils::{Componentable, ModSystem};
+use crate::ecs_utils::{Componentable};
 use crate::geometry::transform::{Scaling, self};
 use crate::player::Player;
 use crate::shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV};
@@ -249,13 +249,14 @@ pub fn delete_shape(
     input.toggle_keys.trigger_once_bind(
         DELETE_SHAPE, || {
             println!("Delete shape");
-            maybe_selected.0.as_mut().map(
-                |selected| {
-                    let e = selected.entity;
+            if let Some(selected) = &maybe_selected.0 {
+                let e = selected.entity;
                     deleted_entities.add(e);
-                    e
-                }
-            )
+                    maybe_selected.0 = None;
+                    Some(e)
+            } else {
+                None
+            }
         }
     )
 }

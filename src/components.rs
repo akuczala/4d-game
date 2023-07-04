@@ -24,7 +24,7 @@ use crate::vector::VectorTrait;
 type DefaultStorage<V> = VecStorage<V>;
 
 impl<V: Componentable> Component for BBox<V> {
-	type Storage = DefaultStorage<Self>;
+	type Storage =  FlaggedStorage<Self, DefaultStorage<Self>>;
 }
 
 impl<V: Componentable> Component for BBall<V> {
