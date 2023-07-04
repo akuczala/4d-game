@@ -245,7 +245,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
     fn make_face1<V: VectorTrait>(
         i: VertIndex,
         ns: &[VertIndex; 2],
-        verts: &Vec<V>,
+        verts: &[V],
         edges: &[Edge],
     ) -> Face<V> {
         let (m, n) = (ns[0], ns[1]);
@@ -259,7 +259,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
     fn make_face2<V: VectorTrait>(
         j: VertIndex,
         ns: &[VertIndex; 2],
-        verts: &Vec<V>,
+        verts: &[V],
         edges: &[Edge],
     ) -> Face<V> {
         let (m, n) = (ns[0], ns[1]);

@@ -133,7 +133,7 @@ impl<V> Texture<V> {
 }
 impl<V: VectorTrait> Texture<V> {
     pub fn make_single_tile_texture(color: Color) -> Self {
-        Texture::make_tile_texture(&vec![FACE_SCALE], &(0..V::DIM).map(|_| 1).collect_vec())
+        Texture::make_tile_texture(&[FACE_SCALE], &(0..V::DIM).map(|_| 1).collect_vec())
             .set_color(color)
     }
     pub fn make_tile_texture(scales: &[Field], n_divisions: &Vec<i32>) -> Self {

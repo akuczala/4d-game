@@ -136,7 +136,7 @@ where
     let build_shape: ShapeEntityBuilderV<V> =
         ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, wall_single_face, wall_label)
             .with_face_texture(FaceTexture {
-                texture: draw::Texture::make_tile_texture(&vec![0.8], &n_divisions),
+                texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions),
                 texture_mapping: Some(draw::TextureMapping {
                     origin_verti: 0,
                     frame_vertis,
@@ -162,7 +162,7 @@ pub fn build_fun_level<V: VectorTrait>(
     let wall_builder =
         ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, wall_single_face, wall_label)
             .with_face_texture(FaceTexture {
-                texture: draw::Texture::make_tile_texture(&vec![0.8], &n_divisions),
+                texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions),
                 texture_mapping: Some(draw::TextureMapping {
                     origin_verti: 0,
                     frame_vertis,

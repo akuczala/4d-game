@@ -255,7 +255,7 @@ where
         println!("Starting {}d engine", V::DIM);
         //let game = Game::new(game::build_shapes_3d());
         let mut graphics = G::new(display);
-        graphics.new_vertex_buffer_from_lines(&vec![], display);
+        graphics.new_vertex_buffer_from_lines(&[], display);
 
         Self::new(crate::build_level::build_scene::<V>, graphics, gui)
     }

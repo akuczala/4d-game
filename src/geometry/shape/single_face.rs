@@ -8,13 +8,13 @@ struct SubFace<V> {
     plane: Plane<V>,
 }
 impl<V: VectorTrait> SubFace<V> {
-    pub fn new(vertis: &Vec<VertIndex>, shape_verts: &Vec<V>, face_normal: V) -> Self {
+    pub fn new(vertis: &[VertIndex], shape_verts: &[V], face_normal: V) -> Self {
         Self {
-            vertis: vertis.clone(),
+            vertis: vertis.to_owned(),
             plane: Self::calc_plane(vertis, shape_verts, face_normal),
         }
     }
-    pub fn update(&mut self, shape_verts: &Vec<V>, face_normal: V) {
+    pub fn update(&mut self, shape_verts: &[V], face_normal: V) {
         self.plane = Self::calc_plane(&self.vertis, shape_verts, face_normal)
     }
     fn calc_plane(vertis: &[VertIndex], shape_verts: &[V], face_normal: V) -> Plane<V> {
@@ -90,7 +90,7 @@ impl<V: VectorTrait> SingleFace<V> {
     pub fn calc_boundaries(
         &self,
         origin: V,
-        verts: &Vec<V>,
+        verts: &[V],
         face_center: V,
         visible: bool,
     ) -> Vec<Plane<V>> {
