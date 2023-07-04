@@ -10,7 +10,7 @@ impl<V: VectorTrait> BBall<V> {
         let radius = verts
             .iter()
             .map(|v| v.norm_sq())
-            .fold(0. / 0., Field::max)
+            .fold(Field::NAN, Field::max)
             .sqrt();
         Self { pos, radius }
     }

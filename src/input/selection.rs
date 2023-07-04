@@ -93,7 +93,7 @@ pub fn set_manipulation_mode<V: VectorTrait>(
                 ShapeMovementMode::Scale => ShapeManipulationMode::Scale(Scaling::unit()),
                 ShapeMovementMode::Free => ShapeManipulationMode::Free(Transform::identity()),
             };
-            manip_state.original_transform = shape_transform.clone();
+            manip_state.original_transform = *shape_transform;
             manip_state.locked_axes = Vec::new();
         }
         if input.helper.mouse_held(0) {
@@ -124,13 +124,10 @@ pub fn manipulate_shape_outer<V: VectorTrait>(
 ) {
     set_manipulation_mode(input, manip_state, selected_transform);
     cancel_manipulation(input, manip_state, selected_transform);
-    reset_orientation_and_scale(&input, selected_transform);
-    pos_to_grid(&input, selected_transform);
-    match input.movement_mode {
-        MovementMode::Shape(_) => {
-            manipulate_shape(input, manip_state, selected_transform, camera_transform);
-        }
-        _ => (),
+    reset_orientation_and_scale(input, selected_transform);
+    pos_to_grid(input, selected_transform);
+    if let MovementMode::Shape(_) = input.movement_mode {
+        manipulate_shape(input, manip_state, selected_transform, camera_transform);
     }
 }
 
@@ -180,17 +177,16 @@ pub fn manipulate_shape<V: VectorTrait>(
         }
         //this mode allows you to control the shape as if it were the camera
         ShapeManipulationMode::Free(transform_delta) => {
-            let mut new_transform_delta = transform_delta.clone();
+            let mut new_transform_delta = transform_delta;
             let update = update_transform(input, &mut new_transform_delta);
             *transform = manip_state
                 .original_transform
-                .clone()
                 .with_transform(new_transform_delta);
             (update, ShapeManipulationMode::Free(new_transform_delta))
         }
     };
     manip_state.mode = new_mode;
-    return update;
+    update
 }
 
 pub fn selection_box<V: VectorTrait>(shape: &Shape<V>) -> DrawLineCollection<V> {
@@ -210,7 +206,7 @@ pub fn create_shape<V: VectorTrait>(
         let dir = player_transform.frame[-1];
         let shape_pos = pos + dir * 2.0;
         ShapeEntityBuilder::new_convex_from_ref_shape(
-            &ref_shapes,
+            ref_shapes,
             ShapeLabel::from_str(CUBE_LABEL_STR),
         )
         .with_transform(Transform::pos(shape_pos))
@@ -231,8 +227,8 @@ pub fn duplicate_shape<V: VectorTrait>(
 ) -> Option<ShapeEntityBuilderV<V>> {
     input.toggle_keys.trigger_once(DUPLICATE_SHAPE, || {
         println!("shape duplicated");
-        ShapeEntityBuilder::new_convex_from_ref_shape(&ref_shapes, shape_label.clone())
-            .with_transform(shape_transform.clone())
+        ShapeEntityBuilder::new_convex_from_ref_shape(ref_shapes, shape_label.clone())
+            .with_transform(*shape_transform)
             .with_texture(shape_texture.clone())
             .with_collider(shape_collider.cloned())
         // TODO: add to spatial hash set (use BBox hash system)

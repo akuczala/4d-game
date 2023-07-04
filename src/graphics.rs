@@ -53,41 +53,40 @@ pub trait Graphics<V: VectorTrait> {
     fn set_index_buffer(&mut self, index_buffer: glium::IndexBuffer<u16>);
     fn set_program(&mut self, program: glium::Program);
 
-    fn new_vertex_buffer(&mut self, verts: &Vec<Option<DrawVertex<V>>>, display: &Display) {
+    fn new_vertex_buffer(&mut self, verts: &[Option<DrawVertex<V>>], display: &Display) {
         self.set_vertex_buffer(
-            glium::VertexBuffer::dynamic(display, &Self::verts_to_gl(&verts)).unwrap(),
+            glium::VertexBuffer::dynamic(display, &Self::verts_to_gl(verts)).unwrap(),
         );
     }
 
     fn new_vertex_buffer_from_lines(
         &mut self,
-        lines: &Vec<Option<DrawLine<V>>>,
+        lines: &[Option<DrawLine<V>>],
         display: &Display,
     ) {
-        let vertexes = Self::opt_lines_to_gl(&lines);
+        let vertexes = Self::opt_lines_to_gl(lines);
         self.set_vertex_buffer(glium::VertexBuffer::dynamic(display, &vertexes).unwrap());
     }
-    fn new_index_buffer(&mut self, verts: &Vec<VertIndex>, display: &Display);
+    fn new_index_buffer(&mut self, verts: &[VertIndex], display: &Display);
 
-    fn verts_to_gl(verts: &Vec<Option<DrawVertex<V>>>) -> Vec<Self::VertexType> {
+    fn verts_to_gl(verts: &[Option<DrawVertex<V>>]) -> Vec<Self::VertexType> {
         verts.iter().map(Self::VertexType::vert_to_gl).collect()
     }
-    fn vertis_to_gl(vertis: &Vec<VertIndex>) -> Vec<u16> {
+    fn vertis_to_gl(vertis: &[VertIndex]) -> Vec<u16> {
         vertis.iter().map(|v| *v as u16).collect()
     }
-    fn opt_lines_to_gl(opt_lines: &Vec<Option<DrawLine<V>>>) -> Vec<Self::VertexType> {
+    fn opt_lines_to_gl(opt_lines: &[Option<DrawLine<V>>]) -> Vec<Self::VertexType> {
         opt_lines
             .iter()
-            .map(Self::VertexType::line_to_gl)
-            .flatten()
+            .flat_map(Self::VertexType::line_to_gl)
             .collect()
     }
-    fn write_opt_lines_to_buffer(&mut self, opt_lines: &Vec<Option<DrawLine<V>>>) {
+    fn write_opt_lines_to_buffer(&mut self, opt_lines: &[Option<DrawLine<V>>]) {
         let mut write_map = self.get_vertex_buffer_mut().map_write();
 
         let mut i = 0;
         for opt_line in opt_lines.iter() {
-            for &v in Self::VertexType::line_to_gl(&opt_line).iter() {
+            for &v in Self::VertexType::line_to_gl(opt_line).iter() {
                 write_map.set(i, v);
                 i += 1;
             }
@@ -141,11 +140,11 @@ pub trait Graphics<V: VectorTrait> {
     }
     fn draw_lines(
         &mut self,
-        draw_lines: &Vec<Option<DrawLine<V>>>,
+        draw_lines: &[Option<DrawLine<V>>],
         mut target: glium::Frame,
     ) -> glium::Frame {
         //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
-        self.write_opt_lines_to_buffer(&draw_lines); //slightly faster than the above (less allocation)
+        self.write_opt_lines_to_buffer(draw_lines); //slightly faster than the above (less allocation)
 
         let draw_params = glium::DrawParameters {
             smooth: Some(glium::draw_parameters::Smooth::Nicest),
@@ -165,7 +164,7 @@ pub trait Graphics<V: VectorTrait> {
             _ => panic!("Invalid dimension"),
         };
         let uniforms = uniform! {
-            perspective : Self::build_perspective_mat(&mut target),
+            perspective : Self::build_perspective_mat(&target),
             view : view_matrix,
             model: [
                 [1.0, 0.0, 0.0, 0.0],
@@ -176,7 +175,7 @@ pub trait Graphics<V: VectorTrait> {
             aspect : (width as f32)/(height as f32),
             thickness : match V::DIM {
                 2 =>LINE_THICKNESS_3D, 3 => LINE_THICKNESS_4D,
-                _ => panic!("Invalid dimension")} as f32,
+                _ => panic!("Invalid dimension")},
             miter : 1,
         };
         //target.clear_color(0.0,0.0,0.0,1.0);
@@ -189,7 +188,7 @@ pub trait Graphics<V: VectorTrait> {
         target
             .draw(
                 self.get_vertex_buffer(),
-                &glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+                glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
                 self.get_program(),
                 &uniforms,
                 &draw_params,

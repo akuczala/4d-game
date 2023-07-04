@@ -54,7 +54,7 @@ impl FPSTimer {
             let mut out_str = "".to_string();
             let mut mean: f32 = 0.;
             for &e in self.elapsed_time_list.iter() {
-                mean = mean + (e.max(16) as f32);
+                mean += e.max(16) as f32;
                 out_str = format!("{} {}", out_str, e);
             }
             let mean = mean / (N_TIMES as f32);

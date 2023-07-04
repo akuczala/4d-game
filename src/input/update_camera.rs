@@ -38,31 +38,26 @@ pub fn update_camera<V: VectorTrait>(
     let mut any_slide_turn = false;
 
     //mouse
-    match input.movement_mode {
-        MovementMode::Player(PlayerMovementMode::Mouse) => {
-            let (dmx, dmy) = input.mouse.mouse_dpos;
-            if dmx.abs() != 0. {
-                if input.helper.held_shift() {
-                    camera.turn(transform, 0, 2, dmx * dt * MOUSE_SENSITIVITY);
-                } else {
-                    camera.turn(transform, 0, -1, dmx * dt * MOUSE_SENSITIVITY);
-                }
-                any_slide_turn = true;
+    if let MovementMode::Player(PlayerMovementMode::Mouse) = input.movement_mode {
+        let (dmx, dmy) = input.mouse.mouse_dpos;
+        if dmx.abs() != 0. {
+            if input.helper.held_shift() {
+                camera.turn(transform, 0, 2, dmx * dt * MOUSE_SENSITIVITY);
+            } else {
+                camera.turn(transform, 0, -1, dmx * dt * MOUSE_SENSITIVITY);
             }
-            //y mouse movement
-            if dmy.abs() != 0. {
-                match (V::DIM, input.helper.held_shift()) {
-                    (3, _) | (4, true) => {
-                        camera.tilt(transform, 1, -1, -dmy * dt * MOUSE_SENSITIVITY)
-                    }
-                    (4, false) => camera.turn(transform, 2, -1, -dmy * dt * MOUSE_SENSITIVITY),
-                    (_, _) => panic!("Invalid dimension"),
-                };
-                //camera.spin(axis,-1,-my*dt*MOUSE_SENSITIVITY);
-                any_slide_turn = true;
-            }
+            any_slide_turn = true;
         }
-        _ => (),
+        //y mouse movement
+        if dmy.abs() != 0. {
+            match (V::DIM, input.helper.held_shift()) {
+                (3, _) | (4, true) => camera.tilt(transform, 1, -1, -dmy * dt * MOUSE_SENSITIVITY),
+                (4, false) => camera.turn(transform, 2, -1, -dmy * dt * MOUSE_SENSITIVITY),
+                (_, _) => panic!("Invalid dimension"),
+            };
+            //camera.spin(axis,-1,-my*dt*MOUSE_SENSITIVITY);
+            any_slide_turn = true;
+        }
     }
 
     //keyboard
@@ -88,10 +83,10 @@ pub fn update_camera<V: VectorTrait>(
             any_slide_turn = true;
             //sliding
             if input.helper.held_alt()
-                ^ match input.movement_mode {
-                    MovementMode::Player(PlayerMovementMode::Mouse) => true,
-                    _ => false,
-                }
+                ^ matches!(
+                    input.movement_mode,
+                    MovementMode::Player(PlayerMovementMode::Mouse)
+                )
             {
                 move_next
                     .translate(camera.get_slide_dpos(camera.heading[axis] * movement_sign, dt));
@@ -112,7 +107,7 @@ pub fn update_camera<V: VectorTrait>(
         };
     }
     //spin unless turning or sliding
-    if V::DIM == 4 && any_slide_turn == false {
+    if V::DIM == 4 && !any_slide_turn {
         //camera.spin(transform,0,2,0.05*dt);
     }
     //         //reset orientation

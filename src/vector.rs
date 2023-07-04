@@ -63,7 +63,7 @@ pub trait VectorTrait:
     fn get_arr(&self) -> &Self::Arr;
     //ideally, I'd be able to implement this here by constrainting Arr to be iterable
     //could we use IntoIterator?
-    fn iter<'a>(&'a self) -> std::slice::Iter<'a, Field>;
+    fn iter(&self) -> std::slice::Iter<Field>;
     fn map<F: Fn(Field) -> Field>(self, f: F) -> Self;
     fn zip_map<F: Fn(Field, Field) -> Field>(self, rhs: Self, f: F) -> Self;
     fn fold<F: Fn(Field, Field) -> Field>(self, init: Option<Field>, f: F) -> Field;
@@ -153,7 +153,7 @@ pub trait MatrixTrait<V: VectorTrait>:
         // is it possible to do this without a lambda? i tried self.index
         (0..V::DIM).map(|i| self[i]).collect()
     }
-    fn from_vec_of_vecs(vecs: &Vec<V>) -> Self;
+    fn from_vec_of_vecs(vecs: &[V]) -> Self;
     fn transpose(&self) -> Self;
 }
 

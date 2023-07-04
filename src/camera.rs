@@ -23,11 +23,11 @@ impl<V: VectorTrait> Camera<V, V::M> {
     }
     pub fn look_at(&mut self, transform: &mut Transform<V, V::M>, point: &V) {
         transform.frame = rotation_matrix(*point - transform.pos, V::one_hot(-1), None);
-        self.update(&transform);
+        self.update(transform);
     }
     pub fn slide(&mut self, transform: &mut Transform<V, V::M>, direction: V, time: Field) {
         *transform = transform.with_translation(self.get_slide_dpos(direction, time));
-        self.update(&transform);
+        self.update(transform);
     }
     pub fn get_slide_dpos(&self, direction: V, time: Field) -> V {
         direction.normalize() * Self::SPEED * time
@@ -47,7 +47,7 @@ impl<V: VectorTrait> Camera<V, V::M> {
         );
         transform.frame = transform.frame.dot(rot);
         self.heading = self.heading.dot(rot);
-        self.update(&transform);
+        self.update(transform);
     }
     //heading-based rotation affecting both frame and heading
     pub fn turn(
@@ -64,7 +64,7 @@ impl<V: VectorTrait> Camera<V, V::M> {
         );
         transform.frame = transform.frame.dot(rot);
         self.heading = self.heading.dot(rot);
-        self.update(&transform);
+        self.update(transform);
     }
     //heading-based rotation affecting only frame
     pub fn tilt(
@@ -86,7 +86,7 @@ impl<V: VectorTrait> Camera<V, V::M> {
             );
             transform.frame = transform.frame.dot(rot);
 
-            self.update(&transform);
+            self.update(transform);
         }
     }
     pub fn update_plane(&mut self, transform: &Transform<V, V::M>) {
@@ -100,6 +100,6 @@ impl<V: VectorTrait> Camera<V, V::M> {
     // }
     pub fn update(&mut self, transform: &Transform<V, V::M>) {
         //self.update_heading();
-        self.update_plane(&transform);
+        self.update_plane(transform);
     }
 }

@@ -138,7 +138,7 @@ impl VectorTrait for Vec4 {
         let a = vecs_iter.next().expect("No vecs given to 4d cross product");
         let b = vecs_iter.next().expect("1 vec given to 4d cross product");
         let c = vecs_iter.next().expect("2 vecs given to 4d cross product");
-        if let Some(_) = vecs_iter.next() {
+        if vecs_iter.next().is_some() {
             panic!("4D cross product given more than 3 vecs");
         }
         Vec4::new(

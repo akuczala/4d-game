@@ -30,7 +30,7 @@ impl<V: VectorTrait> ShapeBuilder<V> {
         };
         Self::new(cube)
     }
-    pub fn build_prism(dim: VecIndex, lengths: &Vec<Field>, n_sides: &Vec<usize>) -> Self {
+    pub fn build_prism(dim: VecIndex, lengths: &[Field], n_sides: &[usize]) -> Self {
         Self::new(match dim {
             2 => build_prism_2d(lengths[0], n_sides[0]),
             3 => build_prism_3d(lengths[0], lengths[1], n_sides[0]),
@@ -85,7 +85,7 @@ pub fn convex_shape_to_face_shape<V: VectorTrait>(
         .map(|&v| V::unproject(v))
         .collect();
     let shape = Shape::new(verts, convex_shape.edges, vec![face]);
-    let subface_vertis = convex_shape
+    let subface_vertis: Vec<Vec<usize>> = convex_shape
         .faces
         .iter()
         .map(|face| face.vertis.clone())
@@ -154,7 +154,7 @@ pub fn build_prism_3d<V: VectorTrait>(r: Field, h: Field, n: VertIndex) -> Shape
         .chain(long_faces)
         .collect();
 
-    return Shape::new(verts, edges, faces);
+    Shape::new(verts, edges, faces)
 }
 pub fn build_long_cube_3d<V: VectorTrait>(length: Field, width: Field) -> Shape<V> {
     build_prism_3d(width / (2.0 as Field).sqrt(), length, 4)
@@ -203,7 +203,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
     if axes[0] == axes[1] {
         panic!("Axes of duoprism must be distinct")
     }
-    let ns_copy = ns.clone();
+    let ns_copy = ns;
     let angles = ns_copy
         .iter()
         .map(move |n| (0..*n).map(move |i| 2.0 * PI * ((i as Field) - 0.5) / (*n as Field)));
@@ -229,16 +229,12 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         .map(|(i, j)| Edge(j + i * ns[1], j + ((i + 1) % ns[0]) * ns[1]));
     let edges: Vec<Edge> = edges_1.chain(edges_2).collect();
 
-    fn make_normal<V: VectorTrait>(
-        edgeis: &Vec<EdgeIndex>,
-        verts: &Vec<V>,
-        edges: &Vec<Edge>,
-    ) -> V {
+    fn make_normal<V: VectorTrait>(edgeis: &[EdgeIndex], verts: &Vec<V>, edges: &[Edge]) -> V {
         let vertis: Vec<VertIndex> = edgeis
             .iter()
             .map(|ei| &edges[*ei])
             .map(|edge| vec![edge.0, edge.1])
-            .flat_map(|x| x)
+            .flatten()
             .collect(); //would like to not have to collect here
                         //get unique values
         let vertis: Vec<VertIndex> = vertis.into_iter().unique().collect();
@@ -258,7 +254,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         let cap2_edgeis = (0..n).map(|j| j + ((i + 1) % m) * n);
         let long_edgeis = (0..n).map(|j| m * n + j + i * n);
         let edgeis: Vec<EdgeIndex> = cap1_edgeis.chain(cap2_edgeis).chain(long_edgeis).collect();
-        let normal = make_normal(&edgeis, &verts, &edges);
+        let normal = make_normal(&edgeis, verts, edges);
         Face::new(edgeis, normal)
     }
     fn make_face2<V: VectorTrait>(
@@ -272,7 +268,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         let cap2_edgeis = (0..m).map(|i| m * n + (j + 1) % n + i * n);
         let long_edgeis = (0..m).map(|i| j + i * n);
         let edgeis: Vec<EdgeIndex> = cap1_edgeis.chain(cap2_edgeis).chain(long_edgeis).collect();
-        let normal = make_normal(&edgeis, &verts, &edges);
+        let normal = make_normal(&edgeis, verts, edges);
         Face::new(edgeis, normal)
     }
     let faces_1 = (0..ns[0]).map(|i| make_face1(i, &ns.clone(), &verts, &edges));
@@ -291,6 +287,6 @@ pub fn invert_normals<V: VectorTrait>(shape: &Shape<V>) -> Shape<V> {
     for face in &mut new_shape.faces {
         face.geometry.plane.normal = -face.normal();
     }
-    new_shape.update_from_ref(&shape, &Transform::identity());
+    new_shape.update_from_ref(shape, &Transform::identity());
     new_shape
 }

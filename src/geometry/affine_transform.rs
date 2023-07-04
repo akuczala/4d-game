@@ -45,7 +45,7 @@ impl<V: VectorTrait> AffineTransform<V, V::M> {
                     .iter()
                     .zip(norms.iter())
                     .map(|(v, n)| *v / *n)
-                    .collect(),
+                    .collect::<Vec<V>>(),
             )
             .transpose(),
             Scaling::Vector(V::from_iter(norms.iter())),

@@ -118,9 +118,8 @@ fn get_entities_in_bbox<V: VectorTrait>(
     get_bbox_cells(bbox, hash)
         .into_iter()
         .filter_map(|cell| hash.get_from_cell(cell)) //get hash set from each cell, if it exists
-        .map(|hashset| hashset.iter()) //get iterator from each hash set
-        .flatten()
-        .map(|&entity| entity) //deref
+        .flat_map(|hashset| hashset.iter()) //get iterator from each hash set
+        .copied() //deref
         .unique() //remove duplicate entities
         .collect()
 }
@@ -164,7 +163,7 @@ fn get_bits(n: HashInt, n_bits: HashInt) -> impl Iterator<Item = HashInt> {
 }
 //could memoize results here if too slow. but should be fast
 //assumes entries of dcoords are 0 or 1
-fn get_dcoords_dcells(dcoords: &Vec<HashInt>, mult: &Vec<HashInt>) -> Vec<HashInt> {
+fn get_dcoords_dcells(dcoords: &[HashInt], mult: &[HashInt]) -> Vec<HashInt> {
     //let dim = dcoords.len();
     assert!(dcoords.iter().all(|&d| d == 0 || d == 1));
     let dpos: Vec<usize> = dcoords
@@ -197,15 +196,13 @@ pub fn move_player<V: VectorTrait>(
     player_transform: &mut Transform<V, V::M>,
     camera: &mut Camera<V, V::M>,
 ) {
-    match move_next {
-        MoveNext {
-            next_dpos: Some(next_dpos),
-            can_move: Some(true),
-        } => {
-            player_transform.translate(*next_dpos);
-            camera.update(player_transform);
-        }
-        _ => (),
+    if let MoveNext {
+        next_dpos: Some(next_dpos),
+        can_move: Some(true),
+    } = move_next
+    {
+        player_transform.translate(*next_dpos);
+        camera.update(player_transform);
     };
     *move_next = MoveNext::default(); //clear movement
 }
@@ -222,40 +219,37 @@ pub fn check_player_static_collisions<'a, I, V: VectorTrait + 'a>(
 ) where
     I: Iterator<Item = (&'a Shape<V>, &'a ShapeType<V>)>,
 {
-    match move_next {
-        MoveNext {
-            next_dpos: Some(_next_dpos),
-            can_move: Some(true),
-        } => {
-            for (shape, shape_type) in shape_iter {
-                let next_dpos = move_next.next_dpos.unwrap();
-                //this is more convoluted than it needs to be
-                let (normal, dist) = shape.point_normal_distance(player_pos);
-                if match shape_type {
-                    ShapeType::SingleFace(single_face) => {
-                        if single_face.two_sided {
-                            (dist.abs() < PLAYER_COLLIDE_DISTANCE)
-                                & (single_face.subface_normal_distance(player_pos).1
-                                    < PLAYER_COLLIDE_DISTANCE)
-                        } else {
-                            (dist < PLAYER_COLLIDE_DISTANCE)
-                                & (single_face.subface_normal_distance(player_pos).1
-                                    < PLAYER_COLLIDE_DISTANCE)
-                        }
+    if let MoveNext {
+        next_dpos: Some(_next_dpos),
+        can_move: Some(true),
+    } = move_next
+    {
+        for (shape, shape_type) in shape_iter {
+            let next_dpos = move_next.next_dpos.unwrap();
+            //this is more convoluted than it needs to be
+            let (normal, dist) = shape.point_normal_distance(player_pos);
+            if match shape_type {
+                ShapeType::SingleFace(single_face) => {
+                    if single_face.two_sided {
+                        (dist.abs() < PLAYER_COLLIDE_DISTANCE)
+                            & (single_face.subface_normal_distance(player_pos).1
+                                < PLAYER_COLLIDE_DISTANCE)
+                    } else {
+                        (dist < PLAYER_COLLIDE_DISTANCE)
+                            & (single_face.subface_normal_distance(player_pos).1
+                                < PLAYER_COLLIDE_DISTANCE)
                     }
-                    ShapeType::Convex(_) => dist < PLAYER_COLLIDE_DISTANCE,
-                } {
-                    //push player away along normal of nearest face (projects out -normal)
-                    //but i use abs here to guarantee the face always repels the player
-                    let new_dpos =
-                        next_dpos + (normal * dist.signum()) * (normal.dot(next_dpos).abs());
-
-                    move_next.next_dpos = Some(new_dpos);
-                    //println!("{}",normal);
                 }
+                ShapeType::Convex(_) => dist < PLAYER_COLLIDE_DISTANCE,
+            } {
+                //push player away along normal of nearest face (projects out -normal)
+                //but i use abs here to guarantee the face always repels the player
+                let new_dpos = next_dpos + (normal * dist.signum()) * (normal.dot(next_dpos).abs());
+
+                move_next.next_dpos = Some(new_dpos);
+                //println!("{}",normal);
             }
         }
-        _ => (),
     }
 }
 

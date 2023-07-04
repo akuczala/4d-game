@@ -48,7 +48,7 @@ impl<V: VectorTrait> RefShapes<V> {
     }
     pub fn get_unwrap(&self, key: &ShapeLabel) -> &Shape<V> {
         self.get(key)
-            .expect(&format!("Ref shape {} not found", key))
+            .unwrap_or_else(|| panic!("Ref shape {} not found", key))
     }
     pub fn insert(&mut self, key: ShapeLabel, value: Shape<V>) -> Option<Shape<V>> {
         self.0.insert(key, value)
@@ -72,7 +72,7 @@ pub trait ShapeTypeTrait<V: VectorTrait> {
         shape: &Shape<V>,
         line: &Line<V>,
         visible_only: bool,
-        face_visibility: &Vec<bool>,
+        face_visibility: &[bool],
     ) -> Vec<V>;
 }
 
@@ -90,7 +90,7 @@ impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
         shape: &Shape<V>,
         line: &Line<V>,
         visible_only: bool,
-        face_visibility: &Vec<bool>,
+        face_visibility: &[bool],
     ) -> Vec<V> {
         match self {
             ShapeType::Convex(convex) => {

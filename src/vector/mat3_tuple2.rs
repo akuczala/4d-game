@@ -115,7 +115,7 @@ impl MatrixTrait<Vec3> for Mat3 {
         }
         Self::from_arr(&arr)
     }
-    fn from_vec_of_vecs(vecs: &Vec<Vec3>) -> Self {
+    fn from_vec_of_vecs(vecs: &[Vec3]) -> Self {
         Mat3::from_vecs(vecs[0], vecs[1], vecs[2])
     }
     fn transpose(&self) -> Mat3 {

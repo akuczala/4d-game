@@ -68,7 +68,7 @@ impl<'a, V: VectorTrait + Componentable> System<'a> for BBoxHashingSystem<V> {
     }
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        self.0.reader_id = Some(WriteStorage::<BBox<V>>::fetch(&world).register_reader());
+        self.0.reader_id = Some(WriteStorage::<BBox<V>>::fetch(world).register_reader());
     }
 }
 impl SystemName for BBoxHashingSystem<()> {
@@ -116,7 +116,7 @@ where
     fn run(&mut self, (player, bbox, mut in_cell, hash): Self::SystemData) {
         in_cell.clear(); //clear previously marked
                          //maybe we should use the anticipated player bbox here
-        let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(), &hash);
+        let entities_in_bbox = get_entities_in_bbox(bbox.get(player.0).unwrap(), &hash);
         for &e in entities_in_bbox.iter() {
             in_cell
                 .insert(e, InPlayerCell)
@@ -188,7 +188,7 @@ where
         use glium::glutin::event::VirtualKeyCode as VKC;
         if input.helper.key_released(PRINT_DEBUG) {
             //let mut out_string = "Entities: ".to_string();
-            let entities_in_bbox = get_entities_in_bbox(&bbox.get(player.0).unwrap(), &hash);
+            let entities_in_bbox = get_entities_in_bbox(bbox.get(player.0).unwrap(), &hash);
             let player_pos = transform.get(player.0).unwrap().pos;
             if entities_in_bbox
                 .iter()

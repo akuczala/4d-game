@@ -600,25 +600,25 @@ pub fn normal_separate<V: VectorTrait>(
         .verts
         .iter()
         .map(|v| v.dot(*normal))
-        .fold(0. / 0., Field::min);
+        .fold(Field::NAN, Field::min);
     let nmax1 = in_front1
         .shape
         .verts
         .iter()
         .map(|v| v.dot(*normal))
-        .fold(0. / 0., Field::max);
+        .fold(Field::NAN, Field::max);
     let nmin2 = in_front2
         .shape
         .verts
         .iter()
         .map(|v| v.dot(*normal))
-        .fold(0. / 0., Field::min);
+        .fold(Field::NAN, Field::min);
     let nmax2 = in_front2
         .shape
         .verts
         .iter()
         .map(|v| v.dot(*normal))
-        .fold(0. / 0., Field::max);
+        .fold(Field::NAN, Field::max);
 
     if nmin2 - nmax1 >= -OVERLAP {
         return Separator::Normal {

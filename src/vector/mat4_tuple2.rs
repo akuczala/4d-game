@@ -139,7 +139,7 @@ impl MatrixTrait<Vec4> for Mat4 {
         }
         Self::from_arr(&arr)
     }
-    fn from_vec_of_vecs(vecs: &Vec<Vec4>) -> Self {
+    fn from_vec_of_vecs(vecs: &[Vec4]) -> Self {
         Mat4::from_vecs(vecs[0], vecs[1], vecs[2], vecs[3])
     }
     fn transpose(&self) -> Mat4 {

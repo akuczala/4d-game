@@ -61,7 +61,7 @@ impl<V: VectorTrait> Plane<V> {
 
         //todo this won't work if the points all lie in the same d-2 plane
         let v0: V = points[0];
-        let d = V::DIM.abs() as usize;
+        let d = V::DIM.unsigned_abs() as usize;
         let parallel_vecs = points[1..d].iter().map(|&v| v - v0);
         let mut normal = V::cross_product(parallel_vecs).normalize();
         if normal.dot(normal_dir) < 0.0 {
@@ -103,7 +103,7 @@ fn is_point_in_sphere<V: VectorTrait>(r: Field, p: V) -> bool {
 }
 
 pub fn point_plane_normal_axis<V: VectorTrait>(point: &V, plane: &Plane<V>) -> Field {
-    return plane.threshold - point.dot(plane.normal);
+    plane.threshold - point.dot(plane.normal)
 }
 pub fn line_plane_intersect<V>(line: &Line<V>, plane: &Plane<V>) -> Option<V>
 where
@@ -121,7 +121,7 @@ where
     }
     let t = (p0n - th) / (p0n - p1n);
     //plane does not intersect line segment
-    if t < 0. || t > 1. {
+    if !(0. ..=1.).contains(&t) {
         return None;
     }
     Some(V::linterp(p0, p1, t))

@@ -34,7 +34,7 @@ impl VertexTrait for SimpleVertex {
             Some(draw_line) => draw_line
                 .get_draw_verts()
                 .iter()
-                .map(|&v| Self::vert_to_gl(&Some(v.clone())))
+                .map(|&v| Self::vert_to_gl(&Some(v)))
                 .collect(),
             None => vec![Self::NO_DRAW, Self::NO_DRAW],
         }

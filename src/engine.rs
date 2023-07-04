@@ -147,7 +147,7 @@ where
         match event {
             Event::MainEventsCleared => {}
             //frame update
-            Event::RedrawRequested(_) => self.on_redraw(&display, fps_timer),
+            Event::RedrawRequested(_) => self.on_redraw(display, fps_timer),
             _ => (),
         };
 
@@ -179,9 +179,9 @@ where
         //gui update (all events)
         if let Some(ref mut gui) = &mut self.gui {
             gui.update(
-                &display,
+                display,
                 &mut fps_timer.gui_last_time,
-                &event,
+                event,
                 control_flow,
                 ui_args,
             )
@@ -197,10 +197,10 @@ where
             }
             fps_timer.start();
 
-            self.dispatcher.dispatch(&mut self.world);
+            self.dispatcher.dispatch(&self.world);
             self.world.maintain();
 
-            self.draw(&display);
+            self.draw(display);
 
             {
                 let mut input = self.world.write_resource::<Input>();
@@ -225,7 +225,7 @@ where
 
     fn draw(&mut self, display: &Display) {
         let draw_lines_data: ReadExpect<draw::DrawLineList<V::SubV>> = self.world.system_data();
-        let draw_lines = &(&draw_lines_data).0;
+        let draw_lines = &(draw_lines_data).0;
         //make new buffer if the number of lines changes
         if draw_lines.len() != self.cur_lines_length {
             self.graphics
@@ -235,10 +235,10 @@ where
         }
 
         let mut target = display.draw();
-        target = self.graphics.draw_lines(&draw_lines, target);
+        target = self.graphics.draw_lines(draw_lines, target);
         //draw gui
         if let Some(ref mut gui) = &mut self.gui {
-            gui.draw(&display, &mut target);
+            gui.draw(display, &mut target);
         }
         target.finish().unwrap();
     }
@@ -270,7 +270,7 @@ pub enum Engine {
 }
 impl Engine {
     pub fn init(dim: VecIndex, display: &Display) -> Engine {
-        let gui = Some(crate::gui::init(&"test", &display));
+        let gui = Some(crate::gui::init("test", display));
         //let gui = None;
         match dim {
             3 => Ok(Engine::Three(EngineD::<Vec3, Graphics2d>::init(

@@ -33,9 +33,9 @@ where
         if input.is_camera_movement_enabled() {
             update_camera(
                 &mut input,
-                &mut transforms.get_mut(player.0).unwrap(),
-                &mut cameras.get_mut(player.0).unwrap(),
-                &mut move_nexts.get_mut(player.0).unwrap(),
+                transforms.get_mut(player.0).unwrap(),
+                cameras.get_mut(player.0).unwrap(),
+                move_nexts.get_mut(player.0).unwrap(),
             );
         }
     }
@@ -67,7 +67,7 @@ where
         if let MaybeSelected(Some(Selected { entity, .. })) = maybe_selected {
             // TODO: It's annoying that I have to clone the camera's transform when we know that it is distinct from selected_transform.
             // how to convince rust of this?
-            let camera_transform = transform_storage.get(player.0).unwrap().clone();
+            let camera_transform = *transform_storage.get(player.0).unwrap();
             let selected_transform = transform_storage
                 .get_mut(*entity)
                 .expect("Selected entity has no Transform");
@@ -139,14 +139,13 @@ where
         &mut self,
         (mut input, player, ref_shapes, lazy, read_transform, entities): Self::SystemData,
     ) {
-        create_shape(
+        if let Some(builder) = create_shape(
             &mut input,
             &ref_shapes,
             read_transform.get(player.0).unwrap(),
-        )
-        .map(|builder| {
+        ) {
             builder.insert(entities.create(), &lazy);
-        });
+        }
     }
 }
 
@@ -190,17 +189,16 @@ where
             ..
         })) = maybe_selected_storage.get(player.0).unwrap()
         {
-            duplicate_shape(
+            if let Some(builder) = duplicate_shape(
                 &mut input,
                 &ref_shapes,
                 shape_label_storage.get(selected_entity).unwrap(),
                 read_transform.get(selected_entity).unwrap(),
                 shape_textures.get(selected_entity).unwrap(),
                 static_colliders.get(selected_entity),
-            )
-            .map(|builder| {
+            ) {
                 builder.insert(entities.create(), &lazy);
-            });
+            }
         }
     }
 }
@@ -224,7 +222,7 @@ where
     ) {
         delete_shape(
             &mut input,
-            &mut write_maybe_selected.get_mut(player.0).unwrap(),
+            write_maybe_selected.get_mut(player.0).unwrap(),
             &mut deleted_entities,
         );
     }
@@ -272,7 +270,7 @@ where
     }
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(&world).register_reader());
+        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(world).register_reader());
     }
 }
 

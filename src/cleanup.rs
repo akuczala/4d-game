@@ -7,12 +7,9 @@ use crate::vector::VectorTrait;
 
 use core::marker::PhantomData;
 
+#[derive(Default)]
 pub struct DeletedEntities(pub Vec<Entity>);
-impl Default for DeletedEntities {
-    fn default() -> Self {
-        Self(vec![])
-    }
-}
+
 impl DeletedEntities {
     pub fn add(&mut self, e: Entity) {
         self.0.push(e);

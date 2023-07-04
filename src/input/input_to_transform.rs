@@ -46,7 +46,7 @@ fn mouse_rotation<V: VectorTrait>(
         //camera.spin(axis,-1,-my*dt*MOUSE_SENSITIVITY);
         any_slide_turn = true;
     }
-    return any_slide_turn;
+    any_slide_turn
 }
 
 fn forwards_backwards_movement<V: VectorTrait>(
@@ -63,7 +63,7 @@ fn forwards_backwards_movement<V: VectorTrait>(
         transform.translate(get_slide_dpos(-transform.frame[-1], dt));
         update = true;
     }
-    return update;
+    update
 }
 
 fn sliding_and_turning<V: VectorTrait>(
@@ -89,16 +89,12 @@ fn sliding_and_turning<V: VectorTrait>(
                     transform.rotate(0, 2, movement_sign * dt)
                     //turning: rotation along (axis,-1)
                 } else {
-                    if axis == 1 {
-                        transform.rotate(axis, -1, movement_sign * dt);
-                    } else {
-                        transform.rotate(axis, -1, movement_sign * dt);
-                    }
+                    transform.rotate(axis, -1, movement_sign * dt);
                 }
             }
         };
     }
-    return any_slide_turn;
+    any_slide_turn
 }
 
 fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
@@ -212,14 +208,14 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
             mouse_to_space((dx, dy), camera_transform) * input.get_dt() * MOUSE_SENSITIVITY,
         );
         new_pos_delta = pos_delta + dpos;
-        *transform = original_transform.clone();
+        *transform = *original_transform;
         transform.translate(match snap {
             true => round_vec(new_pos_delta),
             false => new_pos_delta,
         });
         update = true;
     }
-    return (update, new_pos_delta);
+    (update, new_pos_delta)
 }
 
 pub fn axis_rotation<V: VectorTrait>(
@@ -237,8 +233,8 @@ pub fn axis_rotation<V: VectorTrait>(
         match locked_axes.len() {
             2 => {
                 let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-                new_angle_delta = new_angle_delta + dangle;
-                *transform = original_transform.clone();
+                new_angle_delta += dangle;
+                *transform = *original_transform;
                 transform.rotate(
                     locked_axes[0],
                     locked_axes[1],
@@ -251,8 +247,8 @@ pub fn axis_rotation<V: VectorTrait>(
             }
             4 => {
                 let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-                new_angle_delta = new_angle_delta + dangle;
-                *transform = original_transform.clone();
+                new_angle_delta += dangle;
+                *transform = *original_transform;
                 transform.rotate(
                     locked_axes[0],
                     locked_axes[1],
@@ -275,7 +271,7 @@ pub fn axis_rotation<V: VectorTrait>(
         }
     }
 
-    return (update, new_angle_delta);
+    (update, new_angle_delta)
 }
 
 pub fn scrolling_axis_scaling<V: VectorTrait>(
@@ -305,14 +301,14 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(
             Scaling::Vector(v) => v + dscale,
         };
         new_scale_delta = Scaling::Vector(new_scale_delta_vec);
-        *transform = original_transform.clone();
+        *transform = *original_transform;
         transform.scale(Scaling::Vector(match snap {
             true => round_vec(new_scale_delta_vec),
             false => new_scale_delta_vec,
         }));
         update = true;
     }
-    return (update, new_scale_delta);
+    (update, new_scale_delta)
 }
 
 // TODO rewrite update_camera transformations in terms of these methods; further decompose
@@ -331,7 +327,7 @@ pub fn update_transform<V: VectorTrait>(input: &Input, transform: &mut Transform
     let update = forwards_backwards_movement(input, dt, transform);
 
     //sliding,turning
-    any_slide_turn = any_slide_turn | sliding_and_turning(input, dt, transform);
+    any_slide_turn |= sliding_and_turning(input, dt, transform);
 
     //         //reset orientation
     //         if !input.pressed.space {
@@ -339,5 +335,5 @@ pub fn update_transform<V: VectorTrait>(input: &Input, transform: &mut Transform
     //             camera.update();
     //             input.update = true;
     //             input.pressed.space = true;
-    return update | any_slide_turn;
+    update | any_slide_turn
 }

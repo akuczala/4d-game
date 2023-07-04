@@ -18,10 +18,10 @@ where
     V: VectorTrait + Componentable,
     V::M: Componentable + Clone,
 {
-    let camera = Camera::new(&transform);
+    let camera = Camera::new(transform);
     let player_entity = world
         .create_entity()
-        .with(transform.clone())
+        .with(*transform)
         .with(BBox {
             min: V::ones() * (-0.1) + transform.pos,
             max: V::ones() * (0.1) + transform.pos,
@@ -60,7 +60,7 @@ where
     ) {
         let transform = transforms.get(player.0).expect("Player has no transform");
         let target = shape_targeting(
-            &transform,
+            transform,
             (&shapes, &shape_types, &shape_clip_state, &*entities).join(),
         ); //filter by shapes having a clip state
         *targets.get_mut(player.0).expect("Player has no target") = target;

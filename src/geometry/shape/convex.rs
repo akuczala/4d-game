@@ -111,7 +111,7 @@ impl Convex {
         shape: &Shape<V>,
         line: &Line<V>,
         visible_only: bool,
-        face_visibility: &Vec<bool>,
+        face_visibility: &[bool],
     ) -> Vec<V> {
         //impl std::iter::Iterator<Item=Option<V>> {
         let mut out_points = Vec::<V>::new();

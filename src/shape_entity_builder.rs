@@ -27,7 +27,7 @@ pub struct ShapeEntityBuilder<V, U, M> {
 pub type ShapeEntityBuilderV<V> =
     ShapeEntityBuilder<V, <V as VectorTrait>::SubV, <V as VectorTrait>::M>;
 
-impl<'a, V: VectorTrait> ShapeEntityBuilderV<V> {
+impl<V: VectorTrait> ShapeEntityBuilderV<V> {
     pub fn new_face_from_ref_shape(
         ref_shapes: &RefShapes<V>,
         single_face: SingleFace<V>,
@@ -84,7 +84,7 @@ impl<'a, V: VectorTrait> ShapeEntityBuilderV<V> {
         self
     }
 }
-impl<'a, V> ShapeEntityBuilderV<V>
+impl<V> ShapeEntityBuilderV<V>
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
@@ -100,9 +100,8 @@ where
             static_collider,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        match shape_type {
-            ShapeType::SingleFace(ref mut single_face) => single_face.update(&shape),
-            _ => (),
+        if let ShapeType::SingleFace(ref mut single_face) = shape_type {
+            single_face.update(&shape)
         }
         world
             .create_entity()
@@ -127,9 +126,8 @@ where
             static_collider,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        match shape_type {
-            ShapeType::SingleFace(ref mut single_face) => single_face.update(&shape),
-            _ => (),
+        if let ShapeType::SingleFace(ref mut single_face) = shape_type {
+            single_face.update(&shape)
         }
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
@@ -139,7 +137,9 @@ where
         lazy.insert(e, shape_texture);
         lazy.insert(e, ShapeClipState::<V>::default());
         lazy.insert(e, shape_label);
-        static_collider.map(|c| lazy.insert(e, c));
+        if let Some(c) = static_collider {
+            lazy.insert(e, c)
+        };
 
         // TODO: mark with SaveMarker
     }

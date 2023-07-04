@@ -69,9 +69,8 @@ impl<V: Componentable> ModSystem<V> {
         F: FnMut(&u32) -> (),
     {
         for event in self.get_events(channel) {
-            match event {
-                ComponentEvent::Modified(id) => f(id),
-                _ => (),
+            if let ComponentEvent::Modified(id) = event {
+                f(id)
             }
         }
     }

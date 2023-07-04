@@ -71,7 +71,7 @@ impl MatrixTrait<Vec2> for Mat2 {
     fn get_arr(&self) -> Self::Arr {
         [*self[0].get_arr(), *self[1].get_arr()]
     }
-    fn from_vec_of_vecs(vecs: &Vec<Vec2>) -> Self {
+    fn from_vec_of_vecs(vecs: &[Vec2]) -> Self {
         Mat2::from_vecs(vecs[0], vecs[1])
     }
 

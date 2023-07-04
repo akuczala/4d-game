@@ -23,7 +23,7 @@ impl<V: VectorTrait> SubFace<V> {
         // D-2 vectors parallel to the subface
         let mut verts = vertis
             .iter()
-            .take((V::DIM.abs() as usize) - 1)
+            .take((V::DIM.unsigned_abs() - 1) as usize)
             .map(|&vi| shape_verts[vi]);
         let v0: V = verts.next().unwrap();
         let parallel_vecs = verts.map(|v| v - v0);
@@ -47,7 +47,7 @@ pub struct SingleFace<V> {
     pub two_sided: bool,
 }
 impl<V: VectorTrait> SingleFace<V> {
-    pub fn new(shape: &Shape<V>, subface_vertis: &Vec<Vec<VertIndex>>, two_sided: bool) -> Self {
+    pub fn new(shape: &Shape<V>, subface_vertis: &[Vec<VertIndex>], two_sided: bool) -> Self {
         Self {
             subfaces: SubFaces(
                 subface_vertis
@@ -74,7 +74,7 @@ impl<V: VectorTrait> SingleFace<V> {
             subface
                 .vertis
                 .iter()
-                .take((V::DIM.abs() as usize) - 1)
+                .take((V::DIM.unsigned_abs() - 1) as usize)
                 .map(|&vi| verts[vi] - origin),
         )
         .normalize();
@@ -110,7 +110,7 @@ impl<V: VectorTrait> SingleFace<V> {
         shape: &Shape<V>,
         line: &Line<V>,
         visible_only: bool,
-        face_visibility: &Vec<bool>,
+        face_visibility: &[bool],
     ) -> Vec<V> {
         //impl std::iter::Iterator<Item=Option<V>> {
         let mut out_points = Vec::<V>::new();

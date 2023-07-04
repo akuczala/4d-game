@@ -48,7 +48,7 @@ where
 
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(&world).register_reader());
+        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(world).register_reader());
     }
 }
 
@@ -69,7 +69,7 @@ impl<'a, V: VectorTrait + Componentable> System<'a> for UpdateBBoxSystem<V> {
 
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(&world).register_reader());
+        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(world).register_reader());
     }
 }
 
@@ -114,7 +114,7 @@ where
 
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(&world).register_reader());
+        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(world).register_reader());
     }
 }
 
@@ -158,18 +158,17 @@ where
             shape.update_from_ref(
                 ref_shape
                     .get(shape_label)
-                    .expect(&format!("No ref shape with label {}", &shape_label.0)),
+                    .unwrap_or_else(|| panic!("No ref shape with label {}", &shape_label.0)),
                 transform,
             );
             if let ShapeType::SingleFace(single_face) = shape_type {
-                single_face.update(&shape)
+                single_face.update(shape)
             }
         }
     }
 
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        self.0.reader_id =
-            Some(WriteStorage::<Transform<V, V::M>>::fetch(&world).register_reader());
+        self.0.reader_id = Some(WriteStorage::<Transform<V, V::M>>::fetch(world).register_reader());
     }
 }

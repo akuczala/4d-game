@@ -131,20 +131,17 @@ where
     };
     let sub_wall = ShapeBuilder::<V::SubV>::build_cube(2.0).build();
     let wall_label = ShapeLabel("Wall".to_string());
-    let (wall, wall_single_face) = convex_shape_to_face_shape(sub_wall.clone(), true);
+    let (wall, wall_single_face) = convex_shape_to_face_shape(sub_wall, true);
     ref_shapes.insert(wall_label.clone(), wall);
-    let build_shape: ShapeEntityBuilderV<V> = ShapeEntityBuilder::new_face_from_ref_shape(
-        ref_shapes,
-        wall_single_face,
-        wall_label.clone(),
-    )
-    .with_face_texture(FaceTexture {
-        texture: draw::Texture::make_tile_texture(&vec![0.8], &n_divisions),
-        texture_mapping: Some(draw::TextureMapping {
-            origin_verti: 0,
-            frame_vertis,
-        }),
-    });
+    let build_shape: ShapeEntityBuilderV<V> =
+        ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, wall_single_face, wall_label)
+            .with_face_texture(FaceTexture {
+                texture: draw::Texture::make_tile_texture(&vec![0.8], &n_divisions),
+                texture_mapping: Some(draw::TextureMapping {
+                    origin_verti: 0,
+                    frame_vertis,
+                }),
+            });
     build_test_walls(&build_shape, world);
 }
 
@@ -162,29 +159,23 @@ pub fn build_fun_level<V: VectorTrait>(
     let (wall, wall_single_face) = convex_shape_to_face_shape(sub_cube.clone(), false);
     ref_shapes.insert(wall_label.clone(), wall);
 
-    let wall_builder = ShapeEntityBuilder::new_face_from_ref_shape(
-        ref_shapes,
-        wall_single_face,
-        wall_label.clone(),
-    )
-    .with_face_texture(FaceTexture {
-        texture: draw::Texture::make_tile_texture(&vec![0.8], &n_divisions),
-        texture_mapping: Some(draw::TextureMapping {
-            origin_verti: 0,
-            frame_vertis,
-        }),
-    });
-    let (floor, floor_single_face) = convex_shape_to_face_shape(sub_cube.clone(), true);
+    let wall_builder =
+        ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, wall_single_face, wall_label)
+            .with_face_texture(FaceTexture {
+                texture: draw::Texture::make_tile_texture(&vec![0.8], &n_divisions),
+                texture_mapping: Some(draw::TextureMapping {
+                    origin_verti: 0,
+                    frame_vertis,
+                }),
+            });
+    let (floor, floor_single_face) = convex_shape_to_face_shape(sub_cube, true);
     let floor_label = ShapeLabel("Floor".to_string());
     ref_shapes.insert(floor_label.clone(), floor);
-    let upper_floor_builder = ShapeEntityBuilder::new_face_from_ref_shape(
-        &ref_shapes,
-        floor_single_face,
-        floor_label.clone(),
-    )
-    .stretch(&(V::ones() * 0.5 - V::one_hot(1) * 0.25))
-    .with_rotation(-1, 1, -PI / 2.0)
-    .with_translation(V::one_hot(1) * len / 2.0);
+    let upper_floor_builder =
+        ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, floor_single_face, floor_label)
+            .stretch(&(V::ones() * 0.5 - V::one_hot(1) * 0.25))
+            .with_rotation(-1, 1, -PI / 2.0)
+            .with_translation(V::one_hot(1) * len / 2.0);
     // upper_floor_builder.build(world)
     //     .with(StaticCollider).build();
     let colors = vec![RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW, ORANGE, WHITE];
@@ -341,7 +332,7 @@ pub fn build_corridor_cross<V: VectorTrait>(
             })
             .collect();
     for builder in &mut walls1 {
-        builder.shape_texture = build_texture(&mut builder.shape, &builder.transformation.scale);
+        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
     }
 
     shape_builders.append(&mut walls1);
@@ -357,7 +348,7 @@ pub fn build_corridor_cross<V: VectorTrait>(
     });
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
-    let mut floors_long: Vec<ShapeEntityBuilderV<V>> = iproduct!(axes.clone(), signs.iter())
+    let mut floors_long: Vec<ShapeEntityBuilderV<V>> = iproduct!(axes, signs.iter())
         .map(|(i, sign)| {
             cube_builder
                 .clone()
@@ -378,10 +369,10 @@ pub fn build_corridor_cross<V: VectorTrait>(
         .collect();
 
     for builder in &mut floors_long {
-        builder.shape_texture = build_texture(&mut builder.shape, &builder.transformation.scale);
+        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
     }
     for builder in &mut ceilings_long {
-        builder.shape_texture = build_texture(&mut builder.shape, &builder.transformation.scale);
+        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
     }
 
     shape_builders.append(&mut floors_long);
@@ -447,7 +438,7 @@ where
         insert_coin(
             world,
             ShapeEntityBuilder::new_convex_from_ref_shape(
-                &ref_shapes,
+                ref_shapes,
                 ShapeLabel::from_str(COIN_LABEL_STR),
             )
             .with_translation(V::one_hot(axis) * dir * (wall_length - 0.5))

@@ -28,7 +28,7 @@ impl Index<VecIndex> for Vec3 {
     }
 }
 impl IndexMut<VecIndex> for Vec3 {
-    fn index_mut<'a>(&'a mut self, index: VecIndex) -> &'a mut Self::Output {
+    fn index_mut(&mut self, index: VecIndex) -> &mut Self::Output {
         match index {
             0 | -3 => &mut self.arr[0],
             1 | -2 => &mut self.arr[1],
@@ -97,7 +97,7 @@ impl VectorTrait for Vec3 {
     fn get_arr(&self) -> &[Field; 3] {
         &self.arr
     }
-    fn iter<'a>(&'a self) -> std::slice::Iter<'a, Field> {
+    fn iter(&self) -> std::slice::Iter<Field> {
         self.get_arr().iter()
     }
     fn map<F: Fn(Field) -> Field>(self, f: F) -> Self {
@@ -128,7 +128,7 @@ impl VectorTrait for Vec3 {
     fn cross_product<I: std::iter::Iterator<Item = Self>>(mut vecs_iter: I) -> Self {
         let a = vecs_iter.next().expect("No vecs given to 3d cross product");
         let b = vecs_iter.next().expect("1 vec given to 3d cross product");
-        if let Some(_) = vecs_iter.next() {
+        if vecs_iter.next().is_some() {
             panic!("3D cross product given more than 2 vecs");
         }
         Vec3::new(

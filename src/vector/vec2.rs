@@ -29,7 +29,7 @@ impl Index<VecIndex> for Vec2 {
     }
 }
 impl IndexMut<VecIndex> for Vec2 {
-    fn index_mut<'a>(&'a mut self, index: VecIndex) -> &'a mut Self::Output {
+    fn index_mut(&mut self, index: VecIndex) -> &mut Self::Output {
         match index {
             0 | -2 => &mut self.arr[0],
             1 | -1 => &mut self.arr[1],
@@ -98,7 +98,7 @@ impl VectorTrait for Vec2 {
     fn get_arr(&self) -> &[Field; 2] {
         &self.arr
     }
-    fn iter<'a>(&'a self) -> std::slice::Iter<'a, Field> {
+    fn iter(&self) -> std::slice::Iter<Field> {
         self.get_arr().iter()
     }
     fn map<F: Fn(Field) -> Field>(self, f: F) -> Self {

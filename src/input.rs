@@ -84,12 +84,8 @@ impl MouseData {
     }
 }
 
+#[derive(Default)]
 pub struct ToggleKeys(HashSet<VKC>);
-impl Default for ToggleKeys {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
 impl ToggleKeys {
     fn update_toggle_keys(&mut self, helper: &WinitInputHelper) -> bool {
         let mut update = false;
@@ -103,7 +99,7 @@ impl ToggleKeys {
                 }
             }
         }
-        return update;
+        update
     }
     pub fn contains(&self, key: VKC) -> bool {
         self.0.contains(&key)
@@ -171,10 +167,10 @@ impl Input {
         (self.frame_duration as Field).min(MAX_DT)
     }
     pub fn is_camera_movement_enabled(&self) -> bool {
-        match self.movement_mode {
-            MovementMode::Shape(ShapeMovementMode::Free) => false,
-            _ => true,
-        }
+        !matches!(
+            self.movement_mode,
+            MovementMode::Shape(ShapeMovementMode::Free)
+        )
     }
 }
 
@@ -238,8 +234,8 @@ impl Input {
         let update = &mut self.update;
         //let swap_engine = &mut self.swap_engine;
 
-        match ev {
-            Event::WindowEvent { event, .. } => match event {
+        if let Event::WindowEvent { event, .. } = ev {
+            match event {
                 WindowEvent::CloseRequested => *closed = true,
                 WindowEvent::Resized(_) => *update = true,
                 WindowEvent::Touch(glutin::event::Touch { phase, .. }) => match phase {
@@ -248,8 +244,7 @@ impl Input {
                     _ => (),
                 },
                 e => mouse_event(&mut self.mouse, e),
-            },
-            _ => (),
+            }
         }
         if self.helper.update(ev) {
             self.listen_inputs();

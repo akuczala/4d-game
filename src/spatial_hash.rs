@@ -152,7 +152,7 @@ where
     }
     //create new set in bin or append to existing set
     pub fn insert(&mut self, point: &K, item: T) {
-        self.insert_at_cell(self.hash(&point), item)
+        self.insert_at_cell(self.hash(point), item)
     }
     pub fn remove(&mut self, point: &K, item: &T) -> bool {
         let maybe_set = self.0.get_mut(point);
@@ -167,7 +167,7 @@ where
         }
     }
     pub fn clear_cell(&mut self, point: &K) -> Option<HashSet<T>> {
-        self.0.remove(&point)
+        self.0.remove(point)
     }
 }
 use specs::Entity;
@@ -210,7 +210,7 @@ fn hashset_string(hash: &HashSet<Entity>) -> String {
     for item in hash.iter() {
         out = format!("{} {},", out, entity_string(item));
     }
-    format!("{}", out)
+    out
 }
 
 #[test]

@@ -50,7 +50,7 @@ pub fn init(title: &str, display: &Display) -> System {
     {
         let gl_window = display.gl_window();
         let window = gl_window.window();
-        platform.attach_window(imgui.io_mut(), &window, HiDpiMode::Rounded);
+        platform.attach_window(imgui.io_mut(), window, HiDpiMode::Rounded);
     }
 
     let hidpi_factor = platform.hidpi_factor();
@@ -171,7 +171,7 @@ impl UIArgs {
                         ShapeManipulationMode::Translate(v) => format!("Translate: {}", v),
                         ShapeManipulationMode::Rotate(a) => format!("Rotate: {:.2}", a),
                         ShapeManipulationMode::Scale(s) => format!("Scale: {:?}", s),
-                        ShapeManipulationMode::Free(_t) => format!("Free"),
+                        ShapeManipulationMode::Free(_t) => "Free".to_string(),
                     };
                     let axes_info = manip_state
                         .locked_axes
@@ -216,19 +216,17 @@ fn hello_world(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
         .position([20.0, 20.0], Condition::Appearing)
         .size([300.0, 110.0], Condition::FirstUseEver)
         .build(|| {
-            match ui_args {
-                UIArgs::Test {
-                    ref frame_duration,
-                    ref elapsed_time,
-                    ref mouse_diff,
-                    ref mouse_pos,
-                } => {
-                    ui.text(format!("FPS: {}", 1. / frame_duration));
-                    ui.text(format!("elapsed_time (ms): {}", elapsed_time));
-                    ui.text(format!("dmouse: {:?}", mouse_diff));
-                    ui.text(format!("mouse_pos: {:?}", mouse_pos));
-                }
-                _ => (),
+            if let UIArgs::Test {
+                ref frame_duration,
+                ref elapsed_time,
+                ref mouse_diff,
+                ref mouse_pos,
+            } = ui_args
+            {
+                ui.text(format!("FPS: {}", 1. / frame_duration));
+                ui.text(format!("elapsed_time (ms): {}", elapsed_time));
+                ui.text(format!("dmouse: {:?}", mouse_diff));
+                ui.text(format!("mouse_pos: {:?}", mouse_pos));
             };
             ui.separator();
             let mouse_pos = ui.io().mouse_pos;
@@ -292,15 +290,13 @@ fn debug_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs, state: &mut State) 
         .scroll_bar(false)
         .menu_bar(false)
         .build(|| {
-            match ui_args {
-                UIArgs::Debug {
-                    ref frame_duration,
-                    ref debug_text,
-                } => {
-                    ui.text(format!("FPS: {:0.0}", 1. / frame_duration));
-                    ui.text(debug_text);
-                }
-                _ => (),
+            if let UIArgs::Debug {
+                ref frame_duration,
+                ref debug_text,
+            } = ui_args
+            {
+                ui.text(format!("FPS: {:0.0}", 1. / frame_duration));
+                ui.text(debug_text);
             };
             if ui.radio_button_bool("I toggle my state on click", state.checked) {
                 state.checked = !state.checked; // flip state on click
@@ -330,7 +326,7 @@ impl System {
             Event::MainEventsCleared => {
                 let gl_window = display.gl_window();
                 platform
-                    .prepare_frame(imgui.io_mut(), &gl_window.window())
+                    .prepare_frame(imgui.io_mut(), gl_window.window())
                     .expect("Failed to prepare frame");
                 gl_window.window().request_redraw();
             }
@@ -340,7 +336,7 @@ impl System {
             } => *control_flow = ControlFlow::Exit,
             event => {
                 let gl_window = display.gl_window();
-                platform.handle_event(imgui.io_mut(), gl_window.window(), &event);
+                platform.handle_event(imgui.io_mut(), gl_window.window(), event);
             }
         }
     }
@@ -349,12 +345,12 @@ impl System {
         let platform = &mut self.platform;
         let renderer = &mut self.renderer;
         //let font_size = self.font_size;
-        let mut ui = imgui.frame();
+        let ui = imgui.frame();
         let mut run = true;
         match self.ui_args {
-            UIArgs::Debug { .. } => debug_ui(&mut run, &mut ui, &mut self.ui_args, &mut self.state),
-            UIArgs::Simple { .. } => simple_ui(&mut run, &mut ui, &mut self.ui_args),
-            UIArgs::Test { .. } => hello_world(&mut run, &mut ui, &mut self.ui_args),
+            UIArgs::Debug { .. } => debug_ui(&mut run, ui, &mut self.ui_args, &mut self.state),
+            UIArgs::Simple { .. } => simple_ui(&mut run, ui, &mut self.ui_args),
+            UIArgs::Test { .. } => hello_world(&mut run, ui, &mut self.ui_args),
             UIArgs::None => (),
         };
         if !run {
@@ -365,7 +361,7 @@ impl System {
         let gl_window = display.gl_window();
 
         //target.clear_color_srgb(1.0, 1.0, 1.0, 1.0);
-        platform.prepare_render(&ui, gl_window.window());
+        platform.prepare_render(ui, gl_window.window());
         let draw_data = imgui.render();
         renderer
             .render(target, draw_data)

@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use super::{proj_line_vertex::NewVertex, FRAGMENT_SHADER_SRC, VERTEX_SHADER_SRC};
 use super::{Graphics, VertexTrait};
 use crate::geometry::shape::VertIndex;
@@ -73,11 +75,11 @@ impl Graphics<Vec3> for Graphics3d {
         self.program = program;
     }
 
-    fn new_index_buffer(&mut self, vertis: &Vec<VertIndex>, display: &Display) {
+    fn new_index_buffer(&mut self, vertis: &[VertIndex], display: &Display) {
         self.index_buffer = glium::IndexBuffer::dynamic(
             display,
             glium::index::PrimitiveType::LinesList,
-            &&Self::vertis_to_gl(&vertis),
+            &Self::vertis_to_gl(vertis),
         )
         .unwrap();
     }
@@ -106,8 +108,8 @@ impl Graphics<Vec3> for Graphics3d {
         let aspect_ratio = height as f32 / width as f32;
         //let fov: f32 = 3.141592 / 3.0; //nearly fish eye
         //let fov : f32 = 3.141592 / 8.0;
-        let fov: f32 = 3.141592 / 16.0; //comparable to 3d
-                                        //let zfar = 1024.0;/
+        let fov: f32 = PI / 16.0; //comparable to 3d
+                                  //let zfar = 1024.0;/
         let zfar = 100.0;
         let znear = 0.1;
 

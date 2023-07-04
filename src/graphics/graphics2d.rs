@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use super::proj_line_vertex::NewVertex;
 use super::Graphics;
 use super::{FRAGMENT_SHADER_SRC, VERTEX_SHADER_SRC};
@@ -74,11 +76,11 @@ impl Graphics<Vec2> for Graphics2d {
         self.program = program;
     }
 
-    fn new_index_buffer(&mut self, vertis: &Vec<VertIndex>, display: &Display) {
+    fn new_index_buffer(&mut self, vertis: &[VertIndex], display: &Display) {
         self.index_buffer = glium::IndexBuffer::dynamic(
             display,
             glium::index::PrimitiveType::LinesList,
-            &&Self::vertis_to_gl(&vertis),
+            &Self::vertis_to_gl(&vertis),
         )
         .unwrap();
     }
@@ -91,7 +93,7 @@ impl Graphics<Vec2> for Graphics2d {
     {
         let (width, height) = target.get_dimensions();
         let aspect_ratio = height as f32 / width as f32;
-        let fov: f32 = 3.141592 / 3.0;
+        let fov: f32 = PI / 3.0;
         //let zfar = 1024.0;
         //let znear = 0.1;
 

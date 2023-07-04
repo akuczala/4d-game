@@ -62,7 +62,7 @@ pub fn calc_grid_lines<V: VectorTrait>(center: V, cell_size: Field, n: usize) ->
                         .iter()
                         .map(move |line| line.map(|p| p + V::one_hot(3) * s))
                 })
-                .flat_map(|iter| iter);
+                .flatten();
             let w_lines = iproduct!(deltas.iter(), deltas.iter()).map(|(&x, &z)| {
                 Line(V::one_hot(3) * si, V::one_hot(3) * sf)
                     .map(|p| p + V::one_hot(0) * x + V::one_hot(2) * z + center)
