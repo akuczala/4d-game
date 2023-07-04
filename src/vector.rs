@@ -76,7 +76,8 @@ pub trait VectorTrait:
         self.norm_sq().sqrt()
     }
     fn normalize_get_norm(self) -> (Self, Field) {
-        (|n| (self / n, n))(self.norm())
+        let n = self.norm();
+        (self / n, n)
     }
     fn normalize(self) -> Self {
         self / self.norm()

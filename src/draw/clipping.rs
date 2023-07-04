@@ -123,20 +123,20 @@ pub fn calc_in_front<V: VectorTrait + Componentable>(
     //collect a vec of references to shapes
     //let shapes : Vec<&Shape<V>> = (& read_shapes).join().collect();
     //loop over unique pairs
-    for (shape1, bball1, e1) in (read_shapes, read_bballs, &*entities).join() {
-        for (shape2, bball2, e2) in (read_shapes, read_bballs, &*entities)
+    for (shape1, bball1, e1) in (read_shapes, read_bballs, entities).join() {
+        for (shape2, bball2, e2) in (read_shapes, read_bballs, entities)
             .join()
             .filter(|(_sh, _bb, e)| *e > e1)
         {
             calc_in_front_pair(
                 InFrontArg {
-                    shape: &shape1,
-                    bball: &bball1,
+                    shape: shape1,
+                    bball: bball1,
                     entity: e1,
                 },
                 InFrontArg {
-                    shape: &shape2,
-                    bball: &bball2,
+                    shape: shape2,
+                    bball: bball2,
                     entity: e2,
                 },
                 shape_clip_states,
@@ -154,10 +154,7 @@ pub fn calc_in_front_pair<'a, V: VectorTrait + Componentable>(
 ) {
     //try dynamic separation
     let mut sep_state = dynamic_separate(a.bball, b.bball, origin);
-    let is_unknown = match sep_state {
-        Separation::Unknown => true,
-        _ => false,
-    };
+    let is_unknown = matches!(sep_state, Separation::Unknown);
     //if that's unsuccessful, try static separation
     if is_unknown {
         let a_clip_state = shape_clip_states.get_mut(a.entity).unwrap();
@@ -229,14 +226,12 @@ where
 }
 pub fn clip_line_cube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>> {
     //construct the d cube planes, normals facing in
-    let planes_iter = (0..V::DIM)
-        .map(move |i| {
-            ([-1., 1.]).iter().map(move |&sign| Plane {
-                normal: V::one_hot(i) * sign,
-                threshold: -r,
-            })
+    let planes_iter = (0..V::DIM).flat_map(move |i| {
+        ([-1., 1.]).iter().map(move |&sign| Plane {
+            normal: V::one_hot(i) * sign,
+            threshold: -r,
         })
-        .flatten();
+    });
     //successively clip on each plane
     let mut clipped_line = Some(line);
     for plane in planes_iter {
@@ -263,11 +258,11 @@ pub fn clip_line_sphere<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<
     }
 
     let intersect = crate::geometry::sphere_line_intersect(line, r);
-    intersect.and_then(|iline: Line<V>| match (v0_in_sphere, v1_in_sphere) {
-        (false, false) => Some(iline),
-        (false, true) => Some(Line(iline.0, v1)),
-        (true, false) => Some(Line(v0, iline.1)),
-        (true, true) => Some(iline), // will never reach this case (handled above)
+    intersect.map(|iline: Line<V>| match (v0_in_sphere, v1_in_sphere) {
+        (false, false) => iline,
+        (false, true) => Line(iline.0, v1),
+        (true, false) => Line(v0, iline.1),
+        (true, true) => iline, // will never reach this case (handled above)
     })
 }
 pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> Option<Line<V>> {
@@ -386,7 +381,7 @@ pub enum ReturnLines<V> {
 }
 pub fn clip_line<V: VectorTrait>(line: Line<V>, boundaries: &Vec<Plane<V>>) -> ReturnLines<V> {
     //if no boundaries, return original line
-    if boundaries.len() == 0 {
+    if boundaries.is_empty() {
         return ReturnLines::OneLine(line);
     }
     let Line(p0, p1) = line;
@@ -532,15 +527,13 @@ impl<V: VectorTrait> Separator<V> {
                         false => Separation::S1Front,
                         true => Separation::S2Front,
                     }
-                } else {
-                    if dot_val > thresh_max {
-                        match invert {
-                            false => Separation::S2Front,
-                            true => Separation::S1Front,
-                        }
-                    } else {
-                        Separation::NoFront
+                } else if dot_val > thresh_max {
+                    match invert {
+                        false => Separation::S2Front,
+                        true => Separation::S1Front,
                     }
+                } else {
+                    Separation::NoFront
                 }
             }
         }
@@ -637,7 +630,7 @@ pub fn normal_separate<V: VectorTrait>(
         };
     }
 
-    return Separator::Unknown;
+    Separator::Unknown
 }
 pub fn separate_between_centers<V: VectorTrait>(
     in_front1: InFrontArg<V>,
@@ -652,9 +645,9 @@ pub fn separate_between_centers<V: VectorTrait>(
     }
 }
 #[allow(dead_code)]
-pub fn print_in_front(in_front: &Vec<Vec<bool>>) {
+pub fn print_in_front(in_front: &[Vec<bool>]) {
     for row in in_front.iter() {
-        println!("");
+        println!();
         for val in row.iter() {
             print!(
                 "{}, ",
@@ -665,13 +658,13 @@ pub fn print_in_front(in_front: &Vec<Vec<bool>>) {
             );
         }
     }
-    println!("");
+    println!();
 }
 
-pub fn test_dyn_separate<V: VectorTrait>(bballs: &Vec<BBall<V>>, origin: &V) {
+pub fn test_dyn_separate<V: VectorTrait>(bballs: &[BBall<V>], origin: &V) {
     use colored::*;
     for (i, bball1) in bballs.iter().enumerate() {
-        println!("");
+        println!();
         for (j, bball2) in bballs.iter().enumerate() {
             if i != j {
                 let sep = dynamic_separate(bball1, bball2, origin);
@@ -687,5 +680,5 @@ pub fn test_dyn_separate<V: VectorTrait>(bballs: &Vec<BBall<V>>, origin: &V) {
             }
         }
     }
-    println!("");
+    println!();
 }

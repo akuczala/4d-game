@@ -288,7 +288,7 @@ pub fn build_corridor_cross<V: VectorTrait>(
             .set_color(target_face_color);
 
             // must use scaled verts to properly align textures
-            let scaled_verts = shape.verts.iter().map(|v| scale.scale_vec(*v)).collect();
+            let scaled_verts: Vec<V> = shape.verts.iter().map(|v| scale.scale_vec(*v)).collect();
             face_texture.texture_mapping = Some(draw::TextureMapping::calc_cube_vertis(
                 face,
                 &scaled_verts,

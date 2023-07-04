@@ -115,7 +115,7 @@ pub fn build_prism_2d<V: VectorTrait>(r: Field, n: VertIndex) -> Shape<V> {
         .map(|(i, normal)| Face::new(vec![i], normal))
         .collect();
 
-    return Shape::new(verts, edges, faces);
+    Shape::new(verts, edges, faces)
 }
 
 pub fn build_prism_3d<V: VectorTrait>(r: Field, h: Field, n: VertIndex) -> Shape<V> {
@@ -229,12 +229,11 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         .map(|(i, j)| Edge(j + i * ns[1], j + ((i + 1) % ns[0]) * ns[1]));
     let edges: Vec<Edge> = edges_1.chain(edges_2).collect();
 
-    fn make_normal<V: VectorTrait>(edgeis: &[EdgeIndex], verts: &Vec<V>, edges: &[Edge]) -> V {
+    fn make_normal<V: VectorTrait>(edgeis: &[EdgeIndex], verts: &[V], edges: &[Edge]) -> V {
         let vertis: Vec<VertIndex> = edgeis
             .iter()
             .map(|ei| &edges[*ei])
-            .map(|edge| vec![edge.0, edge.1])
-            .flatten()
+            .flat_map(|edge| vec![edge.0, edge.1])
             .collect(); //would like to not have to collect here
                         //get unique values
         let vertis: Vec<VertIndex> = vertis.into_iter().unique().collect();
@@ -247,7 +246,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         i: VertIndex,
         ns: &[VertIndex; 2],
         verts: &Vec<V>,
-        edges: &Vec<Edge>,
+        edges: &[Edge],
     ) -> Face<V> {
         let (m, n) = (ns[0], ns[1]);
         let cap1_edgeis = (0..n).map(|j| j + i * n);
@@ -261,7 +260,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         j: VertIndex,
         ns: &[VertIndex; 2],
         verts: &Vec<V>,
-        edges: &Vec<Edge>,
+        edges: &[Edge],
     ) -> Face<V> {
         let (m, n) = (ns[0], ns[1]);
         let cap1_edgeis = (0..m).map(|i| m * n + j + i * n);

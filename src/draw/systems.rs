@@ -45,8 +45,8 @@ where
             .map(|line| {
                 transform_draw_line(
                     line.clone(),
-                    &transform.get(player.0).unwrap(),
-                    &camera.get(player.0).unwrap(),
+                    transform.get(player.0).unwrap(),
+                    camera.get(player.0).unwrap(),
                 )
             })
             .collect();

@@ -80,7 +80,7 @@ impl Graphics<Vec2> for Graphics2d {
         self.index_buffer = glium::IndexBuffer::dynamic(
             display,
             glium::index::PrimitiveType::LinesList,
-            &Self::vertis_to_gl(&vertis),
+            &Self::vertis_to_gl(vertis),
         )
         .unwrap();
     }

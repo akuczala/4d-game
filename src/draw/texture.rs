@@ -43,7 +43,7 @@ impl<U: Clone> ShapeTexture<U> {
         F: Fn(FaceTexture<U>) -> FaceTexture<U>,
     {
         for face in self.face_textures.iter_mut() {
-            take_mut::take(face, |face| f(face));
+            take_mut::take(face, &f);
         }
         self
     }
@@ -136,7 +136,7 @@ impl<V: VectorTrait> Texture<V> {
         Texture::make_tile_texture(&vec![FACE_SCALE], &(0..V::DIM).map(|_| 1).collect_vec())
             .set_color(color)
     }
-    pub fn make_tile_texture(scales: &Vec<Field>, n_divisions: &Vec<i32>) -> Self {
+    pub fn make_tile_texture(scales: &[Field], n_divisions: &Vec<i32>) -> Self {
         if V::DIM != n_divisions.len() as VecIndex {
             panic!(
                 "make_tile_texture: Expected n_divisions.len()={} but got {}",
@@ -179,14 +179,13 @@ impl<V: VectorTrait> Texture<V> {
                 let new_dir = V::one_hot(i as VecIndex) / (n as Field);
                 let mut new_lines: Vec<Line<V>> = tile_lines
                     .iter()
-                    .map(|line| {
+                    .flat_map(|line| {
                         vec![
                             line.map(|v| v + new_dir),
                             Line(line.0, line.0 + new_dir),
                             Line(line.1, line.1 + new_dir),
                         ]
                     })
-                    .flat_map(|lines| lines)
                     .collect();
 
                 tile_lines.append(&mut new_lines);
@@ -195,13 +194,11 @@ impl<V: VectorTrait> Texture<V> {
 
         let lines = centers
             .cartesian_product(scales.iter())
-            .map(|(center, &scale)| {
+            .flat_map(|(center, &scale)| {
                 tile_lines
                     .iter()
-                    .map(|line| line.map(|v| v * scale + center))
-                    .collect()
+                    .map(move |line| line.map(|v| v * scale + center))
             })
-            .flat_map(|lines: Vec<Line<V>>| lines)
             .collect();
         Texture::Lines {
             lines,
@@ -251,7 +248,7 @@ impl TextureMapping {
     pub fn draw_lines<V: VectorTrait>(
         &self,
         shape: &Shape<V>,
-        lines: &Vec<Line<V::SubV>>,
+        lines: &[Line<V::SubV>],
         color: Color,
     ) -> Vec<Option<DrawLine<V>>> {
         let origin = shape.verts[self.origin_verti];
@@ -279,18 +276,14 @@ impl TextureMapping {
     }
     pub fn draw_drawlines<V: VectorTrait>(
         &self,
-        _draw_lines: &Vec<DrawLine<V::SubV>>,
+        _draw_lines: &[DrawLine<V::SubV>],
     ) -> Vec<Option<DrawLine<V>>> {
         unimplemented!()
         //draw_lines.iter().map(|draw_line| Some(draw_line.clone())).collect()
     }
     //use face edges and reference vertices to determine vertex indices for texture mapping
     //order by side length, in decreasing order
-    pub fn calc_cube_vertis<V: VectorTrait>(
-        face: &Face<V>,
-        verts: &Vec<V>,
-        edges: &Vec<Edge>,
-    ) -> Self {
+    pub fn calc_cube_vertis<V: VectorTrait>(face: &Face<V>, verts: &[V], edges: &[Edge]) -> Self {
         let face_vertis = &face.vertis;
         let origin_verti = face_vertis[0]; //arbitrary
                                            //get list of vertis connected by an edge to origin verti
@@ -332,7 +325,7 @@ pub fn draw_default_lines<V: VectorTrait>(
             let edge = &shape.edges[*edgei];
             lines.push(Some(DrawLine {
                 line: Line(shape.verts[edge.0], shape.verts[edge.1]).map(scale_point),
-                color: color,
+                color,
             }));
         }
     }

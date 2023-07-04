@@ -11,7 +11,7 @@ pub use texture::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 
 use crate::components::*;
 use crate::constants::{
-    CLIP_SPHERE_RADIUS, CURSOR_COLOR, SELECTION_COLOR, SMALL_Z, VIEWPORT_SHAPE, Z0, Z_NEAR,
+    CLIP_SPHERE_RADIUS, CURSOR_COLOR, FOCAL, SELECTION_COLOR, SMALL_Z, VIEWPORT_SHAPE, Z0, Z_NEAR,
 };
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
@@ -83,14 +83,12 @@ fn project<V>(v: V) -> V::SubV
 where
     V: VectorTrait,
 {
-    let z;
-    let focal: Field = 1.0;
-    if V::is_close(v, V::ones() * Z0) {
-        z = Z0 + SMALL_Z;
+    let z = if V::is_close(v, V::ones() * Z0) {
+        Z0 + SMALL_Z
     } else {
-        z = v[-1];
-    }
-    v.project() * focal / z
+        v[-1]
+    };
+    v.project() * FOCAL / z
 }
 fn view_transform<V: VectorTrait>(transform: &Transform<V, V::M>, point: V) -> V {
     transform.frame * (point - transform.pos)
@@ -110,14 +108,13 @@ where
 
     let view_line = clipped_line.map(|l| l.map(|v| view_transform(transform, v)));
     let proj_line = view_line.map(|l| l.map(project));
-    let clip_proj_line = proj_line.and_then(|l| match VIEWPORT_SHAPE {
+    proj_line.and_then(|l| match VIEWPORT_SHAPE {
         ViewportShape::Cube => clip_line_cube(l, CLIP_SPHERE_RADIUS),
         ViewportShape::Sphere => clip_line_sphere(l, CLIP_SPHERE_RADIUS),
         ViewportShape::Cylinder => clip_line_cylinder(l, CLIP_SPHERE_RADIUS, CLIP_SPHERE_RADIUS),
         ViewportShape::Tube => clip_line_tube(l, CLIP_SPHERE_RADIUS),
         ViewportShape::None => Some(l),
-    });
-    clip_proj_line
+    })
 }
 
 pub struct DrawLineList<V>(pub Vec<Option<DrawLine<V>>>);
@@ -145,7 +142,7 @@ pub fn transform_draw_line<V: VectorTrait>(
 ) -> Option<DrawLine<V::SubV>> {
     match option_draw_line {
         Some(draw_line) => {
-            let transformed_line = transform_line(Some(draw_line.line), &transform, &camera);
+            let transformed_line = transform_line(Some(draw_line.line), transform, camera);
             match transformed_line {
                 Some(line) => Some(DrawLine {
                     line,
@@ -206,11 +203,9 @@ pub fn update_shape_visibility<V: VectorTrait>(
     //calculate boundaries for clipping
     if clip_state.clipping_enabled {
         shape_clip_state.boundaries = match shape_type {
-            ShapeType::Convex(convex) => convex.calc_boundaries(
-                camera_pos,
-                &shape.faces,
-                &mut shape_clip_state.face_visibility,
-            ),
+            ShapeType::Convex(convex) => {
+                convex.calc_boundaries(camera_pos, &shape.faces, &shape_clip_state.face_visibility)
+            }
             ShapeType::SingleFace(single_face) => single_face.calc_boundaries(
                 camera_pos,
                 &shape.verts,
@@ -259,10 +254,10 @@ where
             shape_texture.face_textures.iter()
         ) {
             shape_lines.append(&mut draw_face_texture::<V>(
-                &face_texture,
+                face_texture,
                 face,
-                &shape,
-                &face_scale,
+                shape,
+                face_scale,
                 visible,
             ))
         }

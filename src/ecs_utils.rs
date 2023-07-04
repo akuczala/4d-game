@@ -66,7 +66,7 @@ impl<V: Componentable> ModSystem<V> {
     }
     pub fn for_each_modified<F>(&mut self, channel: &EventChannel<ComponentEvent>, mut f: F)
     where
-        F: FnMut(&u32) -> (),
+        F: FnMut(&u32),
     {
         for event in self.get_events(channel) {
             if let ComponentEvent::Modified(id) = event {

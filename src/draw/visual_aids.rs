@@ -55,14 +55,11 @@ pub fn calc_grid_lines<V: VectorTrait>(center: V, cell_size: Field, n: usize) ->
     match V::DIM {
         3 => xz_lines,
         4 => {
-            let xz_planes = deltas
-                .iter()
-                .map(|&s| {
-                    xz_lines
-                        .iter()
-                        .map(move |line| line.map(|p| p + V::one_hot(3) * s))
-                })
-                .flatten();
+            let xz_planes = deltas.iter().flat_map(|&s| {
+                xz_lines
+                    .iter()
+                    .map(move |line| line.map(|p| p + V::one_hot(3) * s))
+            });
             let w_lines = iproduct!(deltas.iter(), deltas.iter()).map(|(&x, &z)| {
                 Line(V::one_hot(3) * si, V::one_hot(3) * sf)
                     .map(|p| p + V::one_hot(0) * x + V::one_hot(2) * z + center)
@@ -133,7 +130,7 @@ fn draw_star<V: VectorTrait>(axis: VecIndex, sign: bool) -> Vec<Line<V>> {
 pub fn draw_horizon<V: VectorTrait>() -> Vec<Line<V>> {
     match V::DIM {
         3 => calc_wireframe_lines(
-            &(ShapeBuilder::build_prism(2, &vec![SKY_DISTANCE], &vec![12]))
+            &(ShapeBuilder::build_prism(2, &[SKY_DISTANCE], &[12]))
                 .with_rotation(-1, 1, HALF_PI)
                 .build(),
         ),

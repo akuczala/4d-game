@@ -31,7 +31,7 @@ impl<V: VectorTrait> Face<V> {
                 center: V::zero(),
             },
 
-            edgeis: edgeis,
+            edgeis,
             vertis: Vec::new(),
         }
     }

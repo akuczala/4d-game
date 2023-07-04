@@ -96,12 +96,10 @@ pub fn update_camera<V: VectorTrait>(
                 if V::DIM == 4 && input.helper.held_shift() && axis == 2 {
                     camera.spin(transform, 0, 2, movement_sign * dt)
                     //turning: rotation along (axis,-1)
+                } else if axis == 1 {
+                    camera.tilt(transform, axis, -1, movement_sign * dt);
                 } else {
-                    if axis == 1 {
-                        camera.tilt(transform, axis, -1, movement_sign * dt);
-                    } else {
-                        camera.turn(transform, axis, -1, movement_sign * dt);
-                    }
+                    camera.turn(transform, axis, -1, movement_sign * dt);
                 }
             }
         };

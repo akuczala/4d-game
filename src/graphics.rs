@@ -59,11 +59,7 @@ pub trait Graphics<V: VectorTrait> {
         );
     }
 
-    fn new_vertex_buffer_from_lines(
-        &mut self,
-        lines: &[Option<DrawLine<V>>],
-        display: &Display,
-    ) {
+    fn new_vertex_buffer_from_lines(&mut self, lines: &[Option<DrawLine<V>>], display: &Display) {
         let vertexes = Self::opt_lines_to_gl(lines);
         self.set_vertex_buffer(glium::VertexBuffer::dynamic(display, &vertexes).unwrap());
     }

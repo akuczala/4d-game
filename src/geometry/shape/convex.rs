@@ -78,15 +78,15 @@ impl Convex {
     pub fn calc_boundaries<V: VectorTrait>(
         &self,
         origin: V,
-        faces: &Vec<Face<V>>,
-        face_visibility: &Vec<bool>,
+        faces: &[Face<V>],
+        face_visibility: &[bool],
     ) -> Vec<Plane<V>> {
         let mut boundaries: Vec<Plane<V>> = Vec::new();
 
         for subface in &self.subfaces.0 {
             let face1 = &faces[subface.faceis.0];
             let face2 = &faces[subface.faceis.1];
-            if face_visibility[subface.faceis.0] == !face_visibility[subface.faceis.1] {
+            if face_visibility[subface.faceis.0] != face_visibility[subface.faceis.1] {
                 let boundary = Self::calc_boundary(face1.plane(), face2.plane(), origin);
                 boundaries.push(boundary);
             }
@@ -99,7 +99,7 @@ impl Convex {
         }
         boundaries
     }
-    pub fn point_within<V: VectorTrait>(point: V, distance: Field, faces: &Vec<Face<V>>) -> bool {
+    pub fn point_within<V: VectorTrait>(point: V, distance: Field, faces: &[Face<V>]) -> bool {
         faces
             .iter()
             .map(Face::plane)

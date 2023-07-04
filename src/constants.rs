@@ -29,6 +29,8 @@ pub const CURSOR_COLOR: Color = WHITE;
 pub const CUBE_LABEL_STR: &str = "Cube";
 pub const COIN_LABEL_STR: &str = "Coin";
 
+pub const FOCAL: Field = 1.0;
+
 pub const Z0: Field = ZERO;
 
 pub const SMALL_Z: Field = 0.001;

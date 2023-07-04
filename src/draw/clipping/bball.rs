@@ -6,7 +6,7 @@ pub struct BBall<V> {
 }
 
 impl<V: VectorTrait> BBall<V> {
-    pub fn new(verts: &Vec<V>, pos: V) -> Self {
+    pub fn new(verts: &[V], pos: V) -> Self {
         let radius = verts
             .iter()
             .map(|v| v.norm_sq())
