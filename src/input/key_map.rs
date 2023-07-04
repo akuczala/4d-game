@@ -10,7 +10,12 @@ pub const ROTATE_MODE: VKC = VKC::R;
 pub const SCALE_MODE: VKC = VKC::Y;
 pub const FREE_MODE: VKC = VKC::F;
 
-pub const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [(VKC::Key1, 0), (VKC::Key2, 1), (VKC::Key3, 2), (VKC::Key4, 3)];
+pub const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [
+    (VKC::Key1, 0),
+    (VKC::Key2, 1),
+    (VKC::Key3, 2),
+    (VKC::Key4, 3),
+];
 
 pub const CREATE_SHAPE: VKC = VKC::Period;
 // TODO: store combos in toggle keys so we can use shift-period or other combo to delete
@@ -18,16 +23,13 @@ pub const DELETE_SHAPE: VKC = VKC::Semicolon;
 pub const DUPLICATE_SHAPE: VKC = VKC::Slash;
 pub const RESET_ORIENTATION: VKC = VKC::Comma;
 
-
 pub const TOGGLE_CLIPPING: VKC = VKC::C;
-
-
 
 pub const QUIT: VKC = VKC::Key0;
 pub const TOGGLE_DIMENSION: VKC = VKC::Back;
 
 //(- key, + key, axis)
-pub const MOVE_KEYMAP : [(VKC,VKC, VecIndex); 3] = [
+pub const MOVE_KEYMAP: [(VKC, VKC, VecIndex); 3] = [
     (VKC::A, VKC::D, 0),
     (VKC::K, VKC::I, 1),
     (VKC::Q, VKC::E, 2),
@@ -46,4 +48,4 @@ pub const TOGGLEABLE_KEYS: [VKC; 7] = [
     CREATE_SHAPE,
     DUPLICATE_SHAPE,
     DELETE_SHAPE,
-    ];
+];

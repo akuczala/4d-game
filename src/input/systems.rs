@@ -1,82 +1,94 @@
-use std::marker::PhantomData;
 use specs::prelude::*;
+use std::marker::PhantomData;
 
 use crate::cleanup::DeletedEntities;
+use crate::components::*;
 use crate::ecs_utils::ModSystem;
 use crate::{ecs_utils::Componentable, vector::VectorTrait};
-use crate::components::*;
 
-use super::input_to_transform::{reset_orientation_and_scale, pos_to_grid};
-use super::{Input, ShapeManipulationState, set_manipulation_mode, cancel_manipulation, MovementMode, manipulate_shape, print_debug, manipulate_shape_outer, create_shape, duplicate_shape, delete_shape, selection_box, update_camera::update_camera};
+use super::input_to_transform::{pos_to_grid, reset_orientation_and_scale};
+use super::{
+    cancel_manipulation, create_shape, delete_shape, duplicate_shape, manipulate_shape,
+    manipulate_shape_outer, print_debug, selection_box, set_manipulation_mode,
+    update_camera::update_camera, Input, MovementMode, ShapeManipulationState,
+};
 
 pub struct UpdateCameraSystem<V>(pub PhantomData<V>);
-impl <'a, V> System<'a> for UpdateCameraSystem<V>
+impl<'a, V> System<'a> for UpdateCameraSystem<V>
 where
     V: VectorTrait + Componentable,
-    V::M: Componentable
+    V::M: Componentable,
 {
     type SystemData = (
-        Write<'a,Input>,
-        WriteStorage<'a,Transform<V, V::M>>,
-        WriteStorage<'a,Camera<V, V::M>>,
-        WriteStorage<'a,MoveNext<V>>,
-        ReadExpect<'a,Player>
+        Write<'a, Input>,
+        WriteStorage<'a, Transform<V, V::M>>,
+        WriteStorage<'a, Camera<V, V::M>>,
+        WriteStorage<'a, MoveNext<V>>,
+        ReadExpect<'a, Player>,
     );
-    fn run(&mut self, (mut input, mut transforms, mut cameras, mut move_nexts, player) : Self::SystemData) {
+    fn run(
+        &mut self,
+        (mut input, mut transforms, mut cameras, mut move_nexts, player): Self::SystemData,
+    ) {
         if input.is_camera_movement_enabled() {
-            update_camera(&mut input,
-                          &mut transforms.get_mut(player.0).unwrap(),
-                          &mut cameras.get_mut(player.0).unwrap(),
-                          &mut move_nexts.get_mut(player.0).unwrap()
+            update_camera(
+                &mut input,
+                &mut transforms.get_mut(player.0).unwrap(),
+                &mut cameras.get_mut(player.0).unwrap(),
+                &mut move_nexts.get_mut(player.0).unwrap(),
             );
         }
     }
 }
 pub struct ManipulateSelectedShapeSystem<V>(pub PhantomData<V>);
-impl <'a, V> System<'a> for ManipulateSelectedShapeSystem<V>
+impl<'a, V> System<'a> for ManipulateSelectedShapeSystem<V>
 where
-        V: VectorTrait + Componentable,
-        V::M: Componentable + Clone
+    V: VectorTrait + Componentable,
+    V::M: Componentable + Clone,
 {
     type SystemData = (
-        Write<'a,Input>, // need write only for snapping
+        Write<'a, Input>, // need write only for snapping
         Write<'a, ShapeManipulationState<V, V::M>>,
-        ReadExpect<'a,Player>,
+        ReadExpect<'a, Player>,
         WriteStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, MaybeSelected>,
     );
-    fn run(&mut self, (
+    fn run(
+        &mut self,
+        (
         mut input,
         mut manip_state,
         player,
         mut transform_storage,
         maybe_selected_storage
-    ) : Self::SystemData) {
-        let maybe_selected= maybe_selected_storage.get(player.0).unwrap();
-        if let MaybeSelected(Some(Selected{entity,..})) = maybe_selected {
+    ) : Self::SystemData,
+    ) {
+        let maybe_selected = maybe_selected_storage.get(player.0).unwrap();
+        if let MaybeSelected(Some(Selected { entity, .. })) = maybe_selected {
             // TODO: It's annoying that I have to clone the camera's transform when we know that it is distinct from selected_transform.
             // how to convince rust of this?
-            let camera_transform = transform_storage.get(player.0).unwrap().clone(); 
-            let selected_transform = transform_storage.get_mut(*entity).expect("Selected entity has no Transform");
+            let camera_transform = transform_storage.get(player.0).unwrap().clone();
+            let selected_transform = transform_storage
+                .get_mut(*entity)
+                .expect("Selected entity has no Transform");
             manipulate_shape_outer(
                 &mut input,
                 &mut manip_state,
                 selected_transform,
-                &camera_transform
+                &camera_transform,
             )
         }
     }
 }
 
 pub struct SelectTargetSystem<V>(pub PhantomData<V>);
-impl <'a,V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V>
-{
+impl<'a, V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V> {
     type SystemData = (
-        Read<'a,Input>,
-        ReadExpect<'a,Player>,
-        ReadStorage<'a,MaybeTarget<V>>,
-        WriteStorage<'a,MaybeSelected>,
-        WriteStorage<'a, DrawLineCollection<V>>
+        Read<'a, Input>,
+        ReadExpect<'a, Player>,
+        ReadStorage<'a, MaybeTarget<V>>,
+        WriteStorage<'a, MaybeSelected>,
+        WriteStorage<'a, DrawLineCollection<V>>,
     );
     fn run(
         &mut self,
@@ -85,25 +97,34 @@ impl <'a,V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V>
             player,
             maybe_target_storage,
             mut maybe_selected_storage,
-            mut write_draw_line_collection
-        ) : Self::SystemData) { 
-        if let (true, &MovementMode::Player(_)) = (input.helper.mouse_held(0), &input.movement_mode) {
-            let maybe_target = maybe_target_storage.get(player.0).expect("Player has no target component");
-            let selected = maybe_selected_storage.get_mut(player.0).expect("Player has no selection component");
+            mut write_draw_line_collection,
+        ): Self::SystemData,
+    ) {
+        if let (true, &MovementMode::Player(_)) = (input.helper.mouse_held(0), &input.movement_mode)
+        {
+            let maybe_target = maybe_target_storage
+                .get(player.0)
+                .expect("Player has no target component");
+            let selected = maybe_selected_storage
+                .get_mut(player.0)
+                .expect("Player has no selection component");
             if let Some(Selected { entity }) = selected.0 {
                 write_draw_line_collection.remove(entity);
             }
-            selected.0 = maybe_target.0.as_ref().map(|target| Selected::new(target.entity))
+            selected.0 = maybe_target
+                .0
+                .as_ref()
+                .map(|target| Selected::new(target.entity))
         }
     }
 }
 
 pub struct CreateShapeSystem<V>(pub PhantomData<V>);
-impl <'a,V> System<'a> for CreateShapeSystem<V>
+impl<'a, V> System<'a> for CreateShapeSystem<V>
 where
-	V: VectorTrait + Componentable,
-	V::SubV: Componentable,
-	V::M: Componentable
+    V: VectorTrait + Componentable,
+    V::SubV: Componentable,
+    V::M: Componentable,
 {
     type SystemData = (
         WriteExpect<'a, Input>,
@@ -115,33 +136,26 @@ where
     );
 
     fn run(
-        &mut self, (
-            mut input,
-            player ,
-            ref_shapes,
-            lazy,
-            read_transform,
-            entities
-        ): Self::SystemData) {
-        
+        &mut self,
+        (mut input, player, ref_shapes, lazy, read_transform, entities): Self::SystemData,
+    ) {
         create_shape(
             &mut input,
             &ref_shapes,
             read_transform.get(player.0).unwrap(),
-        ).map(
-            |builder| {
-                builder.insert(entities.create(), &lazy);
-            }    
-        );
+        )
+        .map(|builder| {
+            builder.insert(entities.create(), &lazy);
+        });
     }
 }
 
 pub struct DuplicateShapeSystem<V>(pub PhantomData<V>);
-impl <'a, V, U, M> System<'a> for DuplicateShapeSystem<V>
+impl<'a, V, U, M> System<'a> for DuplicateShapeSystem<V>
 where
-        V: VectorTrait<M=M, SubV = U> + Componentable,
-        V::M: Componentable + Clone,
-        U: Componentable + VectorTrait
+    V: VectorTrait<M = M, SubV = U> + Componentable,
+    V::M: Componentable + Clone,
+    U: Componentable + VectorTrait,
 {
     type SystemData = (
         WriteExpect<'a, Input>,
@@ -157,9 +171,10 @@ where
     );
 
     fn run(
-        &mut self, (
+        &mut self,
+        (
             mut input,
-            player ,
+            player,
             maybe_selected_storage,
             ref_shapes,
             lazy,
@@ -167,59 +182,58 @@ where
             shape_label_storage,
             shape_textures,
             static_colliders,
-            entities
-        ): Self::SystemData) {
-        
-        if let &MaybeSelected(Some(Selected{entity: selected_entity, ..})) = maybe_selected_storage.get(player.0).unwrap() {
+            entities,
+        ): Self::SystemData,
+    ) {
+        if let &MaybeSelected(Some(Selected {
+            entity: selected_entity,
+            ..
+        })) = maybe_selected_storage.get(player.0).unwrap()
+        {
             duplicate_shape(
                 &mut input,
                 &ref_shapes,
                 shape_label_storage.get(selected_entity).unwrap(),
                 read_transform.get(selected_entity).unwrap(),
                 shape_textures.get(selected_entity).unwrap(),
-                static_colliders.get(selected_entity)
-            ).map(
-                |builder| {
-                    builder.insert(entities.create(), &lazy);
-                }
-            );
+                static_colliders.get(selected_entity),
+            )
+            .map(|builder| {
+                builder.insert(entities.create(), &lazy);
+            });
         }
-        
     }
 }
 
 pub struct DeleteShapeSystem<V>(pub PhantomData<V>);
 
-impl <'a, V> System<'a> for DeleteShapeSystem<V>
-where V: Componentable
+impl<'a, V> System<'a> for DeleteShapeSystem<V>
+where
+    V: Componentable,
 {
     type SystemData = (
         ReadExpect<'a, Player>,
         WriteStorage<'a, MaybeSelected>,
         WriteExpect<'a, Input>,
-        Write<'a, DeletedEntities>
+        Write<'a, DeletedEntities>,
     );
 
     fn run(
         &mut self,
-        (
-            player,
-            mut write_maybe_selected,
-            mut input,
-            mut deleted_entities,
-        ): Self::SystemData
+        (player, mut write_maybe_selected, mut input, mut deleted_entities): Self::SystemData,
     ) {
         delete_shape(
             &mut input,
             &mut write_maybe_selected.get_mut(player.0).unwrap(),
-            &mut deleted_entities
+            &mut deleted_entities,
         );
     }
 }
 pub struct UpdateSelectionBox<V>(pub ModSystem<V>);
 
 impl<'a, V> System<'a> for UpdateSelectionBox<V>
-where V: Componentable + VectorTrait
+where
+    V: Componentable + VectorTrait,
 {
     type SystemData = (
         ReadExpect<'a, Player>,
@@ -235,23 +249,22 @@ where V: Componentable + VectorTrait
             read_shapes,
             mut write_maybe_selected,
             mut write_draw_line_collection,
-        ): Self::SystemData
+        ): Self::SystemData,
     ) {
         if let Some(MaybeSelected(Some(selected))) = write_maybe_selected.get_mut(player.0) {
-            self.0.for_each_modified(
-                read_shapes.channel(),
-                |id| {
-                    if *id == selected.entity.id() {
-                        write_draw_line_collection.insert(
+            self.0.for_each_modified(read_shapes.channel(), |id| {
+                if *id == selected.entity.id() {
+                    write_draw_line_collection
+                        .insert(
                             selected.entity,
-                            selection_box(read_shapes.get(selected.entity).unwrap())
-                        ).expect("Couldn't add selection box!");
-                    }
+                            selection_box(read_shapes.get(selected.entity).unwrap()),
+                        )
+                        .expect("Couldn't add selection box!");
                 }
-            )
+            })
             // for event in read_shapes.channel().read(self.0.reader_id.as_mut().unwrap()) {
             //     match event {
-            //         ComponentEvent::Modified(id) => 
+            //         ComponentEvent::Modified(id) =>
             //         _ => {}
             //     }
             // }
@@ -259,19 +272,15 @@ where V: Componentable + VectorTrait
     }
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
-        self.0.reader_id = Some(
-            WriteStorage::<Shape<V>>::fetch(&world).register_reader()
-        );
+        self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(&world).register_reader());
     }
-
 }
 
 pub struct PrintDebugSystem<V>(pub PhantomData<V>);
-impl <'a,V : VectorTrait + Componentable> System<'a> for PrintDebugSystem<V> {
-
+impl<'a, V: VectorTrait + Componentable> System<'a> for PrintDebugSystem<V> {
     type SystemData = (Write<'a, Input>, Write<'a, ClipState<V>>);
 
-    fn run(&mut self, (mut input, mut clip_state) : Self::SystemData) {
-        print_debug::<V>(&mut input,&mut clip_state);
+    fn run(&mut self, (mut input, mut clip_state): Self::SystemData) {
+        print_debug::<V>(&mut input, &mut clip_state);
     }
 }

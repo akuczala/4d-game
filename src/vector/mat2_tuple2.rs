@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use super::Vec2;
-use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field};
-use std::ops::{Add, Sub, Mul, Index};
+use crate::vector::{Field, MatrixTrait, VecIndex, VectorTrait};
 use std::fmt;
+use std::ops::{Add, Index, Mul, Sub};
 use std::slice::Iter;
 
 //column major
@@ -15,8 +15,7 @@ impl Mat2 {
     pub fn from_vecs(v0: Vec2, v1: Vec2) -> Mat2 {
         Mat2::from_arr(&[*v0.get_arr(), *v1.get_arr()])
     }
-    pub fn from_arr(arr: &[[Field; 2]; 2]) -> Mat2
-    {
+    pub fn from_arr(arr: &[[Field; 2]; 2]) -> Mat2 {
         Mat2(Vec2::from_arr(&arr[0]), Vec2::from_arr(&arr[1]))
     }
 }
@@ -60,7 +59,7 @@ impl Index<VecIndex> for Mat2 {
         match i {
             0 => &self.0,
             1 | -1 => &self.1,
-            _ => panic!("Invalid index {} for Mat2", i)
+            _ => panic!("Invalid index {} for Mat2", i),
         }
     }
 }
@@ -77,15 +76,12 @@ impl MatrixTrait<Vec2> for Mat2 {
     }
 
     fn map_els<F: Fn(Field) -> Field + Copy>(self, f: F) -> Self {
-        Self::from_arr(&[
-            *self[0].map(f).get_arr(),
-            *self[1].map(f).get_arr()
-        ])
+        Self::from_arr(&[*self[0].map(f).get_arr(), *self[1].map(f).get_arr()])
     }
     fn zip_map_els<F: Fn(Field, Field) -> Field + Copy>(self, rhs: Self, f: F) -> Self {
         Self::from_arr(&[
             *self[0].zip_map(rhs[0], f).get_arr(),
-            *self[1].zip_map(rhs[1], f).get_arr()
+            *self[1].zip_map(rhs[1], f).get_arr(),
         ])
     }
     // fn transpose(self) -> Mat2 {
@@ -96,18 +92,10 @@ impl MatrixTrait<Vec2> for Mat2 {
         Mat2::from_vecs(v2 * v1[0], v2 * v1[1])
     }
     fn id() -> Mat2 {
-        Mat2::from_arr(&[
-            [1., 0.],
-            [0., 1.]
-        ])
+        Mat2::from_arr(&[[1., 0.], [0., 1.]])
     }
     fn diag(v: Vec2) -> Mat2 {
-        Mat2::from_arr(
-            &[
-                [v[0], 0.],
-                [0., v[1]]
-            ]
-        )
+        Mat2::from_arr(&[[v[0], 0.], [0., v[1]]])
     }
     fn dot(self, rhs: Mat2) -> Mat2 {
         let mut arr: Self::Arr = [[0.0; 2]; 2];
@@ -122,12 +110,7 @@ impl MatrixTrait<Vec2> for Mat2 {
     }
     fn transpose(&self) -> Mat2 {
         let a = self.get_arr();
-        Mat2::from_arr(
-            &[
-                [a[0][0], a[1][0]],
-                [a[0][1], a[1][1]]
-            ]
-        )
+        Mat2::from_arr(&[[a[0][0], a[1][0]], [a[0][1], a[1][1]]])
     }
 }
 

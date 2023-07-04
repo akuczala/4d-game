@@ -1,8 +1,13 @@
 use std::{marker::PhantomData, ops::Deref};
 
-use specs::{BitSet, ReaderId, shrev::{EventChannel, EventIterator}, storage::ComponentEvent, hibitset::BitSetOr};
+use specs::{
+    hibitset::BitSetOr,
+    shrev::{EventChannel, EventIterator},
+    storage::ComponentEvent,
+    BitSet, ReaderId,
+};
 
-use crate::vector::{VectorTrait, Vec2, Vec3, Vec4, Mat2, Mat4, Mat3};
+use crate::vector::{Mat2, Mat3, Mat4, Vec2, Vec3, Vec4, VectorTrait};
 
 //the 'static lifetime here tells the compiler that any type with the componentable trait
 //does not hold any references that might require lifetimes
@@ -22,9 +27,8 @@ pub struct ModSystem<V> {
     pub ph: PhantomData<V>,
     pub modified: BitSet,
     pub inserted: BitSet,
-    pub reader_id: Option<ReaderId<ComponentEvent>>
+    pub reader_id: Option<ReaderId<ComponentEvent>>,
 }
-
 
 impl<V: Componentable> ModSystem<V> {
     pub fn typed_default(ph: PhantomData<V>) -> Self {
@@ -35,18 +39,24 @@ impl<V: Componentable> ModSystem<V> {
             inserted: Default::default(),
         }
     }
-    pub fn get_events<'a>(&'a mut self, channel: &'a EventChannel<ComponentEvent>) -> EventIterator<ComponentEvent> {
+    pub fn get_events<'a>(
+        &'a mut self,
+        channel: &'a EventChannel<ComponentEvent>,
+    ) -> EventIterator<ComponentEvent> {
         channel.read(self.reader_id.as_mut().unwrap())
     }
     //I tried to make ReadStorage an argument here but the trait constraints were a nightmare
-    pub fn gather_events(&mut self, channel: &EventChannel<ComponentEvent>)
-    {
+    pub fn gather_events(&mut self, channel: &EventChannel<ComponentEvent>) {
         self.modified.clear();
         self.inserted.clear();
         for event in channel.read(self.reader_id.as_mut().unwrap()) {
             match event {
-                ComponentEvent::Modified(id) => {self.modified.add(*id);},
-                ComponentEvent::Inserted(id) => {self.inserted.add(*id);}
+                ComponentEvent::Modified(id) => {
+                    self.modified.add(*id);
+                }
+                ComponentEvent::Inserted(id) => {
+                    self.inserted.add(*id);
+                }
                 _ => (),
             }
         }
@@ -55,12 +65,13 @@ impl<V: Componentable> ModSystem<V> {
         (&self.modified) | (&self.inserted)
     }
     pub fn for_each_modified<F>(&mut self, channel: &EventChannel<ComponentEvent>, mut f: F)
-    where F: FnMut(&u32) -> ()
+    where
+        F: FnMut(&u32) -> (),
     {
         for event in self.get_events(channel) {
             match event {
-            ComponentEvent::Modified(id) => f(id),
-            _ => ()
+                ComponentEvent::Modified(id) => f(id),
+                _ => (),
             }
         }
     }

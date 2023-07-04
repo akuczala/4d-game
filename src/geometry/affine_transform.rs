@@ -1,8 +1,8 @@
-use crate::vector::{Field, VectorTrait, MatrixTrait};
+use crate::vector::{Field, MatrixTrait, VectorTrait};
 
 use super::transform::Scaling;
 
-pub struct AffineTransform<V, M>{
+pub struct AffineTransform<V, M> {
     pub pos: V,
     pub frame: M,
 }
@@ -11,7 +11,7 @@ pub struct AffineTransform<V, M>{
 // TODO improve performance by creating fewer structs? or does the compiler do that
 impl<V: VectorTrait> AffineTransform<V, V::M> {
     pub fn identity() -> Self {
-        Self{
+        Self {
             pos: V::zero(),
             frame: V::M::id(),
         }
@@ -34,13 +34,21 @@ impl<V: VectorTrait> AffineTransform<V, V::M> {
     pub fn decompose_rotation_scaling(&self) -> (V::M, Scaling<V>) {
         // i tried using normalize_get_norm + unzip but rust hates me
         let cols: Vec<V> = self.frame.transpose().get_rows();
-        let norms: Vec<Field> = cols.iter().map(|v|v.norm()).collect();
+        let norms: Vec<Field> = cols.iter().map(|v| v.norm()).collect();
         //for n in norms.iter() { println!{":: {}", n}}
         (
             V::M::from_vec_of_vecs(
-                &self.frame.transpose().get_rows().iter().zip(norms.iter()).map(|(v,n)| *v / *n).collect()
-            ).transpose(),
-            Scaling::Vector(V::from_iter(norms.iter()))
+                &self
+                    .frame
+                    .transpose()
+                    .get_rows()
+                    .iter()
+                    .zip(norms.iter())
+                    .map(|(v, n)| *v / *n)
+                    .collect(),
+            )
+            .transpose(),
+            Scaling::Vector(V::from_iter(norms.iter())),
         )
     }
     pub fn unshear(&self) -> AffineTransform<V, V::M> {
@@ -72,31 +80,35 @@ impl<V: VectorTrait> AffineTransform<V, V::M> {
         self.apply_self_on_left(transformation) //scale composition commutes
     }
     pub fn with_transform(mut self, transformation: AffineTransform<V, V::M>) -> Self {
-        self.compose(transformation); self
+        self.compose(transformation);
+        self
     }
     pub fn with_translation(mut self, pos_delta: V) -> Self {
-        self.translate(pos_delta); self
+        self.translate(pos_delta);
+        self
     }
 }
 
 #[allow(unused)]
 #[test]
 fn test_decompose() {
-    use crate::vector::{Vec4, Mat4};
+    use crate::vector::{Mat4, Vec4};
     let s = Scaling::Vector(Vec4::new(2.0, 3.0, 5.0, 7.0));
-    let rot_mat = Mat4::from_arr(
-        &[[-0.69214412,  0.44772088,  0.55884119, -0.09043814],
-            [-0.19507629, -0.72900476,  0.2438655 , -0.60911979],
-            [ 0.34303542, -0.2792939 ,  0.73238738,  0.51761989],
-            [ 0.6043248 ,  0.43599655,  0.30304269, -0.59402329]]
-    );
-    let transform = AffineTransform::new(
-        Some(Vec4::zero()),
-        Some(rot_mat.dot(s.get_mat()))
-    );
-    let (rot_mat_recon,s_recon) = transform.decompose_rotation_scaling();
+    let rot_mat = Mat4::from_arr(&[
+        [-0.69214412, 0.44772088, 0.55884119, -0.09043814],
+        [-0.19507629, -0.72900476, 0.2438655, -0.60911979],
+        [0.34303542, -0.2792939, 0.73238738, 0.51761989],
+        [0.6043248, 0.43599655, 0.30304269, -0.59402329],
+    ]);
+    let transform = AffineTransform::new(Some(Vec4::zero()), Some(rot_mat.dot(s.get_mat())));
+    let (rot_mat_recon, s_recon) = transform.decompose_rotation_scaling();
     println!("{}", transform.frame.transpose());
-    println!("{}", match s_recon {Scaling::Vector(v) => v, Scaling::Scalar(f) => Vec4::zero()});
+    println!(
+        "{}",
+        match s_recon {
+            Scaling::Vector(v) => v,
+            Scaling::Scalar(f) => Vec4::zero(),
+        }
+    );
     println!("{}", rot_mat_recon)
 }
-

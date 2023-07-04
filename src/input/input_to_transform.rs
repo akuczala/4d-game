@@ -1,24 +1,30 @@
+use crate::components::*;
+use crate::input::{Input, MovementMode, ShapeMovementMode, MOUSE_SENSITIVITY};
+use crate::vector::{Field, VecIndex, VectorTrait};
 use std::f32::consts::PI;
 use std::ops::{Index, IndexMut};
-use crate::components::*;
-use crate::input::{Input, MOUSE_SENSITIVITY, MovementMode, ShapeMovementMode};
-use crate::vector::{VectorTrait,Field,VecIndex};
 
+use crate::geometry::transform::Scaling;
 use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;
-use crate::geometry::transform::Scaling;
 
+use super::key_map::{
+    AXIS_KEYMAP, MOVE_BACKWARDS, MOVE_FORWARDS, MOVE_KEYMAP, RESET_ORIENTATION, SNAPPING,
+};
 use super::{ShapeManipulationState, ToggleKeys};
-use super::key_map::{MOVE_FORWARDS, MOVE_BACKWARDS, MOVE_KEYMAP, AXIS_KEYMAP, SNAPPING, RESET_ORIENTATION};
 
-const SPEED : Field = 1.5;
-const ANG_SPEED : Field = 1.5*PI/3.0;
+const SPEED: Field = 1.5;
+const ANG_SPEED: Field = 1.5 * PI / 3.0;
 
-pub fn get_slide_dpos<V: VectorTrait>(direction : V, time : Field) -> V {
-    direction.normalize()*SPEED*time
+pub fn get_slide_dpos<V: VectorTrait>(direction: V, time: Field) -> V {
+    direction.normalize() * SPEED * time
 }
 
-fn mouse_rotation<V: VectorTrait>(input: &Input, dt: Field, transform: &mut Transform<V, V::M>) -> bool {
+fn mouse_rotation<V: VectorTrait>(
+    input: &Input,
+    dt: Field,
+    transform: &mut Transform<V, V::M>,
+) -> bool {
     let mut any_slide_turn = false;
     //mouse
     let (dmx, dmy) = input.mouse.mouse_dpos;
@@ -32,73 +38,63 @@ fn mouse_rotation<V: VectorTrait>(input: &Input, dt: Field, transform: &mut Tran
     }
     //y mouse movement
     if dmy.abs() != 0. {
-
         match (V::DIM, input.helper.held_shift()) {
-            (3, _) | (4, true) => transform.rotate(1,-1,-dmy*dt*MOUSE_SENSITIVITY),
-            (4, false) => transform.rotate(2,-1,-dmy*dt*MOUSE_SENSITIVITY),
+            (3, _) | (4, true) => transform.rotate(1, -1, -dmy * dt * MOUSE_SENSITIVITY),
+            (4, false) => transform.rotate(2, -1, -dmy * dt * MOUSE_SENSITIVITY),
             (_, _) => panic!("Invalid dimension"),
         };
         //camera.spin(axis,-1,-my*dt*MOUSE_SENSITIVITY);
         any_slide_turn = true;
     }
-    return any_slide_turn
+    return any_slide_turn;
 }
 
 fn forwards_backwards_movement<V: VectorTrait>(
     input: &Input,
     dt: Field,
-    transform: &mut Transform<V, V::M>
+    transform: &mut Transform<V, V::M>,
 ) -> bool {
     let mut update = false;
     if input.helper.key_held(MOVE_FORWARDS) {
-        transform.translate(
-            get_slide_dpos(transform.frame[-1],dt)
-        );
+        transform.translate(get_slide_dpos(transform.frame[-1], dt));
         update = true;
     }
     if input.helper.key_held(MOVE_BACKWARDS) {
-        transform.translate(
-            get_slide_dpos(-transform.frame[-1], dt)
-        );
+        transform.translate(get_slide_dpos(-transform.frame[-1], dt));
         update = true;
     }
-    return update
+    return update;
 }
 
 fn sliding_and_turning<V: VectorTrait>(
     input: &Input,
     dt: Field,
-    transform: &mut Transform<V, V::M>
+    transform: &mut Transform<V, V::M>,
 ) -> bool {
     let mut any_slide_turn = false;
     for &(key_minus, key_plus, axis) in MOVE_KEYMAP.iter() {
-
         let movement_sign =
-            input.helper.key_held(key_plus) as i32 -
-                input.helper.key_held(key_minus) as i32;
+            input.helper.key_held(key_plus) as i32 - input.helper.key_held(key_minus) as i32;
         let movement_sign = movement_sign as f32;
 
         if movement_sign != 0. {
             any_slide_turn = true;
             //sliding
             if input.helper.held_alt() {
-                transform.translate(
-                    get_slide_dpos(transform.frame[axis]*movement_sign,dt)
-                );
+                transform.translate(get_slide_dpos(transform.frame[axis] * movement_sign, dt));
                 //rotations
             } else {
                 //special case : (0,2) rotation
                 if V::DIM == 4 && input.helper.held_shift() && axis == 2 {
-                    transform.rotate(0,2,movement_sign*dt)
+                    transform.rotate(0, 2, movement_sign * dt)
                     //turning: rotation along (axis,-1)
                 } else {
                     if axis == 1 {
-                        transform.rotate(axis,-1,movement_sign*dt);
+                        transform.rotate(axis, -1, movement_sign * dt);
                     } else {
-                        transform.rotate(axis,-1,movement_sign*dt);
+                        transform.rotate(axis, -1, movement_sign * dt);
                     }
                 }
-
             }
         };
     }
@@ -115,9 +111,7 @@ fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
     axis
 }
 
-
 pub fn set_axes(toggle_keys: &mut ToggleKeys, locked_axes: &mut Vec<VecIndex>, dim: VecIndex) {
-
     // for (key_code, ax) in AXIS_KEYMAP.iter() {
     //     if input.toggle_keys.state(*key_code) && !locked_axes.contains(ax) {
     //         locked_axes.push(*ax);
@@ -127,16 +121,15 @@ pub fn set_axes(toggle_keys: &mut ToggleKeys, locked_axes: &mut Vec<VecIndex>, d
     //     }
     // }
     for (key_code, ax) in AXIS_KEYMAP.iter() {
-        toggle_keys.trigger_once(
-            *key_code,
-            || if *ax < dim  {
+        toggle_keys.trigger_once(*key_code, || {
+            if *ax < dim {
                 if locked_axes.contains(ax) {
                     locked_axes.retain(|x| *x != *ax);
                 } else {
                     locked_axes.push(*ax);
                 }
             }
-        );
+        });
     }
 }
 fn round_to(x: Field, to: Field) -> Field {
@@ -156,7 +149,10 @@ pub fn snapping_enabled(input: &Input) -> bool {
     input.helper.key_held(SNAPPING)
 }
 
-pub fn reset_orientation_and_scale<V: VectorTrait>(input: &Input, transform: &mut Transform<V, V::M>) {
+pub fn reset_orientation_and_scale<V: VectorTrait>(
+    input: &Input,
+    transform: &mut Transform<V, V::M>,
+) {
     if input.helper.key_held(RESET_ORIENTATION) {
         *transform = Transform::new(Some(transform.pos), None, None);
     }
@@ -168,11 +164,17 @@ pub fn pos_to_grid<V: VectorTrait>(input: &Input, transform: &mut Transform<V, V
     }
 }
 
-pub fn mouse_to_space<V: VectorTrait>((dx, dy): (f32, f32), camera_transform: &Transform<V, V::M>) -> V {
+pub fn mouse_to_space<V: VectorTrait>(
+    (dx, dy): (f32, f32),
+    camera_transform: &Transform<V, V::M>,
+) -> V {
     camera_transform.frame[0] * dx - camera_transform.frame[1] * dy
 }
 
-pub fn clear_components<V: IndexMut<VecIndex, Output = Field>> (axes: &Vec<VecIndex>, mut v: V) -> V {
+pub fn clear_components<V: IndexMut<VecIndex, Output = Field>>(
+    axes: &Vec<VecIndex>,
+    mut v: V,
+) -> V {
     for ax in axes {
         v[*ax] = 0.0
     }
@@ -182,7 +184,7 @@ pub fn clear_components<V: IndexMut<VecIndex, Output = Field>> (axes: &Vec<VecIn
 pub fn apply_locked_axes<V: VectorTrait>(locked_axes: &Vec<VecIndex>, mut defaults: V, v: V) -> V {
     // if no axes specified, transform all
     if locked_axes.is_empty() {
-        return v
+        return v;
     }
     for ax in locked_axes {
         defaults[*ax] = v[*ax]
@@ -205,23 +207,20 @@ pub fn scrolling_axis_translation<V: VectorTrait>(
     let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
     if dx != 0.0 || dy != 0.0 {
         let dpos = apply_locked_axes(
-            locked_axes, 
+            locked_axes,
             V::zero(),
-            mouse_to_space((dx, dy), camera_transform) * input.get_dt() * MOUSE_SENSITIVITY
+            mouse_to_space((dx, dy), camera_transform) * input.get_dt() * MOUSE_SENSITIVITY,
         );
-        new_pos_delta = pos_delta + dpos; 
+        new_pos_delta = pos_delta + dpos;
         *transform = original_transform.clone();
-        transform.translate(
-            match snap {
-                true => round_vec(new_pos_delta),
-                false => new_pos_delta
-            }
-        );
+        transform.translate(match snap {
+            true => round_vec(new_pos_delta),
+            false => new_pos_delta,
+        });
         update = true;
     }
-    return (update, new_pos_delta)
+    return (update, new_pos_delta);
 }
-
 
 pub fn axis_rotation<V: VectorTrait>(
     input: &Input,
@@ -229,7 +228,7 @@ pub fn axis_rotation<V: VectorTrait>(
     snap: bool,
     original_transform: &Transform<V, V::M>,
     angle_delta: Field,
-    transform: &mut Transform<V, V::M>
+    transform: &mut Transform<V, V::M>,
 ) -> (bool, Field) {
     let mut new_angle_delta = angle_delta;
     let mut update = false;
@@ -238,48 +237,46 @@ pub fn axis_rotation<V: VectorTrait>(
         match locked_axes.len() {
             2 => {
                 let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-                new_angle_delta = new_angle_delta + dangle; 
+                new_angle_delta = new_angle_delta + dangle;
                 *transform = original_transform.clone();
                 transform.rotate(
                     locked_axes[0],
                     locked_axes[1],
                     match snap {
                         true => round_angle(new_angle_delta),
-                        false => new_angle_delta
-                    }
+                        false => new_angle_delta,
+                    },
                 );
                 update = true;
-            },
+            }
             4 => {
                 let dangle = (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY;
-                new_angle_delta = new_angle_delta + dangle; 
+                new_angle_delta = new_angle_delta + dangle;
                 *transform = original_transform.clone();
                 transform.rotate(
                     locked_axes[0],
                     locked_axes[1],
                     match snap {
                         true => round_angle(new_angle_delta),
-                        false => new_angle_delta
-                    }
+                        false => new_angle_delta,
+                    },
                 );
                 transform.rotate(
                     locked_axes[2],
                     locked_axes[3],
                     match snap {
                         true => round_angle(new_angle_delta),
-                        false => new_angle_delta
-                    }
-                )
-                ;
+                        false => new_angle_delta,
+                    },
+                );
                 update = true;
             }
-            _ => {}, // 4 would be valid in 4d
+            _ => {} // 4 would be valid in 4d
         }
     }
-    
-    return (update, new_angle_delta)
-} 
 
+    return (update, new_angle_delta);
+}
 
 pub fn scrolling_axis_scaling<V: VectorTrait>(
     input: &Input,
@@ -291,39 +288,36 @@ pub fn scrolling_axis_scaling<V: VectorTrait>(
 ) -> (bool, Scaling<V>) {
     let mut new_scale_delta = scale_delta;
     let mut update = false;
-    
+
     let (dx, dy) = input.mouse.mouse_or_scroll_deltas();
     if dx != 0.0 || dy != 0.0 {
         let dscale = match locked_axes.len() {
             1 => V::one_hot(locked_axes[0]) * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
-            2 => (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy) * input.get_dt() * MOUSE_SENSITIVITY,
+            2 => {
+                (V::one_hot(locked_axes[0]) * dx + V::one_hot(locked_axes[1]) * dy)
+                    * input.get_dt()
+                    * MOUSE_SENSITIVITY
+            }
             _ => V::ones() * (dx + dy) * input.get_dt() * MOUSE_SENSITIVITY,
         };
         let new_scale_delta_vec = match scale_delta {
-            Scaling::Scalar(f) =>V::ones() * f + dscale,
+            Scaling::Scalar(f) => V::ones() * f + dscale,
             Scaling::Vector(v) => v + dscale,
-        }; 
+        };
         new_scale_delta = Scaling::Vector(new_scale_delta_vec);
         *transform = original_transform.clone();
-        transform.scale(
-            Scaling::Vector(
-                match snap {
-                    true => round_vec(new_scale_delta_vec),
-                    false => new_scale_delta_vec
-                }
-            )
-        );
+        transform.scale(Scaling::Vector(match snap {
+            true => round_vec(new_scale_delta_vec),
+            false => new_scale_delta_vec,
+        }));
         update = true;
     }
-    return (update, new_scale_delta)
+    return (update, new_scale_delta);
 }
 
 // TODO rewrite update_camera transformations in terms of these methods; further decompose
 // (a bit tricky because of slight differences in rotations)
-pub fn update_transform<V : VectorTrait>(
-    input : &Input,
-    transform: &mut Transform<V, V::M>) -> bool
-{
+pub fn update_transform<V: VectorTrait>(input: &Input, transform: &mut Transform<V, V::M>) -> bool {
     //clear movement
     //*move_next = MoveNext{ next_dpos: None, can_move: Some(true) };
     //limit max dt
@@ -345,6 +339,5 @@ pub fn update_transform<V : VectorTrait>(
     //             camera.update();
     //             input.update = true;
     //             input.pressed.space = true;
-    return update | any_slide_turn
-
+    return update | any_slide_turn;
 }

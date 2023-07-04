@@ -1,12 +1,22 @@
 #[cfg(test)]
-mod tests{
-    use std::{default, convert::Infallible};
+mod tests {
+    use std::{convert::Infallible, default};
 
-    use serde::{Serialize, Deserialize, de::DeserializeOwned};
-    use specs::{World, WorldExt, saveload::{SimpleMarkerAllocator, SerializeComponents}};
+    use serde::{de::DeserializeOwned, Deserialize, Serialize};
+    use specs::{
+        saveload::{SerializeComponents, SimpleMarkerAllocator},
+        World, WorldExt,
+    };
 
-    use crate::{vector::{VectorTrait, Vec3, is_close, Vec2, Mat3}, geometry::shape::{buildshapes::ShapeBuilder, RefShapes}, components::{Shape, ShapeLabel, Transform}, build_level::{build_lvl_1, build_shape_library}, saveload::{save_level, SaveMarker, Save, load_level}, engine::get_engine_dispatcher_builder, constants::CUBE_LABEL_STR};
-
+    use crate::{
+        build_level::{build_lvl_1, build_shape_library},
+        components::{Shape, ShapeLabel, Transform},
+        constants::CUBE_LABEL_STR,
+        engine::get_engine_dispatcher_builder,
+        geometry::shape::{buildshapes::ShapeBuilder, RefShapes},
+        saveload::{load_level, save_level, Save, SaveMarker},
+        vector::{is_close, Mat3, Vec2, Vec3, VectorTrait},
+    };
 
     fn new_world() -> World {
         let mut world = World::new();
@@ -19,10 +29,10 @@ mod tests{
     }
     #[test]
     fn serialize_vec_structs() {
-        fn test_json<T: Serialize +  DeserializeOwned>(t: T) -> T {
+        fn test_json<T: Serialize + DeserializeOwned>(t: T) -> T {
             let writer = Vec::new();
             let mut serializer = serde_json::Serializer::new(writer);
-            //let serializer = 
+            //let serializer =
             //let serialized = serde_json::to_string(&t).unwrap();
             t.serialize(&mut serializer);
             let serialized = String::from_utf8(serializer.into_inner()).unwrap();
@@ -34,24 +44,21 @@ mod tests{
         fn generic<V, M>(v: V)
         where
             V: VectorTrait<M = M> + Serialize + DeserializeOwned,
-            M: Serialize + DeserializeOwned
+            M: Serialize + DeserializeOwned,
         {
             assert!(V::is_close(test_json(v), v));
-            
+
             let shape: Shape<V> = ShapeBuilder::build_cube(1.0).build();
             test_json(shape.clone());
 
-            
             test_json(build_shape_library::<V>());
 
             let transform: Transform<V, V::M> = Transform::identity().with_rotation(0, 1, 0.1);
             test_json(transform);
-
         }
 
         let v = Vec3::new(1.0, 2.0, 3.0);
         generic(v);
-
     }
 
     #[test]
@@ -62,14 +69,11 @@ mod tests{
         let initial_count = world.read_component::<Shape<Vec3>>().count();
         //let mut writer = Vec::new();
         let mut serializer = serde_json::Serializer::new(Vec::new());
-        
-        let result = save_level::<Vec3>(
-            &world,
-            &mut serializer
-        );
+
+        let result = save_level::<Vec3>(&world, &mut serializer);
         let serialized = match result {
-                Ok(_) => String::from_utf8(serializer.into_inner()).unwrap(),
-                Result::Err(_) => "Err!!!".to_string()
+            Ok(_) => String::from_utf8(serializer.into_inner()).unwrap(),
+            Result::Err(_) => "Err!!!".to_string(),
         };
         let mut deserialized_world = new_world();
         let mut deserializer = serde_json::Deserializer::from_str(&serialized);
@@ -77,9 +81,9 @@ mod tests{
         if let Result::Err(_) = result {
             panic!("Boy did that go wrong");
         }
-        assert_eq!(deserialized_world.read_component::<Shape<Vec3>>().count(), initial_count);
-        
-
-
+        assert_eq!(
+            deserialized_world.read_component::<Shape<Vec3>>().count(),
+            initial_count
+        );
     }
 }

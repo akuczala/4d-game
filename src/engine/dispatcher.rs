@@ -1,6 +1,6 @@
-use crate::ecs_utils::{ModSystem, Componentable, SystemName};
+use crate::ecs_utils::{Componentable, ModSystem, SystemName};
 use crate::systems::*;
-use crate::vector::{VectorTrait, MatrixTrait};
+use crate::vector::{MatrixTrait, VectorTrait};
 use specs::prelude::*;
 use std::marker::PhantomData;
 
@@ -19,9 +19,7 @@ where
 
 //start drawing phase. this is first so that we can do world.maintain() before we draw
 //for each shape, update clipping boundaries and face visibility
-fn add_draw_steps<'a, 'b, V>(
-    builder: DispatcherBuilder<'a, 'b>,
-) -> DispatcherBuilder<'a, 'b>
+fn add_draw_steps<'a, 'b, V>(builder: DispatcherBuilder<'a, 'b>) -> DispatcherBuilder<'a, 'b>
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
@@ -29,16 +27,13 @@ where
 {
     let ph = PhantomData::<V>;
     builder
-        .with(
-            VisibilitySystem(ph),
-            VisibilitySystem::NAME,
-            &[]
-        )
+        .with(VisibilitySystem(ph), VisibilitySystem::NAME, &[])
         //determine what shapes are in front of other shapes
         .with(
             InFrontSystem(ph),
             InFrontSystem::NAME,
-            &[VisibilitySystem::NAME])
+            &[VisibilitySystem::NAME],
+        )
         //calculate and clip lines for each shape
         .with(
             CalcShapesLinesSystem(ph),
@@ -49,7 +44,7 @@ where
         .with(
             DrawLineCollectionSystem(ph),
             DrawLineCollectionSystem::NAME,
-            &[InFrontSystem::NAME]
+            &[InFrontSystem::NAME],
         )
         //project lines
         .with(
@@ -66,9 +61,7 @@ where
 }
 
 //start game update phase
-fn add_game_steps<'a, 'b, V>(
-    builder: DispatcherBuilder<'a, 'b>,
-) -> DispatcherBuilder<'a, 'b>
+fn add_game_steps<'a, 'b, V>(builder: DispatcherBuilder<'a, 'b>) -> DispatcherBuilder<'a, 'b>
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
@@ -121,11 +114,7 @@ where
             "manipulate_selected",
             &["select_target"],
         )
-        .with(
-            CreateShapeSystem(ph),
-            "create_shape",
-            &[]
-        )
+        .with(CreateShapeSystem(ph), "create_shape", &[])
         .with(DuplicateShapeSystem(ph), "duplicate_shape", &[])
         .with(DeleteShapeSystem(ph), "delete_shape", &[])
         .with(CoinSpinningSystem(ph), "coin_spinning", &[])
@@ -136,8 +125,8 @@ where
         )
         .with(
             UpdateSelectionBox(ModSystem::typed_default(ph)),
-            "update_selection_box", 
-            &["transform_shapes"]
+            "update_selection_box",
+            &["transform_shapes"],
         )
         .with(UpdatePlayerBBox(ph), "update_player_bbox", &["move_player"]) //merge with above
         .with(
@@ -148,7 +137,7 @@ where
         .with(
             BBoxHashingSystem(ModSystem::typed_default(ph)),
             BBoxHashingSystem::NAME,
-            &["update_all_bbox"]
+            &["update_all_bbox"],
         )
         .with(
             UpdateBBallSystem(ModSystem::typed_default(ph)),
@@ -158,12 +147,12 @@ where
         .with(
             UpdateStaticClippingSystem(ModSystem::typed_default(ph)),
             "update_static_clipping",
-            &["transform_shapes"]
+            &["transform_shapes"],
         )
         .with(
             ShapeCleanupSystem(ph),
             "shape_cleanup",
             &["delete_shape", BBoxHashingSystem::NAME],
         )
-        //.with(PrintDebugSystem(ph), "print_debug", &["update_camera"])
+    //.with(PrintDebugSystem(ph), "print_debug", &["update_camera"])
 }

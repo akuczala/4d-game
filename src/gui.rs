@@ -1,36 +1,36 @@
-use crate::ecs_utils::Componentable;
-use crate::input::{Input, ShapeManipulationState, ShapeManipulationMode};
-use crate::vector::{VectorTrait, MatrixTrait};
-use specs::prelude::*;
 use crate::components::*;
-use glium::Frame;
-use glium::glutin::event::{Event, WindowEvent};
-use glium::glutin::event_loop::{ControlFlow};
-use glium::{Display};
-use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui, ProgressBar};
-use imgui_glium_renderer::Renderer;
-use imgui_winit_support::{HiDpiMode, WinitPlatform};
-use std::time::Instant;
-use map_in_place::MapVecInPlace;
+use crate::ecs_utils::Componentable;
 use crate::fps::FPSFloat;
 use crate::geometry::shape::RefShapes;
+use crate::input::{Input, ShapeManipulationMode, ShapeManipulationState};
+use crate::vector::{MatrixTrait, VectorTrait};
+use glium::glutin::event::{Event, WindowEvent};
+use glium::glutin::event_loop::ControlFlow;
+use glium::Display;
+use glium::Frame;
+use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, ProgressBar, Ui};
+use imgui_glium_renderer::Renderer;
+use imgui_winit_support::{HiDpiMode, WinitPlatform};
+use map_in_place::MapVecInPlace;
+use specs::prelude::*;
+use std::time::Instant;
 //mod clipboard;
 
 #[derive(Default)]
 struct State {
     text: String,
-    checked: bool
+    checked: bool,
 }
 pub struct System {
     pub imgui: Context,
     pub platform: WinitPlatform,
     pub renderer: Renderer,
     pub font_size: f32,
-    pub ui_args : UIArgs,
+    pub ui_args: UIArgs,
     state: State,
 }
 
-pub fn init(title: &str, display : &Display) -> System {
+pub fn init(title: &str, display: &Display) -> System {
     #[allow(unused)]
     let title = match title.rfind('/') {
         Some(idx) => title.split_at(idx + 1).1,
@@ -82,42 +82,46 @@ pub fn init(title: &str, display : &Display) -> System {
         platform,
         renderer,
         font_size,
-        ui_args : UIArgs::None,
+        ui_args: UIArgs::None,
         state: State::default(),
     }
 }
-pub enum UIArgs{
+pub enum UIArgs {
     None,
-    Test{
-        frame_duration : FPSFloat,
-        elapsed_time : u64,
-        mouse_diff : (f32,f32),
-        mouse_pos : Option<(f32,f32)>,
+    Test {
+        frame_duration: FPSFloat,
+        elapsed_time: u64,
+        mouse_diff: (f32, f32),
+        mouse_pos: Option<(f32, f32)>,
     },
-    Simple{
-        frame_duration : FPSFloat,
-        coins_collected : u32,
-        coins_left : u32,
+    Simple {
+        frame_duration: FPSFloat,
+        coins_collected: u32,
+        coins_left: u32,
     },
-    Debug{
-        frame_duration : FPSFloat,
-        debug_text : String,
-    }
+    Debug {
+        frame_duration: FPSFloat,
+        debug_text: String,
+    },
 }
-impl UIArgs{
-    pub fn new_debug<V>(world : &World, frame_duration : FPSFloat) -> Self
-        where
+impl UIArgs {
+    pub fn new_debug<V>(world: &World, frame_duration: FPSFloat) -> Self
+    where
         V: VectorTrait + Componentable,
-        V::M: Componentable
+        V::M: Componentable,
     {
         let mut debug_text = "".to_string();
 
         let player = world.read_resource::<Player>();
         // the let statements for storage here are needed to avoid temporary borrowing
         let maybe_target_storage = world.read_storage::<MaybeTarget<V>>();
-        let maybe_target = maybe_target_storage.get(player.0).expect("player has no target");
-        let maybe_selected_storage= world.read_storage::<MaybeSelected>();
-        let maybe_selected = maybe_selected_storage.get(player.0).expect("player has no selection component");
+        let maybe_target = maybe_target_storage
+            .get(player.0)
+            .expect("player has no target");
+        let maybe_selected_storage = world.read_storage::<MaybeSelected>();
+        let maybe_selected = maybe_selected_storage
+            .get(player.0)
+            .expect("player has no selection component");
 
         let shapes = world.read_component::<Shape<V>>();
         let transforms = world.read_component::<Transform<V, V::M>>();
@@ -126,45 +130,65 @@ impl UIArgs{
             for face in shape.faces.iter() {
                 normals.push(face.normal())
             }
-
         }
         let input = world.read_resource::<Input>();
 
         let debug_strings: Vec<String> = vec![
-                format!("Integrated mouse: {:?}\n", input.mouse.integrated_mouse_dpos),
-                format!("Integrated scroll: {:?}\n", input.mouse.integrated_scroll_dpos),
-                match maybe_target {
-                    MaybeTarget(Some(target)) => format!("target: {}, {}, {}\n",target.entity.id(),target.distance,target.point),
-                    MaybeTarget(None) => "No target\n".to_string(),
-                },
-                match maybe_selected {
-                    MaybeSelected(Some(selected)) => {
-                        //let bbox_storage = world.read_storage::<BBox<V>>();
-                        //let selected_bbox = bbox_storage.get(selected.entity).expect("selected entity has no bbox");
-                        let selected_transform = transforms.get(selected.entity).expect("Nope");
-                        //let (frame, scaling) = selected_transform.decompose_rotation_scaling();
-                        let (frame, scaling) = (selected_transform.frame, selected_transform.scale);
-                        //let bbox_info = format!("target ({}) bbox: {:?}\n",selected.entity.id(), *selected_bbox);
-                        let frame_info = format!("target frame: {}\n, {}\n{:?}\n",selected.entity.id(), frame, scaling);
+            format!(
+                "Integrated mouse: {:?}\n",
+                input.mouse.integrated_mouse_dpos
+            ),
+            format!(
+                "Integrated scroll: {:?}\n",
+                input.mouse.integrated_scroll_dpos
+            ),
+            match maybe_target {
+                MaybeTarget(Some(target)) => format!(
+                    "target: {}, {}, {}\n",
+                    target.entity.id(),
+                    target.distance,
+                    target.point
+                ),
+                MaybeTarget(None) => "No target\n".to_string(),
+            },
+            match maybe_selected {
+                MaybeSelected(Some(selected)) => {
+                    //let bbox_storage = world.read_storage::<BBox<V>>();
+                    //let selected_bbox = bbox_storage.get(selected.entity).expect("selected entity has no bbox");
+                    let selected_transform = transforms.get(selected.entity).expect("Nope");
+                    //let (frame, scaling) = selected_transform.decompose_rotation_scaling();
+                    let (frame, scaling) = (selected_transform.frame, selected_transform.scale);
+                    //let bbox_info = format!("target ({}) bbox: {:?}\n",selected.entity.id(), *selected_bbox);
+                    let frame_info = format!(
+                        "target frame: {}\n, {}\n{:?}\n",
+                        selected.entity.id(),
+                        frame,
+                        scaling
+                    );
 
-                        let manip_state = world.read_resource::<ShapeManipulationState<V, V::M>>();
-                        let manip_info = match manip_state.mode {
-                            ShapeManipulationMode::Translate(v) => format!("Translate: {}", v),
-                            ShapeManipulationMode::Rotate(a) => format!("Rotate: {:.2}", a),
-                            ShapeManipulationMode::Scale(s) => format!("Scale: {:?}", s),
-                            ShapeManipulationMode::Free(_t) => format!("Free")
-                        };
-                        let axes_info = manip_state.locked_axes.iter().fold("Axes:".to_string(), |s, &i| s + &i.to_string()) + "\n";
-                        let snap_info = format!("Snap: {}\n", manip_state.snap);
-                        format!("{}{}{}{}", snap_info, axes_info, frame_info, manip_info)
-                    },
-                    MaybeSelected(None) => "No selection\n".to_string(),
-                },
+                    let manip_state = world.read_resource::<ShapeManipulationState<V, V::M>>();
+                    let manip_info = match manip_state.mode {
+                        ShapeManipulationMode::Translate(v) => format!("Translate: {}", v),
+                        ShapeManipulationMode::Rotate(a) => format!("Rotate: {:.2}", a),
+                        ShapeManipulationMode::Scale(s) => format!("Scale: {:?}", s),
+                        ShapeManipulationMode::Free(_t) => format!("Free"),
+                    };
+                    let axes_info = manip_state
+                        .locked_axes
+                        .iter()
+                        .fold("Axes:".to_string(), |s, &i| s + &i.to_string())
+                        + "\n";
+                    let snap_info = format!("Snap: {}\n", manip_state.snap);
+                    format!("{}{}{}{}", snap_info, axes_info, frame_info, manip_info)
+                }
+                MaybeSelected(None) => "No selection\n".to_string(),
+            },
             //crate::clipping::ShapeClipState::<V>::in_front_debug(world),
-        ].into_iter()
-            //.chain(all_verts.into_iter().map(|v| format!{"::{}\n", v}))
-            //.chain(normals.into_iter().map(|n| format!("{}\n", n)))
-            .collect();
+        ]
+        .into_iter()
+        //.chain(all_verts.into_iter().map(|v| format!{"::{}\n", v}))
+        //.chain(normals.into_iter().map(|n| format!("{}\n", n)))
+        .collect();
 
         //print draw lines
         //let draw_lines = world.read_resource::<DrawLineList<V::SubV>>();
@@ -176,104 +200,124 @@ impl UIArgs{
 
         //concatenate all strings
         for string in debug_strings.into_iter() {
-            debug_text = format!("{}{}",debug_text,string);
+            debug_text = format!("{}{}", debug_text, string);
         }
 
-        Self::Debug{
-            frame_duration, debug_text
+        Self::Debug {
+            frame_duration,
+            debug_text,
         }
     }
 }
 
-
-fn hello_world(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
-        use imgui::{Window, Condition};
-        ui.window("Debug info")
-            .position([20.0, 20.0], Condition::Appearing)
-            .size([300.0, 110.0], Condition::FirstUseEver)
-            .build(|| {
-                match ui_args {
-                    UIArgs::Test{ref frame_duration, ref elapsed_time, ref mouse_diff, ref mouse_pos} => {
-                        ui.text(format!("FPS: {}",1./frame_duration));
-                        ui.text(format!("elapsed_time (ms): {}",elapsed_time));
-                        ui.text(format!("dmouse: {:?}",mouse_diff));
-                        ui.text(format!("mouse_pos: {:?}",mouse_pos));
-                    }
-                    _ => ()
-                };
-                ui.separator();
-                let mouse_pos = ui.io().mouse_pos;
-                ui.text(format!(
-                    "Mouse Position: ({:.1},{:.1})",
-                    mouse_pos[0], mouse_pos[1]
-                ));
-            });
-        
-    }
-fn simple_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs) {
-        use imgui::{Window,Condition};
-        ui.window("Press M to toggle mouse control")
-            .position([0.,0.], Condition::Appearing)
-            .size([190.0, 110.0], Condition::FirstUseEver)
-            .bg_alpha(0.75)
-            .title_bar(false)
-            .resizable(false)
-            .scroll_bar(false)
-            .menu_bar(false)
-            .build(|| {
-                match ui_args {
-                    UIArgs::Test{ref frame_duration, ref elapsed_time, ref mouse_diff, ref mouse_pos} => {
-                        ui.text(format!("FPS: {0:0}",1./frame_duration));
-                        ui.text(format!("elapsed_time (ms): {}",elapsed_time));
-                        ui.text(format!("dmouse: {:?}",mouse_diff));
-                        ui.text(format!("mouse_pos: {:?}",mouse_pos));
-                    }
-                    UIArgs::Simple{ref frame_duration, ref coins_collected, ref coins_left} => {
-                        let total_coins = coins_left + coins_collected;
-                        let coin_text = format!("Coins: {}/{}",coins_collected,total_coins);
-                        ui.text(format!("FPS: {:0.0}",1./frame_duration));
-                        ui.text(coin_text);
-                        ProgressBar::new(
-                            (*coins_collected as f32)/(total_coins as f32))
+fn hello_world(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
+    use imgui::{Condition, Window};
+    ui.window("Debug info")
+        .position([20.0, 20.0], Condition::Appearing)
+        .size([300.0, 110.0], Condition::FirstUseEver)
+        .build(|| {
+            match ui_args {
+                UIArgs::Test {
+                    ref frame_duration,
+                    ref elapsed_time,
+                    ref mouse_diff,
+                    ref mouse_pos,
+                } => {
+                    ui.text(format!("FPS: {}", 1. / frame_duration));
+                    ui.text(format!("elapsed_time (ms): {}", elapsed_time));
+                    ui.text(format!("dmouse: {:?}", mouse_diff));
+                    ui.text(format!("mouse_pos: {:?}", mouse_pos));
+                }
+                _ => (),
+            };
+            ui.separator();
+            let mouse_pos = ui.io().mouse_pos;
+            ui.text(format!(
+                "Mouse Position: ({:.1},{:.1})",
+                mouse_pos[0], mouse_pos[1]
+            ));
+        });
+}
+fn simple_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
+    use imgui::{Condition, Window};
+    ui.window("Press M to toggle mouse control")
+        .position([0., 0.], Condition::Appearing)
+        .size([190.0, 110.0], Condition::FirstUseEver)
+        .bg_alpha(0.75)
+        .title_bar(false)
+        .resizable(false)
+        .scroll_bar(false)
+        .menu_bar(false)
+        .build(|| {
+            match ui_args {
+                UIArgs::Test {
+                    ref frame_duration,
+                    ref elapsed_time,
+                    ref mouse_diff,
+                    ref mouse_pos,
+                } => {
+                    ui.text(format!("FPS: {0:0}", 1. / frame_duration));
+                    ui.text(format!("elapsed_time (ms): {}", elapsed_time));
+                    ui.text(format!("dmouse: {:?}", mouse_diff));
+                    ui.text(format!("mouse_pos: {:?}", mouse_pos));
+                }
+                UIArgs::Simple {
+                    ref frame_duration,
+                    ref coins_collected,
+                    ref coins_left,
+                } => {
+                    let total_coins = coins_left + coins_collected;
+                    let coin_text = format!("Coins: {}/{}", coins_collected, total_coins);
+                    ui.text(format!("FPS: {:0.0}", 1. / frame_duration));
+                    ui.text(coin_text);
+                    ProgressBar::new((*coins_collected as f32) / (total_coins as f32))
                         //.size([200.0, 20.0])
                         .build(ui);
-                        ui.text("Press M to toggle mouse");
-                        ui.text("Backspace toggles 3D/4D");
-                    }
-                    _ => (),
-                };
-            });
-        
-    }
-fn debug_ui(_ : &mut bool, ui : &mut Ui, ui_args : &mut UIArgs, state: &mut State) {
-        use imgui::{Window,Condition};
-        ui.window("Press M to toggle mouse control")
-            .position([0.,0.], Condition::Appearing)
-            .size([190.0, 500.0], Condition::FirstUseEver)
-            .always_auto_resize(true)
-            .bg_alpha(0.75)
-            .title_bar(false)
-            .resizable(false)
-            .scroll_bar(false)
-            .menu_bar(false)
-            .build(|| {
-                match ui_args {
-                    UIArgs::Debug{ref frame_duration, ref debug_text} => {
-                        ui.text(format!("FPS: {:0.0}",1./frame_duration));
-                        ui.text(debug_text);
-                    }
-                    _ => (),
-                };
-                if ui.radio_button_bool("I toggle my state on click", state.checked) {
-                    state.checked = !state.checked; // flip state on click
-                    state.text = "*** Toggling radio button was clicked".to_string();
+                    ui.text("Press M to toggle mouse");
+                    ui.text("Backspace toggles 3D/4D");
                 }
-            });
-        
-    }
+                _ => (),
+            };
+        });
+}
+fn debug_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs, state: &mut State) {
+    use imgui::{Condition, Window};
+    ui.window("Press M to toggle mouse control")
+        .position([0., 0.], Condition::Appearing)
+        .size([190.0, 500.0], Condition::FirstUseEver)
+        .always_auto_resize(true)
+        .bg_alpha(0.75)
+        .title_bar(false)
+        .resizable(false)
+        .scroll_bar(false)
+        .menu_bar(false)
+        .build(|| {
+            match ui_args {
+                UIArgs::Debug {
+                    ref frame_duration,
+                    ref debug_text,
+                } => {
+                    ui.text(format!("FPS: {:0.0}", 1. / frame_duration));
+                    ui.text(debug_text);
+                }
+                _ => (),
+            };
+            if ui.radio_button_bool("I toggle my state on click", state.checked) {
+                state.checked = !state.checked; // flip state on click
+                state.text = "*** Toggling radio button was clicked".to_string();
+            }
+        });
+}
 
 impl System {
-    pub fn update<E>(&mut self, display : &Display, last_frame : &mut Instant, event : &Event<E>, control_flow : &mut ControlFlow, ui_args : UIArgs) {
+    pub fn update<E>(
+        &mut self,
+        display: &Display,
+        last_frame: &mut Instant,
+        event: &Event<E>,
+        control_flow: &mut ControlFlow,
+        ui_args: UIArgs,
+    ) {
         let imgui = &mut self.imgui;
         let platform = &mut self.platform;
         self.ui_args = ui_args;
@@ -300,7 +344,7 @@ impl System {
             }
         }
     }
-    pub fn draw(&mut self, display : &Display, target : &mut Frame) {
+    pub fn draw(&mut self, display: &Display, target: &mut Frame) {
         let imgui = &mut self.imgui;
         let platform = &mut self.platform;
         let renderer = &mut self.renderer;
@@ -308,10 +352,10 @@ impl System {
         let mut ui = imgui.frame();
         let mut run = true;
         match self.ui_args {
-            UIArgs::Debug {..} => debug_ui(&mut run, &mut ui, &mut self.ui_args, &mut self.state),
-            UIArgs::Simple {..} => simple_ui(&mut run, &mut ui, &mut self.ui_args),
-            UIArgs::Test {..} => hello_world(&mut run, &mut ui, &mut self.ui_args),
-            UIArgs::None => ()
+            UIArgs::Debug { .. } => debug_ui(&mut run, &mut ui, &mut self.ui_args, &mut self.state),
+            UIArgs::Simple { .. } => simple_ui(&mut run, &mut ui, &mut self.ui_args),
+            UIArgs::Test { .. } => hello_world(&mut run, &mut ui, &mut self.ui_args),
+            UIArgs::None => (),
         };
         if !run {
             //*control_flow = ControlFlow::Exit;

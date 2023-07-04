@@ -1,52 +1,46 @@
-use crate::geometry::shape::{VertIndex};
-use super::{Graphics,VertexTrait};
-use crate::vector::{Vec3};
-use glium::{Surface,Display};
-use super::{VERTEX_SHADER_SRC,FRAGMENT_SHADER_SRC,proj_line_vertex::NewVertex};
+use super::{proj_line_vertex::NewVertex, FRAGMENT_SHADER_SRC, VERTEX_SHADER_SRC};
+use super::{Graphics, VertexTrait};
+use crate::geometry::shape::VertIndex;
+use crate::vector::Vec3;
+use glium::{Display, Surface};
 
 type Vertex = NewVertex;
 
 pub struct Graphics3d {
     //display : &'a glium::Display,
-    vertex_buffer : glium::VertexBuffer<Vertex>,
-    index_buffer : glium::IndexBuffer<u16>, //can we change this to VertIndex=usize?
-    program : glium::Program
+    vertex_buffer: glium::VertexBuffer<Vertex>,
+    index_buffer: glium::IndexBuffer<u16>, //can we change this to VertIndex=usize?
+    program: glium::Program,
 }
-
 
 impl Graphics<Vec3> for Graphics3d {
     type VertexType = Vertex;
     //type V = Vec3;
 
-    const VERTEX_SHADER_SRC  : &'static str = VERTEX_SHADER_SRC;
-    const FRAGMENT_SHADER_SRC  : &'static str = FRAGMENT_SHADER_SRC;
+    const VERTEX_SHADER_SRC: &'static str = VERTEX_SHADER_SRC;
+    const FRAGMENT_SHADER_SRC: &'static str = FRAGMENT_SHADER_SRC;
 
     //vertices are invisible at z = 10.0,
     //so they don't get drawn.
     //was originally using these for debugging
-    const NO_DRAW : Self::VertexType = Self::VertexType::NO_DRAW;
+    const NO_DRAW: Self::VertexType = Self::VertexType::NO_DRAW;
 
-    fn new(display : &Display) -> Self {
-        
-        let program = glium::Program::from_source(display,
-            VERTEX_SHADER_SRC,
-            FRAGMENT_SHADER_SRC, None)
-            .unwrap();
-        let vertices : Vec<Self::VertexType> = Vec::new();
-        let indices : Vec<u16> = Vec::new();
+    fn new(display: &Display) -> Self {
+        let program =
+            glium::Program::from_source(display, VERTEX_SHADER_SRC, FRAGMENT_SHADER_SRC, None)
+                .unwrap();
+        let vertices: Vec<Self::VertexType> = Vec::new();
+        let indices: Vec<u16> = Vec::new();
         let vertex_buffer = glium::VertexBuffer::dynamic(display, &vertices).unwrap();
-        let index_buffer = glium::IndexBuffer::dynamic(
-                display,
-                glium::index::PrimitiveType::LinesList
-                ,&indices
-            )
-            .unwrap();
+        let index_buffer =
+            glium::IndexBuffer::dynamic(display, glium::index::PrimitiveType::LinesList, &indices)
+                .unwrap();
 
-        Self{
+        Self {
             //display,
             vertex_buffer,
             index_buffer,
-            program
+            program,
         }
     }
 
@@ -69,23 +63,23 @@ impl Graphics<Vec3> for Graphics3d {
     // fn set_display(&mut self, display : &'a glium::Display) {
     //     self.display = display;
     //}
-    fn set_vertex_buffer(&mut self, vertex_buffer : glium::VertexBuffer<Self::VertexType>) {
+    fn set_vertex_buffer(&mut self, vertex_buffer: glium::VertexBuffer<Self::VertexType>) {
         self.vertex_buffer = vertex_buffer;
     }
-    fn set_index_buffer(&mut self, index_buffer : glium::IndexBuffer<u16>) {
+    fn set_index_buffer(&mut self, index_buffer: glium::IndexBuffer<u16>) {
         self.index_buffer = index_buffer;
     }
-    fn set_program(&mut self, program : glium::Program) {
+    fn set_program(&mut self, program: glium::Program) {
         self.program = program;
     }
 
-    fn new_index_buffer(&mut self, vertis : &Vec<VertIndex>, display : &Display) {
+    fn new_index_buffer(&mut self, vertis: &Vec<VertIndex>, display: &Display) {
         self.index_buffer = glium::IndexBuffer::dynamic(
-                display,
-                glium::index::PrimitiveType::LinesList
-                ,&&Self::vertis_to_gl(&vertis)
-            )
-            .unwrap();
+            display,
+            glium::index::PrimitiveType::LinesList,
+            &&Self::vertis_to_gl(&vertis),
+        )
+        .unwrap();
     }
 
     //make this consume its input?
@@ -101,30 +95,28 @@ impl Graphics<Vec3> for Graphics3d {
     //         }
     //         None => Self::NO_DRAW
     //     }
-        
+
     // }
 
-    fn build_perspective_mat<S>(target : &S) -> [[f32 ; 4] ; 4]
-    where S : Surface
+    fn build_perspective_mat<S>(target: &S) -> [[f32; 4]; 4]
+    where
+        S: Surface,
     {
         let (width, height) = target.get_dimensions();
         let aspect_ratio = height as f32 / width as f32;
         //let fov: f32 = 3.141592 / 3.0; //nearly fish eye
         //let fov : f32 = 3.141592 / 8.0;
-        let fov : f32 = 3.141592 / 16.0; //comparable to 3d
-        //let zfar = 1024.0;/
+        let fov: f32 = 3.141592 / 16.0; //comparable to 3d
+                                        //let zfar = 1024.0;/
         let zfar = 100.0;
         let znear = 0.1;
 
         let f = 1.0 / (fov / 2.0).tan();
         [
-            [f*aspect_ratio, 0., 0., 0.],
+            [f * aspect_ratio, 0., 0., 0.],
             [0., f, 0., 0.],
-            [0., 0., (zfar+znear)/(zfar-znear), 1.0],
-            [0., 0., 0., 1.032f32]
+            [0., 0., (zfar + znear) / (zfar - znear), 1.0],
+            [0., 0., 0., 1.032f32],
         ]
-
     }
-    
 }
-

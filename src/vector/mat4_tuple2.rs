@@ -1,9 +1,9 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::Vec4;
-use crate::vector::{VectorTrait, MatrixTrait, VecIndex, Field, Vec2, Mat2, Mat3};
-use std::ops::{Add, Sub, Mul, Index};
+use crate::vector::{Field, Mat2, Mat3, MatrixTrait, Vec2, VecIndex, VectorTrait};
 use std::fmt;
+use std::ops::{Add, Index, Mul, Sub};
 use std::slice::Iter;
 
 //column major
@@ -13,15 +13,9 @@ pub struct Mat4(Vec4, Vec4, Vec4, Vec4);
 
 impl Mat4 {
     pub fn from_vecs(v0: Vec4, v1: Vec4, v2: Vec4, v3: Vec4) -> Mat4 {
-        Mat4::from_arr(&[
-            *v0.get_arr(),
-            *v1.get_arr(),
-            *v2.get_arr(),
-            *v3.get_arr(),
-        ])
+        Mat4::from_arr(&[*v0.get_arr(), *v1.get_arr(), *v2.get_arr(), *v3.get_arr()])
     }
-    pub fn from_arr(arr: &[[Field; 4]; 4]) -> Mat4
-    {
+    pub fn from_arr(arr: &[[Field; 4]; 4]) -> Mat4 {
         Mat4(
             Vec4::from_arr(&arr[0]),
             Vec4::from_arr(&arr[1]),
@@ -77,7 +71,7 @@ impl Index<VecIndex> for Mat4 {
             1 | -3 => &self.1,
             2 | -2 => &self.2,
             3 | -1 => &self.3,
-            _ => panic!("Invalid index {} for Mat4", i)
+            _ => panic!("Invalid index {} for Mat4", i),
         }
     }
 }
@@ -100,7 +94,7 @@ impl MatrixTrait<Vec4> for Mat4 {
             *self[0].map(f).get_arr(),
             *self[1].map(f).get_arr(),
             *self[2].map(f).get_arr(),
-            *self[3].map(f).get_arr()
+            *self[3].map(f).get_arr(),
         ])
     }
     fn zip_map_els<F: Fn(Field, Field) -> Field + Copy>(self, rhs: Self, f: F) -> Self {
@@ -116,30 +110,23 @@ impl MatrixTrait<Vec4> for Mat4 {
     //   Vec4::new((self[0])[1],(self[1])[1]))
     // }
     fn outer(v1: Vec4, v2: Vec4) -> Mat4 {
-        Mat4::from_vecs(
-            v2 * v1[0],
-            v2 * v1[1],
-            v2 * v1[2],
-            v2 * v1[3],
-        )
+        Mat4::from_vecs(v2 * v1[0], v2 * v1[1], v2 * v1[2], v2 * v1[3])
     }
     fn id() -> Mat4 {
         Mat4::from_arr(&[
             [1., 0., 0., 0.],
             [0., 1., 0., 0.],
             [0., 0., 1., 0.],
-            [0., 0., 0., 1.]
+            [0., 0., 0., 1.],
         ])
     }
     fn diag(v: Vec4) -> Mat4 {
-        Mat4::from_arr(
-            &[
-                [v[0], 0., 0., 0.],
-                [0., v[1], 0., 0.],
-                [0., 0., v[2], 0.],
-                [0., 0., 0., v[3]]
-            ]
-        )
+        Mat4::from_arr(&[
+            [v[0], 0., 0., 0.],
+            [0., v[1], 0., 0.],
+            [0., 0., v[2], 0.],
+            [0., 0., 0., v[3]],
+        ])
     }
     fn dot(self, rhs: Mat4) -> Mat4 {
         let mut arr: Self::Arr = [[0.0; 4]; 4];
@@ -157,21 +144,22 @@ impl MatrixTrait<Vec4> for Mat4 {
     }
     fn transpose(&self) -> Mat4 {
         let a = self.get_arr();
-        Mat4::from_arr(
-            &[
-                [a[0][0], a[1][0], a[2][0], a[3][0]],
-                [a[0][1], a[1][1], a[2][1], a[3][1]],
-                [a[0][2], a[1][2], a[2][2], a[3][2]],
-                [a[0][3], a[1][3], a[2][3], a[3][3]]
-            ]
-        )
+        Mat4::from_arr(&[
+            [a[0][0], a[1][0], a[2][0], a[3][0]],
+            [a[0][1], a[1][1], a[2][1], a[3][1]],
+            [a[0][2], a[1][2], a[2][2], a[3][2]],
+            [a[0][3], a[1][3], a[2][3], a[3][3]],
+        ])
     }
 }
 
 impl fmt::Display for Mat4 {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} \n {} \n {} \n {}",
-               self[0], self[1], self[2], self[3])
+        write!(
+            f,
+            "{} \n {} \n {} \n {}",
+            self[0], self[1], self[2], self[3]
+        )
     }
 }
