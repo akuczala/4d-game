@@ -212,7 +212,7 @@ where
     // }
     //build_test_level::<V>(world, &mut ref_shapes);
     //build_test_face(world);
-    //build_empty_level::<V>(world);
+    build_empty_level::<V>(world);
     init_player(world, V::zero());
     world.insert(ref_shapes);
 }

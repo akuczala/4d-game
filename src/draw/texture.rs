@@ -210,9 +210,18 @@ impl TextureMapping {
 		let frame_verts : Vec<V> = self.frame_vertis.iter().map(|&vi| shape.verts[vi] - origin).collect();
 		//this is pretty ridiculous. it just matrix multiplies a matrix of frame_verts (as columns) by each vertex
 		//in every line, then adds the origin.
-		lines.iter().map(|line|
-			line.map(|v| (0..V::SubV::DIM).zip(frame_verts.iter()).map(|(i,&f)| f*v[i]).fold(V::zero(),|a,b| a + b) + origin)
-			).map(|line| Some(DrawLine{line,color})).collect()
+		//TODO: a lot of time is spent doing this calculation
+		lines.iter().map(
+			|line| line.map(
+				|v| (0..V::SubV::DIM).zip(frame_verts.iter()).map(
+					|(i,&f)| f*v[i]
+				).fold(
+					V::zero(),|a,b| a + b
+				) + origin
+			)
+		).map(
+			|line| Some(DrawLine{line,color})
+		).collect() 
 	}
 	pub fn draw_drawlines<V : VectorTrait>(&self, _draw_lines : &Vec<DrawLine<V::SubV>>) -> Vec<Option<DrawLine<V>>> {
 		unimplemented!()

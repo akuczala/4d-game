@@ -33,6 +33,9 @@ where
 //enter each statically colliding entity into every cell containing its bbox volume (either 1, 2, 4 ... up to 2^d cells)
 //assuming that cells are large enough that all bboxes can fit in a cell
 //for static objects, it is cheap to hash the volume since we need only do it once
+//note that at present, we are rehashing ALL mutably accessed bboxes every step
+// this occurs a) every time the player moves, and b) every time a shape is transformed
+// so this is particularly inefficient for fixed pos spinning coins, which really don't need their hash updated
 pub struct BBoxHashingSystem<V>(pub ModSystem<V>);
 
 impl<'a,V : VectorTrait + Componentable> System<'a> for BBoxHashingSystem<V> {
@@ -69,9 +72,9 @@ where
 	V::M: Componentable
 {
 	type SystemData = (
-		ReadExpect<'a,Player>,
-		WriteStorage<'a,BBox<V>>,
-		ReadStorage<'a,Transform<V, V::M>>
+		ReadExpect<'a, Player>,
+		WriteStorage<'a, BBox<V>>,
+		ReadStorage<'a, Transform<V, V::M>>
 	);
 
 	fn run(&mut self, (player, mut write_bbox, transform) : Self::SystemData) {
