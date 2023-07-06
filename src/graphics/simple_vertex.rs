@@ -1,5 +1,6 @@
 use super::{DrawLine, DrawVertex, VectorTrait, VertexTrait};
 
+// This, for some time now, cannot be used in place of NewVertex
 #[derive(Copy, Clone)]
 pub struct SimpleVertex {
     pub position: [f32; 3],

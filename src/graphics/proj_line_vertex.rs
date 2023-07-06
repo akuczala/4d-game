@@ -78,18 +78,19 @@ impl VertexTrait for NewVertex {
                 //         previous : proj_verts[0],
                 //     })
                 // }
-                let mut out = vec![];
+                //let mut out = vec![];
                 //draw two triangles to make a line
-                for &(i, d) in [(0, -1), (0, 1), (1, -1), (1, -1), (1, 1), (0, 1)].iter() {
-                    out.push(Self {
+                // if we really need to, we can have this return a fixed len array
+                [(0, -1), (0, 1), (1, -1), (1, -1), (1, 1), (0, 1)]
+                    .map(|(i, d)| Self {
                         position: proj_verts[i],
                         direction: d as f32,
                         color: *draw_verts[i].color.get_arr(),
                         next: proj_verts[1],
                         previous: proj_verts[0],
-                    });
-                }
-                out
+                    })
+                    .into_iter()
+                    .collect()
             }
             None => (0..6).map(|_| Self::NO_DRAW).collect(),
         }
