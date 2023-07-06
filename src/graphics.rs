@@ -151,6 +151,25 @@ fn build_view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -
     ]
 }
 
+pub fn update_buffer<X: VertexTrait, V: VectorTrait>(
+    graphics: &mut Graphics<X>,
+    draw_lines: &[Option<DrawLine<V>>],
+    display: &Display,
+) {
+    //make new buffer if
+    // a. the number of lines increases (need more room in the buffer)
+    // b. the number of lines drastically decreases (to not waste memory)
+    let cur_lines_len = graphics.vertex_buffer.len();
+    let draw_lines_len = draw_lines.len();
+    if (draw_lines_len > cur_lines_len) | (draw_lines_len < cur_lines_len / 2) {
+        graphics.vertex_buffer = new_vertex_buffer_from_lines(draw_lines, display);
+        // println!(
+        //     "New buffer! {} to {}",
+        //     self.cur_lines_length, draw_lines_len
+        // );
+    }
+}
+
 pub fn draw_lines<X: VertexTrait, V: VectorTrait>(
     graphics: &mut Graphics<X>,
     draw_lines: &[Option<DrawLine<V>>],

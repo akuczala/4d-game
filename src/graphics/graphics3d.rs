@@ -2,7 +2,6 @@ use std::f32::consts::PI;
 
 use super::{proj_line_vertex::NewVertex, FRAGMENT_SHADER_SRC, VERTEX_SHADER_SRC};
 use crate::geometry::shape::VertIndex;
-use crate::vector::Vec3;
 use glium::{Display, Surface};
 
 pub fn build_perspective_mat_3d<S>(target: &S) -> [[f32; 4]; 4]

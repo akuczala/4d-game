@@ -8,6 +8,7 @@ use crate::ecs_utils::Componentable;
 use crate::graphics;
 use crate::graphics::new_vertex_buffer_from_lines;
 use crate::graphics::proj_line_vertex::NewVertex;
+use crate::graphics::update_buffer;
 use crate::graphics::Graphics;
 use crate::graphics::VertexTrait;
 use crate::input::ShapeManipulationState;
@@ -39,7 +40,6 @@ use crate::vector::{Vec3, Vec4, VecIndex, VectorTrait};
 // TODO: reduce number of explicit constraints needed by introducing a componentable-constrained trait?
 pub struct EngineD<V, X: Copy> {
     pub world: World,
-    pub cur_lines_length: usize,
     graphics: Graphics<X>,
     gui: Option<crate::gui::System>,
     dispatcher: Dispatcher<'static, 'static>,
@@ -87,7 +87,7 @@ where
             )
         });
         //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
-        let cur_lines_length = draw_lines.len();
+        //let cur_lines_length = draw_lines.len();
         let face_scales: Vec<crate::vector::Field> = vec![FACE_SCALE];
 
         world.insert(clip_state); // decompose into single entity properties
@@ -98,7 +98,6 @@ where
         EngineD {
             world,
             dispatcher,
-            cur_lines_length,
             graphics,
             gui: maybe_gui,
             dummy: PhantomData,
@@ -230,23 +229,10 @@ where
             }
         }
     }
-
     fn draw(&mut self, display: &Display) {
         let draw_lines_data: ReadExpect<draw::DrawLineList<V::SubV>> = self.world.system_data();
-        let draw_lines = &(draw_lines_data).0;
-        //make new buffer if
-        // a. the number of lines increases (need more room in the buffer)
-        // b. the number of lines drastically decreases (to not waste memory)
-        let draw_lines_len = draw_lines.len();
-        if (draw_lines_len > self.cur_lines_length) | (draw_lines_len < self.cur_lines_length / 2) {
-            self.graphics.vertex_buffer =
-                graphics::new_vertex_buffer_from_lines(draw_lines, display);
-            // println!(
-            //     "New buffer! {} to {}",
-            //     self.cur_lines_length, draw_lines_len
-            // );
-            self.cur_lines_length = draw_lines_len;
-        }
+        let draw_lines = &draw_lines_data.0;
+        update_buffer(&mut self.graphics, draw_lines, display);
 
         let mut target = display.draw();
         target = graphics::draw_lines(&mut self.graphics, draw_lines, target);

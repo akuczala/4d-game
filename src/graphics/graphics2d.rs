@@ -4,8 +4,6 @@ use super::proj_line_vertex::NewVertex;
 use super::simple_vertex::SimpleVertex;
 use super::{FRAGMENT_SHADER_SRC, VERTEX_SHADER_SRC};
 use crate::geometry::shape::VertIndex;
-use crate::graphics::VertexTrait;
-use crate::vector::Vec2;
 use glium::{Display, Surface};
 
 pub fn build_perspective_mat_2d<S>(target: &S) -> [[f32; 4]; 4]
