@@ -49,6 +49,7 @@ impl VertexTrait for NewVertex {
             None => Self::NO_DRAW,
         }
     }
+    // TODO: a lot of time is spent in this fn
     fn line_to_gl<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Vec<Self> {
         match maybe_line {
             Some(draw_line) => {

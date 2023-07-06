@@ -32,7 +32,7 @@ use crate::geometry::shape::RefShapes;
 use crate::graphics::{Graphics, Graphics2d, Graphics3d};
 use crate::vector::{Vec3, Vec4, VecIndex, VectorTrait};
 
-// TODO: reduce number of generics needed by introducing a componentable-constrained trait?
+// TODO: reduce number of explicit constraints needed by introducing a componentable-constrained trait?
 pub struct EngineD<V, G> {
     pub world: World,
     pub cur_lines_length: usize,
@@ -160,7 +160,7 @@ where
         event: &Event<E>,
         fps_timer: &mut FPSTimer,
     ) {
-        let frame_duration = fps_timer.get_frame_length();
+        //let frame_duration = fps_timer.get_frame_length();
 
         //values to be passed to UI
         // ui_args = UIArgs::Test{
@@ -170,7 +170,11 @@ where
         //     mouse_pos : input.helper.mouse(),
 
         // };
-        let ui_args = UIArgs::new_debug::<V>(&self.world, frame_duration);
+
+        //TODO: slow to build this
+        //let ui_args = UIArgs::new_debug::<V>(&self.world, frame_duration);
+
+        let ui_args = UIArgs::None;
         // ui_args = UIArgs::Simple{
         //     frame_duration,
         //     coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
@@ -226,12 +230,18 @@ where
     fn draw(&mut self, display: &Display) {
         let draw_lines_data: ReadExpect<draw::DrawLineList<V::SubV>> = self.world.system_data();
         let draw_lines = &(draw_lines_data).0;
-        //make new buffer if the number of lines changes
-        if draw_lines.len() != self.cur_lines_length {
+        //make new buffer if
+        // a. the number of lines increases (need more room in the buffer)
+        // b. the number of lines drastically decreases (to not waste memory)
+        let draw_lines_len = draw_lines.len();
+        if (draw_lines_len > self.cur_lines_length) | (draw_lines_len < self.cur_lines_length / 2) {
             self.graphics
                 .new_vertex_buffer_from_lines(draw_lines, display);
-            //println!("New buffer! {} to {}",draw_lines.len(),cur_lines_length);
-            self.cur_lines_length = draw_lines.len();
+            // println!(
+            //     "New buffer! {} to {}",
+            //     self.cur_lines_length, draw_lines_len
+            // );
+            self.cur_lines_length = draw_lines_len;
         }
 
         let mut target = display.draw();

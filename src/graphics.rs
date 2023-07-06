@@ -80,12 +80,19 @@ pub trait Graphics<V: VectorTrait> {
     fn write_opt_lines_to_buffer(&mut self, opt_lines: &[Option<DrawLine<V>>]) {
         let mut write_map = self.get_vertex_buffer_mut().map_write();
 
+        // TODO: this could be refactored with flat_map etc but i don't know how that impacts performance
+        //we might avoid allocating a vec if we have line_to_gl return an iterator
+        // this is a fn that eats a fair amount of performance (particularly due to vec allocation)
         let mut i = 0;
         for opt_line in opt_lines.iter() {
             for &v in Self::VertexType::line_to_gl(opt_line).iter() {
                 write_map.set(i, v);
                 i += 1;
             }
+        }
+        // Set remaining buffer with NO_DRAW verts to avoid "ghosts" while keeping buffer len unchanged
+        for j in i..write_map.len() {
+            write_map.set(j, Self::NO_DRAW);
         }
     }
 
