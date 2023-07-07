@@ -5,12 +5,8 @@ use specs::saveload; // TODO: revert to private
 use crate::collide;
 use crate::constants::FACE_SCALE;
 use crate::ecs_utils::Componentable;
-use crate::graphics;
-use crate::graphics::new_vertex_buffer_from_lines;
-use crate::graphics::proj_line_vertex::NewVertex;
-use crate::graphics::update_buffer;
-use crate::graphics::Graphics;
-use crate::graphics::VertexTrait;
+use crate::graphics::DefaultGraphics;
+use crate::graphics::GraphicsTrait;
 use crate::input::ShapeManipulationState;
 use crate::saveload::Save;
 use crate::saveload::SaveMarker;
@@ -38,23 +34,23 @@ use crate::geometry::shape::RefShapes;
 use crate::vector::{Vec3, Vec4, VecIndex, VectorTrait};
 
 // TODO: reduce number of explicit constraints needed by introducing a componentable-constrained trait?
-pub struct EngineD<V, X: Copy> {
+pub struct EngineD<V, G> {
     pub world: World,
-    graphics: Graphics<X>,
+    graphics: G,
     gui: Option<crate::gui::System>,
     dispatcher: Dispatcher<'static, 'static>,
     dummy: PhantomData<V>, //Forces EngineD to take V as a parameter
 }
-impl<V, X> EngineD<V, X>
+impl<V, G> EngineD<V, G>
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
-    X: VertexTrait,
+    G: GraphicsTrait,
 {
     pub fn new<F: Fn(&mut World)>(
         build_scene: F,
-        graphics: Graphics<X>,
+        graphics: G,
         maybe_gui: Option<crate::gui::System>,
     ) -> Self {
         let mut world = World::new();
@@ -74,11 +70,8 @@ where
 
         collide::create_spatial_hash::<V>(&mut world);
 
-        //use crate::vector::Rotatable;
-        //camera.rotate(-2,-1,3.14159/2.);
-
         let clip_state = ClipState::<V>::new();
-        let draw_lines = draw::DrawLineList::<V>(vec![]);
+        let draw_lines: DrawLineList<V> = draw::DrawLineList::<V>(vec![]);
         let proj_lines = draw_lines.map(|l| {
             draw::transform_draw_line(
                 l,
@@ -86,8 +79,6 @@ where
                 &Camera::new(&Transform::identity()), // <-- dummy camera
             )
         });
-        //draw_lines.append(&mut crate::draw::draw_wireframe(&test_cube,GREEN));
-        //let cur_lines_length = draw_lines.len();
         let face_scales: Vec<crate::vector::Field> = vec![FACE_SCALE];
 
         world.insert(clip_state); // decompose into single entity properties
@@ -230,12 +221,14 @@ where
         }
     }
     fn draw(&mut self, display: &Display) {
+        // TODO: ideally all this stuff is invisible to engine - it should be enough to pass lines
+        // and gui args to graphics for drawing
         let draw_lines_data: ReadExpect<draw::DrawLineList<V::SubV>> = self.world.system_data();
         let draw_lines = &draw_lines_data.0;
-        update_buffer(&mut self.graphics, draw_lines, display);
+        self.graphics.update_buffer(draw_lines, display);
 
         let mut target = display.draw();
-        target = graphics::draw_lines(&mut self.graphics, draw_lines, target);
+        target = self.graphics.draw_lines(draw_lines, target);
         //draw gui
         if let Some(ref mut gui) = &mut self.gui {
             gui.draw(display, &mut target);
@@ -244,20 +237,16 @@ where
     }
 }
 
-impl<V, X> EngineD<V, X>
+impl<V, G> EngineD<V, G>
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
-    X: VertexTrait,
+    G: GraphicsTrait,
 {
     fn init(display: &Display, gui: Option<crate::gui::System>) -> Self {
         println!("Starting {}d engine", V::DIM);
-        //let game = Game::new(game::build_shapes_3d());
-        let mut graphics = Graphics::<X>::new(display);
-        graphics.vertex_buffer = new_vertex_buffer_from_lines::<X, V::SubV>(&[], display);
-
-        Self::new(crate::build_level::build_scene::<V>, graphics, gui)
+        Self::new(crate::build_level::build_scene::<V>, G::init(display), gui)
     }
 }
 
@@ -265,18 +254,20 @@ where
 //could probably use a macro here
 //there must be a nicer way
 pub enum Engine {
-    Three(EngineD<Vec3, NewVertex>),
-    Four(EngineD<Vec4, NewVertex>),
+    Three(EngineD<Vec3, DefaultGraphics>),
+    Four(EngineD<Vec4, DefaultGraphics>),
 }
 impl Engine {
     pub fn init(dim: VecIndex, display: &Display) -> Engine {
         let gui = Some(crate::gui::init("test", display));
         //let gui = None;
         match dim {
-            3 => Ok(Engine::Three(EngineD::<Vec3, NewVertex>::init(
+            3 => Ok(Engine::Three(EngineD::<Vec3, DefaultGraphics>::init(
                 display, gui,
             ))),
-            4 => Ok(Engine::Four(EngineD::<Vec4, NewVertex>::init(display, gui))),
+            4 => Ok(Engine::Four(EngineD::<Vec4, DefaultGraphics>::init(
+                display, gui,
+            ))),
             _ => Err("Invalid dimension for game engine"),
         }
         .unwrap()
@@ -288,8 +279,12 @@ impl Engine {
             Engine::Three(engined) => std::mem::swap(&mut gui, &mut engined.gui),
         }
         match self {
-            Engine::Four(_engined) => Engine::Three(EngineD::<Vec3, NewVertex>::init(display, gui)),
-            Engine::Three(_engined) => Engine::Four(EngineD::<Vec4, NewVertex>::init(display, gui)),
+            Engine::Four(_engined) => {
+                Engine::Three(EngineD::<Vec3, DefaultGraphics>::init(display, gui))
+            }
+            Engine::Three(_engined) => {
+                Engine::Four(EngineD::<Vec4, DefaultGraphics>::init(display, gui))
+            }
         }
     }
     pub fn update<E>(

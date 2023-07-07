@@ -117,6 +117,7 @@ where
     })
 }
 
+#[derive(Default)]
 pub struct DrawLineList<V>(pub Vec<Option<DrawLine<V>>>);
 impl<V: VectorTrait> DrawLineList<V> {
     pub fn len(&self) -> usize {

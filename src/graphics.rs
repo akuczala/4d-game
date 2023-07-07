@@ -13,11 +13,12 @@ use crate::vector::VectorTrait;
 
 use self::graphics2d::build_perspective_mat_2d;
 use self::graphics3d::build_perspective_mat_3d;
+use self::proj_line_vertex::NewVertex;
 
 pub mod colors;
-pub mod graphics2d;
-pub mod graphics3d;
-pub mod proj_line_vertex;
+mod graphics2d;
+mod graphics3d;
+mod proj_line_vertex;
 mod simple_vertex;
 
 //pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/test-shader.vert");
@@ -30,6 +31,22 @@ pub trait VertexTrait: Vertex {
     fn line_to_gl<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Vec<Self>;
 }
 
+pub trait GraphicsTrait {
+    type Vertex: VertexTrait;
+    fn init(display: &Display) -> Self;
+    fn draw_lines<V: VectorTrait>(
+        &mut self,
+        draw_lines: &[Option<DrawLine<V>>],
+        target: glium::Frame,
+    ) -> glium::Frame;
+    fn update_buffer<V: VectorTrait>(
+        &mut self,
+        draw_lines: &[Option<DrawLine<V>>],
+        display: &Display,
+    );
+}
+
+pub type DefaultGraphics = Graphics<NewVertex>;
 pub struct Graphics<X: Copy> {
     pub vertex_buffer: glium::VertexBuffer<X>,
     pub index_buffer: glium::IndexBuffer<u16>, //can we change this to VertIndex=usize?
@@ -151,84 +168,93 @@ fn build_view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -
     ]
 }
 
-pub fn update_buffer<X: VertexTrait, V: VectorTrait>(
-    graphics: &mut Graphics<X>,
-    draw_lines: &[Option<DrawLine<V>>],
-    display: &Display,
-) {
-    //make new buffer if
-    // a. the number of lines increases (need more room in the buffer)
-    // b. the number of lines drastically decreases (to not waste memory)
-    let cur_lines_len = graphics.vertex_buffer.len();
-    let draw_lines_len = draw_lines.len();
-    if (draw_lines_len > cur_lines_len) | (draw_lines_len < cur_lines_len / 2) {
-        graphics.vertex_buffer = new_vertex_buffer_from_lines(draw_lines, display);
-        // println!(
-        //     "New buffer! {} to {}",
-        //     self.cur_lines_length, draw_lines_len
-        // );
+impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
+    type Vertex = X;
+
+    fn init(display: &Display) -> Self {
+        Self::new(display)
+        //graphics.vertex_buffer = new_vertex_buffer_from_lines::<X, V::SubV>(&[], display);
     }
-}
 
-pub fn draw_lines<X: VertexTrait, V: VectorTrait>(
-    graphics: &mut Graphics<X>,
-    draw_lines: &[Option<DrawLine<V>>],
-    mut target: glium::Frame,
-) -> glium::Frame {
-    //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
-    write_opt_lines_to_buffer(&mut graphics.vertex_buffer, draw_lines); //slightly faster than the above (less allocation)
+    fn update_buffer<V: VectorTrait>(
+        &mut self,
+        draw_lines: &[Option<DrawLine<V>>],
+        display: &Display,
+    ) {
+        //make new buffer if
+        // a. the number of lines increases (need more room in the buffer)
+        // b. the number of lines drastically decreases (to not waste memory)
+        let cur_lines_len = self.vertex_buffer.len();
+        let draw_lines_len = draw_lines.len();
+        if (draw_lines_len > cur_lines_len) | (draw_lines_len < cur_lines_len / 2) {
+            self.vertex_buffer = new_vertex_buffer_from_lines(draw_lines, display);
+            // println!(
+            //     "New buffer! {} to {}",
+            //     self.cur_lines_length, draw_lines_len
+            // );
+        }
+    }
 
-    let draw_params = glium::DrawParameters {
-        smooth: Some(glium::draw_parameters::Smooth::Nicest),
-        blend: glium::Blend::alpha_blending(), //lines are a lot darker
-        ..Default::default()
-    };
-    //let mut target = display.draw();
-    let (width, height) = target.get_dimensions();
-    let view_matrix = match V::DIM {
-        2 => [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0f32],
-        ],
-        3 => build_view_matrix(&[2.0, 2.0, -4.0], &[-1.0, -1.0, 2.0], &[0.0, 1.0, 0.0]),
-        _ => panic!("Invalid dimension"),
-    };
-    let uniforms = uniform! {
-        perspective : match V::DIM {
-            2 => build_perspective_mat_2d(&target),
-            3 => build_perspective_mat_3d(&target),
-            _ => panic!("Invalid dimension")
-        },
-        view : view_matrix,
-        model: [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [ 0.0, 0.0, 0.0 , 1.0f32],
-        ],
-        aspect : (width as f32)/(height as f32),
-        thickness : match V::DIM {
-            2 =>LINE_THICKNESS_3D, 3 => LINE_THICKNESS_4D,
-            _ => panic!("Invalid dimension")},
-        miter : 1,
-    };
-    target.clear_color(
-        BACKGROUND_COLOR[0],
-        BACKGROUND_COLOR[1],
-        BACKGROUND_COLOR[2],
-        BACKGROUND_COLOR[3],
-    );
-    target
-        .draw(
-            &graphics.vertex_buffer,
-            glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-            &graphics.program,
-            &uniforms,
-            &draw_params,
-        )
-        .unwrap();
+    fn draw_lines<V: VectorTrait>(
+        &mut self,
+        draw_lines: &[Option<DrawLine<V>>],
+        mut target: glium::Frame,
+    ) -> glium::Frame {
+        //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
+        write_opt_lines_to_buffer(&mut self.vertex_buffer, draw_lines); //slightly faster than the above (less allocation)
 
-    target
+        let draw_params = glium::DrawParameters {
+            smooth: Some(glium::draw_parameters::Smooth::Nicest),
+            blend: glium::Blend::alpha_blending(), //lines are a lot darker
+            ..Default::default()
+        };
+        //let mut target = display.draw();
+        let (width, height) = target.get_dimensions();
+        let view_matrix = match V::DIM {
+            2 => [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0f32],
+            ],
+            3 => build_view_matrix(&[2.0, 2.0, -4.0], &[-1.0, -1.0, 2.0], &[0.0, 1.0, 0.0]),
+            _ => panic!("Invalid dimension"),
+        };
+        let uniforms = uniform! {
+            perspective : match V::DIM {
+                2 => build_perspective_mat_2d(&target),
+                3 => build_perspective_mat_3d(&target),
+                _ => panic!("Invalid dimension")
+            },
+            view : view_matrix,
+            model: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [ 0.0, 0.0, 0.0 , 1.0f32],
+            ],
+            aspect : (width as f32)/(height as f32),
+            thickness : match V::DIM {
+                2 =>LINE_THICKNESS_3D, 3 => LINE_THICKNESS_4D,
+                _ => panic!("Invalid dimension")},
+            miter : 1,
+        };
+        target.clear_color(
+            BACKGROUND_COLOR[0],
+            BACKGROUND_COLOR[1],
+            BACKGROUND_COLOR[2],
+            BACKGROUND_COLOR[3],
+        );
+        target
+            .draw(
+                &self.vertex_buffer,
+                glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+                &self.program,
+                &uniforms,
+                &draw_params,
+            )
+            .unwrap();
+
+        target
+    }
 }
