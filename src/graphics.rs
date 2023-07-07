@@ -1,3 +1,4 @@
+use glium::buffer::WriteMapping;
 use glium::vertex::Vertex;
 use glium::Display;
 use glium::IndexBuffer;
@@ -14,6 +15,7 @@ use crate::vector::VectorTrait;
 use self::graphics2d::build_perspective_mat_2d;
 use self::graphics3d::build_perspective_mat_3d;
 use self::proj_line_vertex::NewVertex;
+use self::simple_vertex::SimpleVertex;
 
 pub mod colors;
 mod graphics2d;
@@ -21,19 +23,25 @@ mod graphics3d;
 mod proj_line_vertex;
 mod simple_vertex;
 
-//pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/test-shader.vert");
+//pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/simple-shader.vert");
 pub const VERTEX_SHADER_SRC: &str = include_str!("graphics/test-shader.vert");
 pub const FRAGMENT_SHADER_SRC: &str = include_str!("graphics/simple-shader.frag");
 
 pub trait VertexTrait: Vertex {
     const NO_DRAW: Self;
+    type Iter: Iterator<Item = Self>;
     fn vert_to_gl<V: VectorTrait>(vert: &Option<DrawVertex<V>>) -> Self;
     fn line_to_gl<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Vec<Self>;
+    fn line_to_gl_iter<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Self::Iter;
+    // fn write_line<V: VectorTrait>(write_mapping: &mut WriteMapping<[Self]>, maybe_line: &Option<DrawLine<V>>) {
+    //     Self::line_to_gl(maybe_line)
+    // }
 }
 
 pub trait GraphicsTrait {
     type Vertex: VertexTrait;
     fn init(display: &Display) -> Self;
+    //fn draw<V: VectorTrait>(display: &Display, draw_lines: &[Option<DrawLine<V>>]);
     fn draw_lines<V: VectorTrait>(
         &mut self,
         draw_lines: &[Option<DrawLine<V>>],
@@ -110,14 +118,20 @@ fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
     vertex_buffer: &mut VertexBuffer<X>,
     opt_lines: &[Option<DrawLine<V>>],
 ) {
+    //let buffer_len = vertex_buffer.len();
     let mut write_map = vertex_buffer.map_write();
+    // vertex_buffer.write(
+    //     &opt_lines.iter().flat_map(
+    //         |opt_line| X::line_to_gl(opt_line).iter()
+    //     ).collect()
+    // )
 
     // TODO: this could be refactored with flat_map etc but i don't know how that impacts performance
     //we might avoid allocating a vec if we have line_to_gl return an iterator
     // this is a fn that eats a fair amount of performance (particularly due to vec allocation)
     let mut i = 0;
     for opt_line in opt_lines.iter() {
-        for &v in X::line_to_gl(opt_line).iter() {
+        for v in X::line_to_gl_iter(opt_line) {
             write_map.set(i, v);
             i += 1;
         }

@@ -1,3 +1,5 @@
+use std::array::IntoIter;
+
 use super::{DrawLine, DrawVertex, VectorTrait, VertexTrait};
 
 // This, for some time now, cannot be used in place of NewVertex
@@ -12,6 +14,8 @@ impl Default for SimpleVertex {
     }
 }
 impl VertexTrait for SimpleVertex {
+    //type Iter = <Vec<Self> as IntoIterator>::IntoIter;
+    type Iter = IntoIter<Self, 2>;
     //make this consume its input?
     const NO_DRAW: Self = Self {
         position: [0.0, 0.0, 10.0],
@@ -40,5 +44,18 @@ impl VertexTrait for SimpleVertex {
             None => vec![Self::NO_DRAW, Self::NO_DRAW],
         }
     }
+    fn line_to_gl_iter<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Self::Iter
+    {
+        //Self::line_to_gl(maybe_line).into_iter()
+        match maybe_line {
+            Some(draw_line) => draw_line
+                .get_draw_verts()
+                .map(|v| Self::vert_to_gl(&Some(v))),
+            None => [Self::NO_DRAW, Self::NO_DRAW],
+        }.into_iter()
+    }
 }
 implement_vertex!(SimpleVertex, position, color);
+
+
+//struct LineIter

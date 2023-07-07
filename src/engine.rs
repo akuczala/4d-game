@@ -166,9 +166,9 @@ where
         // };
 
         //TODO: slow to build this
-        //let ui_args = UIArgs::new_debug::<V>(&self.world, frame_duration);
+        let ui_args = UIArgs::new_debug::<V>(&self.world, fps_timer.get_frame_length());
 
-        let ui_args = UIArgs::None;
+        //let ui_args = UIArgs::None;
         // ui_args = UIArgs::Simple{
         //     frame_duration,
         //     coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
