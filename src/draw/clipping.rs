@@ -286,6 +286,7 @@ pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> 
 }
 
 // clip line in infinite cylinder
+// TODO: reduce # vec allocations
 pub fn clip_line_tube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>> {
     if V::DIM < 3 {
         return clip_line_cube(line, r); // this isn't quite right but whatevs
@@ -439,6 +440,7 @@ pub fn clip_line<V: VectorTrait>(line: Line<V>, boundaries: &Vec<Plane<V>>) -> R
 }
 
 //consider using parallel joins here
+// TODO: reduce vec pushing + allocation (~10% of runtime)
 pub fn clip_draw_lines<'a, V: VectorTrait + 'a, I>(
     lines: Vec<Option<DrawLine<V>>>,
     clip_states_in_front: I,

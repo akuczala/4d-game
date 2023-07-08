@@ -136,6 +136,7 @@ where
                 _ => (),
             };
         }
+        // TODO: how often do we really need to update the ui?
         self.update_ui(display, control_flow, event, fps_timer);
         //game update and draw
         match event {
@@ -166,13 +167,13 @@ where
         // };
 
         //TODO: slow to build this
-        let ui_args = UIArgs::new_debug::<V>(&self.world, fps_timer.get_frame_length());
+        //let ui_args = UIArgs::new_debug::<V>(&self.world, fps_timer.get_frame_length());
 
-        //let ui_args = UIArgs::None;
-        // ui_args = UIArgs::Simple{
-        //     frame_duration,
-        //     coins_collected : self.world.read_resource::<crate::coin::CoinsCollected>().0,
-        //     coins_left : self.world.read_storage::<crate::coin::Coin>().count() as u32,
+        let ui_args = UIArgs::None;
+        // let ui_args = UIArgs::Simple {
+        //     frame_duration: fps_timer.get_frame_length(),
+        //     coins_collected: self.world.read_resource::<crate::coin::CoinsCollected>().0,
+        //     coins_left: self.world.read_storage::<crate::coin::Coin>().count() as u32,
         // };
         //gui update (all events)
         if let Some(ref mut gui) = &mut self.gui {

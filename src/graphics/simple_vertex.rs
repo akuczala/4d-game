@@ -44,18 +44,17 @@ impl VertexTrait for SimpleVertex {
             None => vec![Self::NO_DRAW, Self::NO_DRAW],
         }
     }
-    fn line_to_gl_iter<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Self::Iter
-    {
+    fn line_to_gl_iter<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Self::Iter {
         //Self::line_to_gl(maybe_line).into_iter()
         match maybe_line {
             Some(draw_line) => draw_line
                 .get_draw_verts()
                 .map(|v| Self::vert_to_gl(&Some(v))),
             None => [Self::NO_DRAW, Self::NO_DRAW],
-        }.into_iter()
+        }
+        .into_iter()
     }
 }
 implement_vertex!(SimpleVertex, position, color);
-
 
 //struct LineIter

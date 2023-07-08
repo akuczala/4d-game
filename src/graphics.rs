@@ -59,6 +59,7 @@ pub struct Graphics<X: Copy> {
     pub vertex_buffer: glium::VertexBuffer<X>,
     pub index_buffer: glium::IndexBuffer<u16>, //can we change this to VertIndex=usize?
     pub program: glium::Program,
+    cur_lines_len: usize, // we store buffer size here because apparently calling vertex_buffer.len() is expensive
 }
 impl<X: Vertex> Graphics<X> {
     pub fn new(display: &glium::Display) -> Self {
@@ -76,6 +77,7 @@ impl<X: Vertex> Graphics<X> {
             vertex_buffer,
             index_buffer,
             program,
+            cur_lines_len: 0,
         }
     }
 }
@@ -116,6 +118,7 @@ pub fn new_vertex_buffer_from_lines<X: VertexTrait, V: VectorTrait>(
 
 fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
     vertex_buffer: &mut VertexBuffer<X>,
+    buffer_len: usize,
     opt_lines: &[Option<DrawLine<V>>],
 ) {
     //let buffer_len = vertex_buffer.len();
@@ -127,8 +130,7 @@ fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
     // )
 
     // TODO: this could be refactored with flat_map etc but i don't know how that impacts performance
-    //we might avoid allocating a vec if we have line_to_gl return an iterator
-    // this is a fn that eats a fair amount of performance (particularly due to vec allocation)
+
     let mut i = 0;
     for opt_line in opt_lines.iter() {
         for v in X::line_to_gl_iter(opt_line) {
@@ -137,7 +139,8 @@ fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
         }
     }
     // Set remaining buffer with NO_DRAW verts to avoid "ghosts" while keeping buffer len unchanged
-    for j in i..write_map.len() {
+    // if I use buffer_len instead of write_map.len() here i get ghosts again. why?
+    for j in i..buffer_len {
         write_map.set(j, X::NO_DRAW);
     }
 }
@@ -198,10 +201,11 @@ impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
         //make new buffer if
         // a. the number of lines increases (need more room in the buffer)
         // b. the number of lines drastically decreases (to not waste memory)
-        let cur_lines_len = self.vertex_buffer.len();
+        let cur_lines_len = self.cur_lines_len;
         let draw_lines_len = draw_lines.len();
         if (draw_lines_len > cur_lines_len) | (draw_lines_len < cur_lines_len / 2) {
             self.vertex_buffer = new_vertex_buffer_from_lines(draw_lines, display);
+            self.cur_lines_len = draw_lines_len;
             // println!(
             //     "New buffer! {} to {}",
             //     self.cur_lines_length, draw_lines_len
@@ -215,7 +219,11 @@ impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
         mut target: glium::Frame,
     ) -> glium::Frame {
         //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
-        write_opt_lines_to_buffer(&mut self.vertex_buffer, draw_lines); //slightly faster than the above (less allocation)
+        write_opt_lines_to_buffer(
+            &mut self.vertex_buffer,
+            self.cur_lines_len * 6, // NewVertex happens to produce 6 verts per line. make this a assoc const?
+            draw_lines,
+        ); //slightly faster than the above (less allocation)
 
         let draw_params = glium::DrawParameters {
             smooth: Some(glium::draw_parameters::Smooth::Nicest),
