@@ -4,42 +4,43 @@ use glium::Display;
 use glium::IndexBuffer;
 use glium::Surface;
 use glium::VertexBuffer;
+use specs::Write;
 
 use crate::constants::BACKGROUND_COLOR;
-use crate::constants::LINE_THICKNESS_3D;
-use crate::constants::LINE_THICKNESS_4D;
 use crate::draw::{DrawLine, DrawVertex};
 use crate::geometry::shape::VertIndex;
+use crate::vector::VecIndex;
 use crate::vector::VectorTrait;
 
-use self::graphics2d::build_perspective_mat_2d;
-use self::graphics3d::build_perspective_mat_3d;
-use self::proj_line_vertex::NewVertex;
+use self::matrices::build_perspective_matrix;
+use self::matrices::build_view_matrix;
+use self::matrices::IDENTITY_MATRIX;
+use self::proj_line_vertex::ProjLineVertex;
 use self::simple_vertex::SimpleVertex;
 
 pub mod colors;
-mod graphics2d;
-mod graphics3d;
+mod matrices;
 mod proj_line_vertex;
 mod simple_vertex;
 
-//pub const VERTEX_SHADER_SRC : &str = include_str!("graphics/simple-shader.vert");
-pub const VERTEX_SHADER_SRC: &str = include_str!("graphics/test-shader.vert");
-pub const FRAGMENT_SHADER_SRC: &str = include_str!("graphics/simple-shader.frag");
+const FRAGMENT_SHADER_SRC: &str = include_str!("graphics/simple-shader.frag");
 
 pub trait VertexTrait: Vertex {
     const NO_DRAW: Self;
+    const LINE_BUFFER_SIZE: usize;
+    const PRIMITIVE_TYPE: glium::index::PrimitiveType;
+    const VERTEX_SHADER_SRC: &'static str;
     type Iter: Iterator<Item = Self>;
     fn vert_to_gl<V: VectorTrait>(vert: &DrawVertex<V>) -> Self;
-    fn line_to_gl<V: VectorTrait>(maybe_line: &DrawLine<V>) -> Vec<Self>;
-    fn line_to_gl_iter<V: VectorTrait>(maybe_line: &DrawLine<V>) -> Self::Iter;
-    fn line_to_gl_arr<V: VectorTrait>(maybe_line: &DrawLine<V>) -> [Self; 6];
+    fn line_to_gl<V: VectorTrait>(draw_line: &DrawLine<V>) -> Vec<Self>;
+    fn line_to_gl_iter<V: VectorTrait>(draw_line: &DrawLine<V>) -> Self::Iter;
+    fn line_thickness(dim: VecIndex) -> f32;
+    // this may be slightly(?) faster than line_to_gl_iter, but i don't know how to make the arr size generic
+    //fn line_to_gl_arr<V: VectorTrait>(maybe_line: &DrawLine<V>) -> [Self; 6];
 }
 
 pub trait GraphicsTrait {
-    type Vertex: VertexTrait;
     fn init(display: &Display) -> Self;
-    //fn draw<V: VectorTrait>(display: &Display, draw_lines: &[Option<DrawLine<V>>]);
     fn draw_lines<V: VectorTrait>(
         &mut self,
         draw_lines: &[DrawLine<V>],
@@ -48,29 +49,30 @@ pub trait GraphicsTrait {
     fn update_buffer<V: VectorTrait>(&mut self, draw_lines: &[DrawLine<V>], display: &Display);
 }
 
-pub type DefaultGraphics = Graphics<NewVertex>;
+pub type DefaultGraphics = Graphics<ProjLineVertex>;
 pub struct Graphics<X: Copy> {
     pub vertex_buffer: glium::VertexBuffer<X>,
     pub index_buffer: glium::IndexBuffer<u16>, //can we change this to VertIndex=usize?
     pub program: glium::Program,
     cur_lines_len: usize, // we store buffer size here because apparently calling vertex_buffer.len() is expensive
 }
-impl<X: Vertex> Graphics<X> {
+impl<X: VertexTrait> Graphics<X> {
     pub fn new(display: &glium::Display) -> Self {
-        let program =
-            glium::Program::from_source(display, VERTEX_SHADER_SRC, FRAGMENT_SHADER_SRC, None)
-                .unwrap();
-        let vertices: Vec<X> = Vec::new();
-        let indices: Vec<u16> = Vec::new();
-        let vertex_buffer = glium::VertexBuffer::dynamic(display, &vertices).unwrap();
-        let index_buffer =
-            glium::IndexBuffer::dynamic(display, glium::index::PrimitiveType::LinesList, &indices)
-                .unwrap();
-
         Self {
-            vertex_buffer,
-            index_buffer,
-            program,
+            vertex_buffer: glium::VertexBuffer::dynamic(display, &Vec::new()).unwrap(),
+            index_buffer: glium::IndexBuffer::dynamic(
+                display,
+                glium::index::PrimitiveType::LinesList,
+                &Vec::new(),
+            )
+            .unwrap(),
+            program: glium::Program::from_source(
+                display,
+                X::VERTEX_SHADER_SRC,
+                FRAGMENT_SHADER_SRC,
+                None,
+            )
+            .unwrap(),
             cur_lines_len: 0,
         }
     }
@@ -102,7 +104,7 @@ fn new_vertex_buffer<X: VertexTrait, V: VectorTrait>(
     glium::VertexBuffer::dynamic(display, &verts_to_gl(verts)).unwrap()
 }
 
-pub fn new_vertex_buffer_from_lines<X: VertexTrait, V: VectorTrait>(
+fn new_vertex_buffer_from_lines<X: VertexTrait, V: VectorTrait>(
     lines: &[DrawLine<V>],
     display: &Display,
 ) -> VertexBuffer<X> {
@@ -111,77 +113,27 @@ pub fn new_vertex_buffer_from_lines<X: VertexTrait, V: VectorTrait>(
 }
 
 fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
-    vertex_buffer: &mut VertexBuffer<X>,
+    write_map: &mut WriteMapping<[X]>,
     buffer_len: usize,
     opt_lines: &[DrawLine<V>],
 ) {
-    //let buffer_len = vertex_buffer.len();
-    let mut write_map = vertex_buffer.map_write();
-    // vertex_buffer.write(
-    //     &opt_lines.iter().flat_map(
-    //         |opt_line| X::line_to_gl(opt_line).iter()
-    //     ).collect()
-    // )
 
     // TODO: this could be refactored with flat_map etc but i don't know how that impacts performance
-
+    // TODO: is it faster to call .write once rather than write_map.set a bunch of times?
     let mut i = 0;
     for opt_line in opt_lines.iter() {
-        for v in X::line_to_gl_arr(opt_line) {
+        for v in X::line_to_gl_iter(opt_line) {
             write_map.set(i, v);
             i += 1;
         }
     }
     // Set remaining buffer with NO_DRAW verts to avoid "ghosts" while keeping buffer len unchanged
-    // if I use buffer_len instead of write_map.len() here i get ghosts again. why?
     for j in i..buffer_len {
         write_map.set(j, X::NO_DRAW);
     }
 }
 
-fn build_view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -> [[f32; 4]; 4] {
-    let f = {
-        let f = direction;
-        let len = f[0] * f[0] + f[1] * f[1] + f[2] * f[2];
-        let len = len.sqrt();
-        [f[0] / len, f[1] / len, f[2] / len]
-    };
-
-    let s = [
-        up[1] * f[2] - up[2] * f[1],
-        up[2] * f[0] - up[0] * f[2],
-        up[0] * f[1] - up[1] * f[0],
-    ];
-
-    let s_norm = {
-        let len = s[0] * s[0] + s[1] * s[1] + s[2] * s[2];
-        let len = len.sqrt();
-        [s[0] / len, s[1] / len, s[2] / len]
-    };
-
-    let u = [
-        f[1] * s_norm[2] - f[2] * s_norm[1],
-        f[2] * s_norm[0] - f[0] * s_norm[2],
-        f[0] * s_norm[1] - f[1] * s_norm[0],
-    ];
-
-    let p = [
-        -position[0] * s_norm[0] - position[1] * s_norm[1] - position[2] * s_norm[2],
-        -position[0] * u[0] - position[1] * u[1] - position[2] * u[2],
-        -position[0] * f[0] - position[1] * f[1] - position[2] * f[2],
-    ];
-
-    [
-        [s_norm[0], u[0], f[0], 0.0],
-        [s_norm[1], u[1], f[1], 0.0],
-        [s_norm[2], u[2], f[2], 0.0],
-        [p[0], p[1], p[2], 1.0],
-    ]
-}
-
 impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
-    type Vertex = X;
-
     fn init(display: &Display) -> Self {
         Self::new(display)
     }
@@ -209,45 +161,25 @@ impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
     ) -> glium::Frame {
         //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
         write_opt_lines_to_buffer(
-            &mut self.vertex_buffer,
-            self.cur_lines_len * 6, // NewVertex happens to produce 6 verts per line. make this a assoc const?
+            &mut self.vertex_buffer.map_write(),
+            self.cur_lines_len * X::LINE_BUFFER_SIZE,
             draw_lines,
         ); //slightly faster than the above (less allocation)
 
         let draw_params = glium::DrawParameters {
             smooth: Some(glium::draw_parameters::Smooth::Nicest),
             blend: glium::Blend::alpha_blending(), //lines are a lot darker
+            line_width: Some(X::line_thickness(V::DIM)),
             ..Default::default()
         };
-        //let mut target = display.draw();
         let (width, height) = target.get_dimensions();
-        let view_matrix = match V::DIM {
-            2 => [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0f32],
-            ],
-            3 => build_view_matrix(&[2.0, 2.0, -4.0], &[-1.0, -1.0, 2.0], &[0.0, 1.0, 0.0]),
-            _ => panic!("Invalid dimension"),
-        };
         let uniforms = uniform! {
-            perspective : match V::DIM {
-                2 => build_perspective_mat_2d(&target),
-                3 => build_perspective_mat_3d(&target),
-                _ => panic!("Invalid dimension")
-            },
-            view : view_matrix,
-            model: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [ 0.0, 0.0, 0.0 , 1.0f32],
-            ],
+            perspective : build_perspective_matrix(V::DIM, width, height),
+            view : build_view_matrix(V::DIM),
+            model: IDENTITY_MATRIX,
+            // below needed only for proj_line vertex
             aspect : (width as f32)/(height as f32),
-            thickness : match V::DIM {
-                2 =>LINE_THICKNESS_3D, 3 => LINE_THICKNESS_4D,
-                _ => panic!("Invalid dimension")},
+            thickness : X::line_thickness(V::DIM),
             miter : 1,
         };
         target.clear_color(
@@ -259,7 +191,7 @@ impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
         target
             .draw(
                 &self.vertex_buffer,
-                glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+                glium::index::NoIndices(X::PRIMITIVE_TYPE),
                 &self.program,
                 &uniforms,
                 &draw_params,
