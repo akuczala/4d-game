@@ -84,7 +84,7 @@ pub fn draw_face_texture<V: VectorTrait>(
     shape: &Shape<V>,
     face_scales: &Vec<Field>,
     visible: bool,
-) -> Vec<Option<DrawLine<V>>> {
+) -> Vec<DrawLine<V>> {
     if !visible {
         return Vec::new();
     }
@@ -250,7 +250,7 @@ impl TextureMapping {
         shape: &Shape<V>,
         lines: &[Line<V::SubV>],
         color: Color,
-    ) -> Vec<Option<DrawLine<V>>> {
+    ) -> Vec<DrawLine<V>> {
         let origin = shape.verts[self.origin_verti];
         let frame_verts: Vec<V> = self
             .frame_vertis
@@ -271,13 +271,13 @@ impl TextureMapping {
                         + origin
                 })
             })
-            .map(|line| Some(DrawLine { line, color }))
+            .map(|line| DrawLine { line, color })
             .collect()
     }
     pub fn draw_drawlines<V: VectorTrait>(
         &self,
         _draw_lines: &[DrawLine<V::SubV>],
-    ) -> Vec<Option<DrawLine<V>>> {
+    ) -> Vec<DrawLine<V>> {
         unimplemented!()
         //draw_lines.iter().map(|draw_line| Some(draw_line.clone())).collect()
     }
@@ -316,17 +316,16 @@ pub fn draw_default_lines<V: VectorTrait>(
     shape: &Shape<V>,
     color: Color,
     face_scales: &Vec<Field>,
-) -> Vec<Option<DrawLine<V>>> {
-    let mut lines: Vec<Option<DrawLine<V>>> =
-        Vec::with_capacity(face.edgeis.len() * face_scales.len());
+) -> Vec<DrawLine<V>> {
+    let mut lines: Vec<DrawLine<V>> = Vec::with_capacity(face.edgeis.len() * face_scales.len());
     for &face_scale in face_scales {
         let scale_point = |v| V::linterp(face.center(), v, face_scale);
         for edgei in &face.edgeis {
             let edge = &shape.edges[*edgei];
-            lines.push(Some(DrawLine {
+            lines.push(DrawLine {
                 line: Line(shape.verts[edge.0], shape.verts[edge.1]).map(scale_point),
                 color,
-            }));
+            });
         }
     }
     lines

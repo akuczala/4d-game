@@ -42,7 +42,7 @@ where
         write_out_lines.0 = read_in_lines
             .0
             .iter()
-            .map(|line| {
+            .flat_map(|line| {
                 transform_draw_line(
                     line.clone(),
                     transform.get(player.0).unwrap(),

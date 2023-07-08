@@ -1,5 +1,7 @@
 use std::array::IntoIter;
 
+use itertools::Itertools;
+
 use super::{DrawLine, DrawVertex, VectorTrait, VertexTrait};
 
 #[derive(Copy, Clone)]
@@ -36,91 +38,41 @@ impl VertexTrait for NewVertex {
         previous: [0., 0., 0.],
     };
     //don't intend to use this function for this shader
-    fn vert_to_gl<V: VectorTrait>(vert: &Option<DrawVertex<V>>) -> Self {
-        match *vert {
-            Some(DrawVertex { vertex, color }) => {
-                let pos = NewVertex::project_pos(vertex);
-                Self {
-                    direction: 1.0,
-                    position: pos,
-                    color: *color.get_arr(),
-                    next: pos,
-                    previous: pos,
-                }
-            }
-            None => Self::NO_DRAW,
+    fn vert_to_gl<V: VectorTrait>(vert: &DrawVertex<V>) -> Self {
+        let pos = NewVertex::project_pos(vert.vertex);
+        Self {
+            direction: 1.0,
+            position: pos,
+            color: *vert.color.get_arr(),
+            next: pos,
+            previous: pos,
         }
     }
     // TODO: a lot of time is spent in this fn
-    fn line_to_gl<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Vec<Self> {
-        match maybe_line {
-            Some(draw_line) => {
-                //let mut out = Vec::with_capacity(4);
-                let draw_verts: [DrawVertex<V>; 2] = draw_line.get_draw_verts();
-                //let dir = draw_verts[1].vertex - draw_verts[0].vertex;
-                //let midpoint = crate::vector::VectorTrait::linterp(draw_verts[0].vertex,draw_verts[1].vertex,0.5);
-                let proj_verts: Vec<[f32; 3]> = draw_verts
-                    .iter()
-                    .map(|dv| NewVertex::project_pos(dv.vertex))
-                    .collect();
-                //let proj_midpoint = NewVertex::project_pos(midpoint);
-                // for &dir in [-1.,1. ].iter() {
-                //     out.push(Self{
-                //         position : proj_verts[0],
-                //         direction : dir as f32,
-                //         color : *draw_verts[0].color.get_arr(),
-                //         next : proj_verts[1],
-                //         previous : proj_verts[0],
-                //     });
-                //     out.push(Self{
-                //         position : proj_verts[1],
-                //         direction : dir as f32,
-                //         color : *draw_verts[1].color.get_arr(),
-                //         next : proj_verts[1],
-                //         previous : proj_verts[0],
-                //     })
-                // }
-                //let mut out = vec![];
-                //draw two triangles to make a line
-                // if we really need to, we can have this return a fixed len array
-                [(0, -1), (0, 1), (1, -1), (1, -1), (1, 1), (0, 1)]
-                    .map(|(i, d)| Self {
-                        position: proj_verts[i],
-                        direction: d as f32,
-                        color: *draw_verts[i].color.get_arr(),
-                        next: proj_verts[1],
-                        previous: proj_verts[0],
-                    })
-                    .into_iter()
-                    .collect()
-            }
-            None => (0..6).map(|_| Self::NO_DRAW).collect(),
-        }
+    fn line_to_gl<V: VectorTrait>(draw_line: &DrawLine<V>) -> Vec<Self> {
+        Self::line_to_gl_iter(draw_line).collect_vec()
     }
     //type Iter = <Vec<Self> as IntoIterator>::IntoIter;
     type Iter = IntoIter<Self, 6>;
-    fn line_to_gl_iter<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Self::Iter {
+    fn line_to_gl_iter<V: VectorTrait>(draw_line: &DrawLine<V>) -> Self::Iter {
+        Self::line_to_gl_arr(draw_line).into_iter()
+    }
+
+    fn line_to_gl_arr<V: VectorTrait>(draw_line: &DrawLine<V>) -> [Self; 6] {
         //Self::line_to_gl(maybe_line).into_iter()
-        match maybe_line {
-            Some(draw_line) => {
-                //let mut out = Vec::with_capacity(4);
-                let draw_verts: [DrawVertex<V>; 2] = draw_line.get_draw_verts();
-                //let dir = draw_verts[1].vertex - draw_verts[0].vertex;
-                //let midpoint = crate::vector::VectorTrait::linterp(draw_verts[0].vertex,draw_verts[1].vertex,0.5);
-                let proj_verts = draw_verts.map(|dv| NewVertex::project_pos(dv.vertex));
-                //draw two triangles to make a line
-                // if we really need to, we can have this return a fixed len array
-                [(0, -1), (0, 1), (1, -1), (1, -1), (1, 1), (0, 1)]
-                    .map(|(i, d)| Self {
-                        position: proj_verts[i],
-                        direction: d as f32,
-                        color: *draw_verts[i].color.get_arr(),
-                        next: proj_verts[1],
-                        previous: proj_verts[0],
-                    })
-                    .into_iter()
-            }
-            None => [0, 1, 2, 3, 4, 5].map(|_| Self::NO_DRAW).into_iter(),
-        }
+        //let mut out = Vec::with_capacity(4);
+        let draw_verts: [DrawVertex<V>; 2] = draw_line.get_draw_verts();
+        //let dir = draw_verts[1].vertex - draw_verts[0].vertex;
+        //let midpoint = crate::vector::VectorTrait::linterp(draw_verts[0].vertex,draw_verts[1].vertex,0.5);
+        let proj_verts = draw_verts.map(|dv| NewVertex::project_pos(dv.vertex));
+        //draw two triangles to make a line
+        // if we really need to, we can have this return a fixed len array
+        [(0, -1), (0, 1), (1, -1), (1, -1), (1, 1), (0, 1)].map(|(i, d)| Self {
+            position: proj_verts[i],
+            direction: d as f32,
+            color: *draw_verts[i].color.get_arr(),
+            next: proj_verts[1],
+            previous: proj_verts[0],
+        })
     }
 }

@@ -442,9 +442,9 @@ pub fn clip_line<V: VectorTrait>(line: Line<V>, boundaries: &Vec<Plane<V>>) -> R
 //consider using parallel joins here
 // TODO: reduce vec pushing + allocation (~10% of runtime)
 pub fn clip_draw_lines<'a, V: VectorTrait + 'a, I>(
-    lines: Vec<Option<DrawLine<V>>>,
+    lines: Vec<DrawLine<V>>,
     clip_states_in_front: I,
-) -> Vec<Option<DrawLine<V>>>
+) -> Vec<DrawLine<V>>
 //where for<'a> &'a I : std::iter::Iterator<Item=&'a ShapeClipState<V>>
 where
     I: std::iter::Iterator<Item = &'a ShapeClipState<V>>,
@@ -466,28 +466,25 @@ where
         //let same_shape = clip_shape_index == shape_index;
         if !clipping_shape.transparent {
             //let mut additional_lines : Vec<Option<Line<V>>> = Vec::new();
-            let mut new_lines: Vec<Option<DrawLine<V>>> = Vec::new();
+            let mut new_lines: Vec<DrawLine<V>> = Vec::new();
             //would like to map in place here, with side effects
             //(creating additonal lines)
             //worst case, we could push back and forth between two Vecs
             //with capacities slightly greater than initial # lines
             //right now i just push on to a new Vec every time
             for opt_draw_line in clipped_lines.into_iter() {
-                let new_line = match opt_draw_line {
-                    Some(DrawLine { line, color }) => {
-                        match clip_line(line, &clipping_shape.boundaries) {
-                            ReturnLines::TwoLines(line0, line1) => {
-                                //additional_lines.push(Some(line1)); //push extra lines on to other vector
-                                new_lines.push(Some(DrawLine { line: line1, color }));
-                                Some(DrawLine { line: line0, color })
-                            }
-                            ReturnLines::OneLine(line) => Some(DrawLine { line, color }),
-                            ReturnLines::NoLines => None,
+                {
+                    let color = opt_draw_line.color;
+                    match clip_line(opt_draw_line.line, &clipping_shape.boundaries) {
+                        ReturnLines::TwoLines(line0, line1) => {
+                            //additional_lines.push(Some(line1)); //push extra lines on to other vector
+                            new_lines.push(DrawLine { line: line0, color });
+                            new_lines.push(DrawLine { line: line1, color });
                         }
+                        ReturnLines::OneLine(line) => new_lines.push(DrawLine { line, color }),
+                        ReturnLines::NoLines => (),
                     }
-                    None => None,
-                };
-                new_lines.push(new_line);
+                }
             }
             clipped_lines = new_lines;
             //clipped_lines.append(&mut additional_lines);

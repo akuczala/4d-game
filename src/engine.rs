@@ -72,7 +72,7 @@ where
 
         let clip_state = ClipState::<V>::new();
         let draw_lines: DrawLineList<V> = draw::DrawLineList::<V>(vec![]);
-        let proj_lines = draw_lines.map(|l| {
+        let proj_lines = draw_lines.flat_map(|l| {
             draw::transform_draw_line(
                 l,
                 &Transform::identity(),
@@ -169,12 +169,12 @@ where
         //TODO: slow to build this
         //let ui_args = UIArgs::new_debug::<V>(&self.world, fps_timer.get_frame_length());
 
-        let ui_args = UIArgs::None;
-        // let ui_args = UIArgs::Simple {
-        //     frame_duration: fps_timer.get_frame_length(),
-        //     coins_collected: self.world.read_resource::<crate::coin::CoinsCollected>().0,
-        //     coins_left: self.world.read_storage::<crate::coin::Coin>().count() as u32,
-        // };
+        //let ui_args = UIArgs::None;
+        let ui_args = UIArgs::Simple {
+            frame_duration: fps_timer.get_frame_length(),
+            coins_collected: self.world.read_resource::<crate::coin::CoinsCollected>().0,
+            coins_left: self.world.read_storage::<crate::coin::Coin>().count() as u32,
+        };
         //gui update (all events)
         if let Some(ref mut gui) = &mut self.gui {
             gui.update(

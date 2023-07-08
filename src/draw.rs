@@ -93,18 +93,17 @@ where
 fn view_transform<V: VectorTrait>(transform: &Transform<V, V::M>, point: V) -> V {
     transform.frame * (point - transform.pos)
 }
-//this takes a Option<Line> and returns Option<Line>
 //can likely remove camera here by calculating the plane from the transform, unless you want the
 //camera's plane to differ from its position/heading
 pub fn transform_line<V: VectorTrait>(
-    line: Option<Line<V>>,
+    line: Line<V>,
     transform: &Transform<V, V::M>,
     camera: &Camera<V, V::M>,
 ) -> Option<Line<V::SubV>>
 where
     V: VectorTrait,
 {
-    let clipped_line = line.and_then(|l| clip_line_plane(l, &camera.plane, Z_NEAR));
+    let clipped_line = clip_line_plane(line, &camera.plane, Z_NEAR);
 
     let view_line = clipped_line.map(|l| l.map(|v| view_transform(transform, v)));
     let proj_line = view_line.map(|l| l.map(project));
@@ -118,7 +117,7 @@ where
 }
 
 #[derive(Default)]
-pub struct DrawLineList<V>(pub Vec<Option<DrawLine<V>>>);
+pub struct DrawLineList<V>(pub Vec<DrawLine<V>>);
 impl<V: VectorTrait> DrawLineList<V> {
     pub fn len(&self) -> usize {
         self.0.len()
@@ -126,43 +125,38 @@ impl<V: VectorTrait> DrawLineList<V> {
     pub fn map<F, U>(&self, f: F) -> DrawLineList<U>
     where
         U: VectorTrait,
-        F: Fn(Option<DrawLine<V>>) -> Option<DrawLine<U>>,
+        F: Fn(DrawLine<V>) -> DrawLine<U>,
     {
         DrawLineList(self.0.iter().map(|l| f(l.clone())).collect()) //another questionable clone
+    }
+    pub fn flat_map<F, U>(&self, f: F) -> DrawLineList<U>
+    where
+        U: VectorTrait,
+        F: Fn(DrawLine<V>) -> Option<DrawLine<U>>,
+    {
+        DrawLineList(self.0.iter().flat_map(|l| f(l.clone())).collect()) //another questionable clone
     }
 }
 
 //apply transform line to the lines in draw_lines
-//need to do nontrivial destructuring and reconstructing
-//in order to properly handle Option
-//would probably benefit from something monad-like
 pub fn transform_draw_line<V: VectorTrait>(
-    option_draw_line: Option<DrawLine<V>>,
+    draw_line: DrawLine<V>,
     transform: &Transform<V, V::M>,
     camera: &Camera<V, V::M>,
 ) -> Option<DrawLine<V::SubV>> {
-    match option_draw_line {
-        Some(draw_line) => {
-            let transformed_line = transform_line(Some(draw_line.line), transform, camera);
-            match transformed_line {
-                Some(line) => Some(DrawLine {
-                    line,
-                    color: draw_line.color,
-                }),
-                None => None,
-            }
-        }
-        None => None,
-    }
+    transform_line(draw_line.line, transform, camera).map(|line| DrawLine {
+        line,
+        color: draw_line.color,
+    })
 }
 
-pub fn draw_cursor<U: VectorTrait>(shape: &Shape<U>) -> impl Iterator<Item = Option<DrawLine<U>>> {
-    calc_wireframe_lines(shape).into_iter().map(|line| {
-        Some(DrawLine {
+pub fn draw_cursor<U: VectorTrait>(shape: &Shape<U>) -> impl Iterator<Item = DrawLine<U>> {
+    calc_wireframe_lines(shape)
+        .into_iter()
+        .map(|line| DrawLine {
             line,
             color: CURSOR_COLOR,
         })
-    })
 }
 
 //updates clipping boundaries and face visibility based on normals
@@ -227,7 +221,7 @@ pub fn calc_shapes_lines<V>(
     shape_clip_states: &ReadStorage<ShapeClipState<V>>,
     face_scale: &Vec<Field>,
     clip_state: &ClipState<V>,
-) -> Vec<Option<DrawLine<V>>>
+) -> Vec<DrawLine<V>>
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
@@ -241,13 +235,13 @@ where
     // panic!();
     //probably worth computing / storing number of lines
     //and using Vec::with_capacity
-    let mut lines: Vec<Option<DrawLine<V>>> = Vec::new();
+    let mut lines: Vec<DrawLine<V>> = Vec::new();
 
     //compute lines for each shape
     for (shape, shape_texture, shape_clip_state) in
         (shapes, shape_textures, shape_clip_states).join()
     {
-        let mut shape_lines: Vec<Option<DrawLine<V>>> = Vec::new();
+        let mut shape_lines: Vec<DrawLine<V>> = Vec::new();
         //get lines from each face
         for (face, &visible, face_texture) in izip!(
             shape.faces.iter(),

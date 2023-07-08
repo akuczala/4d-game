@@ -36,12 +36,13 @@ impl<V> DrawLineCollection<V> {
 pub fn draw_collection<'a, V: VectorTrait + 'a, I>(
     lines_collection: &DrawLineCollection<V>,
     shape_clip_state_iter: Option<I>,
-) -> Vec<Option<DrawLine<V>>>
+) -> Vec<DrawLine<V>>
 where
     I: std::iter::Iterator<Item = &'a ShapeClipState<V>>,
 {
     // TODO: return iterator?
-    let lines = lines_collection.0.iter().map(|l| Some(l.clone())).collect(); // TODO: do we really need to clone here?
+    // TODO: eliminate cloning here?
+    let lines = lines_collection.0.clone();
     match shape_clip_state_iter {
         Some(iter) => clip_draw_lines(lines, iter),
         None => lines,

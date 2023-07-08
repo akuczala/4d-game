@@ -30,12 +30,11 @@ pub const FRAGMENT_SHADER_SRC: &str = include_str!("graphics/simple-shader.frag"
 pub trait VertexTrait: Vertex {
     const NO_DRAW: Self;
     type Iter: Iterator<Item = Self>;
-    fn vert_to_gl<V: VectorTrait>(vert: &Option<DrawVertex<V>>) -> Self;
-    fn line_to_gl<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Vec<Self>;
-    fn line_to_gl_iter<V: VectorTrait>(maybe_line: &Option<DrawLine<V>>) -> Self::Iter;
-    // fn write_line<V: VectorTrait>(write_mapping: &mut WriteMapping<[Self]>, maybe_line: &Option<DrawLine<V>>) {
-    //     Self::line_to_gl(maybe_line)
-    // }
+    const LINE_SIZE: u8;
+    fn vert_to_gl<V: VectorTrait>(vert: &DrawVertex<V>) -> Self;
+    fn line_to_gl<V: VectorTrait>(maybe_line: &DrawLine<V>) -> Vec<Self>;
+    fn line_to_gl_iter<V: VectorTrait>(maybe_line: &DrawLine<V>) -> Self::Iter;
+    fn line_to_gl_arr<V: VectorTrait>(maybe_line: &DrawLine<V>) -> [Self; 6];
 }
 
 pub trait GraphicsTrait {
@@ -44,14 +43,10 @@ pub trait GraphicsTrait {
     //fn draw<V: VectorTrait>(display: &Display, draw_lines: &[Option<DrawLine<V>>]);
     fn draw_lines<V: VectorTrait>(
         &mut self,
-        draw_lines: &[Option<DrawLine<V>>],
+        draw_lines: &[DrawLine<V>],
         target: glium::Frame,
     ) -> glium::Frame;
-    fn update_buffer<V: VectorTrait>(
-        &mut self,
-        draw_lines: &[Option<DrawLine<V>>],
-        display: &Display,
-    );
+    fn update_buffer<V: VectorTrait>(&mut self, draw_lines: &[DrawLine<V>], display: &Display);
 }
 
 pub type DefaultGraphics = Graphics<NewVertex>;
@@ -82,13 +77,13 @@ impl<X: Vertex> Graphics<X> {
     }
 }
 
-fn verts_to_gl<X: VertexTrait, V: VectorTrait>(verts: &[Option<DrawVertex<V>>]) -> Vec<X> {
+fn verts_to_gl<X: VertexTrait, V: VectorTrait>(verts: &[DrawVertex<V>]) -> Vec<X> {
     verts.iter().map(X::vert_to_gl).collect()
 }
 fn vertis_to_gl(vertis: &[VertIndex]) -> Vec<u16> {
     vertis.iter().map(|v| *v as u16).collect()
 }
-fn opt_lines_to_gl<X: VertexTrait, V: VectorTrait>(opt_lines: &[Option<DrawLine<V>>]) -> Vec<X> {
+fn opt_lines_to_gl<X: VertexTrait, V: VectorTrait>(opt_lines: &[DrawLine<V>]) -> Vec<X> {
     opt_lines.iter().flat_map(X::line_to_gl).collect()
 }
 
@@ -102,14 +97,14 @@ fn new_index_buffer(vertis: &[VertIndex], display: &Display) -> IndexBuffer<u16>
 }
 
 fn new_vertex_buffer<X: VertexTrait, V: VectorTrait>(
-    verts: &[Option<DrawVertex<V>>],
+    verts: &[DrawVertex<V>],
     display: &Display,
 ) -> VertexBuffer<X> {
     glium::VertexBuffer::dynamic(display, &verts_to_gl(verts)).unwrap()
 }
 
 pub fn new_vertex_buffer_from_lines<X: VertexTrait, V: VectorTrait>(
-    lines: &[Option<DrawLine<V>>],
+    lines: &[DrawLine<V>],
     display: &Display,
 ) -> VertexBuffer<X> {
     let vertexes = opt_lines_to_gl(lines);
@@ -119,7 +114,7 @@ pub fn new_vertex_buffer_from_lines<X: VertexTrait, V: VectorTrait>(
 fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
     vertex_buffer: &mut VertexBuffer<X>,
     buffer_len: usize,
-    opt_lines: &[Option<DrawLine<V>>],
+    opt_lines: &[DrawLine<V>],
 ) {
     //let buffer_len = vertex_buffer.len();
     let mut write_map = vertex_buffer.map_write();
@@ -133,7 +128,7 @@ fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
 
     let mut i = 0;
     for opt_line in opt_lines.iter() {
-        for v in X::line_to_gl_iter(opt_line) {
+        for v in X::line_to_gl_arr(opt_line) {
             write_map.set(i, v);
             i += 1;
         }
@@ -190,14 +185,9 @@ impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
 
     fn init(display: &Display) -> Self {
         Self::new(display)
-        //graphics.vertex_buffer = new_vertex_buffer_from_lines::<X, V::SubV>(&[], display);
     }
 
-    fn update_buffer<V: VectorTrait>(
-        &mut self,
-        draw_lines: &[Option<DrawLine<V>>],
-        display: &Display,
-    ) {
+    fn update_buffer<V: VectorTrait>(&mut self, draw_lines: &[DrawLine<V>], display: &Display) {
         //make new buffer if
         // a. the number of lines increases (need more room in the buffer)
         // b. the number of lines drastically decreases (to not waste memory)
@@ -205,17 +195,17 @@ impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
         let draw_lines_len = draw_lines.len();
         if (draw_lines_len > cur_lines_len) | (draw_lines_len < cur_lines_len / 2) {
             self.vertex_buffer = new_vertex_buffer_from_lines(draw_lines, display);
-            self.cur_lines_len = draw_lines_len;
             // println!(
             //     "New buffer! {} to {}",
-            //     self.cur_lines_length, draw_lines_len
+            //     self.cur_lines_len, draw_lines_len
             // );
+            self.cur_lines_len = draw_lines_len;
         }
     }
 
     fn draw_lines<V: VectorTrait>(
         &mut self,
-        draw_lines: &[Option<DrawLine<V>>],
+        draw_lines: &[DrawLine<V>],
         mut target: glium::Frame,
     ) -> glium::Frame {
         //self.get_vertex_buffer().write(&Self::opt_lines_to_gl(&draw_lines));
