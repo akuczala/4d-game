@@ -30,7 +30,6 @@ pub const FRAGMENT_SHADER_SRC: &str = include_str!("graphics/simple-shader.frag"
 pub trait VertexTrait: Vertex {
     const NO_DRAW: Self;
     type Iter: Iterator<Item = Self>;
-    const LINE_SIZE: u8;
     fn vert_to_gl<V: VectorTrait>(vert: &DrawVertex<V>) -> Self;
     fn line_to_gl<V: VectorTrait>(maybe_line: &DrawLine<V>) -> Vec<Self>;
     fn line_to_gl_iter<V: VectorTrait>(maybe_line: &DrawLine<V>) -> Self::Iter;
