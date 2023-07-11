@@ -6,7 +6,7 @@ use crate::vector::{Field, VecIndex, VectorTrait};
 use std::collections::{HashMap, HashSet};
 
 use crate::components::{Shape, Transform};
-use crate::draw::{project, DrawLine};
+use crate::draw::DrawLine;
 use crate::geometry::{sphere_line_intersect, sphere_t_intersect_infinite_normed, Line, Plane};
 
 use specs::{Component, Entities, Entity, Join, ReadStorage, VecStorage, WriteStorage};

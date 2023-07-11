@@ -360,11 +360,14 @@ pub fn color_cube_texture<V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::S
     }
 }
 
-pub fn fuzzy_color_cube_texture<V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::SubV> {
+pub fn fuzzy_color_cube_texture<V: VectorTrait>(
+    shape: &Shape<V>,
+    n_lines: usize,
+) -> ShapeTexture<V::SubV> {
     color_cube_texture(shape).zip_textures_with(shape.faces.iter(), |face_tex, face| FaceTexture {
         texture: face_tex
             .texture
-            .merged_with(&Texture::make_fuzz_texture(N_FUZZ_LINES)),
+            .merged_with(&Texture::make_fuzz_texture(n_lines)),
         texture_mapping: Some(TextureMapping::calc_cube_vertis(
             face,
             &shape.verts,

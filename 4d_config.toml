@@ -1,0 +1,12 @@
+face_scale = 0.800000011920929
+
+[fuzz_lines]
+face_num = 1000
+sky_num = 0
+horizon_num = 0
+
+[view_config]
+clip_sphere_radius = 0.5
+viewport_shape = "Cylinder"
+focal = 0.4
+spin_speed = 0.2

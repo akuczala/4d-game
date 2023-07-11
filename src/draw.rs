@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use itertools::Itertools;
 use rand::seq::IteratorRandom;
 use serde::__private::de;
+use serde::{Deserialize, Serialize};
 
 use clipping::{clip_line_cube, clip_line_plane, ClipState};
 use specs::rayon::iter::Chain;
@@ -10,6 +11,7 @@ use specs::{Join, ReadStorage};
 pub use texture::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 
 use crate::components::*;
+use crate::config::ViewConfig;
 use crate::constants::{
     CLIP_SPHERE_RADIUS, CURSOR_COLOR, FOCAL, SELECTION_COLOR, SMALL_Z, VIEWPORT_SHAPE, Z0, Z_NEAR,
 };
@@ -31,7 +33,7 @@ pub mod visual_aids;
 
 extern crate map_in_place;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum ViewportShape {
     Cube,
     Sphere,
@@ -79,7 +81,7 @@ impl<V: VectorTrait> DrawLine<V> {
     }
 }
 
-fn project<V>(v: V) -> V::SubV
+fn project<V>(focal: Field, v: V) -> V::SubV
 where
     V: VectorTrait,
 {
@@ -88,7 +90,7 @@ where
     } else {
         v[-1]
     };
-    v.project() * FOCAL / z
+    v.project() * focal / z
 }
 fn view_transform<V: VectorTrait>(transform: &Transform<V, V::M>, point: V) -> V {
     transform.frame * (point - transform.pos)
@@ -99,21 +101,21 @@ pub fn transform_line<V: VectorTrait>(
     line: Line<V>,
     transform: &Transform<V, V::M>,
     camera: &Camera<V, V::M>,
+    view_config: &ViewConfig,
 ) -> Option<Line<V::SubV>>
 where
     V: VectorTrait,
 {
-    let clipped_line = clip_line_plane(line, &camera.plane, Z_NEAR);
-
-    let view_line = clipped_line.map(|l| l.map(|v| view_transform(transform, v)));
-    let proj_line = view_line.map(|l| l.map(project));
-    proj_line.and_then(|l| match VIEWPORT_SHAPE {
-        ViewportShape::Cube => clip_line_cube(l, CLIP_SPHERE_RADIUS),
-        ViewportShape::Sphere => clip_line_sphere(l, CLIP_SPHERE_RADIUS),
-        ViewportShape::Cylinder => clip_line_cylinder(l, CLIP_SPHERE_RADIUS, CLIP_SPHERE_RADIUS),
-        ViewportShape::Tube => clip_line_tube(l, CLIP_SPHERE_RADIUS),
-        ViewportShape::None => Some(l),
-    })
+    let r = view_config.clip_sphere_radius;
+    clip_line_plane(line, &camera.plane, Z_NEAR)
+        .map(|l| l.map(|v| project(view_config.focal, view_transform(transform, v))))
+        .and_then(|l| match view_config.viewport_shape {
+            ViewportShape::Cube => clip_line_cube(l, r),
+            ViewportShape::Sphere => clip_line_sphere(l, r),
+            ViewportShape::Cylinder => clip_line_cylinder(l, r, r),
+            ViewportShape::Tube => clip_line_tube(l, r),
+            ViewportShape::None => Some(l),
+        })
 }
 
 #[derive(Default)]
@@ -143,8 +145,9 @@ pub fn transform_draw_line<V: VectorTrait>(
     draw_line: DrawLine<V>,
     transform: &Transform<V, V::M>,
     camera: &Camera<V, V::M>,
+    view_config: &ViewConfig,
 ) -> Option<DrawLine<V::SubV>> {
-    transform_line(draw_line.line, transform, camera).map(|line| DrawLine {
+    transform_line(draw_line.line, transform, camera, view_config).map(|line| DrawLine {
         line,
         color: draw_line.color,
     })

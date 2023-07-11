@@ -127,14 +127,14 @@ fn draw_star<V: VectorTrait>(axis: VecIndex, sign: bool) -> Vec<Line<V>> {
     calc_wireframe_lines(&cube)
 }
 
-pub fn draw_horizon<V: VectorTrait>() -> Vec<Line<V>> {
+pub fn draw_horizon<V: VectorTrait>(n_lines: usize) -> Vec<Line<V>> {
     match V::DIM {
         3 => calc_wireframe_lines(
             &(ShapeBuilder::build_prism(2, &[SKY_DISTANCE], &[12]))
                 .with_rotation(-1, 1, HALF_PI)
                 .build(),
         ),
-        4 => (0..N_HORIZON_FUZZ_LINES)
+        4 => (0..n_lines)
             .map(|_| {
                 pointlike_sky_line({
                     let u = random_sphere_point::<V::SubV>() * SKY_DISTANCE;
@@ -146,8 +146,8 @@ pub fn draw_horizon<V: VectorTrait>() -> Vec<Line<V>> {
     }
 }
 
-pub fn draw_sky<V: VectorTrait>() -> Vec<DrawLine<V>> {
-    (0..N_SKY_FUZZ_LINES)
+pub fn draw_sky<V: VectorTrait>(n_lines: usize) -> Vec<DrawLine<V>> {
+    (0..n_lines)
         .map(|_| {
             let pos = random_hemisphere_point(V::one_hot(1)) * SKY_DISTANCE;
             DrawLine {

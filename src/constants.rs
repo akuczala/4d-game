@@ -37,6 +37,8 @@ pub const CLIP_SPHERE_RADIUS: Field = 0.5;
 
 pub const VIEWPORT_SHAPE: ViewportShape = ViewportShape::Cylinder;
 
-pub const FACE_SCALE: Field = 0.95;
+pub const FACE_SCALE: Field = 0.8;
 
 pub const PLAYER_COLLIDE_DISTANCE: Field = 0.2;
+
+pub const CONFIG_FILE_PATH_STR: &str = "./4d_config.toml";

@@ -8,6 +8,7 @@ use super::key_map::{
 use super::{Input, MovementMode, PlayerMovementMode, ShapeMovementMode, MOUSE_SENSITIVITY};
 
 use crate::cleanup::DeletedEntities;
+use crate::config::Config;
 use crate::constants::{CUBE_LABEL_STR, SELECTION_COLOR};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube, color_cube_texture, fuzzy_color_cube_texture};
@@ -197,6 +198,7 @@ pub fn selection_box<V: VectorTrait>(shape: &Shape<V>) -> DrawLineCollection<V> 
 pub fn create_shape<V: VectorTrait>(
     input: &mut Input,
     ref_shapes: &RefShapes<V>,
+    config: &Config,
     player_transform: &Transform<V, V::M>,
 ) -> Option<ShapeEntityBuilderV<V>> {
     input.toggle_keys.trigger_once(CREATE_SHAPE, || {
@@ -211,7 +213,7 @@ pub fn create_shape<V: VectorTrait>(
         )
         .with_transform(Transform::pos(shape_pos))
         .with_scale(Scaling::Scalar(1.0))
-        .with_texturing_fn(fuzzy_color_cube_texture)
+        .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, config.fuzz_lines.face_num))
         .with_collider(Some(StaticCollider))
         // TODO: add to spatial hash set (use BBox hash system)
     })

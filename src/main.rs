@@ -26,6 +26,7 @@ mod cleanup;
 mod coin;
 mod collide;
 mod components;
+mod config;
 mod ecs_utils;
 mod engine;
 mod fps;

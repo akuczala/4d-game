@@ -3,6 +3,7 @@ pub use dispatcher::get_engine_dispatcher_builder;
 use specs::saveload; // TODO: revert to private
 
 use crate::collide;
+use crate::config::load_config;
 use crate::constants::FACE_SCALE;
 use crate::ecs_utils::Componentable;
 use crate::graphics::DefaultGraphics;
@@ -65,6 +66,7 @@ where
 
         world.insert(Input::new());
         world.insert(ShapeManipulationState::default() as ShapeManipulationState<V, V::M>);
+        world.insert(load_config());
 
         build_scene(&mut world);
 
@@ -72,13 +74,7 @@ where
 
         let clip_state = ClipState::<V>::new();
         let draw_lines: DrawLineList<V> = draw::DrawLineList::<V>(vec![]);
-        let proj_lines = draw_lines.flat_map(|l| {
-            draw::transform_draw_line(
-                l,
-                &Transform::identity(),
-                &Camera::new(&Transform::identity()), // <-- dummy camera
-            )
-        });
+        let proj_lines = DrawLineList::<V::SubV>(vec![]);
         let face_scales: Vec<crate::vector::Field> = vec![FACE_SCALE];
 
         world.insert(clip_state); // decompose into single entity properties

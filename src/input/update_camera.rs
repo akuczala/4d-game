@@ -1,6 +1,7 @@
 use super::key_map::{MOVE_BACKWARDS, MOVE_FORWARDS, MOVE_KEYMAP};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY};
 
+use crate::config::ViewConfig;
 use crate::ecs_utils::Componentable;
 use crate::player::Player;
 use std::marker::PhantomData;
@@ -23,6 +24,7 @@ use glutin::event::{Event, WindowEvent};
 
 pub fn update_camera<V: VectorTrait>(
     input: &mut Input,
+    view_config: &ViewConfig,
     transform: &mut Transform<V, V::M>,
     camera: &mut Camera<V, V::M>,
     move_next: &mut MoveNext<V>,
@@ -106,7 +108,7 @@ pub fn update_camera<V: VectorTrait>(
     }
     //spin unless turning or sliding
     if V::DIM == 4 && !any_slide_turn {
-        //camera.spin(transform,0,2,0.05*dt);
+        camera.spin(transform, 0, 2, view_config.spin_speed * dt);
     }
     //         //reset orientation
     //         if !input.pressed.space {

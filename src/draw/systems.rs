@@ -6,6 +6,7 @@ use crate::{
     components::{
         BBall, Camera, ClipState, Cursor, Player, Shape, ShapeClipState, ShapeType, Transform,
     },
+    config::Config,
     ecs_utils::{Componentable, SystemName},
     vector::{Field, VectorTrait},
 };
@@ -32,11 +33,12 @@ where
         ReadStorage<'a, Camera<V, V::M>>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadExpect<'a, Player>,
+        ReadExpect<'a, Config>,
     );
 
     fn run(
         &mut self,
-        (read_in_lines, mut write_out_lines, camera, transform, player): Self::SystemData,
+        (read_in_lines, mut write_out_lines, camera, transform, player, config): Self::SystemData,
     ) {
         //write new vec of draw lines to DrawLineList
         write_out_lines.0 = read_in_lines
@@ -47,6 +49,7 @@ where
                     line.clone(),
                     transform.get(player.0).unwrap(),
                     camera.get(player.0).unwrap(),
+                    &config.view_config,
                 )
             })
             .collect();

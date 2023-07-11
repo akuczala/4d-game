@@ -2,8 +2,9 @@ use specs::prelude::*;
 use std::marker::PhantomData;
 
 use crate::cleanup::DeletedEntities;
-use crate::components::*;
+use crate::config::Config;
 use crate::ecs_utils::ModSystem;
+use crate::{components::*, config};
 use crate::{ecs_utils::Componentable, vector::VectorTrait};
 
 use super::input_to_transform::{pos_to_grid, reset_orientation_and_scale};
@@ -25,14 +26,16 @@ where
         WriteStorage<'a, Camera<V, V::M>>,
         WriteStorage<'a, MoveNext<V>>,
         ReadExpect<'a, Player>,
+        ReadExpect<'a, Config>,
     );
     fn run(
         &mut self,
-        (mut input, mut transforms, mut cameras, mut move_nexts, player): Self::SystemData,
+        (mut input, mut transforms, mut cameras, mut move_nexts, player, config): Self::SystemData,
     ) {
         if input.is_camera_movement_enabled() {
             update_camera(
                 &mut input,
+                &config.view_config,
                 transforms.get_mut(player.0).unwrap(),
                 cameras.get_mut(player.0).unwrap(),
                 move_nexts.get_mut(player.0).unwrap(),
@@ -130,6 +133,7 @@ where
         WriteExpect<'a, Input>,
         ReadExpect<'a, Player>,
         ReadExpect<'a, RefShapes<V>>,
+        ReadExpect<'a, Config>,
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Transform<V, V::M>>,
         Entities<'a>,
@@ -137,11 +141,12 @@ where
 
     fn run(
         &mut self,
-        (mut input, player, ref_shapes, lazy, read_transform, entities): Self::SystemData,
+        (mut input, player, ref_shapes, config, lazy, read_transform, entities): Self::SystemData,
     ) {
         if let Some(builder) = create_shape(
             &mut input,
             &ref_shapes,
+            &config,
             read_transform.get(player.0).unwrap(),
         ) {
             builder.insert(entities.create(), &lazy);

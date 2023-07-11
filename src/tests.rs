@@ -11,6 +11,7 @@ mod tests {
     use crate::{
         build_level::{build_lvl_1, build_shape_library},
         components::{Shape, ShapeLabel, Transform},
+        config::{self, save_config, Config},
         constants::CUBE_LABEL_STR,
         engine::get_engine_dispatcher_builder,
         geometry::shape::{buildshapes::ShapeBuilder, RefShapes},
@@ -34,7 +35,7 @@ mod tests {
             let mut serializer = serde_json::Serializer::new(writer);
             //let serializer =
             //let serialized = serde_json::to_string(&t).unwrap();
-            t.serialize(&mut serializer);
+            t.serialize(&mut serializer).unwrap();
             let serialized = String::from_utf8(serializer.into_inner()).unwrap();
             println!("serialized = {}", serialized);
             let deserialized: T = serde_json::from_str(&serialized).unwrap();
@@ -85,5 +86,14 @@ mod tests {
             deserialized_world.read_component::<Shape<Vec3>>().count(),
             initial_count
         );
+    }
+
+    #[test]
+    fn load_config() {
+        println!("{:?}", config::load_config())
+    }
+    #[test]
+    fn test_save_config() {
+        save_config(Config::default()).unwrap()
     }
 }
