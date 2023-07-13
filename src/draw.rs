@@ -13,7 +13,7 @@ pub use texture::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 use crate::components::*;
 use crate::config::ViewConfig;
 use crate::constants::{
-    CLIP_SPHERE_RADIUS, CURSOR_COLOR, FOCAL, SELECTION_COLOR, SMALL_Z, VIEWPORT_SHAPE, Z0, Z_NEAR,
+    CURSOR_COLOR, SELECTION_COLOR, SMALL_Z, Z0, Z_NEAR,
 };
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
@@ -222,7 +222,7 @@ pub fn calc_shapes_lines<V>(
     shapes: &ReadStorage<Shape<V>>,
     shape_textures: &ReadStorage<ShapeTexture<V::SubV>>,
     shape_clip_states: &ReadStorage<ShapeClipState<V>>,
-    face_scale: &Vec<Field>,
+    face_scale: &[Field],
     clip_state: &ClipState<V>,
 ) -> Vec<DrawLine<V>>
 where

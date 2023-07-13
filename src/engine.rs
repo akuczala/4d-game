@@ -4,7 +4,6 @@ use specs::saveload; // TODO: revert to private
 
 use crate::collide;
 use crate::config::load_config;
-use crate::constants::FACE_SCALE;
 use crate::ecs_utils::Componentable;
 use crate::graphics::DefaultGraphics;
 use crate::graphics::GraphicsTrait;
@@ -75,12 +74,11 @@ where
         let clip_state = ClipState::<V>::new();
         let draw_lines: DrawLineList<V> = draw::DrawLineList::<V>(vec![]);
         let proj_lines = DrawLineList::<V::SubV>(vec![]);
-        let face_scales: Vec<crate::vector::Field> = vec![FACE_SCALE];
+
 
         world.insert(clip_state); // decompose into single entity properties
         world.insert(draw_lines); // unclear if this would be better as entities; might be able to thread
         world.insert(proj_lines);
-        world.insert(face_scales);
 
         EngineD {
             world,

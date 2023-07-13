@@ -142,7 +142,7 @@ where
         ReadStorage<'a, Shape<V>>,
         ReadStorage<'a, ShapeTexture<V::SubV>>,
         ReadStorage<'a, ShapeClipState<V>>,
-        ReadExpect<'a, Vec<Field>>,
+        ReadExpect<'a, Config>,
         ReadExpect<'a, ClipState<V>>,
         WriteExpect<'a, DrawLineList<V>>, // TODO: break up into components so that these can be processed more in parallel with par_iter?
     );
@@ -153,7 +153,7 @@ where
 		shapes,
 		shape_textures,
 		shape_clip_states,
-		face_scale,
+		config,
 		clip_state,
 		mut lines
 	) : Self::SystemData,
@@ -162,7 +162,7 @@ where
             &shapes,
             &shape_textures,
             &shape_clip_states,
-            &face_scale,
+            &[config.face_scale],
             &clip_state,
         );
     }

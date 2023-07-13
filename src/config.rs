@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::{
-        CLIP_SPHERE_RADIUS, CONFIG_FILE_PATH_STR, FACE_SCALE, FOCAL, N_FUZZ_LINES,
-        N_HORIZON_FUZZ_LINES, N_SKY_FUZZ_LINES, VIEWPORT_SHAPE,
+        CONFIG_FILE_PATH_STR,
     },
     draw::ViewportShape,
     vector::Field,
@@ -21,9 +20,9 @@ pub struct ViewConfig {
 impl Default for ViewConfig {
     fn default() -> Self {
         Self {
-            clip_sphere_radius: CLIP_SPHERE_RADIUS,
-            viewport_shape: VIEWPORT_SHAPE,
-            focal: FOCAL,
+            clip_sphere_radius: 0.5,
+            viewport_shape:  ViewportShape::Cylinder,
+            focal: 1.0,
             spin_speed: Default::default(),
         }
     }
@@ -38,9 +37,9 @@ pub struct FuzzLinesConfig {
 impl Default for FuzzLinesConfig {
     fn default() -> Self {
         Self {
-            face_num: N_FUZZ_LINES,
-            sky_num: N_SKY_FUZZ_LINES,
-            horizon_num: N_HORIZON_FUZZ_LINES,
+            face_num: 500,
+            sky_num: 1000,
+            horizon_num: 500,
         }
     }
 }
@@ -55,7 +54,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            face_scale: FACE_SCALE,
+            face_scale: 0.8,
             fuzz_lines: Default::default(),
             view_config: Default::default(),
         }

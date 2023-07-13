@@ -5,7 +5,7 @@ use itertools::Itertools;
 use crate::{
     components::{Shape, Transform, Transformable},
     constants::{
-        AXES_COLORS, CARDINAL_COLORS, HALF, HALF_PI, N_HORIZON_FUZZ_LINES, N_SKY_FUZZ_LINES,
+        AXES_COLORS, CARDINAL_COLORS, HALF, HALF_PI,
         SKY_DISTANCE, SKY_FUZZ_SIZE, STAR_SIZE, ZERO,
     },
     geometry::{
