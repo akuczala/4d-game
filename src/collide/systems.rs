@@ -27,7 +27,7 @@ where
         ReadExpect<'a, Player>,
         WriteStorage<'a, MoveNext<V>>,
         WriteStorage<'a, Transform<V, V::M>>,
-        WriteStorage<'a, Camera<V, V::M>>,
+        WriteStorage<'a, Camera<V>>,
     );
 
     fn run(

@@ -393,7 +393,7 @@ where
     V::M: Componentable,
 {
     let transform = Transform::identity().with_translation(pos);
-    crate::player::build_player(world, &transform);
+    crate::player::build_player(world, &transform, None);
     init_cursor::<V>(world);
 }
 pub fn init_cursor<V>(world: &mut World)

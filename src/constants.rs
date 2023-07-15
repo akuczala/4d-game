@@ -44,3 +44,5 @@ pub const PLAYER_COLLIDE_DISTANCE: Field = 0.2;
 pub const SPEED: Field = 1.5;
 pub const ANG_SPEED: Field = 1.5 * PI / 3.0;
 pub const MAX_TILT: Field = 0.99;
+
+pub const MAX_TARGET_DIST: Field = 10.;

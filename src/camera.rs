@@ -3,15 +3,13 @@ use crate::constants::{PI, ANG_SPEED, MAX_TILT};
 use crate::geometry::Plane;
 use crate::vector::{rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait};
 
-pub struct Camera<V, M> {
-    pub heading: M,
+pub struct Camera<V> {
     pub plane: Plane<V>,
 }
-impl<V: VectorTrait> Camera<V, V::M> {
+impl<V: VectorTrait> Camera<V> {
 
-    pub fn new(transform: &Transform<V, V::M>) -> Camera<V, V::M> {
+    pub fn new(transform: &Transform<V, V::M>) -> Camera<V> {
         Camera {
-            heading: V::M::id(),
             plane: Plane {
                 normal: V::one_hot(-1),
                 threshold: V::one_hot(-1).dot(transform.pos),

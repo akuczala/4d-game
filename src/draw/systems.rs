@@ -29,7 +29,7 @@ where
     type SystemData = (
         ReadExpect<'a, DrawLineList<V>>,
         WriteExpect<'a, DrawLineList<V::SubV>>,
-        ReadStorage<'a, Camera<V, V::M>>,
+        ReadStorage<'a, Camera<V>>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadExpect<'a, Player>,
     );

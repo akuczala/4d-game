@@ -98,7 +98,7 @@ fn view_transform<V: VectorTrait>(transform: &Transform<V, V::M>, point: V) -> V
 pub fn transform_line<V: VectorTrait>(
     line: Line<V>,
     transform: &Transform<V, V::M>,
-    camera: &Camera<V, V::M>,
+    camera: &Camera<V>,
 ) -> Option<Line<V::SubV>>
 where
     V: VectorTrait,
@@ -142,7 +142,7 @@ impl<V: VectorTrait> DrawLineList<V> {
 pub fn transform_draw_line<V: VectorTrait>(
     draw_line: DrawLine<V>,
     transform: &Transform<V, V::M>,
-    camera: &Camera<V, V::M>,
+    camera: &Camera<V>,
 ) -> Option<DrawLine<V::SubV>> {
     transform_line(draw_line.line, transform, camera).map(|line| DrawLine {
         line,

@@ -194,7 +194,7 @@ fn get_dcoords_dcells(dcoords: &[HashInt], mult: &[HashInt]) -> Vec<HashInt> {
 pub fn move_player<V: VectorTrait>(
     move_next: &mut MoveNext<V>,
     player_transform: &mut Transform<V, V::M>,
-    camera: &mut Camera<V, V::M>,
+    camera: &mut Camera<V>,
 ) {
     if let MoveNext {
         next_dpos: Some(next_dpos),
