@@ -37,6 +37,28 @@ where
 
 const MAX_TARGET_DIST: Field = 10.;
 
+// this may be a temp solution until we split the camera + player into separate entities
+// e.g. the player has transform = heading, camera has transform where player is looking. would be 
+// nice to have a parent relationship between the two transforms a la unity
+// pub struct Heading<M>(pub M);
+// impl<V: VectorTrait> Heading<V::M> {
+//     pub fn spin(
+//         &mut self,
+//         transform: &mut Transform<V, V::M>,
+//         axis1: VecIndex,
+//         axis2: VecIndex,
+//         speed_mult: Field,
+//     ) {
+//         let rot = rotation_matrix(
+//             transform.frame[axis1],
+//             transform.frame[axis2],
+//             Some(speed_mult * Camera::ANG_SPEED),
+//         );
+//         transform.frame = transform.frame.dot(rot);
+//         self.heading = self.heading.dot(rot);
+//     }
+// }
+
 pub struct ShapeTargetingSystem<V>(pub PhantomData<V>);
 
 impl<'a, V> System<'a> for ShapeTargetingSystem<V>

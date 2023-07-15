@@ -1,4 +1,4 @@
-mod input_to_transform;
+pub mod input_to_transform;
 pub mod key_map; // this can be private when we're not debugging
 mod selection;
 pub mod systems;
