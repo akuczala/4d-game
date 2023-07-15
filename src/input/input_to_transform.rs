@@ -81,7 +81,11 @@ fn sliding_and_turning<V: VectorTrait>(
             any_slide_turn = true;
             //sliding
             if input.helper.held_alt() {
-                transform.translate(get_slide_dpos(transform.frame[axis] * movement_sign, SPEED, dt));
+                transform.translate(get_slide_dpos(
+                    transform.frame[axis] * movement_sign,
+                    SPEED,
+                    dt,
+                ));
                 //rotations
             } else {
                 //special case : (0,2) rotation

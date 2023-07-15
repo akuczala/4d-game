@@ -16,7 +16,7 @@ pub use crate::geometry::{
     shape::{Convex, Shape, ShapeLabel, ShapeType, ShapeTypeTrait, SingleFace},
     transform::{Transform, Transformable},
 };
-pub use crate::player::{Cursor, MaybeSelected, MaybeTarget, Selected, Heading};
+pub use crate::player::{Cursor, Heading, MaybeSelected, MaybeTarget, Selected};
 use crate::vector::VectorTrait;
 
 type DefaultStorage<V> = VecStorage<V>;

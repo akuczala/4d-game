@@ -1,5 +1,5 @@
 use crate::components::{Transform, Transformable};
-use crate::constants::{PI, ANG_SPEED, MAX_TILT};
+use crate::constants::{ANG_SPEED, MAX_TILT, PI};
 use crate::geometry::Plane;
 use crate::vector::{rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait};
 
@@ -7,7 +7,6 @@ pub struct Camera<V> {
     pub plane: Plane<V>,
 }
 impl<V: VectorTrait> Camera<V> {
-
     pub fn new(transform: &Transform<V, V::M>) -> Camera<V> {
         Camera {
             plane: Plane {

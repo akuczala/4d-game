@@ -117,7 +117,6 @@ fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
     buffer_len: usize,
     opt_lines: &[DrawLine<V>],
 ) {
-
     // TODO: this could be refactored with flat_map etc but i don't know how that impacts performance
     // TODO: is it faster to call .write once rather than write_map.set a bunch of times?
     let mut i = 0;

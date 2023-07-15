@@ -15,8 +15,11 @@ use std::marker::PhantomData;
 
 pub struct Player(pub Entity); //specifies entity of player
 
-pub fn build_player<V>(world: &mut World, transform: &Transform<V, V::M>, heading: Option<Heading<V::M>>)
-where
+pub fn build_player<V>(
+    world: &mut World,
+    transform: &Transform<V, V::M>,
+    heading: Option<Heading<V::M>>,
+) where
     V: VectorTrait + Componentable,
     V::M: Componentable + Clone,
 {
@@ -29,7 +32,7 @@ where
             min: V::ones() * (-0.1) + transform.pos,
             max: V::ones() * (0.1) + transform.pos,
         })
-        .with(camera) 
+        .with(camera)
         .with(MoveNext::<V>::default())
         .with(MaybeTarget::<V>(None))
         .with(MaybeSelected(None))
@@ -39,7 +42,7 @@ where
 }
 
 // this may be a temp solution until we split the camera + player into separate entities
-// e.g. the player has transform = heading, camera has transform where player is looking. would be 
+// e.g. the player has transform = heading, camera has transform where player is looking. would be
 // nice to have a parent relationship between the two transforms a la unity
 // I wanted to be able to impl a method that returns M[-1], but it doesn't work because MatrixTrait has a free generic parameter V
 pub struct Heading<M>(pub M);

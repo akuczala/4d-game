@@ -2,7 +2,7 @@ use super::input_to_transform::get_slide_dpos;
 use super::key_map::{MOVE_BACKWARDS, MOVE_FORWARDS, MOVE_KEYMAP};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY};
 
-use crate::constants::{SPEED, MAX_TILT, ANG_SPEED};
+use crate::constants::{ANG_SPEED, MAX_TILT, SPEED};
 use crate::ecs_utils::Componentable;
 use crate::player::Player;
 use std::marker::PhantomData;
@@ -17,7 +17,7 @@ use winit_input_helper::WinitInputHelper;
 use specs::prelude::*;
 
 use crate::components::*;
-use crate::vector::{Field, VecIndex, VectorTrait, MatrixTrait, rotation_matrix};
+use crate::vector::{rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait};
 
 use crate::geometry::shape::RefShapes;
 use crate::input::{PlayerMovementMode, ShapeMovementMode};
@@ -30,11 +30,7 @@ pub fn delta_turn_matrix<V: VectorTrait>(
     axis2: VecIndex,
     speed_mult: Field,
 ) -> V::M {
-    rotation_matrix(
-        heading[axis1],
-        heading[axis2],
-        Some(speed_mult * ANG_SPEED),
-    )
+    rotation_matrix(heading[axis1], heading[axis2], Some(speed_mult * ANG_SPEED))
 }
 
 //heading-based rotation affecting only camera direction
@@ -63,13 +59,23 @@ fn delta_tilt_matrix<V: VectorTrait>(
     }
 }
 
-fn turn<V: VectorTrait>(heading: &mut Heading<V::M>, transform: &mut Transform<V, V::M>, axes: (VecIndex, VecIndex), speed_mult: Field) {
+fn turn<V: VectorTrait>(
+    heading: &mut Heading<V::M>,
+    transform: &mut Transform<V, V::M>,
+    axes: (VecIndex, VecIndex),
+    speed_mult: Field,
+) {
     let dmat = delta_turn_matrix::<V>(&heading.0, axes.0, axes.1, speed_mult);
     transform.frame = transform.frame.dot(dmat);
     heading.0 = heading.0.dot(dmat);
 }
 
-fn tilt<V: VectorTrait>(heading: &Heading<V::M>, transform: &mut Transform<V, V::M>, axes: (VecIndex, VecIndex), speed_mult: Field) {
+fn tilt<V: VectorTrait>(
+    heading: &Heading<V::M>,
+    transform: &mut Transform<V, V::M>,
+    axes: (VecIndex, VecIndex),
+    speed_mult: Field,
+) {
     if let Some(rot) = delta_tilt_matrix(&heading.0, transform, axes.0, axes.1, speed_mult) {
         transform.frame = transform.frame.dot(rot);
     }
@@ -106,7 +112,9 @@ pub fn update_camera<V: VectorTrait>(
         //y mouse movement
         if dmy.abs() != 0. {
             match (V::DIM, input.helper.held_shift()) {
-                (3, _) | (4, true) => tilt(heading, transform, (1, -1), -dmy * dt * MOUSE_SENSITIVITY),
+                (3, _) | (4, true) => {
+                    tilt(heading, transform, (1, -1), -dmy * dt * MOUSE_SENSITIVITY)
+                }
                 (4, false) => turn(heading, transform, (2, -1), -dmy * dt * MOUSE_SENSITIVITY),
                 (_, _) => panic!("Invalid dimension"),
             };
@@ -143,8 +151,7 @@ pub fn update_camera<V: VectorTrait>(
                     MovementMode::Player(PlayerMovementMode::Mouse)
                 )
             {
-                move_next
-                    .translate(get_slide_dpos(heading.0[axis] * movement_sign, SPEED, dt));
+                move_next.translate(get_slide_dpos(heading.0[axis] * movement_sign, SPEED, dt));
                 //rotations
             } else {
                 //special case : (0,2) rotation
@@ -157,7 +164,6 @@ pub fn update_camera<V: VectorTrait>(
                     turn(heading, transform, (axis, -1), movement_sign * dt);
                 }
             }
-            
         };
     }
     //spin unless turning or sliding
