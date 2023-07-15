@@ -156,13 +156,14 @@ pub fn update_camera<V: VectorTrait>(
                     turn(&mut camera.heading, transform, (axis, -1), movement_sign * dt);
                 }
             }
-            camera.update(transform);
+            
         };
     }
     //spin unless turning or sliding
     if V::DIM == 4 && !any_slide_turn {
         //camera.spin(transform,0,2,0.05*dt);
     }
+    camera.update(transform);
     //         //reset orientation
     //         if !input.pressed.space {
     //             camera.frame = V::M::id();
