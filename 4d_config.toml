@@ -18,4 +18,4 @@ stars = true
 level = "Level1" # Supported: Level1, Empty, Test1, Test2
 
 [editor]
-enabled = true
+enabled = false
