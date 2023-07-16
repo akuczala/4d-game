@@ -8,7 +8,7 @@ height = 0.5
 radius = 0.6
 viewport_shape = "Cylinder"
 focal = 1.0
-spin_speed = 0.1
+spin_speed = 0.02
 
 [scene]
 grid = false

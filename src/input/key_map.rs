@@ -25,7 +25,7 @@ pub const RESET_ORIENTATION: VKC = VKC::Comma;
 
 pub const TOGGLE_CLIPPING: VKC = VKC::C;
 
-pub const QUIT: VKC = VKC::Key0;
+pub const QUIT: VKC = VKC::Escape;
 pub const TOGGLE_DIMENSION: VKC = VKC::Back;
 
 //(- key, + key, axis)
