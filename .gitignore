@@ -1,7 +1,6 @@
-.ipynb_checkpoints/*
 *.sublime-project
 *.sublime-workspace
-python/__pycache__/*
+python/*
 /target
 **/*.rs.bk
 architecture.txt
@@ -9,3 +8,4 @@ architecture.txt
 game-ideas.txt
 **/mesh-try4.rs
 *.gv
+.vscode/*

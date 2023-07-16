@@ -1,5 +1,5 @@
 [fuzz_lines]
-face_num = 1000
+face_num = 500
 sky_num = 1000
 horizon_num = 500
 
@@ -15,7 +15,7 @@ grid = false
 sky = false
 horizon = false
 stars = true
-level = "Level1"
+level = "Level1" # Supported: Level1, Empty, Test1, Test2
 
 [editor]
-enabled = false
+enabled = true

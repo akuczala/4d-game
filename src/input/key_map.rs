@@ -19,8 +19,8 @@ pub const AXIS_KEYMAP: [(VKC, VecIndex); 4] = [
 
 pub const CREATE_SHAPE: VKC = VKC::Period;
 // TODO: store combos in toggle keys so we can use shift-period or other combo to delete
-pub const DELETE_SHAPE: VKC = VKC::Semicolon;
-pub const DUPLICATE_SHAPE: VKC = VKC::Slash;
+pub const DELETE_SHAPE: VKC = VKC::Slash;
+pub const DUPLICATE_SHAPE: VKC = VKC::Semicolon;
 pub const RESET_ORIENTATION: VKC = VKC::Comma;
 
 pub const TOGGLE_CLIPPING: VKC = VKC::C;
