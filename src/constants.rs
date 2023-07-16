@@ -12,8 +12,8 @@ pub const BACKGROUND_COLOR: [f32; 4] = [DARK_TINT, DARK_TINT, DARK_TINT, 1.0];
 pub const CARDINAL_COLORS: [Color; 8] = [RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW, ORANGE, WHITE];
 pub const AXES_COLORS: [Color; 4] = [RED, GREEN, CYAN, MAGENTA];
 
-pub const N_FUZZ_LINES: usize = 50;
-pub const N_SKY_FUZZ_LINES: usize = 100;
+pub const N_FUZZ_LINES: usize = 500;
+pub const N_SKY_FUZZ_LINES: usize = 1000;
 pub const N_HORIZON_FUZZ_LINES: usize = 500;
 
 pub const SKY_DISTANCE: Field = 1e4;
@@ -46,3 +46,5 @@ pub const ANG_SPEED: Field = 1.5 * PI / 3.0;
 pub const MAX_TILT: Field = 0.99;
 
 pub const MAX_TARGET_DIST: Field = 10.;
+
+pub const FRAME_MS: u64 = 16;

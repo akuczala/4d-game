@@ -4,6 +4,7 @@ use specs::saveload; // TODO: revert to private
 
 use crate::collide;
 use crate::constants::FACE_SCALE;
+use crate::constants::FRAME_MS;
 use crate::ecs_utils::Componentable;
 use crate::graphics::DefaultGraphics;
 use crate::graphics::GraphicsTrait;
@@ -114,35 +115,36 @@ where
             }
             //input events
             input.listen_events(event);
-
             if input.closed {
                 println!("Escape button pressed; exiting.");
                 *control_flow = ControlFlow::Exit;
             }
-            //window / game / redraw events
-            match event {
-                Event::WindowEvent {
-                    event: WindowEvent::CloseRequested,
-                    ..
-                } => {
-                    println!("The close button was pressed; stopping");
-                    *control_flow = ControlFlow::Exit
-                }
-                Event::MainEventsCleared => {
-                    // Application update code.
-                    display.gl_window().window().request_redraw();
-                    if input.update {}
-                }
-                _ => (),
-            };
         }
-        // TODO: how often do we really need to update the ui?
-        self.update_ui(display, control_flow, event, fps_timer);
-        //game update and draw
+        //window / game / redraw events
         match event {
-            Event::MainEventsCleared => {}
-            //frame update
-            Event::RedrawRequested(_) => self.on_redraw(display, fps_timer),
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
+                println!("The close button was pressed; stopping");
+                *control_flow = ControlFlow::Exit
+            }
+            Event::MainEventsCleared => {
+                // Application update code.
+                //display.gl_window().window().request_redraw();
+                //if input.update {}
+                if Instant::now() > fps_timer.start + Duration::from_millis(FRAME_MS) {
+                    fps_timer.end();
+                    {
+                        self.world.write_resource::<Input>().frame_duration =
+                            fps_timer.get_frame_length();
+                    }
+                    fps_timer.start();
+                    self.update_ui(display, control_flow, event, fps_timer);
+                    self.on_redraw(display);
+                }
+            }
+            Event::RedrawRequested(_) => {}
             _ => (),
         };
 
@@ -187,40 +189,38 @@ where
         };
     }
 
-    fn on_redraw(&mut self, display: &Display, fps_timer: &mut FPSTimer) {
+    fn run_systems(&mut self) {
+        self.dispatcher.dispatch(&self.world);
+        self.world.maintain();
+    }
+
+    fn on_redraw(&mut self, display: &Display) {
         // Redraw the application.
-        if Instant::now() > fps_timer.start + Duration::from_millis(16) {
-            fps_timer.end();
-            {
-                self.world.write_resource::<Input>().frame_duration = fps_timer.get_frame_length();
-            }
-            fps_timer.start();
+        self.run_systems();
 
-            self.dispatcher.dispatch(&self.world);
-            self.world.maintain();
+        self.draw(display);
 
-            self.draw(display);
+        Self::center_mouse(&mut self.world.write_resource::<Input>(), display)
+    }
 
-            {
-                let mut input = self.world.write_resource::<Input>();
-                if let MovementMode::Player(PlayerMovementMode::Mouse) | MovementMode::Shape(_) =
-                    input.movement_mode
-                {
-                    display
-                        .gl_window()
-                        .window()
-                        .set_cursor_position(glium::glutin::dpi::Position::new(
-                            glium::glutin::dpi::PhysicalPosition::new(100, 100),
-                        ))
-                        .unwrap();
-                    display.gl_window().window().set_cursor_visible(false);
-                    input.mouse.mouse_dpos = (0., 0.);
-                } else {
-                    display.gl_window().window().set_cursor_visible(true);
-                }
-            }
+    fn center_mouse(input: &mut Input, display: &Display) {
+        if let MovementMode::Player(PlayerMovementMode::Mouse) | MovementMode::Shape(_) =
+            input.movement_mode
+        {
+            display
+                .gl_window()
+                .window()
+                .set_cursor_position(glium::glutin::dpi::Position::new(
+                    glium::glutin::dpi::PhysicalPosition::new(100, 100),
+                ))
+                .unwrap();
+            display.gl_window().window().set_cursor_visible(false);
+            input.mouse.mouse_dpos = (0., 0.);
+        } else {
+            display.gl_window().window().set_cursor_visible(true);
         }
     }
+
     fn draw(&mut self, display: &Display) {
         // TODO: ideally all this stuff is invisible to engine - it should be enough to pass lines
         // and gui args to graphics for drawing

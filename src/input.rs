@@ -219,20 +219,11 @@ impl Input {
                 _ => MovementMode::Player(PlayerMovementMode::Mouse),
             }
         }
-        // trying to move to selection.rs?
-        // for &(key, mode) in MODE_KEYMAP.iter() {
-        //     if self.helper.key_released(key) {
-        //         self.movement_mode = MovementMode::Shape(mode);
-        //         self.mouse.integrated_mouse_dpos = Default::default();
-        //         self.mouse.integrated_scroll_dpos = Default::default();
-        //     }
-        // }
     }
-    // listing the events produced by application and waiting to be received
+    // run for every winit event
     pub fn listen_events<E>(&mut self, ev: &Event<E>) {
         let closed = &mut self.closed;
         let update = &mut self.update;
-        //let swap_engine = &mut self.swap_engine;
 
         if let Event::WindowEvent { event, .. } = ev {
             match event {
