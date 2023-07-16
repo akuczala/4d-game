@@ -16,10 +16,10 @@ impl Default for ViewConfig {
     fn default() -> Self {
         Self {
             height: 0.5,
-            radius: 0.5,
+            radius: 0.6,
             viewport_shape: ViewportShape::Cylinder,
             focal: 1.0,
-            spin_speed: Default::default(),
+            spin_speed: 0.1,
         }
     }
 }
@@ -41,11 +41,25 @@ impl Default for FuzzLinesConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum LevelConfig {
+    Level1,
+    Test1,
+    Test2,
+    Empty,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+pub struct Level1Config {
+    pub open_center: bool,
+}
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SceneConfig {
     pub grid: bool,
     pub sky: bool,
     pub horizon: bool,
     pub stars: bool,
+    pub level: LevelConfig,
+    pub level_1: Option<Level1Config>,
 }
 impl Default for SceneConfig {
     fn default() -> Self {
@@ -54,15 +68,23 @@ impl Default for SceneConfig {
             sky: false,
             horizon: false,
             stars: true,
+            level: LevelConfig::Level1,
+            level_1: None,
         }
     }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
+pub struct EditorConfig {
+    pub enabled: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct Config {
     pub fuzz_lines: FuzzLinesConfig,
-    pub view_config: ViewConfig,
-    pub scene_config: SceneConfig,
+    pub view: ViewConfig,
+    pub scene: SceneConfig,
+    pub editor: EditorConfig,
 }
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;

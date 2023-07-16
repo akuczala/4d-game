@@ -44,20 +44,16 @@ fn delta_tilt_matrix<V: VectorTrait>(
 ) -> Option<V::M> {
     let dot = heading[axis1].dot(transform.frame[axis2]); // get projection of frame axis along heading axis
 
-    if dot * speed_mult < 0. || dot.abs() < MAX_TILT {
+    (dot * speed_mult < 0. || dot.abs() < MAX_TILT).then(
         //rotate if tilting direction is opposite projection or if < max tilt
-        //if true {
-        Some(rotation_matrix(
-            transform.frame[axis1],
-            transform.frame[axis2],
-            Some(speed_mult * ANG_SPEED),
-        ))
-        //transform.frame = transform.frame.dot(rot);
-
-        //self.update(transform);
-    } else {
-        None
-    }
+        || {
+            rotation_matrix(
+                transform.frame[axis1],
+                transform.frame[axis2],
+                Some(speed_mult * ANG_SPEED),
+            )
+        },
+    )
 }
 
 fn turn<V: VectorTrait>(

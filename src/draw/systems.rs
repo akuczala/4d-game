@@ -50,7 +50,7 @@ where
                     line.clone(),
                     transform.get(player.0).unwrap(),
                     camera.get(player.0).unwrap(),
-                    &config.view_config,
+                    &config.view,
                 )
             })
             .collect();

@@ -201,22 +201,30 @@ pub fn create_shape<V: VectorTrait>(
     config: &Config,
     player_transform: &Transform<V, V::M>,
 ) -> Option<ShapeEntityBuilderV<V>> {
-    input.toggle_keys.trigger_once(CREATE_SHAPE, || {
-        println!("shape created");
-        //let player_transform =
-        let pos = player_transform.pos;
-        let dir = player_transform.frame[-1];
-        let shape_pos = pos + dir * 2.0;
-        ShapeEntityBuilder::new_convex_from_ref_shape(
-            ref_shapes,
-            ShapeLabel::from_str(CUBE_LABEL_STR),
-        )
-        .with_transform(Transform::pos(shape_pos))
-        .with_scale(Scaling::Scalar(1.0))
-        .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, config.fuzz_lines.face_num))
-        .with_collider(Some(StaticCollider))
-        // TODO: add to spatial hash set (use BBox hash system)
-    })
+    config
+        .editor
+        .enabled
+        .then(|| {
+            input.toggle_keys.trigger_once(CREATE_SHAPE, || {
+                println!("shape created");
+                //let player_transform =
+                let pos = player_transform.pos;
+                let dir = player_transform.frame[-1];
+                let shape_pos = pos + dir * 2.0;
+                ShapeEntityBuilder::new_convex_from_ref_shape(
+                    ref_shapes,
+                    ShapeLabel::from_str(CUBE_LABEL_STR),
+                )
+                .with_transform(Transform::pos(shape_pos))
+                .with_scale(Scaling::Scalar(1.0))
+                .with_texturing_fn(|shape| {
+                    fuzzy_color_cube_texture(shape, config.fuzz_lines.face_num)
+                })
+                .with_collider(Some(StaticCollider))
+                // TODO: add to spatial hash set (use BBox hash system)
+            })
+        })
+        .flatten()
 }
 
 pub fn duplicate_shape<V: VectorTrait>(
@@ -244,8 +252,8 @@ pub fn delete_shape(
     deleted_entities: &mut DeletedEntities,
 ) -> Option<Entity> {
     input.toggle_keys.trigger_once_bind(DELETE_SHAPE, || {
-        println!("Delete shape");
         if let Some(selected) = &maybe_selected.0 {
+            println!("Delete shape");
             let e = selected.entity;
             deleted_entities.add(e);
             maybe_selected.0 = None;

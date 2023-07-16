@@ -66,7 +66,7 @@ mod tests {
     fn serialize_world() {
         let mut ref_shapes = build_shape_library::<Vec3>();
         let mut world = new_world();
-        build_lvl_1(&mut world, &mut ref_shapes);
+        build_lvl_1(&mut world, &mut ref_shapes, false);
         let initial_count = world.read_component::<Shape<Vec3>>().count();
         //let mut writer = Vec::new();
         let mut serializer = serde_json::Serializer::new(Vec::new());

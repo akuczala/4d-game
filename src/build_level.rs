@@ -1,7 +1,7 @@
 use crate::coin::Coin;
 use crate::collide::StaticCollider;
 use crate::components::{Cursor, Transform};
-use crate::config::Config;
+use crate::config::{Config, FuzzLinesConfig, LevelConfig};
 use crate::constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FACE_SCALE, PI};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube_texture, fuzzy_color_cube_texture};
@@ -147,11 +147,12 @@ where
 }
 
 pub fn build_fun_level<V: VectorTrait>(
+    fuzz_config: FuzzLinesConfig,
     ref_shapes: &mut RefShapes<V>,
 ) -> Vec<ShapeEntityBuilderV<V>> {
     let (n_divisions, frame_vertis) = match V::DIM {
-        3 => (vec![4, 4], vec![1, 3]),
-        4 => (vec![4, 4, 4], vec![1, 3, 4]),
+        3 => (vec![2, 2], vec![1, 3]),
+        4 => (vec![2, 2, 2], vec![1, 3, 4]),
         _ => panic!("Cannot build test level in {} dimensions.", { V::DIM }),
     };
     let len = 4.0;
@@ -163,7 +164,8 @@ pub fn build_fun_level<V: VectorTrait>(
     let wall_builder =
         ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, wall_single_face, wall_label)
             .with_face_texture(FaceTexture {
-                texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions),
+                texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions)
+                    .merged_with(&Texture::make_fuzz_texture(fuzz_config.face_num)),
                 texture_mapping: Some(draw::TextureMapping {
                     origin_verti: 0,
                     frame_vertis,
@@ -226,13 +228,23 @@ where
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    let ref_shapes = build_shape_library::<V>();
-    build_lvl_1(world, &ref_shapes);
-    // for builder in build_fun_level::<V>(&mut ref_shapes) {
-    //     insert_static_collider(world, builder);
-    // }
-    //build_test_level::<V>(world, &mut ref_shapes);
-    //build_test_face(world);
+    let config: Config = (*world.read_resource::<Config>()).clone();
+    let mut ref_shapes = build_shape_library::<V>();
+
+    match config.scene.level {
+        LevelConfig::Level1 => build_lvl_1(
+            world,
+            &ref_shapes,
+            config.scene.level_1.unwrap_or_default().open_center,
+        ),
+        LevelConfig::Test1 => build_test_level(world, &mut ref_shapes),
+        LevelConfig::Test2 => {
+            build_fun_level(config.fuzz_lines, &mut ref_shapes)
+                .into_iter()
+                .for_each(|b| insert_static_collider(world, b));
+        }
+        LevelConfig::Empty => (),
+    };
     build_empty_level::<V>(world);
     init_player(world, V::zero());
     world.insert(ref_shapes);
@@ -240,7 +252,7 @@ where
 
 pub fn build_empty_level<V: VectorTrait + Componentable>(world: &mut World) {
     let config: Config = (*world.read_resource::<Config>()).clone();
-    let scene_config = config.scene_config;
+    let scene_config = config.scene;
     vec![
         DrawLineCollection::from_lines(
             calc_grid_lines(V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 2),
@@ -254,7 +266,12 @@ pub fn build_empty_level<V: VectorTrait + Componentable>(world: &mut World) {
         DrawLineCollection(draw_stars::<V>()),
     ]
     .into_iter()
-    .zip([scene_config.grid, scene_config.sky, scene_config.stars])
+    .zip([
+        scene_config.grid,
+        scene_config.sky,
+        scene_config.horizon,
+        scene_config.stars,
+    ])
     .for_each(|(dlc, enabled)| {
         if enabled {
             world.create_entity().with(dlc).build();
@@ -266,6 +283,7 @@ pub fn build_corridor_cross<V: VectorTrait>(
     cube_builder: &ShapeEntityBuilderV<V>,
     wall_length: Field,
     config: &Config,
+    open_center: bool,
 ) -> Vec<ShapeEntityBuilderV<V>> {
     // todo figure out why texture is now off after changes to transform
     pub fn build_texture<V: VectorTrait>(
@@ -398,11 +416,14 @@ pub fn build_corridor_cross<V: VectorTrait>(
             .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, config.fuzz_lines.face_num)),
     );
     //center ceiling
-    shape_builders.push(
-        shape_builders[shape_builders.len() - 1]
-            .clone()
-            .with_translation(V::one_hot(1) * (wall_height + corr_width)),
-    );
+    if !open_center {
+        shape_builders.push(
+            shape_builders[shape_builders.len() - 1]
+                .clone()
+                .with_translation(V::one_hot(1) * (wall_height + corr_width)),
+        );
+    }
+
     shape_builders
 }
 pub fn init_player<V>(world: &mut World, pos: V)
@@ -427,7 +448,7 @@ where
         .build();
 }
 
-pub fn build_lvl_1<V>(world: &mut World, ref_shapes: &RefShapes<V>)
+pub fn build_lvl_1<V>(world: &mut World, ref_shapes: &RefShapes<V>, open_center: bool)
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
@@ -441,7 +462,7 @@ where
     let wall_length = 3.0;
     let config = (*world.read_resource::<Config>()).clone();
     let walls: Vec<ShapeEntityBuilderV<V>> =
-        build_corridor_cross(&cube_builder, wall_length, &config);
+        build_corridor_cross(&cube_builder, wall_length, &config, open_center);
 
     for wall in walls.into_iter() {
         insert_static_collider(world, wall)

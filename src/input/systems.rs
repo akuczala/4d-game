@@ -37,7 +37,7 @@ where
         if input.is_camera_movement_enabled() {
             update_camera(
                 &mut input,
-                &config.view_config,
+                &config.view,
                 transforms.get_mut(player.0).unwrap(),
                 headings.get_mut(player.0).unwrap(),
                 cameras.get_mut(player.0).unwrap(),
@@ -91,6 +91,7 @@ pub struct SelectTargetSystem<V>(pub PhantomData<V>);
 impl<'a, V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V> {
     type SystemData = (
         Read<'a, Input>,
+        ReadExpect<'a, Config>,
         ReadExpect<'a, Player>,
         ReadStorage<'a, MaybeTarget<V>>,
         WriteStorage<'a, MaybeSelected>,
@@ -100,14 +101,17 @@ impl<'a, V: VectorTrait + Componentable> System<'a> for SelectTargetSystem<V> {
         &mut self,
         (
             input,
+            config,
             player,
             maybe_target_storage,
             mut maybe_selected_storage,
             mut write_draw_line_collection,
         ): Self::SystemData,
     ) {
-        if let (true, &MovementMode::Player(_)) = (input.helper.mouse_held(0), &input.movement_mode)
-        {
+        if let (true, &MovementMode::Player(_)) = (
+            input.helper.mouse_held(0) & config.editor.enabled,
+            &input.movement_mode,
+        ) {
             let maybe_target = maybe_target_storage
                 .get(player.0)
                 .expect("Player has no target component");
