@@ -2,8 +2,8 @@ use super::input_to_transform::get_slide_dpos;
 use super::key_map::{MOVE_BACKWARDS, MOVE_FORWARDS, MOVE_KEYMAP};
 use super::{Input, MovementMode, MOUSE_SENSITIVITY};
 
-use crate::constants::{ANG_SPEED, MAX_TILT, SPEED};
 use crate::config::ViewConfig;
+use crate::constants::{ANG_SPEED, MAX_TILT, SPEED};
 use crate::ecs_utils::Componentable;
 use crate::player::Player;
 use std::marker::PhantomData;

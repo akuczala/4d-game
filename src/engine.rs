@@ -76,7 +76,6 @@ where
         let draw_lines: DrawLineList<V> = draw::DrawLineList::<V>(vec![]);
         let proj_lines = DrawLineList::<V::SubV>(vec![]);
 
-
         world.insert(clip_state); // decompose into single entity properties
         world.insert(draw_lines); // unclear if this would be better as entities; might be able to thread
         world.insert(proj_lines);

@@ -2,17 +2,12 @@ use std::error;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    constants::{
-        CONFIG_FILE_PATH_STR,
-    },
-    draw::ViewportShape,
-    vector::Field,
-};
+use crate::{constants::CONFIG_FILE_PATH_STR, draw::ViewportShape, vector::Field};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ViewConfig {
-    pub clip_sphere_radius: Field,
+    pub height: Field,
+    pub radius: Field,
     pub viewport_shape: ViewportShape,
     pub focal: Field,
     pub spin_speed: Field,
@@ -20,8 +15,9 @@ pub struct ViewConfig {
 impl Default for ViewConfig {
     fn default() -> Self {
         Self {
-            clip_sphere_radius: 0.5,
-            viewport_shape:  ViewportShape::Cylinder,
+            height: 0.5,
+            radius: 0.5,
+            viewport_shape: ViewportShape::Cylinder,
             focal: 1.0,
             spin_speed: Default::default(),
         }
@@ -45,19 +41,30 @@ impl Default for FuzzLinesConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Config {
-    pub fuzz_lines: FuzzLinesConfig,
-    pub view_config: ViewConfig,
+pub struct SceneConfig {
+    pub grid: bool,
+    pub sky: bool,
+    pub horizon: bool,
+    pub stars: bool,
 }
-
-impl Default for Config {
+impl Default for SceneConfig {
     fn default() -> Self {
         Self {
-            fuzz_lines: Default::default(),
-            view_config: Default::default(),
+            grid: false,
+            sky: false,
+            horizon: false,
+            stars: true,
         }
     }
 }
+
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+pub struct Config {
+    pub fuzz_lines: FuzzLinesConfig,
+    pub view_config: ViewConfig,
+    pub scene_config: SceneConfig,
+}
+
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 pub fn load_config_2() -> Result<Config> {

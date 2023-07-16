@@ -1,6 +1,8 @@
+pub mod mat1;
 pub mod mat2_tuple2;
 pub mod mat3_tuple2;
 pub mod mat4_tuple2;
+pub mod vec1;
 pub mod vec2;
 pub mod vec3;
 pub mod vec4;

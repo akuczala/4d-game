@@ -224,6 +224,7 @@ where
         Some(Line(p0, intersect))
     }
 }
+
 pub fn clip_line_cube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>> {
     //construct the d cube planes, normals facing in
     let planes_iter = (0..V::DIM).flat_map(move |i| {
@@ -246,6 +247,7 @@ pub fn clip_line_cube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>
     //     )
     // )
 }
+
 pub fn clip_line_sphere<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>> {
     let v0 = line.0;
     let v1 = line.1;
@@ -266,12 +268,6 @@ pub fn clip_line_sphere<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<
     })
 }
 pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> Option<Line<V>> {
-    // yes this is lame
-    if V::DIM < 3 {
-        return clip_line_cube(line, r);
-    }
-    // below only works for > 2D
-
     //first clip with planes on top and bottom
     let long_axis = 1;
     let planes_iter = ([-1., 1.]).iter().map(move |&sign| Plane {
@@ -288,9 +284,6 @@ pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> 
 // clip line in infinite cylinder
 // TODO: reduce # vec allocations
 pub fn clip_line_tube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>> {
-    if V::DIM < 3 {
-        return clip_line_cube(line, r); // this isn't quite right but whatevs
-    }
     fn build_vec<V: VectorTrait>(u: V::SubV, a: Field, long_axis: VecIndex) -> V {
         let mut u_iter = u.iter();
         V::from_iter(
@@ -323,7 +316,6 @@ pub fn clip_line_tube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>
     fn t_in_range(t: Field) -> bool {
         0.0 < t && t < 1.0
     }
-    //println!("t_roots: {}",t_roots.clone().unwrap());
     t_roots
         .filter(
             // eliminate lines segments outside the circle entirely

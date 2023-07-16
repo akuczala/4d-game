@@ -3,6 +3,7 @@ use std::fmt;
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 use std::slice::Iter;
 
+use super::vec1::Vec1;
 use super::Mat2;
 use crate::vector::{Field, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
 
@@ -78,9 +79,7 @@ impl Div<Field> for Vec2 {
 impl VectorTrait for Vec2 {
     type M = Mat2;
 
-    //this should be Field but we have to implement VectorTrait
-    //for Field
-    type SubV = Vec2;
+    type SubV = Vec1;
 
     type Arr = [Field; 2];
 
@@ -123,12 +122,12 @@ impl VectorTrait for Vec2 {
     }
     //should really return Field
     //I instead just throw away the second component
-    fn project(&self) -> Vec2 {
-        Vec2::new(self[0], 0.0)
+    fn project(&self) -> Vec1 {
+        Vec1::new(self[0])
     }
-    fn unproject(v: Vec2) -> Vec2 {
-        v
-    } //this is identity since we don't have Vec1
+    fn unproject(v: Vec1) -> Vec2 {
+        Vec2::new(v[0], 0.0)
+    }
     fn cross_product<I: std::iter::Iterator<Item = Self>>(mut vecs_iter: I) -> Self {
         let v0 = vecs_iter.next().expect("No vecs given to 2d cross product");
         if let Some(_v1) = vecs_iter.next() {

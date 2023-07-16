@@ -2,7 +2,7 @@ use crate::coin::Coin;
 use crate::collide::StaticCollider;
 use crate::components::{Cursor, Transform};
 use crate::config::Config;
-use crate::constants::{COIN_LABEL_STR, CUBE_LABEL_STR, PI, FACE_SCALE};
+use crate::constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FACE_SCALE, PI};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube_texture, fuzzy_color_cube_texture};
 use crate::draw::visual_aids::{calc_grid_lines, draw_horizon, draw_sky, draw_stars};
@@ -240,6 +240,7 @@ where
 
 pub fn build_empty_level<V: VectorTrait + Componentable>(world: &mut World) {
     let config: Config = (*world.read_resource::<Config>()).clone();
+    let scene_config = config.scene_config;
     vec![
         DrawLineCollection::from_lines(
             calc_grid_lines(V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 2),
@@ -253,8 +254,11 @@ pub fn build_empty_level<V: VectorTrait + Componentable>(world: &mut World) {
         DrawLineCollection(draw_stars::<V>()),
     ]
     .into_iter()
-    .for_each(|dlc| {
-        world.create_entity().with(dlc).build();
+    .zip([scene_config.grid, scene_config.sky, scene_config.stars])
+    .for_each(|(dlc, enabled)| {
+        if enabled {
+            world.create_entity().with(dlc).build();
+        }
     });
 }
 
@@ -280,7 +284,7 @@ pub fn build_corridor_cross<V: VectorTrait>(
                 _ => panic!("build corridor cross expected DefaultLines"), //don't bother handling the other cases
             };
             face_texture.texture = draw::Texture::make_tile_texture(
-                &vec![FACE_SCALE],
+                &[FACE_SCALE],
                 &match V::DIM {
                     3 => vec![3, 1],
                     4 => vec![3, 1, 1],

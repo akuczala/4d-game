@@ -12,9 +12,7 @@ pub use texture::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 
 use crate::components::*;
 use crate::config::ViewConfig;
-use crate::constants::{
-    CURSOR_COLOR, SELECTION_COLOR, SMALL_Z, Z0, Z_NEAR,
-};
+use crate::constants::{CURSOR_COLOR, SELECTION_COLOR, SMALL_Z, Z0, Z_NEAR};
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{shape::VertIndex, Line, Shape};
@@ -106,13 +104,14 @@ pub fn transform_line<V: VectorTrait>(
 where
     V: VectorTrait,
 {
-    let r = view_config.clip_sphere_radius;
+    let r = view_config.radius;
+    let h = view_config.height;
     clip_line_plane(line, &camera.plane, Z_NEAR)
         .map(|l| l.map(|v| project(view_config.focal, view_transform(transform, v))))
         .and_then(|l| match view_config.viewport_shape {
             ViewportShape::Cube => clip_line_cube(l, r),
             ViewportShape::Sphere => clip_line_sphere(l, r),
-            ViewportShape::Cylinder => clip_line_cylinder(l, r, r),
+            ViewportShape::Cylinder => clip_line_cylinder(l, r, h),
             ViewportShape::Tube => clip_line_tube(l, r),
             ViewportShape::None => Some(l),
         })

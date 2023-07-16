@@ -7,8 +7,9 @@ use crate::{
         BBall, Camera, ClipState, Cursor, Player, Shape, ShapeClipState, ShapeType, Transform,
     },
     config::Config,
+    constants::FACE_SCALE,
     ecs_utils::{Componentable, SystemName},
-    vector::{Field, VectorTrait}, constants::FACE_SCALE,
+    vector::{Field, VectorTrait},
 };
 
 use super::{
@@ -148,13 +149,7 @@ where
 
     fn run(
         &mut self,
-        (
-		shapes,
-		shape_textures,
-		shape_clip_states,
-		clip_state,
-		mut lines
-	) : Self::SystemData,
+        (shapes, shape_textures, shape_clip_states, clip_state, mut lines): Self::SystemData,
     ) {
         lines.0 = calc_shapes_lines(
             &shapes,

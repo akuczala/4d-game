@@ -1,10 +1,17 @@
 [fuzz_lines]
-face_num = 100
-sky_num = 2000
+face_num = 500
+sky_num = 1000
 horizon_num = 500
 
 [view_config]
-clip_sphere_radius = 0.5
+height = 0.5
+radius = 1.0
 viewport_shape = "Cylinder"
 focal = 1.0
 spin_speed = 0.1
+
+[scene_config]
+grid = false
+sky = false
+horizon = false
+stars = false
