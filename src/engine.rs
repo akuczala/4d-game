@@ -140,13 +140,14 @@ where
                             fps_timer.get_frame_length();
                     }
                     fps_timer.start();
-                    self.update_ui(display, control_flow, event, fps_timer);
                     self.on_redraw(display);
                 }
             }
             Event::RedrawRequested(_) => {}
             _ => (),
         };
+        // this catches e.g. all window resizing events
+        self.update_ui(display, control_flow, event, fps_timer);
 
         false //don't switch engines
     }
