@@ -46,7 +46,6 @@ impl Default for FuzzLinesConfig {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Config {
-    pub face_scale: Field,
     pub fuzz_lines: FuzzLinesConfig,
     pub view_config: ViewConfig,
 }
@@ -54,7 +53,6 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            face_scale: 0.8,
             fuzz_lines: Default::default(),
             view_config: Default::default(),
         }

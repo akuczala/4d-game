@@ -8,7 +8,7 @@ use crate::{
     },
     config::Config,
     ecs_utils::{Componentable, SystemName},
-    vector::{Field, VectorTrait},
+    vector::{Field, VectorTrait}, constants::FACE_SCALE,
 };
 
 use super::{
@@ -30,7 +30,7 @@ where
     type SystemData = (
         ReadExpect<'a, DrawLineList<V>>,
         WriteExpect<'a, DrawLineList<V::SubV>>,
-        ReadStorage<'a, Camera<V, V::M>>,
+        ReadStorage<'a, Camera<V>>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadExpect<'a, Player>,
         ReadExpect<'a, Config>,
@@ -142,7 +142,6 @@ where
         ReadStorage<'a, Shape<V>>,
         ReadStorage<'a, ShapeTexture<V::SubV>>,
         ReadStorage<'a, ShapeClipState<V>>,
-        ReadExpect<'a, Config>,
         ReadExpect<'a, ClipState<V>>,
         WriteExpect<'a, DrawLineList<V>>, // TODO: break up into components so that these can be processed more in parallel with par_iter?
     );
@@ -153,7 +152,6 @@ where
 		shapes,
 		shape_textures,
 		shape_clip_states,
-		config,
 		clip_state,
 		mut lines
 	) : Self::SystemData,
@@ -162,7 +160,7 @@ where
             &shapes,
             &shape_textures,
             &shape_clip_states,
-            &[config.face_scale],
+            &[FACE_SCALE],
             &clip_state,
         );
     }

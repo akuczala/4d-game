@@ -1,3 +1,4 @@
+use glium::backend::glutin::headless;
 use specs::prelude::*;
 use std::marker::PhantomData;
 
@@ -23,20 +24,22 @@ where
     type SystemData = (
         Write<'a, Input>,
         WriteStorage<'a, Transform<V, V::M>>,
-        WriteStorage<'a, Camera<V, V::M>>,
+        WriteStorage<'a, Camera<V>>,
+        WriteStorage<'a, Heading<V::M>>,
         WriteStorage<'a, MoveNext<V>>,
         ReadExpect<'a, Player>,
         ReadExpect<'a, Config>,
     );
     fn run(
         &mut self,
-        (mut input, mut transforms, mut cameras, mut move_nexts, player, config): Self::SystemData,
+        (mut input, mut transforms, mut cameras, mut headings, mut move_nexts, player, config): Self::SystemData,
     ) {
         if input.is_camera_movement_enabled() {
             update_camera(
                 &mut input,
                 &config.view_config,
                 transforms.get_mut(player.0).unwrap(),
+                headings.get_mut(player.0).unwrap(),
                 cameras.get_mut(player.0).unwrap(),
                 move_nexts.get_mut(player.0).unwrap(),
             );

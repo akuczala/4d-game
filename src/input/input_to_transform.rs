@@ -16,8 +16,8 @@ use super::{ShapeManipulationState, ToggleKeys};
 const SPEED: Field = 1.5;
 const ANG_SPEED: Field = 1.5 * PI / 3.0;
 
-pub fn get_slide_dpos<V: VectorTrait>(direction: V, time: Field) -> V {
-    direction.normalize() * SPEED * time
+pub fn get_slide_dpos<V: VectorTrait>(direction: V, speed: Field, time: Field) -> V {
+    direction.normalize() * speed * time
 }
 
 fn mouse_rotation<V: VectorTrait>(
@@ -56,11 +56,11 @@ fn forwards_backwards_movement<V: VectorTrait>(
 ) -> bool {
     let mut update = false;
     if input.helper.key_held(MOVE_FORWARDS) {
-        transform.translate(get_slide_dpos(transform.frame[-1], dt));
+        transform.translate(get_slide_dpos(transform.frame[-1], SPEED, dt));
         update = true;
     }
     if input.helper.key_held(MOVE_BACKWARDS) {
-        transform.translate(get_slide_dpos(-transform.frame[-1], dt));
+        transform.translate(get_slide_dpos(-transform.frame[-1], SPEED, dt));
         update = true;
     }
     update
@@ -81,7 +81,11 @@ fn sliding_and_turning<V: VectorTrait>(
             any_slide_turn = true;
             //sliding
             if input.helper.held_alt() {
-                transform.translate(get_slide_dpos(transform.frame[axis] * movement_sign, dt));
+                transform.translate(get_slide_dpos(
+                    transform.frame[axis] * movement_sign,
+                    SPEED,
+                    dt,
+                ));
                 //rotations
             } else {
                 //special case : (0,2) rotation

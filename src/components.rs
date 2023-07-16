@@ -16,7 +16,7 @@ pub use crate::geometry::{
     shape::{Convex, Shape, ShapeLabel, ShapeType, ShapeTypeTrait, SingleFace},
     transform::{Transform, Transformable},
 };
-pub use crate::player::{Cursor, MaybeSelected, MaybeTarget, Selected};
+pub use crate::player::{Cursor, Heading, MaybeSelected, MaybeTarget, Selected};
 use crate::vector::VectorTrait;
 
 type DefaultStorage<V> = VecStorage<V>;
@@ -45,7 +45,7 @@ impl<U: Componentable> Component for ShapeTexture<U> {
 impl<V: Componentable, M: Componentable> Component for Transform<V, M> {
     type Storage = FlaggedStorage<Self, DefaultStorage<Self>>;
 }
-impl<V: Componentable, M: Componentable> Component for Camera<V, M> {
+impl<V: Componentable> Component for Camera<V> {
     type Storage = DefaultStorage<Self>;
 }
 impl Component for Coin {
@@ -61,5 +61,9 @@ impl<V: Componentable> Component for MaybeTarget<V> {
 }
 
 impl<V: Componentable> Component for DrawLineCollection<V> {
+    type Storage = HashMapStorage<Self>;
+}
+
+impl<M: Componentable> Component for Heading<M> {
     type Storage = HashMapStorage<Self>;
 }

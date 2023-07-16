@@ -2,7 +2,7 @@ use crate::coin::Coin;
 use crate::collide::StaticCollider;
 use crate::components::{Cursor, Transform};
 use crate::config::Config;
-use crate::constants::{COIN_LABEL_STR, CUBE_LABEL_STR, N_FUZZ_LINES, PI};
+use crate::constants::{COIN_LABEL_STR, CUBE_LABEL_STR, PI, FACE_SCALE};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::{color_cube_texture, fuzzy_color_cube_texture};
 use crate::draw::visual_aids::{calc_grid_lines, draw_horizon, draw_sky, draw_stars};
@@ -280,7 +280,7 @@ pub fn build_corridor_cross<V: VectorTrait>(
                 _ => panic!("build corridor cross expected DefaultLines"), //don't bother handling the other cases
             };
             face_texture.texture = draw::Texture::make_tile_texture(
-                &vec![config.face_scale],
+                &vec![FACE_SCALE],
                 &match V::DIM {
                     3 => vec![3, 1],
                     4 => vec![3, 1, 1],
@@ -408,7 +408,7 @@ where
     V::M: Componentable,
 {
     let transform = Transform::identity().with_translation(pos);
-    crate::player::build_player(world, &transform);
+    crate::player::build_player(world, &transform, None);
     init_cursor::<V>(world);
 }
 pub fn init_cursor<V>(world: &mut World)

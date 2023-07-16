@@ -8,3 +8,4 @@ architecture.txt
 .idea/*
 game-ideas.txt
 **/mesh-try4.rs
+*.gv

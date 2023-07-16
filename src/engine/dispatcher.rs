@@ -50,13 +50,13 @@ where
         .with(
             TransformDrawLinesSystem(ph),
             TransformDrawLinesSystem::NAME,
-            &[CalcShapesLinesSystem::NAME],
+            &[CalcShapesLinesSystem::NAME, DrawLineCollectionSystem::NAME],
         )
         // draw the cursor on the d - 1 screen
         .with(
             DrawCursorSystem(ph),
             DrawCursorSystem::NAME,
-            &[CalcShapesLinesSystem::NAME, DrawLineCollectionSystem::NAME],
+            &[TransformDrawLinesSystem::NAME],
         )
 }
 

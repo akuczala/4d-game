@@ -1,7 +1,7 @@
 use super::visual_aids::random_sphere_point;
 use super::DrawLine;
 
-use crate::constants::{CARDINAL_COLORS, FACE_SCALE, N_FUZZ_LINES};
+use crate::constants::{CARDINAL_COLORS, FACE_SCALE};
 use crate::geometry::{
     shape::{Edge, Face, Shape, VertIndex},
     Line,
@@ -82,7 +82,7 @@ pub fn draw_face_texture<V: VectorTrait>(
     face_texture: &FaceTexture<V::SubV>,
     face: &Face<V>,
     shape: &Shape<V>,
-    face_scales: &Vec<Field>,
+    face_scales: &[Field],
     visible: bool,
 ) -> Vec<DrawLine<V>> {
     if !visible {
@@ -315,7 +315,7 @@ pub fn draw_default_lines<V: VectorTrait>(
     face: &Face<V>,
     shape: &Shape<V>,
     color: Color,
-    face_scales: &Vec<Field>,
+    face_scales: &[Field],
 ) -> Vec<DrawLine<V>> {
     let mut lines: Vec<DrawLine<V>> = Vec::with_capacity(face.edgeis.len() * face_scales.len());
     for &face_scale in face_scales {
