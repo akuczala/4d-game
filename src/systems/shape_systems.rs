@@ -93,6 +93,8 @@ where
         // clear static separators for shape, which will be repopulated next draw
         // still some odd clipping behavior from single faces, but this might have nothing
         // to do with updating
+
+        // TODO: This is being triggered all the time for (at least) selected shapes. disabled for now
         self.0.gather_events(read_shape.channel());
         let mut entities_to_update = Vec::new();
         for (_, shape_clip_state, entity) in

@@ -131,17 +131,17 @@ impl UIArgs {
                 normals.push(face.normal())
             }
         }
-        let input = world.read_resource::<Input>();
+        //let input = world.read_resource::<Input>();
 
         let debug_strings: Vec<String> = vec![
-            format!(
-                "Integrated mouse: {:?}\n",
-                input.mouse.integrated_mouse_dpos
-            ),
-            format!(
-                "Integrated scroll: {:?}\n",
-                input.mouse.integrated_scroll_dpos
-            ),
+            // format!(
+            //     "Integrated mouse: {:?}\n",
+            //     input.mouse.integrated_mouse_dpos
+            // ),
+            // format!(
+            //     "Integrated scroll: {:?}\n",
+            //     input.mouse.integrated_scroll_dpos
+            // ),
             match maybe_target {
                 MaybeTarget(Some(target)) => format!(
                     "target: {}, {}, {}\n",
@@ -176,10 +176,19 @@ impl UIArgs {
                     let axes_info = manip_state
                         .locked_axes
                         .iter()
-                        .fold("Axes:".to_string(), |s, &i| s + &i.to_string())
-                        + "\n";
-                    let snap_info = format!("Snap: {}\n", manip_state.snap);
-                    format!("{}{}{}{}", snap_info, axes_info, frame_info, manip_info)
+                        .fold("Axes:".to_string(), |s, &i| s + &i.to_string());
+                    let clip_info = {
+                        let scs = world.read_component::<ShapeClipState<V>>();
+                        let shape_clip_state = scs.get(selected.entity).unwrap();
+                        format!(
+                            "In front: {:?}\nSeparators: {:?}",
+                            shape_clip_state.in_front, shape_clip_state.separators
+                        )
+                    };
+                    format!(
+                        "{}\n{}\n{}\n{}\n",
+                        axes_info, frame_info, manip_info, clip_info
+                    )
                 }
                 MaybeSelected(None) => "No selection\n".to_string(),
             },
@@ -200,7 +209,7 @@ impl UIArgs {
 
         //concatenate all strings
         for string in debug_strings.into_iter() {
-            debug_text = format!("{}{}", debug_text, string);
+            debug_text = textwrap::fill(&format!("{}{}", debug_text, string), 40);
         }
 
         Self::Debug {

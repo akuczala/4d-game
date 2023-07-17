@@ -1,13 +1,12 @@
-use crate::vector::{barycenter, Vec2, Vec3, Vec4};
-use crate::vector::{VecIndex, VectorTrait};
-use itertools::Itertools;
-//use crate::vec2::Vec2;
 use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, SingleFace, VertIndex};
 use crate::draw::{Texture, TextureMapping};
 use crate::geometry::Transformable;
 use crate::graphics::colors::*;
 use crate::vector::Field;
 use crate::vector::PI;
+use crate::vector::{barycenter, Vec2, Vec3, Vec4};
+use crate::vector::{VecIndex, VectorTrait};
+use itertools::Itertools;
 use std::marker::PhantomData;
 
 #[derive(Clone)]

@@ -144,11 +144,11 @@ where
             "update_all_bball",
             &["transform_shapes"],
         )
-        .with(
-            UpdateStaticClippingSystem(ModSystem::typed_default(ph)),
-            "update_static_clipping",
-            &["transform_shapes"],
-        )
+        // .with(
+        //     UpdateStaticClippingSystem(ModSystem::typed_default(ph)),
+        //     "update_static_clipping",
+        //     &["transform_shapes"],
+        // )
         .with(
             ShapeCleanupSystem(ph),
             "shape_cleanup",

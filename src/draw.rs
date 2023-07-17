@@ -207,6 +207,7 @@ pub fn update_shape_visibility<V: VectorTrait>(
                 camera_pos,
                 &shape.verts,
                 shape.faces[0].center(),
+                shape.faces[0].normal(),
                 shape_clip_state.face_visibility[0],
             ),
         };
@@ -270,7 +271,9 @@ where
                         None => panic!("Invalid entity {} found in shape_clip_state", e.id()),
                     });
             //do clipping between all shapes
-            //let shapes_in_front = shapes.join().filter(|&s| (s as *const _ ) != (shape as *const _));
+            // let clip_states_in_front = shape_clip_states
+            //     .join()
+            //     .filter(|&s| (s as *const _) != (shape_clip_state as *const _));
             let mut clipped_lines = clipping::clip_draw_lines(shape_lines, clip_states_in_front);
             lines.append(&mut clipped_lines);
         } else {
