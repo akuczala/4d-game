@@ -9,7 +9,7 @@ mod tests {
     };
 
     use crate::{
-        build_level::{build_lvl_1, build_shape_library},
+        build_level::{build_level, build_shape_library},
         components::{Shape, ShapeLabel, Transform},
         config::{self, save_config, Config},
         constants::CUBE_LABEL_STR,
@@ -66,7 +66,7 @@ mod tests {
     fn serialize_world() {
         let mut ref_shapes = build_shape_library::<Vec3>();
         let mut world = new_world();
-        build_lvl_1(&mut world, &mut ref_shapes, false);
+        build_level(&mut ref_shapes, &mut world);
         let initial_count = world.read_component::<Shape<Vec3>>().count();
         //let mut writer = Vec::new();
         let mut serializer = serde_json::Serializer::new(Vec::new());
