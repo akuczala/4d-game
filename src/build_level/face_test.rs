@@ -59,7 +59,7 @@ fn build_test_walls<'a, V: VectorTrait + 'a>(
         ),
         build_wall(V::one_hot(-1) * 1.0, (0, -1, PI), GREEN),
         build_wall(V::one_hot(0) * 1.0, (0, -1, PI / 2.), ORANGE),
-        build_wall(-V::one_hot(0) * 1.01, (0, -1, 3.0 * PI / 2.), CYAN),
+        build_wall(-V::one_hot(0) * 0.9 + V::one_hot(1) * 1.0, (0, -1, 3.0 * PI / 2.), CYAN),
     ];
     let floors = [
         floor.clone().with_translation(-V::one_hot(0) * 2.0),

@@ -46,6 +46,7 @@ where
         }
     }
 }
+
 pub struct ManipulateSelectedShapeSystem<V>(pub PhantomData<V>);
 impl<'a, V> System<'a> for ManipulateSelectedShapeSystem<V>
 where
@@ -74,6 +75,8 @@ where
             // TODO: It's annoying that I have to clone the camera's transform when we know that it is distinct from selected_transform.
             // how to convince rust of this?
             let camera_transform = *transform_storage.get(player.0).unwrap();
+            // TODO: this get will always trigger a mutation event
+            // we might able to circumvent this by returning an Option<Transfrom> from manipulate_shape_outer
             let selected_transform = transform_storage
                 .get_mut(*entity)
                 .expect("Selected entity has no Transform");
