@@ -65,7 +65,7 @@ impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
     }
 }
 pub fn unproject_shape_to_face<V: VectorTrait>(convex_shape: &Shape<V::SubV>) -> Shape<V> {
-    Shape::new(
+    Shape::new_convex(
         convex_shape
             .verts
             .iter()
@@ -114,7 +114,7 @@ pub fn build_prism_2d<V: VectorTrait>(r: Field, n: VertIndex) -> Shape<V> {
         .map(|(i, normal)| Face::new(vec![i], normal))
         .collect();
 
-    Shape::new(verts, edges, faces)
+    Shape::new_convex(verts, edges, faces)
 }
 
 pub fn build_prism_3d<V: VectorTrait>(r: Field, h: Field, n: VertIndex) -> Shape<V> {
@@ -153,7 +153,7 @@ pub fn build_prism_3d<V: VectorTrait>(r: Field, h: Field, n: VertIndex) -> Shape
         .chain(long_faces)
         .collect();
 
-    Shape::new(verts, edges, faces)
+    Shape::new_convex(verts, edges, faces)
 }
 pub fn build_long_cube_3d<V: VectorTrait>(length: Field, width: Field) -> Shape<V> {
     build_prism_3d(width / (2.0 as Field).sqrt(), length, 4)
@@ -168,7 +168,7 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
     let edges = shape.edges;
     let mut faces = shape.faces;
     faces.remove(face_index);
-    Shape::new(verts, edges, faces)
+    Shape::new_convex(verts, edges, faces)
 }
 pub fn remove_faces<V: VectorTrait>(shape: Shape<V>, faceis: Vec<FaceIndex>) -> Shape<V> {
     let verts = shape.verts;
@@ -180,7 +180,7 @@ pub fn remove_faces<V: VectorTrait>(shape: Shape<V>, faceis: Vec<FaceIndex>) -> 
         .filter(|(i, _face)| !faceis.contains(i))
         .map(|(_i, face)| face)
         .collect();
-    Shape::new(verts, edges, new_faces)
+    Shape::new_convex(verts, edges, new_faces)
 }
 use crate::geometry::transform::Scaling;
 use crate::geometry::Transform;
@@ -277,7 +277,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
     // 	println!("{}",face)
     // }
 
-    Shape::new(verts, edges, faces)
+    Shape::new_convex(verts, edges, faces)
 }
 
 pub fn invert_normals<V: VectorTrait>(shape: &Shape<V>) -> Shape<V> {

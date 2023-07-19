@@ -1,10 +1,11 @@
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use crate::geometry::shape::{Face, FaceIndex, Shape};
 use crate::geometry::{line_plane_intersect, Line, Plane};
 use crate::vector::{Field, VectorTrait};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct SubFace {
     pub faceis: (FaceIndex, FaceIndex),
 }
@@ -15,11 +16,11 @@ impl fmt::Display for SubFace {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct Subfaces(pub Vec<SubFace>);
 impl Subfaces {
     //find indices of (d-1) faces that are joined by a (d-2) edge
-    fn calc_subfaces<V: VectorTrait>(faces: &Vec<Face<V>>) -> Subfaces {
+    fn calc_subfaces<V: VectorTrait>(faces: &[Face<V>]) -> Subfaces {
         let mut subfaces: Vec<SubFace> = Vec::new();
         if V::DIM == 2 {
             for i in 0..faces.len() {
@@ -46,14 +47,14 @@ impl Subfaces {
         Subfaces(subfaces)
     }
 }
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Convex {
     subfaces: Subfaces,
 }
 impl Convex {
-    pub fn new<V: VectorTrait>(shape: &Shape<V>) -> Self {
+    pub fn new<V: VectorTrait>(faces: &[Face<V>]) -> Self {
         Convex {
-            subfaces: Subfaces::calc_subfaces(&shape.faces),
+            subfaces: Subfaces::calc_subfaces(faces),
         }
     }
     fn calc_boundary<V: VectorTrait>(face1: &Plane<V>, face2: &Plane<V>, origin: V) -> Plane<V> {

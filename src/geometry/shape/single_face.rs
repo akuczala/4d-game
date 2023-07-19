@@ -1,12 +1,14 @@
 use std::iter;
 use std::marker::PhantomData;
 
+use serde::{Deserialize, Serialize};
+
 use super::{face, Face, Shape, VertIndex};
 use crate::constants::ZERO;
 use crate::geometry::{line_plane_intersect, Line, Plane};
 use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct SubFace<V> {
     vertis: Vec<VertIndex>, // list of vertis in each subface
     plane: Plane<V>, // this is not used for clipping, but is used for collisions + line intersection (e.g. targeting)
@@ -42,10 +44,10 @@ impl<V: VectorTrait> SubFace<V> {
         Plane::from_normal_and_point(normal, subface_center)
     }
 }
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct SubFaces<V>(Vec<SubFace<V>>);
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SingleFace<V> {
     subfaces: SubFaces<V>,
     pub two_sided: bool,
@@ -148,7 +150,7 @@ impl<V: VectorTrait> SingleFace<V> {
 use super::Edge;
 use crate::vector::{Vec2, Vec3};
 fn make_3d_triangle() -> (Shape<Vec3>, SingleFace<Vec3>) {
-    let shape = Shape::new(
+    let shape = Shape::new_convex(
         vec![
             Vec3::new(1., -1., 1.),
             Vec3::new(1., 1., 1.),
@@ -162,7 +164,7 @@ fn make_3d_triangle() -> (Shape<Vec3>, SingleFace<Vec3>) {
     (shape, single_face)
 }
 fn make_3d_square() -> (Shape<Vec3>, SingleFace<Vec3>) {
-    let shape = Shape::new(
+    let shape = Shape::new_convex(
         vec![
             Vec3::new(-1., -1., 1.),
             Vec3::new(-1., 1., 1.),
@@ -179,7 +181,7 @@ fn make_3d_square() -> (Shape<Vec3>, SingleFace<Vec3>) {
 #[test]
 fn test_boundaries() {
     use crate::vector::is_close;
-    let shape = Shape::new(
+    let shape = Shape::new_convex(
         vec![Vec2::new(1., -1.), Vec2::new(1., 1.)],
         vec![Edge(0, 1)],
         vec![Face::new(vec![0], Vec2::new(-1., 0.))],

@@ -48,7 +48,7 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
         let ref_shape = ref_shapes.get_unwrap(&label);
         Self {
             shape: ref_shape.clone(),
-            shape_type: ShapeType::Convex(Convex::new(ref_shape)),
+            shape_type: ShapeType::Convex(Convex::new(&ref_shape.faces)),
             shape_label: label,
             transformation: Transform::identity(),
             shape_texture: ShapeTexture::new_default(ref_shape.verts.len()),

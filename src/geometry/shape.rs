@@ -39,7 +39,7 @@ pub trait ShapeTypeTrait<V: VectorTrait> {
 // so in general, the maximum data needed for a subface is
 // the 1 or 2 faces it belongs to
 // the normal
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum ShapeType<V> {
     Convex(convex::Convex),
     SingleFace(single_face::SingleFace<V>),
@@ -80,10 +80,16 @@ pub struct Shape<V> {
     pub verts: Vec<V>,
     pub edges: Vec<Edge>,
     pub faces: Vec<Face<V>>,
+    pub shape_type: ShapeType<V>,
 }
 
 impl<V: VectorTrait> Shape<V> {
-    pub fn new(verts: Vec<V>, edges: Vec<Edge>, mut faces: Vec<Face<V>>) -> Shape<V> {
+    pub fn new(
+        verts: Vec<V>,
+        edges: Vec<Edge>,
+        mut faces: Vec<Face<V>>,
+        shape_type: ShapeType<V>,
+    ) -> Self {
         //compute vertex indices for all faces
         //we do this before anything else
         //because it is irritating to do when faces and verts are members of shape
@@ -99,7 +105,13 @@ impl<V: VectorTrait> Shape<V> {
             verts,
             edges,
             faces,
+            shape_type,
         }
+    }
+
+    pub fn new_convex(verts: Vec<V>, edges: Vec<Edge>, faces: Vec<Face<V>>) -> Self {
+        let shape_type = ShapeType::Convex(Convex::new(&faces));
+        Self::new(verts, edges, faces, shape_type)
     }
 
     //pub fn get_face_verts(&self, face : Face)
