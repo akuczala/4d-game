@@ -16,7 +16,6 @@ use specs::saveload::MarkedBuilder;
 #[derive(Clone)]
 pub struct ShapeEntityBuilder<V, U, M> {
     pub shape: Shape<V>, // remove this field?
-    shape_type: ShapeType<V>,
     shape_label: ShapeLabel,
     pub transformation: Transform<V, M>,
     pub shape_texture: ShapeTexture<U>,
@@ -36,8 +35,12 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
         let ref_shape = ref_shapes.get_unwrap(&label);
         let shape_texture = ShapeTexture::new_default(ref_shape.verts.len());
         Self {
-            shape: ref_shape.clone(),
-            shape_type: ShapeType::SingleFace(single_face),
+            shape: Shape::new(
+                ref_shape.verts.clone(),
+                ref_shape.edges.clone(),
+                ref_shape.faces.clone(),
+                ShapeType::SingleFace(single_face),
+            ),
             shape_label: label,
             transformation: Transform::identity(),
             shape_texture,
@@ -48,7 +51,6 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
         let ref_shape = ref_shapes.get_unwrap(&label);
         Self {
             shape: ref_shape.clone(),
-            shape_type: ShapeType::Convex(Convex::new(&ref_shape.faces)),
             shape_label: label,
             transformation: Transform::identity(),
             shape_texture: ShapeTexture::new_default(ref_shape.verts.len()),
@@ -93,22 +95,20 @@ where
     pub fn build(self, world: &mut World) -> EntityBuilder {
         let Self {
             mut shape,
-            mut shape_type,
             shape_label,
             transformation,
             shape_texture,
             static_collider,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        if let ShapeType::SingleFace(ref mut single_face) = shape_type {
-            single_face.update(&shape)
+        if let ShapeType::SingleFace(ref mut single_face) = shape.shape_type {
+            single_face.update(&shape.verts, &shape.faces)
         }
         world
             .create_entity()
             .with(shape.calc_bbox())
             .with(BBall::new(&shape.verts, transformation.pos))
             .with(transformation)
-            .with(shape_type)
             .with(shape)
             .with(shape_label)
             .with(shape_texture)
@@ -119,20 +119,18 @@ where
     pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>) {
         let Self {
             mut shape,
-            mut shape_type,
             shape_label,
             transformation,
             shape_texture,
             static_collider,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        if let ShapeType::SingleFace(ref mut single_face) = shape_type {
-            single_face.update(&shape)
+        if let ShapeType::SingleFace(ref mut single_face) = shape.shape_type {
+            single_face.update(&shape.verts, &shape.faces)
         }
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, transformation);
-        lazy.insert(e, shape_type);
         lazy.insert(e, shape);
         lazy.insert(e, shape_texture);
         lazy.insert(e, ShapeClipState::<V>::default());

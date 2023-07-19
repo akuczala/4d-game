@@ -58,7 +58,6 @@ where
         ReadExpect<'a, Player>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, Shape<V>>,
-        ReadStorage<'a, ShapeType<V>>,
         ReadStorage<'a, ShapeClipState<V>>,
         Entities<'a>,
         WriteStorage<'a, MaybeTarget<V>>,
@@ -66,13 +65,10 @@ where
 
     fn run(
         &mut self,
-        (player, transforms, shapes, shape_types, shape_clip_state, entities, mut targets) : Self::SystemData,
+        (player, transforms, shapes, shape_clip_state, entities, mut targets): Self::SystemData,
     ) {
         let transform = transforms.get(player.0).expect("Player has no transform");
-        let target = shape_targeting(
-            transform,
-            (&shapes, &shape_types, &shape_clip_state, &*entities).join(),
-        ); //filter by shapes having a clip state
+        let target = shape_targeting(transform, (&shapes, &shape_clip_state, &*entities).join()); //filter by shapes having a clip state
         *targets.get_mut(player.0).expect("Player has no target") = target;
     }
 }
@@ -108,14 +104,7 @@ fn shape_targeting<'a, V: VectorTrait + 'a, I>(
 ) -> MaybeTarget<V>
 where
     //for<'a> &'a I: std::iter::Iterator<Item=(&'a Shape<V>, &'a ShapeType<V>,&'a ShapeClipState<V>, Entity)>
-    I: std::iter::Iterator<
-        Item = (
-            &'a Shape<V>,
-            &'a ShapeType<V>,
-            &'a ShapeClipState<V>,
-            Entity,
-        ),
-    >,
+    I: std::iter::Iterator<Item = (&'a Shape<V>, &'a ShapeClipState<V>, Entity)>,
 {
     let pos = transform.pos;
     let dir = transform.frame[-1];
@@ -124,9 +113,11 @@ where
     //loop through all shapes and check for nearest intersection
     let mut closest: Option<(Entity, Field, V)> = None;
     let mut all_points = Vec::<V>::new();
-    for (shape, shape_type, shape_clip_state, e) in iter {
+    for (shape, shape_clip_state, e) in iter {
         for intersect_point in
-            shape_type.line_intersect(shape, &ray, true, &shape_clip_state.face_visibility)
+            shape
+                .shape_type
+                .line_intersect(shape, &ray, true, &shape_clip_state.face_visibility)
         {
             //find intersections of ray with visible faces
             all_points.push(intersect_point);

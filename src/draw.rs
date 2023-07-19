@@ -167,11 +167,10 @@ pub fn update_shape_visibility<V: VectorTrait>(
     camera_pos: V,
     shape: &Shape<V>,
     shape_clip_state: &mut ShapeClipState<V>,
-    shape_type: &ShapeType<V>,
     clip_state: &ClipState<V>,
 ) {
     //update shape visibility and boundaries
-    let two_sided = match shape_type {
+    let two_sided = match &shape.shape_type {
         ShapeType::Convex(_) => false,
         ShapeType::SingleFace(single_face) => single_face.two_sided,
     };
@@ -199,7 +198,7 @@ pub fn update_shape_visibility<V: VectorTrait>(
 
     //calculate boundaries for clipping
     if clip_state.clipping_enabled {
-        shape_clip_state.boundaries = match shape_type {
+        shape_clip_state.boundaries = match &shape.shape_type {
             ShapeType::Convex(convex) => {
                 convex.calc_boundaries(camera_pos, &shape.faces, &shape_clip_state.face_visibility)
             }

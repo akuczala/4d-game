@@ -135,7 +135,6 @@ where
         ReadExpect<'a, Player>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, Shape<V>>,
-        ReadStorage<'a, ShapeType<V>>,
         ReadStorage<'a, StaticCollider>,
         ReadStorage<'a, InPlayerCell>,
         WriteStorage<'a, MoveNext<V>>,
@@ -143,22 +142,14 @@ where
 
     fn run(
         &mut self,
-        (
-            player,
-            transform,
-            shape,
-            shape_types,
-            static_collider,
-            in_cell,
-            mut write_move_next,
-        ) : Self::SystemData,
+        (player, transform, shape, static_collider, in_cell, mut write_move_next): Self::SystemData,
     ) {
         check_player_static_collisions(
             write_move_next.get_mut(player.0).unwrap(),
             transform.get(player.0).unwrap().pos,
-            (&shape, &shape_types, &static_collider, &in_cell)
+            (&shape, &static_collider, &in_cell)
                 .join()
-                .map(|(shape, shape_type, _, _)| (shape, shape_type)),
+                .map(|(shape, _, _)| shape),
         )
     }
 }
@@ -176,15 +167,11 @@ where
         ReadExpect<'a, Player>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, Shape<V>>,
-        ReadStorage<'a, ShapeType<V>>,
         ReadStorage<'a, BBox<V>>,
         ReadExpect<'a, SpatialHashSet<V, Entity>>,
     );
 
-    fn run(
-        &mut self,
-        (input, player, transform, shapes, shape_types, bbox, hash): Self::SystemData,
-    ) {
+    fn run(&mut self, (input, player, transform, shapes, bbox, hash): Self::SystemData) {
         use glium::glutin::event::VirtualKeyCode as VKC;
         if input.helper.key_released(PRINT_DEBUG) {
             //let mut out_string = "Entities: ".to_string();
@@ -192,7 +179,7 @@ where
             let player_pos = transform.get(player.0).unwrap().pos;
             if entities_in_bbox
                 .iter()
-                .any(|&e| match shape_types.get(e).unwrap() {
+                .any(|&e| match &shapes.get(e).unwrap().shape_type {
                     ShapeType::Convex(_convex) => {
                         Convex::point_within(player_pos, 0.1, &shapes.get(e).unwrap().faces)
                     }

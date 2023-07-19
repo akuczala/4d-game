@@ -134,26 +134,18 @@ where
         ReadStorage<'a, ShapeLabel>,
         ReadStorage<'a, Transform<V, V::M>>,
         WriteStorage<'a, Shape<V>>,
-        WriteStorage<'a, ShapeType<V>>,
     );
 
     fn run(
         &mut self,
-        (
-            ref_shape,
-            read_shape_label,
-            read_transform,
-            mut write_shape,
-            mut write_shape_type,
-        ) : Self::SystemData,
+        (ref_shape, read_shape_label, read_transform, mut write_shape): Self::SystemData,
     ) {
         self.0.gather_events(read_transform.channel());
-        for (_, transform, shape, shape_label, shape_type) in (
+        for (_, transform, shape, shape_label) in (
             &self.0.modified,
             &read_transform,
             &mut write_shape,
             &read_shape_label,
-            &mut write_shape_type,
         )
             .join()
         {
@@ -163,8 +155,8 @@ where
                     .unwrap_or_else(|| panic!("No ref shape with label {}", &shape_label.0)),
                 transform,
             );
-            if let ShapeType::SingleFace(single_face) = shape_type {
-                single_face.update(shape)
+            if let ShapeType::SingleFace(ref mut single_face) = &mut shape.shape_type {
+                single_face.update(&shape.verts, &shape.faces)
             }
         }
     }

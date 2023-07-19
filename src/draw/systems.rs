@@ -97,7 +97,6 @@ where
     type SystemData = (
         ReadStorage<'a, Shape<V>>,
         WriteStorage<'a, ShapeClipState<V>>,
-        ReadStorage<'a, ShapeType<V>>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadExpect<'a, Player>,
         ReadExpect<'a, ClipState<V>>,
@@ -105,23 +104,13 @@ where
 
     fn run(
         &mut self,
-        (
-			shapes,
-			mut shape_clip_states,
-			shape_types,
-			transform,
-			player,
-			clip_state
-		) : Self::SystemData,
+        (shapes, mut shape_clip_states, transform, player, clip_state): Self::SystemData,
     ) {
-        for (shape, shape_clip_state, shape_type) in
-            (&shapes, &mut shape_clip_states, &shape_types).join()
-        {
+        for (shape, shape_clip_state) in (&shapes, &mut shape_clip_states).join() {
             update_shape_visibility(
                 transform.get(player.0).unwrap().pos,
                 shape,
                 shape_clip_state,
-                shape_type,
                 &clip_state,
             )
         }

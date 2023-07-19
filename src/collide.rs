@@ -217,18 +217,18 @@ pub fn check_player_static_collisions<'a, I, V: VectorTrait + 'a>(
     player_pos: V,
     shape_iter: I,
 ) where
-    I: Iterator<Item = (&'a Shape<V>, &'a ShapeType<V>)>,
+    I: Iterator<Item = &'a Shape<V>>,
 {
     if let MoveNext {
         next_dpos: Some(_next_dpos),
         can_move: Some(true),
     } = move_next
     {
-        for (shape, shape_type) in shape_iter {
+        for shape in shape_iter {
             let next_dpos = move_next.next_dpos.unwrap();
             //this is more convoluted than it needs to be
             let (normal, dist) = shape.point_normal_distance(player_pos);
-            if match shape_type {
+            if match &shape.shape_type {
                 ShapeType::SingleFace(single_face) => {
                     if single_face.two_sided {
                         (dist.abs() < PLAYER_COLLIDE_DISTANCE)

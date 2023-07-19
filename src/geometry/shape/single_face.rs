@@ -64,9 +64,9 @@ impl<V: VectorTrait> SingleFace<V> {
             two_sided,
         }
     }
-    pub fn update(&mut self, shape: &Shape<V>) {
+    pub fn update(&mut self, shape_verts: &[V], shape_faces: &[Face<V>]) {
         for subface in self.subfaces.0.iter_mut() {
-            subface.update(&shape.verts, shape.faces[0].normal())
+            subface.update(shape_verts, shape_faces[0].normal())
         }
     }
     fn calc_boundary(

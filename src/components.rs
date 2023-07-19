@@ -32,10 +32,6 @@ impl<V: Componentable> Component for BBall<V> {
 impl<V: Componentable> Component for Shape<V> {
     type Storage = FlaggedStorage<Self, DefaultStorage<Self>>;
 }
-
-impl<V: Componentable> Component for ShapeType<V> {
-    type Storage = FlaggedStorage<Self, DefaultStorage<Self>>;
-}
 impl<V: Componentable> Component for ShapeClipState<V> {
     type Storage = DefaultStorage<Self>;
 }
