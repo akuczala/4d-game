@@ -47,13 +47,13 @@ where
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    let mut ref_shapes = build_shape_library::<V>();
-    build_level(&mut ref_shapes, world);
+    let ref_shapes = build_shape_library::<V>();
+    build_level(&ref_shapes, world);
     world.insert(ref_shapes);
     init_player(world, V::zero());
 }
 
-pub fn build_level<V: VectorTrait>(ref_shapes: &mut RefShapes<V>, world: &mut World)
+pub fn build_level<V: VectorTrait>(ref_shapes: &RefShapes<V>, world: &mut World)
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,

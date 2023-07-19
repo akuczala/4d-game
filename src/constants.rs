@@ -21,6 +21,8 @@ pub const CURSOR_COLOR: Color = WHITE;
 
 pub const CUBE_LABEL_STR: &str = "Cube";
 pub const COIN_LABEL_STR: &str = "Coin";
+pub const ONE_SIDED_FACE_LABEL_STR: &str = "OneSidedFace";
+pub const TWO_SIDED_FACE_LABEL_STR: &str = "TwoSidedFace";
 
 pub const Z0: Field = ZERO;
 

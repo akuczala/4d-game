@@ -1,3 +1,4 @@
+use crate::constants::TWO_SIDED_FACE_LABEL_STR;
 use crate::draw::FaceTexture;
 use crate::geometry::shape::buildshapes::{convex_shape_to_face_shape, ShapeBuilder};
 use crate::graphics::colors::*;
@@ -90,7 +91,7 @@ fn build_test_walls<'a, V: VectorTrait + 'a>(
         .map(|f| f(build_shape.clone()))
         .chain(floors)
 }
-pub fn build_test_level<V>(world: &mut World, ref_shapes: &mut RefShapes<V>)
+pub fn build_test_level<V>(world: &mut World, ref_shapes: &RefShapes<V>)
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
@@ -101,13 +102,11 @@ where
         4 => (vec![4, 4, 4], vec![1, 3, 4]),
         _ => panic!("Cannot build test level in {} dimensions.", { V::DIM }),
     };
-    let sub_wall = ShapeBuilder::<V::SubV>::build_cube(2.0).build();
-    let wall_label = ShapeLabel("Wall".to_string());
-    let wall = convex_shape_to_face_shape(sub_wall, true);
-    ref_shapes.insert(wall_label.clone(), wall);
     let build_shape: ShapeEntityBuilderV<V> = ShapeEntityBuilder::new_from_ref_shape(
-        ref_shapes, wall_label,
+        ref_shapes,
+        ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR),
     )
+    .with_scale(Scaling::Scalar(2.0))
     .with_face_texture(FaceTexture {
         texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions),
         texture_mapping: Some(draw::TextureMapping {

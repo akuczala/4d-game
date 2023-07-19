@@ -7,11 +7,16 @@ use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
 
 use crate::{
-    constants::{COIN_LABEL_STR, CUBE_LABEL_STR},
+    constants::{
+        COIN_LABEL_STR, CUBE_LABEL_STR, ONE_SIDED_FACE_LABEL_STR, TWO_SIDED_FACE_LABEL_STR,
+    },
     vector::VectorTrait,
 };
 
-use super::{buildshapes::ShapeBuilder, Shape};
+use super::{
+    buildshapes::{convex_shape_to_face_shape, ShapeBuilder},
+    Shape,
+};
 
 // TODO: consider merging with Shape
 // might be a bad idea - could contain in larger struct?
@@ -61,8 +66,17 @@ impl<V: VectorTrait> Default for RefShapes<V> {
 pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     let mut ref_shapes: RefShapes<V> = RefShapes::new();
     let cube = ShapeBuilder::<V>::build_cube(1.0).build();
+    let sub_cube = ShapeBuilder::<V::SubV>::build_cube(1.0).build();
     let coin: Shape<V> = ShapeBuilder::<V>::build_coin().build();
     ref_shapes.insert(ShapeLabel::from_str(CUBE_LABEL_STR), cube);
     ref_shapes.insert(ShapeLabel::from_str(COIN_LABEL_STR), coin);
+    ref_shapes.insert(
+        ShapeLabel::from_str(ONE_SIDED_FACE_LABEL_STR),
+        convex_shape_to_face_shape(sub_cube.clone(), false),
+    );
+    ref_shapes.insert(
+        ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR),
+        convex_shape_to_face_shape(sub_cube, true),
+    );
     ref_shapes
 }
