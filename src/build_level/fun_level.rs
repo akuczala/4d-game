@@ -1,6 +1,6 @@
 use specs::{World, WorldExt};
 
-use crate::constants::{CARDINAL_COLORS, PI, ONE_SIDED_FACE_LABEL_STR, TWO_SIDED_FACE_LABEL_STR};
+use crate::constants::{CARDINAL_COLORS, ONE_SIDED_FACE_LABEL_STR, PI, TWO_SIDED_FACE_LABEL_STR};
 use crate::graphics::colors::*;
 use crate::{
     components::{RefShapes, Shape, ShapeLabel, ShapeTexture, Transformable},
@@ -35,7 +35,7 @@ pub fn build_fun_level<V: VectorTrait>(
     let wall_label = ShapeLabel::from_str(ONE_SIDED_FACE_LABEL_STR);
 
     let wall_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, wall_label)
-    .with_scale(Scaling::Scalar(len))
+        .with_scale(Scaling::Scalar(len))
         .with_face_texture(FaceTexture {
             texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions)
                 .merged_with(&Texture::make_fuzz_texture(fuzz_config.face_num)),
@@ -46,7 +46,7 @@ pub fn build_fun_level<V: VectorTrait>(
         });
     let floor_label = ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR);
     let upper_floor_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, floor_label)
-    .with_scale(Scaling::Scalar(len))
+        .with_scale(Scaling::Scalar(len))
         .stretch(&(V::ones() * 0.5 - V::one_hot(1) * 0.25))
         .with_rotation(-1, 1, -PI / 2.0)
         .with_translation(V::one_hot(1) * len / 2.0);

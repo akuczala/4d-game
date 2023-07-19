@@ -1,4 +1,5 @@
 pub mod bball;
+pub mod boundaries;
 
 use crate::ecs_utils::Componentable;
 use crate::player::Player;

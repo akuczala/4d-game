@@ -176,6 +176,9 @@ impl<V: VectorTrait> Shape<V> {
             face.geometry.center = transform.transform_vec(&ref_face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
         }
+        if let ShapeType::SingleFace(ref mut single_face) = self.shape_type {
+            single_face.update(&self.verts, &self.faces)
+        }
     }
 }
 // impl<V: VectorTrait> Transformable<V> for Shape<V> {

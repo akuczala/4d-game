@@ -6,7 +6,7 @@ use crate::geometry::{line_plane_intersect, Line, Plane};
 use crate::vector::{Field, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]
-struct SubFace {
+pub struct SubFace {
     pub faceis: (FaceIndex, FaceIndex),
 }
 use std::fmt;
@@ -17,7 +17,7 @@ impl fmt::Display for SubFace {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-struct Subfaces(pub Vec<SubFace>);
+pub struct Subfaces(pub Vec<SubFace>);
 impl Subfaces {
     //find indices of (d-1) faces that are joined by a (d-2) edge
     fn calc_subfaces<V: VectorTrait>(faces: &[Face<V>]) -> Subfaces {
@@ -49,56 +49,13 @@ impl Subfaces {
 }
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Convex {
-    subfaces: Subfaces,
+    pub subfaces: Subfaces,
 }
 impl Convex {
     pub fn new<V: VectorTrait>(faces: &[Face<V>]) -> Self {
         Convex {
             subfaces: Subfaces::calc_subfaces(faces),
         }
-    }
-    fn calc_boundary<V: VectorTrait>(face1: &Plane<V>, face2: &Plane<V>, origin: V) -> Plane<V> {
-        let (n1, n2) = (face1.normal, face2.normal);
-        let (th1, th2) = (face1.threshold, face2.threshold);
-
-        //k1 and k2 must have opposite signs
-        let k1 = n1.dot(origin) - th1;
-        let k2 = n2.dot(origin) - th2;
-        //assert!(k1*k2 < 0.0,"k1 = {}, k2 = {}",k1,k2);
-
-        let t = k1 / (k1 - k2);
-
-        let n3 = V::linterp(n1, n2, t);
-        let th3 = crate::vector::scalar_linterp(th1, th2, t);
-
-        Plane {
-            normal: n3,
-            threshold: th3,
-        }
-    }
-    pub fn calc_boundaries<V: VectorTrait>(
-        &self,
-        origin: V,
-        faces: &[Face<V>],
-        face_visibility: &[bool],
-    ) -> Vec<Plane<V>> {
-        let mut boundaries: Vec<Plane<V>> = Vec::new();
-
-        for subface in &self.subfaces.0 {
-            let face1 = &faces[subface.faceis.0];
-            let face2 = &faces[subface.faceis.1];
-            if face_visibility[subface.faceis.0] != face_visibility[subface.faceis.1] {
-                let boundary = Self::calc_boundary(face1.plane(), face2.plane(), origin);
-                boundaries.push(boundary);
-            }
-        }
-        //visible faces are boundaries
-        for (face, visible) in faces.iter().zip(face_visibility.iter()) {
-            if *visible {
-                boundaries.push(face.plane().clone())
-            }
-        }
-        boundaries
     }
     pub fn point_within<V: VectorTrait>(point: V, distance: Field, faces: &[Face<V>]) -> bool {
         faces

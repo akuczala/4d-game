@@ -19,6 +19,7 @@ use crate::geometry::{shape::VertIndex, Line, Shape};
 use crate::graphics::colors::*;
 use crate::vector::{barycenter, linspace, Field, VecIndex, VectorTrait};
 
+use self::clipping::boundaries::calc_boundaries;
 use self::clipping::{clip_line_cylinder, clip_line_sphere, clip_line_tube};
 use self::texture::draw_face_texture;
 use self::visual_aids::{calc_wireframe_lines, draw_axes};
@@ -198,18 +199,8 @@ pub fn update_shape_visibility<V: VectorTrait>(
 
     //calculate boundaries for clipping
     if clip_state.clipping_enabled {
-        shape_clip_state.boundaries = match &shape.shape_type {
-            ShapeType::Convex(convex) => {
-                convex.calc_boundaries(camera_pos, &shape.faces, &shape_clip_state.face_visibility)
-            }
-            ShapeType::SingleFace(single_face) => single_face.calc_boundaries(
-                camera_pos,
-                &shape.verts,
-                shape.faces[0].center(),
-                shape.faces[0].normal(),
-                shape_clip_state.face_visibility[0],
-            ),
-        };
+        shape_clip_state.boundaries =
+            calc_boundaries(camera_pos, shape, &shape_clip_state.face_visibility);
     }
 }
 

@@ -155,9 +155,6 @@ where
                     .unwrap_or_else(|| panic!("No ref shape with label {}", &shape_label.0)),
                 transform,
             );
-            if let ShapeType::SingleFace(ref mut single_face) = &mut shape.shape_type {
-                single_face.update(&shape.verts, &shape.faces)
-            }
         }
     }
 

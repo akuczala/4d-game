@@ -49,7 +49,7 @@ pub struct Plane<V> {
     pub threshold: Field,
 }
 impl<V: VectorTrait> Plane<V> {
-    fn from_normal_and_point(normal: V, point: V) -> Self {
+    pub fn from_normal_and_point(normal: V, point: V) -> Self {
         Plane {
             normal,
             threshold: normal.dot(point),

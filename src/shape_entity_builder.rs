@@ -81,9 +81,6 @@ where
             static_collider,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        if let ShapeType::SingleFace(ref mut single_face) = shape.shape_type {
-            single_face.update(&shape.verts, &shape.faces)
-        }
         world
             .create_entity()
             .with(shape.calc_bbox())
@@ -105,9 +102,6 @@ where
             static_collider,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        if let ShapeType::SingleFace(ref mut single_face) = shape.shape_type {
-            single_face.update(&shape.verts, &shape.faces)
-        }
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, transformation);

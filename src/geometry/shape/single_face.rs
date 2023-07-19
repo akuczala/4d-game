@@ -9,8 +9,8 @@ use crate::geometry::{line_plane_intersect, Line, Plane};
 use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]
-struct SubFace<V> {
-    vertis: Vec<VertIndex>, // list of vertis in each subface
+pub struct SubFace<V> {
+    pub vertis: Vec<VertIndex>, // list of vertis in each subface
     plane: Plane<V>, // this is not used for clipping, but is used for collisions + line intersection (e.g. targeting)
 }
 impl<V: VectorTrait> SubFace<V> {
@@ -45,11 +45,11 @@ impl<V: VectorTrait> SubFace<V> {
     }
 }
 #[derive(Clone, Serialize, Deserialize)]
-struct SubFaces<V>(Vec<SubFace<V>>);
+pub struct SubFaces<V>(pub Vec<SubFace<V>>);
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SingleFace<V> {
-    subfaces: SubFaces<V>,
+    pub subfaces: SubFaces<V>,
     pub two_sided: bool,
 }
 impl<V: VectorTrait> SingleFace<V> {
@@ -72,56 +72,6 @@ impl<V: VectorTrait> SingleFace<V> {
     pub fn update(&mut self, shape_vers: &[V], shape_faces: &[Face<V>]) {
         for subface in self.subfaces.0.iter_mut() {
             subface.update(shape_vers, shape_faces[0].normal())
-        }
-    }
-    fn calc_boundary(
-        &self,
-        subface_vertis: &[VertIndex],
-        origin: V,
-        verts: &[V],
-        face_center: V,
-    ) -> Plane<V> {
-        let mut boundary_normal = V::cross_product(
-            subface_vertis
-                .iter()
-                .take((V::DIM.unsigned_abs() - 1) as usize)
-                .map(|&vi| verts[vi] - origin),
-        )
-        .normalize();
-        //not sure about the sign here
-        if boundary_normal.dot(face_center - origin) > 0. {
-            boundary_normal = -boundary_normal;
-        }
-        Plane {
-            normal: boundary_normal,
-            threshold: boundary_normal.dot(origin),
-        }
-    }
-    pub fn calc_boundaries(
-        &self,
-        origin: V,
-        verts: &[V],
-        face_center: V,
-        face_normal: V,
-        visible: bool,
-    ) -> Vec<Plane<V>> {
-        if visible {
-            self.subfaces
-                .0
-                .iter()
-                .map(|subface| self.calc_boundary(&subface.vertis, origin, verts, face_center))
-                // face is itself a boundary
-                .chain(iter::once(Plane::from_normal_and_point(
-                    if self.two_sided && (face_normal.dot(origin - face_center) < ZERO) {
-                        -face_normal
-                    } else {
-                        face_normal
-                    },
-                    face_center,
-                )))
-                .collect()
-        } else {
-            Vec::new()
         }
     }
     //returns points of intersection with shape
@@ -154,7 +104,7 @@ impl<V: VectorTrait> SingleFace<V> {
 
 use super::Edge;
 use crate::vector::{Vec2, Vec3};
-fn make_3d_triangle() -> (Shape<Vec3>, SingleFace<Vec3>) {
+pub fn make_3d_triangle() -> (Shape<Vec3>, SingleFace<Vec3>) {
     let shape = Shape::new_convex(
         vec![
             Vec3::new(1., -1., 1.),
@@ -173,7 +123,7 @@ fn make_3d_triangle() -> (Shape<Vec3>, SingleFace<Vec3>) {
     );
     (shape, single_face)
 }
-fn make_3d_square() -> (Shape<Vec3>, SingleFace<Vec3>) {
+pub fn make_3d_square() -> (Shape<Vec3>, SingleFace<Vec3>) {
     let shape = Shape::new_convex(
         vec![
             Vec3::new(-1., -1., 1.),
@@ -192,60 +142,6 @@ fn make_3d_square() -> (Shape<Vec3>, SingleFace<Vec3>) {
         false,
     );
     (shape, single_face)
-}
-#[test]
-fn test_boundaries() {
-    use crate::vector::is_close;
-    let shape = Shape::new_convex(
-        vec![Vec2::new(1., -1.), Vec2::new(1., 1.)],
-        vec![Edge(0, 1)],
-        vec![Face::new(vec![0], Vec2::new(-1., 0.))],
-    );
-    let subfaces_vertis = vec![vec![0], vec![1]];
-    let single_face = SingleFace::new(
-        &shape.verts,
-        shape.faces[0].normal(),
-        &subfaces_vertis,
-        false,
-    );
-    let boundaries = single_face.calc_boundaries(
-        Vec2::zero(),
-        &shape.verts,
-        shape.faces[0].center(),
-        shape.faces[0].normal(),
-        true,
-    );
-    for boundary in boundaries.iter() {
-        println!("{}", boundary)
-    }
-    println!("3d, Triangle");
-    let (shape, single_face) = make_3d_triangle();
-    let boundaries = single_face.calc_boundaries(
-        Vec3::zero(),
-        &shape.verts,
-        shape.faces[0].center(),
-        shape.faces[0].normal(),
-        true,
-    );
-    for boundary in boundaries.iter() {
-        assert!(is_close(boundary.threshold, 0.0));
-        //needs more asserts
-        println!("{}", boundary)
-    }
-    println!("3d, Square");
-    let (shape, single_face) = make_3d_square();
-    let boundaries = single_face.calc_boundaries(
-        Vec3::zero(),
-        &shape.verts,
-        shape.faces[0].center(),
-        shape.faces[0].normal(),
-        true,
-    );
-    for boundary in boundaries.iter() {
-        assert!(is_close(boundary.threshold, 0.0));
-        //needs more asserts
-        println!("{}", boundary)
-    }
 }
 
 #[test]
