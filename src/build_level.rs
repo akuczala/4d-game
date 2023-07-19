@@ -12,7 +12,7 @@ use crate::draw::texture::{color_cube_texture, fuzzy_color_cube_texture};
 use crate::draw::visual_aids::{calc_grid_lines, draw_horizon, draw_sky, draw_stars};
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::buildshapes::ShapeBuilder;
-use crate::geometry::shape::{RefShapes, ShapeLabel};
+use crate::geometry::shape::{build_shape_library, RefShapes, ShapeLabel};
 use crate::geometry::transform::{Scaling, Transformable};
 use crate::geometry::Shape;
 use crate::graphics::colors::*;
@@ -39,15 +39,6 @@ where
     V::M: Componentable,
 {
     shape_builder.build(world).with(Coin).build();
-}
-
-pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
-    let mut ref_shapes: RefShapes<V> = RefShapes::new();
-    let cube = ShapeBuilder::<V>::build_cube(1.0).build();
-    let coin: Shape<V> = ShapeBuilder::<V>::build_coin().build();
-    ref_shapes.insert(ShapeLabel::from_str(CUBE_LABEL_STR), cube);
-    ref_shapes.insert(ShapeLabel::from_str(COIN_LABEL_STR), coin);
-    ref_shapes
 }
 
 pub fn build_scene<V>(world: &mut World)

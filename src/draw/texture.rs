@@ -205,6 +205,7 @@ impl<V: VectorTrait> Texture<V> {
             color: DEFAULT_COLOR,
         }
     }
+    // this works only for rectangular faces, as is
     pub fn make_fuzz_texture(n: usize) -> Self {
         Texture::Lines {
             lines: (0..n).map(|_| pointlike_line(V::random())).collect(),
@@ -213,6 +214,7 @@ impl<V: VectorTrait> Texture<V> {
     }
     pub fn merged_with(&self, texture: &Texture<V>) -> Texture<V> {
         match (self, texture) {
+            // first two cases only work for rectangles
             (Texture::DefaultLines { color: color_1 }, other) => {
                 Texture::make_single_tile_texture(*color_1).merged_with(other)
             }

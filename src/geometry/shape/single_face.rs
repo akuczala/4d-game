@@ -1,14 +1,15 @@
 use std::iter;
+use std::marker::PhantomData;
 
 use super::{face, Face, Shape, VertIndex};
 use crate::constants::ZERO;
 use crate::geometry::{line_plane_intersect, Line, Plane};
-use crate::vector::{barycenter_iter, Field, VectorTrait};
+use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
 
 #[derive(Clone)]
 struct SubFace<V> {
     vertis: Vec<VertIndex>, // list of vertis in each subface
-    plane: Plane<V>,
+    plane: Plane<V>, // this is not used for clipping, but is used for collisions + line intersection (e.g. targeting)
 }
 impl<V: VectorTrait> SubFace<V> {
     pub fn new(vertis: &[VertIndex], shape_verts: &[V], face_normal: V) -> Self {
@@ -68,14 +69,13 @@ impl<V: VectorTrait> SingleFace<V> {
     }
     fn calc_boundary(
         &self,
-        subface: &SubFace<V>,
+        subface_vertis: &[VertIndex],
         origin: V,
         verts: &[V],
         face_center: V,
     ) -> Plane<V> {
         let mut boundary_normal = V::cross_product(
-            subface
-                .vertis
+            subface_vertis
                 .iter()
                 .take((V::DIM.unsigned_abs() - 1) as usize)
                 .map(|&vi| verts[vi] - origin),
@@ -102,7 +102,7 @@ impl<V: VectorTrait> SingleFace<V> {
             self.subfaces
                 .0
                 .iter()
-                .map(|subface| self.calc_boundary(subface, origin, verts, face_center))
+                .map(|subface| self.calc_boundary(&subface.vertis, origin, verts, face_center))
                 // face is itself a boundary
                 .chain(iter::once(Plane::from_normal_and_point(
                     if self.two_sided && (face_normal.dot(origin - face_center) < ZERO) {

@@ -64,26 +64,26 @@ impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
         self.shape.modify(&transformation)
     }
 }
+pub fn unproject_shape_to_face<V: VectorTrait>(convex_shape: &Shape<V::SubV>) -> Shape<V> {
+    Shape::new(
+        convex_shape
+            .verts
+            .iter()
+            .map(|&v| V::unproject(v))
+            .collect(),
+        convex_shape.edges.clone(),
+        vec![Face::new(
+            (0..convex_shape.edges.len()).collect_vec(),
+            V::one_hot(-1),
+        )],
+    )
+}
 
 pub fn convex_shape_to_face_shape<V: VectorTrait>(
     convex_shape: Shape<V::SubV>,
     two_sided: bool,
 ) -> (Shape<V>, SingleFace<V>) {
-    let face = Face::new(
-        convex_shape
-            .edges
-            .iter()
-            .enumerate()
-            .map(|(i, _)| i)
-            .collect(),
-        V::one_hot(-1),
-    );
-    let verts = convex_shape
-        .verts
-        .iter()
-        .map(|&v| V::unproject(v))
-        .collect();
-    let shape = Shape::new(verts, convex_shape.edges, vec![face]);
+    let shape = unproject_shape_to_face(&convex_shape);
     let subface_vertis: Vec<Vec<usize>> = convex_shape
         .faces
         .iter()

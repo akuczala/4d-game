@@ -9,12 +9,12 @@ mod tests {
     };
 
     use crate::{
-        build_level::{build_level, build_shape_library},
+        build_level::build_level,
         components::{Shape, ShapeLabel, Transform},
         config::{self, save_config, Config},
         constants::CUBE_LABEL_STR,
         engine::get_engine_dispatcher_builder,
-        geometry::shape::{buildshapes::ShapeBuilder, RefShapes},
+        geometry::shape::{build_shape_library, buildshapes::ShapeBuilder, RefShapes},
         saveload::{load_level, save_level, Save, SaveMarker},
         vector::{is_close, Mat3, Vec2, Vec3, VectorTrait},
     };

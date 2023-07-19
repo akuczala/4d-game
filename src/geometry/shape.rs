@@ -1,9 +1,8 @@
-pub mod convex;
-pub mod single_face;
-
-pub mod face;
-
 pub mod buildshapes;
+pub mod convex;
+pub mod face;
+mod shape_library;
+pub mod single_face;
 
 use super::{line_plane_intersect, Line, Plane, Transform, Transformable};
 use crate::graphics::colors::Color;
@@ -13,59 +12,12 @@ pub use convex::Convex;
 pub use face::Face;
 use serde::{Deserialize, Serialize};
 pub use single_face::SingleFace;
-use std::collections::hash_map::Values;
-use std::collections::HashMap;
 
 use crate::geometry::shape::face::FaceGeometry;
 use crate::geometry::transform::Scaling;
-use specs::{Component, ConvertSaveload, VecStorage};
 use std::fmt::{self, Display};
 
-// TODO: consider merging with Shape
-// might be a bad idea - could contain in larger struct?
-#[derive(Component, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-#[storage(VecStorage)]
-pub struct ShapeLabel(pub String);
-impl Display for ShapeLabel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ShapeLabel({})", self.0)
-    }
-}
-impl ShapeLabel {
-    pub fn from_str(str: &str) -> Self {
-        ShapeLabel(str.to_string())
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct RefShapes<V>(HashMap<ShapeLabel, Shape<V>>);
-impl<V: VectorTrait> RefShapes<V> {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    pub fn get(&self, key: &ShapeLabel) -> Option<&Shape<V>> {
-        self.0.get(key)
-    }
-    pub fn get_unwrap(&self, key: &ShapeLabel) -> &Shape<V> {
-        self.get(key)
-            .unwrap_or_else(|| panic!("Ref shape {} not found", key))
-    }
-    pub fn insert(&mut self, key: ShapeLabel, value: Shape<V>) -> Option<Shape<V>> {
-        self.0.insert(key, value)
-    }
-    pub fn remove(&mut self, key: &ShapeLabel) -> Option<Shape<V>> {
-        self.0.remove(key)
-    }
-    pub fn get_all(&self) -> impl Iterator<Item = &Shape<V>> {
-        self.0.values()
-    }
-}
-impl<V: VectorTrait> Default for RefShapes<V> {
-    fn default() -> Self {
-        Self(HashMap::new())
-    }
-}
-
+pub use shape_library::*;
 pub trait ShapeTypeTrait<V: VectorTrait> {
     fn line_intersect(
         &self,
@@ -79,6 +31,14 @@ pub trait ShapeTypeTrait<V: VectorTrait> {
 // TODO: rework how ShapeType, Shape, Convex, and SingleFace work.
 // do we really need BOTH a ShapeType + Shape for each entity? Can we combine these into a single ADT?
 // is there a more general struct we could use to capture both cases?
+
+//TODO: add a third type / replace singleface with struct representing an adhoc collection of (convex) faces
+// this would have, in general, a combination of both subface types. Subfaces connecting faces would be of the convex type,
+// and subfaces on the boundary would be of the single face type
+
+// so in general, the maximum data needed for a subface is
+// the 1 or 2 faces it belongs to
+// the normal
 #[derive(Clone)]
 pub enum ShapeType<V> {
     Convex(convex::Convex),
