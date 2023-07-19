@@ -53,20 +53,25 @@ pub struct SingleFace<V> {
     pub two_sided: bool,
 }
 impl<V: VectorTrait> SingleFace<V> {
-    pub fn new(shape: &Shape<V>, subface_vertis: &[Vec<VertIndex>], two_sided: bool) -> Self {
+    pub fn new(
+        shape_verts: &[V],
+        face_normal: V,
+        subface_vertis: &[Vec<VertIndex>],
+        two_sided: bool,
+    ) -> Self {
         Self {
             subfaces: SubFaces(
                 subface_vertis
                     .iter()
-                    .map(|vertis| SubFace::new(vertis, &shape.verts, shape.faces[0].normal()))
+                    .map(|vertis| SubFace::new(vertis, shape_verts, face_normal))
                     .collect(),
             ),
             two_sided,
         }
     }
-    pub fn update(&mut self, shape_verts: &[V], shape_faces: &[Face<V>]) {
+    pub fn update(&mut self, shape_vers: &[V], shape_faces: &[Face<V>]) {
         for subface in self.subfaces.0.iter_mut() {
-            subface.update(shape_verts, shape_faces[0].normal())
+            subface.update(shape_vers, shape_faces[0].normal())
         }
     }
     fn calc_boundary(
@@ -160,7 +165,12 @@ fn make_3d_triangle() -> (Shape<Vec3>, SingleFace<Vec3>) {
         vec![Face::new(vec![0, 1, 2], Vec3::new(0., 0., -1.))],
     );
     let subfaces_vertis = vec![vec![0, 1], vec![1, 2], vec![2, 0]];
-    let single_face = SingleFace::new(&shape, &subfaces_vertis, false);
+    let single_face = SingleFace::new(
+        &shape.verts,
+        shape.faces[0].normal(),
+        &subfaces_vertis,
+        false,
+    );
     (shape, single_face)
 }
 fn make_3d_square() -> (Shape<Vec3>, SingleFace<Vec3>) {
@@ -175,7 +185,12 @@ fn make_3d_square() -> (Shape<Vec3>, SingleFace<Vec3>) {
         vec![Face::new(vec![0, 1, 2, 3], Vec3::new(0., 0., -1.))],
     );
     let subfaces_vertis = vec![vec![0, 1], vec![0, 2], vec![1, 3], vec![2, 3]];
-    let single_face = SingleFace::new(&shape, &subfaces_vertis, false);
+    let single_face = SingleFace::new(
+        &shape.verts,
+        shape.faces[0].normal(),
+        &subfaces_vertis,
+        false,
+    );
     (shape, single_face)
 }
 #[test]
@@ -187,7 +202,12 @@ fn test_boundaries() {
         vec![Face::new(vec![0], Vec2::new(-1., 0.))],
     );
     let subfaces_vertis = vec![vec![0], vec![1]];
-    let single_face = SingleFace::new(&shape, &subfaces_vertis, false);
+    let single_face = SingleFace::new(
+        &shape.verts,
+        shape.faces[0].normal(),
+        &subfaces_vertis,
+        false,
+    );
     let boundaries = single_face.calc_boundaries(
         Vec2::zero(),
         &shape.verts,

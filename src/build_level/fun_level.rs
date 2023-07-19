@@ -34,27 +34,25 @@ pub fn build_fun_level<V: VectorTrait>(
     let len = 4.0;
     let sub_cube = ShapeBuilder::<V::SubV>::build_cube(len).build();
     let wall_label = ShapeLabel("Wall".to_string());
-    let (wall, wall_single_face) = convex_shape_to_face_shape(sub_cube.clone(), false);
+    let wall = convex_shape_to_face_shape(sub_cube.clone(), false);
     ref_shapes.insert(wall_label.clone(), wall);
 
-    let wall_builder =
-        ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, wall_single_face, wall_label)
-            .with_face_texture(FaceTexture {
-                texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions)
-                    .merged_with(&Texture::make_fuzz_texture(fuzz_config.face_num)),
-                texture_mapping: Some(draw::TextureMapping {
-                    origin_verti: 0,
-                    frame_vertis,
-                }),
-            });
-    let (floor, floor_single_face) = convex_shape_to_face_shape(sub_cube, true);
+    let wall_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, wall_label)
+        .with_face_texture(FaceTexture {
+            texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions)
+                .merged_with(&Texture::make_fuzz_texture(fuzz_config.face_num)),
+            texture_mapping: Some(draw::TextureMapping {
+                origin_verti: 0,
+                frame_vertis,
+            }),
+        });
+    let floor = convex_shape_to_face_shape(sub_cube, true);
     let floor_label = ShapeLabel("Floor".to_string());
     ref_shapes.insert(floor_label.clone(), floor);
-    let upper_floor_builder =
-        ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, floor_single_face, floor_label)
-            .stretch(&(V::ones() * 0.5 - V::one_hot(1) * 0.25))
-            .with_rotation(-1, 1, -PI / 2.0)
-            .with_translation(V::one_hot(1) * len / 2.0);
+    let upper_floor_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, floor_label)
+        .stretch(&(V::ones() * 0.5 - V::one_hot(1) * 0.25))
+        .with_rotation(-1, 1, -PI / 2.0)
+        .with_translation(V::one_hot(1) * len / 2.0);
     // upper_floor_builder.build(world)
     //     .with(StaticCollider).build();
     let colors = CARDINAL_COLORS;

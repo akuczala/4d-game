@@ -103,17 +103,18 @@ where
     };
     let sub_wall = ShapeBuilder::<V::SubV>::build_cube(2.0).build();
     let wall_label = ShapeLabel("Wall".to_string());
-    let (wall, wall_single_face) = convex_shape_to_face_shape(sub_wall, true);
+    let wall = convex_shape_to_face_shape(sub_wall, true);
     ref_shapes.insert(wall_label.clone(), wall);
-    let build_shape: ShapeEntityBuilderV<V> =
-        ShapeEntityBuilder::new_face_from_ref_shape(ref_shapes, wall_single_face, wall_label)
-            .with_face_texture(FaceTexture {
-                texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions),
-                texture_mapping: Some(draw::TextureMapping {
-                    origin_verti: 0,
-                    frame_vertis,
-                }),
-            });
+    let build_shape: ShapeEntityBuilderV<V> = ShapeEntityBuilder::new_from_ref_shape(
+        ref_shapes, wall_label,
+    )
+    .with_face_texture(FaceTexture {
+        texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions),
+        texture_mapping: Some(draw::TextureMapping {
+            origin_verti: 0,
+            frame_vertis,
+        }),
+    });
     build_test_walls(&build_shape).into_iter().for_each(|b| {
         b.build(world).build();
     });

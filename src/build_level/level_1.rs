@@ -171,10 +171,8 @@ where
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    let cube_builder = ShapeEntityBuilder::new_convex_from_ref_shape(
-        ref_shapes,
-        ShapeLabel::from_str(CUBE_LABEL_STR),
-    );
+    let cube_builder =
+        ShapeEntityBuilder::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR));
 
     let wall_length = 3.0;
     let config = (*world.read_resource::<Config>()).clone();
@@ -196,7 +194,7 @@ where
     ) {
         insert_coin(
             world,
-            ShapeEntityBuilder::new_convex_from_ref_shape(
+            ShapeEntityBuilder::new_from_ref_shape(
                 ref_shapes,
                 ShapeLabel::from_str(COIN_LABEL_STR),
             )

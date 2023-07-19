@@ -1,4 +1,4 @@
-use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, SingleFace, VertIndex};
+use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, SingleFace, VertIndex};
 use crate::draw::{Texture, TextureMapping};
 use crate::geometry::Transformable;
 use crate::graphics::colors::*;
@@ -64,33 +64,30 @@ impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
         self.shape.modify(&transformation)
     }
 }
-pub fn unproject_shape_to_face<V: VectorTrait>(convex_shape: &Shape<V::SubV>) -> Shape<V> {
-    Shape::new_convex(
-        convex_shape
-            .verts
-            .iter()
-            .map(|&v| V::unproject(v))
-            .collect(),
-        convex_shape.edges.clone(),
-        vec![Face::new(
-            (0..convex_shape.edges.len()).collect_vec(),
-            V::one_hot(-1),
-        )],
-    )
-}
 
 pub fn convex_shape_to_face_shape<V: VectorTrait>(
     convex_shape: Shape<V::SubV>,
     two_sided: bool,
-) -> (Shape<V>, SingleFace<V>) {
-    let shape = unproject_shape_to_face(&convex_shape);
+) -> Shape<V> {
     let subface_vertis: Vec<Vec<usize>> = convex_shape
         .faces
         .iter()
         .map(|face| face.vertis.clone())
         .collect();
-    let single_face = SingleFace::new(&shape, &subface_vertis, two_sided);
-    (shape, single_face)
+    let verts = convex_shape
+        .verts
+        .iter()
+        .map(|&v| V::unproject(v))
+        .collect_vec();
+    let edges = convex_shape.edges.clone();
+    let face = Face::new((0..convex_shape.edges.len()).collect_vec(), V::one_hot(-1));
+    let single_face = ShapeType::SingleFace(SingleFace::new(
+        &verts,
+        face.normal(),
+        &subface_vertis,
+        two_sided,
+    ));
+    Shape::new(verts, edges, vec![face], single_face)
 }
 
 fn circle_vec<V: VectorTrait>(angle: Field) -> V {

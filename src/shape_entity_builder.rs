@@ -27,27 +27,7 @@ pub type ShapeEntityBuilderV<V> =
     ShapeEntityBuilder<V, <V as VectorTrait>::SubV, <V as VectorTrait>::M>;
 
 impl<V: VectorTrait> ShapeEntityBuilderV<V> {
-    pub fn new_face_from_ref_shape(
-        ref_shapes: &RefShapes<V>,
-        single_face: SingleFace<V>,
-        label: ShapeLabel,
-    ) -> Self {
-        let ref_shape = ref_shapes.get_unwrap(&label);
-        let shape_texture = ShapeTexture::new_default(ref_shape.verts.len());
-        Self {
-            shape: Shape::new(
-                ref_shape.verts.clone(),
-                ref_shape.edges.clone(),
-                ref_shape.faces.clone(),
-                ShapeType::SingleFace(single_face),
-            ),
-            shape_label: label,
-            transformation: Transform::identity(),
-            shape_texture,
-            static_collider: None,
-        }
-    }
-    pub fn new_convex_from_ref_shape(ref_shapes: &RefShapes<V>, label: ShapeLabel) -> Self {
+    pub fn new_from_ref_shape(ref_shapes: &RefShapes<V>, label: ShapeLabel) -> Self {
         let ref_shape = ref_shapes.get_unwrap(&label);
         Self {
             shape: ref_shape.clone(),

@@ -211,7 +211,7 @@ pub fn create_shape<V: VectorTrait>(
                 let pos = player_transform.pos;
                 let dir = player_transform.frame[-1];
                 let shape_pos = pos + dir * 2.0;
-                ShapeEntityBuilder::new_convex_from_ref_shape(
+                ShapeEntityBuilder::new_from_ref_shape(
                     ref_shapes,
                     ShapeLabel::from_str(CUBE_LABEL_STR),
                 )
@@ -237,7 +237,7 @@ pub fn duplicate_shape<V: VectorTrait>(
 ) -> Option<ShapeEntityBuilderV<V>> {
     input.toggle_keys.trigger_once(DUPLICATE_SHAPE, || {
         println!("shape duplicated");
-        ShapeEntityBuilder::new_convex_from_ref_shape(ref_shapes, shape_label.clone())
+        ShapeEntityBuilder::new_from_ref_shape(ref_shapes, shape_label.clone())
             .with_transform(*shape_transform)
             .with_texture(shape_texture.clone())
             .with_collider(shape_collider.cloned())

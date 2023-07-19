@@ -116,7 +116,7 @@ pub fn draw_stars<V: VectorTrait>() -> Vec<DrawLine<V>> {
 
 fn draw_star<V: VectorTrait>(axis: VecIndex, sign: bool) -> Vec<Line<V>> {
     let sub_cube: Shape<V::SubV> = ShapeBuilder::build_cube(STAR_SIZE).build();
-    let (mut cube, _) = convex_shape_to_face_shape::<V>(sub_cube, true);
+    let mut cube = convex_shape_to_face_shape::<V>(sub_cube, true);
     cube.update_from_ref(
         &cube.clone(),
         &Transform::identity()
