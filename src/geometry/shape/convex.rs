@@ -6,31 +6,31 @@ use crate::geometry::{line_plane_intersect, Line, Plane};
 use crate::vector::{Field, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct SubFace {
+pub struct ConvexSubFace {
     pub faceis: (FaceIndex, FaceIndex),
 }
 use std::fmt;
-impl fmt::Display for SubFace {
+impl fmt::Display for ConvexSubFace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SubFace({},{})", self.faceis.0, self.faceis.1)
     }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Subfaces(pub Vec<SubFace>);
-impl Subfaces {
+pub struct ConvexSubfaces(pub Vec<ConvexSubFace>);
+impl ConvexSubfaces {
     //find indices of (d-1) faces that are joined by a (d-2) edge
-    fn calc_subfaces<V: VectorTrait>(faces: &[Face<V>]) -> Subfaces {
-        let mut subfaces: Vec<SubFace> = Vec::new();
+    fn calc_subfaces<V: VectorTrait>(faces: &[Face<V>]) -> ConvexSubfaces {
+        let mut subfaces: Vec<ConvexSubFace> = Vec::new();
         if V::DIM == 2 {
             for i in 0..faces.len() {
                 for j in 0..i {
                     if count_common_verts(&faces[i], &faces[j]) >= 1 {
-                        subfaces.push(SubFace { faceis: (i, j) })
+                        subfaces.push(ConvexSubFace { faceis: (i, j) })
                     }
                 }
             }
-            return Subfaces(subfaces);
+            return ConvexSubfaces(subfaces);
         }
         let n_target = match V::DIM {
             3 => 1,
@@ -40,21 +40,21 @@ impl Subfaces {
         for i in 0..faces.len() {
             for j in 0..i {
                 if count_common_edges(&faces[i], &faces[j]) >= n_target {
-                    subfaces.push(SubFace { faceis: (i, j) })
+                    subfaces.push(ConvexSubFace { faceis: (i, j) })
                 }
             }
         }
-        Subfaces(subfaces)
+        ConvexSubfaces(subfaces)
     }
 }
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Convex {
-    pub subfaces: Subfaces,
+    pub subfaces: ConvexSubfaces,
 }
 impl Convex {
     pub fn new<V: VectorTrait>(faces: &[Face<V>]) -> Self {
         Convex {
-            subfaces: Subfaces::calc_subfaces(faces),
+            subfaces: ConvexSubfaces::calc_subfaces(faces),
         }
     }
     pub fn point_within<V: VectorTrait>(point: V, distance: Field, faces: &[Face<V>]) -> bool {

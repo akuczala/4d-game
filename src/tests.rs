@@ -11,7 +11,7 @@ mod tests {
     use crate::{
         build_level::build_level,
         components::{Shape, ShapeLabel, Transform},
-        config::{self, save_config, Config},
+        config::{self, load_config, save_config, Config},
         constants::CUBE_LABEL_STR,
         engine::get_engine_dispatcher_builder,
         geometry::shape::{build_shape_library, buildshapes::ShapeBuilder, RefShapes},
@@ -23,6 +23,7 @@ mod tests {
         let mut world = World::new();
         world.register::<SaveMarker>();
         //world.write_resource::<SimpleMarkerAllocator<Save>>();
+        world.insert(load_config());
         world.insert::<SimpleMarkerAllocator<Save>>(SimpleMarkerAllocator::default());
         let mut dispatcher = get_engine_dispatcher_builder::<Vec3>().build();
         dispatcher.setup(&mut world);
@@ -89,8 +90,8 @@ mod tests {
     }
 
     #[test]
-    fn load_config() {
-        println!("{:?}", config::load_config())
+    fn test_load_config() {
+        println!("{:?}", load_config())
     }
     #[test]
     fn test_save_config() {

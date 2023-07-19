@@ -3,7 +3,10 @@ use std::iter;
 use crate::{
     components::{Convex, Shape, ShapeType, SingleFace},
     constants::ZERO,
-    geometry::{shape::VertIndex, Face, Plane},
+    geometry::{
+        shape::{convex::ConvexSubFace, VertIndex},
+        Face, Plane,
+    },
     vector::VectorTrait,
 };
 
@@ -13,9 +16,12 @@ pub fn calc_boundaries<V: VectorTrait>(
     face_visibility: &[bool],
 ) -> Vec<Plane<V>> {
     match &shape.shape_type {
-        ShapeType::Convex(convex) => {
-            calc_convex_boundaries(convex, camera_pos, &shape.faces, face_visibility)
-        }
+        ShapeType::Convex(convex) => calc_convex_boundaries(
+            &convex.subfaces.0,
+            camera_pos,
+            &shape.faces,
+            face_visibility,
+        ),
         ShapeType::SingleFace(single_face) => calc_single_face_boundaries(
             single_face,
             camera_pos,
@@ -48,14 +54,14 @@ fn calc_convex_boundary<V: VectorTrait>(face1: &Plane<V>, face2: &Plane<V>, orig
 }
 
 fn calc_convex_boundaries<V: VectorTrait>(
-    convex: &Convex,
+    subfaces: &[ConvexSubFace],
     origin: V,
     faces: &[Face<V>],
     face_visibility: &[bool],
 ) -> Vec<Plane<V>> {
     let mut boundaries: Vec<Plane<V>> = Vec::new();
 
-    for subface in &convex.subfaces.0 {
+    for subface in subfaces {
         let face1 = &faces[subface.faceis.0];
         let face2 = &faces[subface.faceis.1];
         if face_visibility[subface.faceis.0] != face_visibility[subface.faceis.1] {
@@ -129,6 +135,23 @@ fn test_single_face_boundaries() {
     use crate::geometry::shape::Edge;
     use crate::vector::is_close;
     use crate::vector::{Vec2, Vec3};
+
+    fn assert_on_boundaries<V: VectorTrait>(face_normal: V, boundaries: &[Plane<V>]) {
+        let mut hits = 0;
+        for boundary in boundaries {
+            if !V::is_close(boundary.normal, face_normal) {
+                assert!(is_close(boundary.threshold, 0.0));
+            } else {
+                hits += 1;
+            }
+            //needs more asserts
+            println!("{}", boundary)
+        }
+        // there should be exactly one boundary with the same normal as the face
+        assert_eq!(hits, 1);
+    }
+
+    // Line segment
     let shape = Shape::new_convex(
         vec![Vec2::new(1., -1.), Vec2::new(1., 1.)],
         vec![Edge(0, 1)],
@@ -149,9 +172,8 @@ fn test_single_face_boundaries() {
         shape.faces[0].normal(),
         true,
     );
-    for boundary in boundaries.iter() {
-        println!("{}", boundary)
-    }
+    assert_on_boundaries(shape.faces[0].normal(), &boundaries);
+
     println!("3d, Triangle");
     let (shape, single_face) = make_3d_triangle();
     let boundaries = calc_single_face_boundaries(
@@ -162,11 +184,8 @@ fn test_single_face_boundaries() {
         shape.faces[0].normal(),
         true,
     );
-    for boundary in boundaries.iter() {
-        assert!(is_close(boundary.threshold, 0.0));
-        //needs more asserts
-        println!("{}", boundary)
-    }
+    assert_on_boundaries(shape.faces[0].normal(), &boundaries);
+
     println!("3d, Square");
     let (shape, single_face) = make_3d_square();
     let boundaries = calc_single_face_boundaries(
@@ -177,9 +196,5 @@ fn test_single_face_boundaries() {
         shape.faces[0].normal(),
         true,
     );
-    for boundary in boundaries.iter() {
-        assert!(is_close(boundary.threshold, 0.0));
-        //needs more asserts
-        println!("{}", boundary)
-    }
+    assert_on_boundaries(shape.faces[0].normal(), &boundaries);
 }
