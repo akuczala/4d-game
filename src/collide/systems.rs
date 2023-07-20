@@ -172,7 +172,6 @@ where
     );
 
     fn run(&mut self, (input, player, transform, shapes, bbox, hash): Self::SystemData) {
-        use glium::glutin::event::VirtualKeyCode as VKC;
         if input.helper.key_released(PRINT_DEBUG) {
             //let mut out_string = "Entities: ".to_string();
             let entities_in_bbox = get_entities_in_bbox(bbox.get(player.0).unwrap(), &hash);

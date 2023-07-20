@@ -1,8 +1,9 @@
 pub use std::f32::consts::{E, PI};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_3};
 
 use crate::{components::ShapeLabel, draw::ViewportShape, graphics::colors::*, vector::Field};
 
-pub const HALF_PI: Field = PI * HALF;
+pub const HALF_PI: Field = FRAC_PI_2;
 pub const ZERO: Field = 0.0;
 pub const HALF: Field = 0.5;
 
@@ -32,7 +33,7 @@ pub const Z_NEAR: Field = 0.1;
 pub const PLAYER_COLLIDE_DISTANCE: Field = 0.2;
 
 pub const SPEED: Field = 1.5;
-pub const ANG_SPEED: Field = 1.5 * PI / 3.0;
+pub const ANG_SPEED: Field = 1.5 * FRAC_PI_3;
 pub const MAX_TILT: Field = 0.99;
 
 pub const MAX_TARGET_DIST: Field = 10.;

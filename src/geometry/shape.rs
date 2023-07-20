@@ -114,7 +114,6 @@ impl<V: VectorTrait> Shape<V> {
         Self::new(verts, edges, faces, shape_type)
     }
 
-    //pub fn get_face_verts(&self, face : Face)
     pub fn get_facei_verts(&self, facei: FaceIndex) -> Vec<V> {
         self.faces[facei]
             .vertis

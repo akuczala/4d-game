@@ -8,10 +8,10 @@ pub use shape::{Face, Shape};
 use std::fmt;
 pub use transform::{Transform, Transformable};
 
+/// Represents a line or line segment. Defined by two points.
 #[derive(Clone)]
 pub struct Line<V>(pub V, pub V);
 impl<V: fmt::Display> fmt::Display for Line<V> {
-    // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Line({},{})", self.0, self.1)
     }
@@ -34,6 +34,7 @@ impl<V: VectorTrait> Line<V> {
     pub fn is_close(&self, other: &Line<V>) -> bool {
         V::is_close(self.0, other.0) && V::is_close(self.1, other.1)
     }
+    /// Linearly interpolates between the first point (at t=0) and the second (at t=1)
     pub fn linterp(&self, t: Field) -> V {
         V::linterp(self.0, self.1, t)
     }
@@ -43,6 +44,8 @@ impl Line<Field> {
         scalar_linterp(self.0, self.1, t)
     }
 }
+
+/// Represents a hyperplane. Defined by normal vector and threshold (n . p)
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Plane<V> {
     pub normal: V,
@@ -74,7 +77,7 @@ impl<V: VectorTrait> Plane<V> {
     pub fn point_signed_distance(&self, point: V) -> Field {
         self.normal.dot(point) - self.threshold
     }
-    //returns closest plane + distance
+    ///returns closest plane + distance
     pub fn point_normal_distance<'a, I: Iterator<Item = &'a Plane<V>>>(
         point: V,
         planes: I,
