@@ -173,7 +173,7 @@ pub fn update_shape_visibility<V: VectorTrait>(
     //update shape visibility and boundaries
     let two_sided = match &shape.shape_type {
         ShapeType::Convex(_) => false,
-        ShapeType::SingleFace(single_face) => single_face.two_sided,
+        ShapeType::SingleFace(_) => shape.faces[0].two_sided,
     };
     // build face visibility vec if empty
     if shape_clip_state.face_visibility.is_empty() {

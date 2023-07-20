@@ -4,7 +4,7 @@ use crate::{
     components::{Convex, Shape, ShapeType, SingleFace},
     constants::ZERO,
     geometry::{
-        shape::{convex::ConvexSubFace, VertIndex},
+        shape::{convex::ConvexSubFace, single_face::BoundarySubFace, subface::SubFace, VertIndex},
         Face, Plane,
     },
     vector::VectorTrait,
@@ -15,22 +15,38 @@ pub fn calc_boundaries<V: VectorTrait>(
     shape: &Shape<V>,
     face_visibility: &[bool],
 ) -> Vec<Plane<V>> {
-    match &shape.shape_type {
-        ShapeType::Convex(convex) => calc_convex_boundaries(
-            &convex.subfaces.0,
-            camera_pos,
-            &shape.faces,
-            face_visibility,
-        ),
-        ShapeType::SingleFace(single_face) => calc_single_face_boundaries(
-            single_face,
-            camera_pos,
-            &shape.verts,
-            shape.faces[0].center(),
-            shape.faces[0].normal(),
-            face_visibility[0],
-        ),
+    let mut boundaries: Vec<Plane<V>> = Vec::new();
+
+    for subface in &shape.shape_type.get_subfaces() {
+        match subface {
+            SubFace::Convex(ConvexSubFace { faceis }) => {
+                let face1 = &shape.faces[faceis.0];
+                let face2 = &shape.faces[faceis.1];
+                if face_visibility[faceis.0] != face_visibility[faceis.1] {
+                    let boundary = calc_convex_boundary(face1.plane(), face2.plane(), camera_pos);
+                    boundaries.push(boundary);
+                }
+            }
+            SubFace::Boundary(bsf) => {
+                if face_visibility[bsf.facei] {
+                    boundaries.push(calc_single_face_boundary(
+                        &bsf.vertis,
+                        camera_pos,
+                        &shape.verts,
+                        shape.faces[bsf.facei].center(),
+                    ))
+                }
+            }
+        };
     }
+    //visible faces are boundaries
+    for (face, visible) in shape.faces.iter().zip(face_visibility.iter()) {
+        if *visible {
+            // we could check for two-sided here, but why not just set visible = true always?
+            boundaries.push(face.plane().clone())
+        }
+    }
+    boundaries
 }
 
 fn calc_convex_boundary<V: VectorTrait>(face1: &Plane<V>, face2: &Plane<V>, origin: V) -> Plane<V> {
@@ -51,31 +67,6 @@ fn calc_convex_boundary<V: VectorTrait>(face1: &Plane<V>, face2: &Plane<V>, orig
         normal: n3,
         threshold: th3,
     }
-}
-
-fn calc_convex_boundaries<V: VectorTrait>(
-    subfaces: &[ConvexSubFace],
-    origin: V,
-    faces: &[Face<V>],
-    face_visibility: &[bool],
-) -> Vec<Plane<V>> {
-    let mut boundaries: Vec<Plane<V>> = Vec::new();
-
-    for subface in subfaces {
-        let face1 = &faces[subface.faceis.0];
-        let face2 = &faces[subface.faceis.1];
-        if face_visibility[subface.faceis.0] != face_visibility[subface.faceis.1] {
-            let boundary = calc_convex_boundary(face1.plane(), face2.plane(), origin);
-            boundaries.push(boundary);
-        }
-    }
-    //visible faces are boundaries
-    for (face, visible) in faces.iter().zip(face_visibility.iter()) {
-        if *visible {
-            boundaries.push(face.plane().clone())
-        }
-    }
-    boundaries
 }
 
 fn calc_single_face_boundary<V: VectorTrait>(
@@ -100,35 +91,8 @@ fn calc_single_face_boundary<V: VectorTrait>(
         threshold: boundary_normal.dot(origin),
     }
 }
-fn calc_single_face_boundaries<V: VectorTrait>(
-    single_face: &SingleFace<V>,
-    origin: V,
-    verts: &[V],
-    face_center: V,
-    face_normal: V,
-    visible: bool,
-) -> Vec<Plane<V>> {
-    if visible {
-        single_face
-            .subfaces
-            .0
-            .iter()
-            .map(|subface| calc_single_face_boundary(&subface.vertis, origin, verts, face_center))
-            // face is itself a boundary
-            .chain(iter::once(Plane::from_normal_and_point(
-                if single_face.two_sided && (face_normal.dot(origin - face_center) < ZERO) {
-                    -face_normal
-                } else {
-                    face_normal
-                },
-                face_center,
-            )))
-            .collect()
-    } else {
-        Vec::new()
-    }
-}
-// TODO: fix these tests
+
+// TODO: fix these tests (again)
 #[test]
 fn test_single_face_boundaries() {
     use crate::geometry::shape::single_face::{make_3d_square, make_3d_triangle};
@@ -152,49 +116,22 @@ fn test_single_face_boundaries() {
     }
 
     // Line segment
-    let shape = Shape::new_convex(
+    let shape = Shape::new_single_face(
         vec![Vec2::new(1., -1.), Vec2::new(1., 1.)],
         vec![Edge(0, 1)],
-        vec![Face::new(vec![0], Vec2::new(-1., 0.))],
+        Face::new(vec![0], Vec2::new(-1., 0.)),
+        &[vec![0], vec![1]],
     );
-    let subfaces_vertis = vec![vec![0], vec![1]];
-    let single_face = SingleFace::new(
-        &shape.verts,
-        shape.faces[0].normal(),
-        &subfaces_vertis,
-        false,
-    );
-    let boundaries = calc_single_face_boundaries(
-        &single_face,
-        Vec2::zero(),
-        &shape.verts,
-        shape.faces[0].center(),
-        shape.faces[0].normal(),
-        true,
-    );
+    let boundaries = calc_boundaries(Vec2::zero(), &shape, &[true]);
     assert_on_boundaries(shape.faces[0].normal(), &boundaries);
 
     println!("3d, Triangle");
-    let (shape, single_face) = make_3d_triangle();
-    let boundaries = calc_single_face_boundaries(
-        &single_face,
-        Vec3::zero(),
-        &shape.verts,
-        shape.faces[0].center(),
-        shape.faces[0].normal(),
-        true,
-    );
+    let shape = make_3d_triangle();
+    let boundaries = calc_boundaries(Vec3::zero(), &shape, &[true]);
     assert_on_boundaries(shape.faces[0].normal(), &boundaries);
 
     println!("3d, Square");
-    let (shape, single_face) = make_3d_square();
-    let boundaries = calc_single_face_boundaries(
-        &single_face,
-        Vec3::zero(),
-        &shape.verts,
-        shape.faces[0].center(),
-        shape.faces[0].normal(),
-        true,
-    );
+    let shape = make_3d_square();
+    let boundaries = calc_boundaries(Vec3::zero(), &shape, &[true]);
     assert_on_boundaries(shape.faces[0].normal(), &boundaries);
 }

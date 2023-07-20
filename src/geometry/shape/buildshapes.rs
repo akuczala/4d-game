@@ -67,7 +67,7 @@ impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
 
 pub fn convex_shape_to_face_shape<V: VectorTrait>(
     convex_shape: Shape<V::SubV>,
-    two_sided: bool,
+    two_sided: bool, // TODO: add two_sided to face constructor
 ) -> Shape<V> {
     let subface_vertis: Vec<Vec<usize>> = convex_shape
         .faces
@@ -81,12 +81,8 @@ pub fn convex_shape_to_face_shape<V: VectorTrait>(
         .collect_vec();
     let edges = convex_shape.edges.clone();
     let face = Face::new((0..convex_shape.edges.len()).collect_vec(), V::one_hot(-1));
-    let single_face = ShapeType::SingleFace(SingleFace::new(
-        &verts,
-        face.normal(),
-        &subface_vertis,
-        two_sided,
-    ));
+    let single_face =
+        ShapeType::SingleFace(SingleFace::new(&verts, face.normal(), &subface_vertis, 0));
     Shape::new(verts, edges, vec![face], single_face)
 }
 

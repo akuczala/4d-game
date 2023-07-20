@@ -1,7 +1,9 @@
 pub mod bbox;
 pub mod systems;
 
-use crate::components::{Camera, Convex, Player, Shape, ShapeType, Transform, Transformable};
+use crate::components::{
+    Camera, Convex, Player, Shape, ShapeType, SingleFace, Transform, Transformable,
+};
 use crate::constants::PLAYER_COLLIDE_DISTANCE;
 use crate::ecs_utils::{Componentable, ModSystem};
 use crate::geometry::transform::Scaling;
@@ -230,15 +232,13 @@ pub fn check_player_static_collisions<'a, I, V: VectorTrait + 'a>(
             let (normal, dist) = shape.point_normal_distance(player_pos);
             if match &shape.shape_type {
                 ShapeType::SingleFace(single_face) => {
-                    if single_face.two_sided {
-                        (dist.abs() < PLAYER_COLLIDE_DISTANCE)
-                            & (single_face.subface_normal_distance(player_pos).1
-                                < PLAYER_COLLIDE_DISTANCE)
+                    (if shape.faces[0].two_sided {
+                        dist.abs()
                     } else {
-                        (dist < PLAYER_COLLIDE_DISTANCE)
-                            & (single_face.subface_normal_distance(player_pos).1
-                                < PLAYER_COLLIDE_DISTANCE)
-                    }
+                        dist
+                    } < PLAYER_COLLIDE_DISTANCE)
+                        & (SingleFace::subface_normal_distance(&single_face.subfaces, player_pos).1
+                            < PLAYER_COLLIDE_DISTANCE)
                 }
                 ShapeType::Convex(_) => dist < PLAYER_COLLIDE_DISTANCE,
             } {

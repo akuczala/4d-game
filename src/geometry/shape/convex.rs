@@ -65,7 +65,6 @@ impl Convex {
     }
     //returns points of intersection with shape
     pub fn line_intersect<V: VectorTrait>(
-        &self,
         shape: &Shape<V>,
         line: &Line<V>,
         visible_only: bool,

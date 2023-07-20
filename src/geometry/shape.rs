@@ -3,6 +3,10 @@ pub mod convex;
 pub mod face;
 mod shape_library;
 pub mod single_face;
+pub mod subface;
+
+use self::single_face::BoundarySubFace;
+use self::subface::SubFace;
 
 use super::{line_plane_intersect, Line, Plane, Transform, Transformable};
 use crate::graphics::colors::Color;
@@ -44,6 +48,18 @@ pub enum ShapeType<V> {
     Convex(convex::Convex),
     SingleFace(single_face::SingleFace<V>),
 }
+impl<V: Copy> ShapeType<V> {
+    pub fn get_subfaces(&self) -> Vec<SubFace<V>> {
+        match self {
+            ShapeType::Convex(Convex { subfaces }) => {
+                subfaces.0.iter().cloned().map(SubFace::Convex).collect()
+            }
+            ShapeType::SingleFace(SingleFace { subfaces }) => {
+                subfaces.0.iter().cloned().map(SubFace::Boundary).collect()
+            }
+        }
+    }
+}
 impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
     fn line_intersect(
         &self,
@@ -53,12 +69,16 @@ impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
         face_visibility: &[bool],
     ) -> Vec<V> {
         match self {
-            ShapeType::Convex(convex) => {
-                convex.line_intersect(shape, line, visible_only, face_visibility)
+            ShapeType::Convex(_) => {
+                Convex::line_intersect(shape, line, visible_only, face_visibility)
             }
-            ShapeType::SingleFace(single_face) => {
-                single_face.line_intersect(shape, line, visible_only, face_visibility)
-            }
+            ShapeType::SingleFace(single_face) => SingleFace::line_intersect(
+                &single_face.subfaces,
+                shape,
+                line,
+                visible_only,
+                face_visibility,
+            ),
         }
     }
 }
@@ -112,6 +132,17 @@ impl<V: VectorTrait> Shape<V> {
     pub fn new_convex(verts: Vec<V>, edges: Vec<Edge>, faces: Vec<Face<V>>) -> Self {
         let shape_type = ShapeType::Convex(Convex::new(&faces));
         Self::new(verts, edges, faces, shape_type)
+    }
+
+    pub fn new_single_face(
+        verts: Vec<V>,
+        edges: Vec<Edge>,
+        face: Face<V>,
+        subface_vertis: &[Vec<VertIndex>],
+    ) -> Self {
+        let shape_type =
+            ShapeType::SingleFace(SingleFace::new(&verts, face.normal(), subface_vertis, 0));
+        Self::new(verts, edges, vec![face], shape_type)
     }
 
     pub fn get_facei_verts(&self, facei: FaceIndex) -> Vec<V> {

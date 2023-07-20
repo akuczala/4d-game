@@ -12,6 +12,7 @@ pub struct Face<V> {
 
     pub edgeis: Vec<EdgeIndex>,
     pub vertis: Vec<VertIndex>,
+    pub two_sided: bool,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -30,6 +31,7 @@ impl<V: VectorTrait> Face<V> {
                 },
                 center: V::zero(),
             },
+            two_sided: false,
 
             edgeis,
             vertis: Vec::new(),
