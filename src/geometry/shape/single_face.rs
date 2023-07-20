@@ -116,7 +116,7 @@ pub fn make_3d_triangle() -> Shape<Vec3> {
             Vec3::new(-1., 0., 1.),
         ],
         vec![Edge(0, 1), Edge(1, 2), Edge(2, 0)],
-        Face::new(vec![0, 1, 2], Vec3::new(0., 0., -1.)),
+        Face::new(vec![0, 1, 2], Vec3::new(0., 0., -1.), false),
         &[vec![0, 1], vec![1, 2], vec![2, 0]],
     )
 }
@@ -129,7 +129,7 @@ pub fn make_3d_square() -> Shape<Vec3> {
             Vec3::new(1., 1., 1.),
         ],
         vec![Edge(0, 1), Edge(0, 2), Edge(1, 3), Edge(2, 3)],
-        Face::new(vec![0, 1, 2, 3], Vec3::new(0., 0., -1.)),
+        Face::new(vec![0, 1, 2, 3], Vec3::new(0., 0., -1.), false),
         &[vec![0, 1], vec![0, 2], vec![1, 3], vec![2, 3]],
     )
 }

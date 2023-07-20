@@ -67,7 +67,7 @@ impl<V: VectorTrait> Transformable<V> for ShapeBuilder<V> {
 
 pub fn convex_shape_to_face_shape<V: VectorTrait>(
     convex_shape: Shape<V::SubV>,
-    two_sided: bool, // TODO: add two_sided to face constructor
+    two_sided: bool,
 ) -> Shape<V> {
     let subface_vertis: Vec<Vec<usize>> = convex_shape
         .faces
@@ -80,7 +80,11 @@ pub fn convex_shape_to_face_shape<V: VectorTrait>(
         .map(|&v| V::unproject(v))
         .collect_vec();
     let edges = convex_shape.edges.clone();
-    let face = Face::new((0..convex_shape.edges.len()).collect_vec(), V::one_hot(-1));
+    let face = Face::new(
+        (0..convex_shape.edges.len()).collect_vec(),
+        V::one_hot(-1),
+        two_sided,
+    );
     let single_face =
         ShapeType::SingleFace(SingleFace::new(&verts, face.normal(), &subface_vertis, 0));
     Shape::new(verts, edges, vec![face], single_face)
@@ -104,7 +108,7 @@ pub fn build_prism_2d<V: VectorTrait>(r: Field, n: VertIndex) -> Shape<V> {
     //build faces
     let faces = (0..n)
         .zip(normals)
-        .map(|(i, normal)| Face::new(vec![i], normal))
+        .map(|(i, normal)| Face::new(vec![i], normal, false))
         .collect();
 
     Shape::new_convex(verts, edges, faces)
@@ -135,11 +139,15 @@ pub fn build_prism_3d<V: VectorTrait>(r: Field, h: Field, n: VertIndex) -> Shape
     let edges: Vec<Edge> = top_edges.chain(bottom_edges).chain(long_edges).collect();
 
     //build faces
-    let top_face = Face::new((0..n).collect(), V::one_hot(2));
-    let bottom_face = Face::new((n..2 * n).collect(), V::one_hot(2) * (-1.0));
-    let long_faces = (0..n)
-        .zip(normals)
-        .map(|(i, normal)| Face::new(vec![i, i + n, 2 * n + i, 2 * n + (i + 1) % n], normal));
+    let top_face = Face::new((0..n).collect(), V::one_hot(2), false);
+    let bottom_face = Face::new((n..2 * n).collect(), V::one_hot(2) * (-1.0), false);
+    let long_faces = (0..n).zip(normals).map(|(i, normal)| {
+        Face::new(
+            vec![i, i + n, 2 * n + i, 2 * n + (i + 1) % n],
+            normal,
+            false,
+        )
+    });
 
     let faces: Vec<Face<V>> = vec![top_face, bottom_face]
         .into_iter()
@@ -246,7 +254,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         let long_edgeis = (0..n).map(|j| m * n + j + i * n);
         let edgeis: Vec<EdgeIndex> = cap1_edgeis.chain(cap2_edgeis).chain(long_edgeis).collect();
         let normal = make_normal(&edgeis, verts, edges);
-        Face::new(edgeis, normal)
+        Face::new(edgeis, normal, false)
     }
     fn make_face2<V: VectorTrait>(
         j: VertIndex,
@@ -260,7 +268,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         let long_edgeis = (0..m).map(|i| j + i * n);
         let edgeis: Vec<EdgeIndex> = cap1_edgeis.chain(cap2_edgeis).chain(long_edgeis).collect();
         let normal = make_normal(&edgeis, verts, edges);
-        Face::new(edgeis, normal)
+        Face::new(edgeis, normal, false)
     }
     let faces_1 = (0..ns[0]).map(|i| make_face1(i, &ns.clone(), &verts, &edges));
     let faces_2 = (0..ns[1]).map(|j| make_face2(j, &ns.clone(), &verts, &edges));

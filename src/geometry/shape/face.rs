@@ -22,7 +22,7 @@ pub struct FaceGeometry<V> {
 }
 
 impl<V: VectorTrait> Face<V> {
-    pub fn new(edgeis: Vec<EdgeIndex>, normal: V) -> Face<V> {
+    pub fn new(edgeis: Vec<EdgeIndex>, normal: V, two_sided: bool) -> Face<V> {
         Face {
             geometry: FaceGeometry {
                 plane: Plane {
@@ -31,7 +31,7 @@ impl<V: VectorTrait> Face<V> {
                 },
                 center: V::zero(),
             },
-            two_sided: false,
+            two_sided,
 
             edgeis,
             vertis: Vec::new(),
