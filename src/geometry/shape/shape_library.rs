@@ -8,13 +8,14 @@ use specs::{Component, VecStorage};
 
 use crate::{
     constants::{
-        COIN_LABEL_STR, CUBE_LABEL_STR, ONE_SIDED_FACE_LABEL_STR, TWO_SIDED_FACE_LABEL_STR,
+        COIN_LABEL_STR, CUBE_LABEL_STR, INVERTED_CUBE_LABEL_STR, ONE_SIDED_FACE_LABEL_STR,
+        TWO_SIDED_FACE_LABEL_STR,
     },
     vector::VectorTrait,
 };
 
 use super::{
-    buildshapes::{convex_shape_to_face_shape, ShapeBuilder},
+    buildshapes::{convex_shape_to_face_shape, invert_normals, ShapeBuilder},
     Shape,
 };
 
@@ -67,6 +68,9 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     let mut ref_shapes: RefShapes<V> = RefShapes::new();
     let cube = ShapeBuilder::<V>::build_cube(1.0).build();
     let sub_cube = ShapeBuilder::<V::SubV>::build_cube(1.0).build();
+    let inverted_cube = invert_normals(&cube);
+    //inverted_cube.faces[0].geometry.plane.normal = -inverted_cube.faces[0].geometry.plane.normal;
+
     let coin: Shape<V> = ShapeBuilder::<V>::build_coin().build();
     ref_shapes.insert(ShapeLabel::from_str(CUBE_LABEL_STR), cube);
     ref_shapes.insert(ShapeLabel::from_str(COIN_LABEL_STR), coin);
@@ -78,5 +82,6 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
         ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR),
         convex_shape_to_face_shape(sub_cube, true),
     );
+    ref_shapes.insert(ShapeLabel::from_str(INVERTED_CUBE_LABEL_STR), inverted_cube);
     ref_shapes
 }

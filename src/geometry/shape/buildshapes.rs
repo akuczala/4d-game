@@ -85,9 +85,7 @@ pub fn convex_shape_to_face_shape<V: VectorTrait>(
         V::one_hot(-1),
         two_sided,
     );
-    let single_face =
-        ShapeType::SingleFace(SingleFace::new(&verts, face.normal(), &subface_vertis, 0));
-    Shape::new(verts, edges, vec![face], single_face)
+    Shape::new_single_face(verts, edges, face, &subface_vertis)
 }
 
 fn circle_vec<V: VectorTrait>(angle: Field) -> V {
@@ -286,6 +284,6 @@ pub fn invert_normals<V: VectorTrait>(shape: &Shape<V>) -> Shape<V> {
     for face in &mut new_shape.faces {
         face.geometry.plane.normal = -face.normal();
     }
-    new_shape.update_from_ref(shape, &Transform::identity());
+    //new_shape.update_from_ref(shape, &Transform::identity());
     new_shape
 }

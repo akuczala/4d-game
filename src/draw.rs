@@ -171,10 +171,6 @@ pub fn update_shape_visibility<V: VectorTrait>(
     clip_state: &ClipState<V>,
 ) {
     //update shape visibility and boundaries
-    let two_sided = match &shape.shape_type {
-        ShapeType::Convex(_) => false,
-        ShapeType::SingleFace(_) => shape.faces[0].two_sided,
-    };
     // build face visibility vec if empty
     if shape_clip_state.face_visibility.is_empty() {
         for face in shape.faces.iter() {
@@ -183,7 +179,7 @@ pub fn update_shape_visibility<V: VectorTrait>(
                 .push(get_face_visibility::<V>(
                     face,
                     camera_pos,
-                    shape_clip_state.transparent | two_sided,
+                    shape_clip_state.transparent | face.two_sided,
                 ));
         }
     } else {
@@ -192,8 +188,11 @@ pub fn update_shape_visibility<V: VectorTrait>(
             .iter()
             .zip(shape_clip_state.face_visibility.iter_mut())
         {
-            *visible =
-                get_face_visibility(face, camera_pos, shape_clip_state.transparent | two_sided);
+            *visible = get_face_visibility(
+                face,
+                camera_pos,
+                shape_clip_state.transparent | face.two_sided,
+            );
         }
     }
 

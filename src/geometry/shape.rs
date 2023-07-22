@@ -47,6 +47,7 @@ pub trait ShapeTypeTrait<V: VectorTrait> {
 pub enum ShapeType<V> {
     Convex(convex::Convex),
     SingleFace(single_face::SingleFace<V>),
+    Generic(Vec<SubFace<V>>),
 }
 impl<V: Copy> ShapeType<V> {
     pub fn get_subfaces(&self) -> Vec<SubFace<V>> {
@@ -57,6 +58,7 @@ impl<V: Copy> ShapeType<V> {
             ShapeType::SingleFace(SingleFace { subfaces }) => {
                 subfaces.0.iter().cloned().map(SubFace::Boundary).collect()
             }
+            ShapeType::Generic(subfaces) => subfaces.clone(),
         }
     }
 }
@@ -79,6 +81,7 @@ impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
                 visible_only,
                 face_visibility,
             ),
+            ShapeType::Generic(_) => unimplemented!(),
         }
     }
 }
@@ -152,11 +155,22 @@ impl<V: VectorTrait> Shape<V> {
             .map(|vi| self.verts[*vi])
             .collect()
     }
+    /// returns the max signed distance to any face plane
+    /// for a convex shape, only
     pub fn point_signed_distance(&self, point: V) -> Field {
         self.faces
             .iter()
             .map(|f| f.plane().point_signed_distance(point))
             .fold(Field::NEG_INFINITY, |a, b| match a > b {
+                true => a,
+                false => b,
+            })
+    }
+    pub fn point_signed_distance_inverted(&self, point: V) -> Field {
+        self.faces
+            .iter()
+            .map(|f| f.plane().point_signed_distance(point))
+            .fold(Field::INFINITY, |a, b| match a < b {
                 true => a,
                 false => b,
             })
@@ -172,6 +186,16 @@ impl<V: VectorTrait> Shape<V> {
                     true => (n1, a),
                     false => (n2, b),
                 }
+            })
+    }
+    pub fn point_normal_distance_inverted(&self, point: V) -> (V, Field) {
+        self.faces
+            .iter()
+            .map(Face::plane)
+            .map(|plane| (plane.normal, plane.point_signed_distance(point)))
+            .fold((V::zero(), f32::INFINITY), |(n1, a), (n2, b)| match a < b {
+                true => (n1, a),
+                false => (n2, b),
             })
     }
     //returns distance and normal of closest face
@@ -193,6 +217,9 @@ impl<V: VectorTrait> Shape<V> {
             face.geometry.plane.normal = (transform.frame * face.normal()).normalize();
             face.geometry.center = transform.transform_vec(&face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
+        }
+        if let ShapeType::SingleFace(ref mut single_face) = self.shape_type {
+            single_face.update(&self.verts, &self.faces)
         }
     }
     pub fn update_from_ref(&mut self, ref_shape: &Shape<V>, transform: &Transform<V, V::M>) {

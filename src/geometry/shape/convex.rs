@@ -70,21 +70,15 @@ impl Convex {
         visible_only: bool,
         face_visibility: &[bool],
     ) -> Vec<V> {
-        //impl std::iter::Iterator<Item=Option<V>> {
-        let mut out_points = Vec::<V>::new();
-        for (face, _) in shape
+        //for (face, _) in shape
+        shape
             .faces
             .iter()
             .zip(face_visibility.iter())
             .filter(|(_, &visible)| !visible_only || visible)
-        {
-            if let Some(p) = line_plane_intersect(line, face.plane()) {
-                if crate::vector::is_close(shape.point_signed_distance(p), 0.) {
-                    out_points.push(p);
-                }
-            }
-        }
-        out_points
+            .flat_map(|(face, _)| line_plane_intersect(line, face.plane()))
+            .filter(|p| crate::vector::is_close(shape.point_signed_distance_inverted(*p), 0.)) // TODO: testing inversion
+            .collect_vec()
     }
 }
 

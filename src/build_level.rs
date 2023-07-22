@@ -1,5 +1,6 @@
 mod face_test;
 mod fun_level;
+mod invert_test;
 mod level_1;
 
 use crate::coin::Coin;
@@ -22,6 +23,7 @@ use specs::prelude::*;
 
 use self::face_test::build_test_level;
 use self::fun_level::build_fun_level;
+use self::invert_test::build_inverted_test_level;
 use self::level_1::build_lvl_1;
 
 pub fn insert_static_collider<V>(world: &mut World, shape_builder: ShapeEntityBuilderV<V>)
@@ -72,6 +74,7 @@ where
                 .into_iter()
                 .for_each(|b| insert_static_collider(world, b));
         }
+        LevelConfig::Test3 => build_inverted_test_level(ref_shapes, world),
         LevelConfig::Empty => (),
     };
     build_empty_level::<V>(world);

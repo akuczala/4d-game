@@ -4,12 +4,17 @@ pub mod systems;
 use crate::components::{
     Camera, Convex, Player, Shape, ShapeType, SingleFace, Transform, Transformable,
 };
-use crate::constants::PLAYER_COLLIDE_DISTANCE;
+use crate::constants::{PLAYER_COLLIDE_DISTANCE, ZERO};
 use crate::ecs_utils::{Componentable, ModSystem};
+use crate::geometry::shape::single_face::BoundarySubFace;
+use crate::geometry::shape::subface::SubFace;
+use crate::geometry::shape::FaceIndex;
 use crate::geometry::transform::Scaling;
+use crate::geometry::Face;
 use crate::input::key_map::PRINT_DEBUG;
 use crate::input::Input;
 use crate::spatial_hash::{HashInt, SpatialHashSet};
+use crate::utils::partial_max;
 use crate::vector::{Field, VectorTrait};
 use itertools::Itertools;
 use specs::prelude::*;
@@ -214,6 +219,53 @@ pub fn update_player_bbox<V: VectorTrait>(player_bbox: &mut BBox<V>, player_pos:
     player_bbox.max = player_pos + V::constant(-0.2);
 }
 
+/// finds the max (signed) distance to a face's subface planes
+pub fn face_max_subface_dist<V: VectorTrait>(
+    shape_subfaces: &[SubFace<V>],
+    face_i: FaceIndex,
+    pos: V,
+) -> Option<Field> {
+    let face_boundary_subfaces: Vec<&BoundarySubFace<V>> = shape_subfaces
+        .iter()
+        .flat_map(|sf| match sf {
+            SubFace::Convex(_) => None,
+            SubFace::Boundary(bsf) => (bsf.facei == face_i).then_some(bsf),
+        })
+        .collect();
+    partial_max(
+        face_boundary_subfaces
+            .iter()
+            .map(|bsf| bsf.plane.point_signed_distance(pos)),
+    )
+}
+
+/// returns vec of faces within some distance of the player
+/// We currently assume that all faces are one-sided and form a convex hull
+pub fn colliding_faces<V: VectorTrait>(
+    shape: &Shape<V>,
+    collide_distance: Field,
+    player_pos: V,
+) -> Vec<&Face<V>> {
+    // TODO: handle two-sided case
+    // TODO: reduce redundant work by integrating this calculation with below
+    let (_, convex_dist) = shape.point_normal_distance(player_pos);
+
+    let mut out = Vec::new();
+    let subfaces = shape.shape_type.get_subfaces();
+    for (face_i, face) in shape.faces.iter().enumerate() {
+        let face_dist = face.plane().point_signed_distance(player_pos);
+        if (convex_dist < collide_distance)
+            && (face_dist > ZERO)
+            && (face_dist < collide_distance)
+            && face_max_subface_dist(&subfaces, face_i, player_pos)
+                .map_or(true, |d| d < collide_distance)
+        {
+            out.push(face)
+        }
+    }
+    out
+}
+
 pub fn check_player_static_collisions<'a, I, V: VectorTrait + 'a>(
     move_next: &mut MoveNext<V>,
     player_pos: V,
@@ -229,22 +281,12 @@ pub fn check_player_static_collisions<'a, I, V: VectorTrait + 'a>(
         for shape in shape_iter {
             let next_dpos = move_next.next_dpos.unwrap();
             //this is more convoluted than it needs to be
-            let (normal, dist) = shape.point_normal_distance(player_pos);
-            if match &shape.shape_type {
-                ShapeType::SingleFace(single_face) => {
-                    (if shape.faces[0].two_sided {
-                        dist.abs()
-                    } else {
-                        dist
-                    } < PLAYER_COLLIDE_DISTANCE)
-                        & (SingleFace::subface_normal_distance(&single_face.subfaces, player_pos).1
-                            < PLAYER_COLLIDE_DISTANCE)
-                }
-                ShapeType::Convex(_) => dist < PLAYER_COLLIDE_DISTANCE,
-            } {
+            // for concave shapes, more than one face can push the player away simultaneously (at the corner)
+            for face in colliding_faces(shape, PLAYER_COLLIDE_DISTANCE, player_pos) {
+                let normal = face.normal();
                 //push player away along normal of nearest face (projects out -normal)
                 //but i use abs here to guarantee the face always repels the player
-                let new_dpos = next_dpos + (normal * dist.signum()) * (normal.dot(next_dpos).abs());
+                let new_dpos = next_dpos + (normal) * (normal.dot(next_dpos).abs());
 
                 move_next.next_dpos = Some(new_dpos);
                 //println!("{}",normal);

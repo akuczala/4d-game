@@ -40,6 +40,7 @@ mod shape_entity_builder;
 mod spatial_hash;
 mod systems;
 mod tests;
+mod utils;
 
 //mod object;
 

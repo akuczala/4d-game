@@ -25,10 +25,11 @@ pub fn calc_boundaries<V: VectorTrait>(
     let subface_boundaries = subfaces.iter().filter_map(|subface| match subface {
         SubFace::Convex(ConvexSubFace { faceis }) => {
             (face_visibility[faceis.0] != face_visibility[faceis.1]).then(|| {
-                let face1 = &shape.faces[faceis.0];
-                let face2 = &shape.faces[faceis.1];
-                let boundary = calc_convex_boundary(face1.plane(), face2.plane(), camera_pos);
-                boundary
+                calc_convex_boundary(
+                    shape.faces[faceis.0].plane(),
+                    shape.faces[faceis.1].plane(),
+                    camera_pos,
+                )
             })
         }
         SubFace::Boundary(bsf) => (face_visibility[bsf.facei]).then(|| {

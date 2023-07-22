@@ -45,6 +45,7 @@ pub enum LevelConfig {
     Level1,
     Test1,
     Test2,
+    Test3,
     Empty,
 }
 

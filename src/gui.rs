@@ -177,7 +177,7 @@ impl UIArgs {
                         .locked_axes
                         .iter()
                         .fold("Axes:".to_string(), |s, &i| s + &i.to_string());
-                    let clip_info = {
+                    let _clip_info = {
                         let scs = world.read_component::<ShapeClipState<V>>();
                         let shape_clip_state = scs.get(selected.entity).unwrap();
                         format!(
@@ -185,9 +185,22 @@ impl UIArgs {
                             shape_clip_state.in_front, shape_clip_state.separators
                         )
                     };
+                    let dist_info: String = {
+                        //let shapes = world.read_component::<Shape<V>>();
+                        //let shape = shapes.get(selected.entity).unwrap();
+                        let player_pos = transforms.get(player.0).unwrap().pos;
+                        //format!("Distance: {}", shape.point_signed_distance(player_pos))
+                        (&shapes)
+                            .join()
+                            .map(|shape| {
+                                format!("Distance: {}", shape.point_signed_distance(player_pos))
+                            })
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    };
                     format!(
                         "{}\n{}\n{}\n{}\n",
-                        axes_info, frame_info, manip_info, clip_info
+                        axes_info, frame_info, manip_info, dist_info
                     )
                 }
                 MaybeSelected(None) => "No selection\n".to_string(),

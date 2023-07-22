@@ -3,8 +3,9 @@ use std::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
 
+use super::subface::SubFace;
 use super::{face, Face, FaceIndex, Shape, VertIndex};
-use crate::components::ShapeType;
+use crate::components::{ShapeType, Transform};
 use crate::constants::ZERO;
 use crate::geometry::shape::single_face;
 use crate::geometry::{line_plane_intersect, Line, Plane};
@@ -13,7 +14,7 @@ use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct BoundarySubFace<V> {
     pub vertis: Vec<VertIndex>, // list of vertis in each subface
-    plane: Plane<V>, // this is not used for clipping, but is used for collisions + line intersection (e.g. targeting)
+    pub plane: Plane<V>, // this is not used for clipping, but is used for collisions + line intersection (e.g. targeting)
     pub facei: FaceIndex,
 }
 impl<V: VectorTrait> BoundarySubFace<V> {
@@ -108,6 +109,15 @@ impl<V: VectorTrait> SingleFace<V> {
 
 use super::Edge;
 use crate::vector::{Vec2, Vec3};
+pub fn make_line_shape() -> Shape<Vec2> {
+    Shape::new_single_face(
+        vec![Vec2::new(1., -1.), Vec2::new(1., 1.)],
+        vec![Edge(0, 1)],
+        Face::new(vec![0], Vec2::new(-1., 0.), false),
+        &[vec![0], vec![1]],
+    )
+}
+
 pub fn make_3d_triangle() -> Shape<Vec3> {
     Shape::new_single_face(
         vec![
@@ -196,4 +206,73 @@ fn test_subface_dist() {
         SingleFace::subface_normal_distance(&single_face.subfaces, Vec3::new(0.5, 2.0, 0.0));
     assert!(Vec3::is_close(n, Vec3::one_hot(1)), "n={}", n);
     assert!(is_close(d, 1.0), "d={}", d);
+}
+
+#[test]
+fn test_point_within2() {
+    use crate::vector::linspace;
+    use colored::*;
+
+    fn point_normal_distance_i<'a, V: VectorTrait, I: Iterator<Item = &'a Plane<V>>>(
+        point: V,
+        planes: I,
+    ) -> Option<(&'a Plane<V>, usize, Field)> {
+        planes.enumerate().fold(
+            None,
+            |acc: Option<(&Plane<V>, usize, Field)>, (i, plane)| {
+                let this_dist: Field = plane.point_signed_distance(point);
+                Some(acc.map_or_else(
+                    || (plane, i, this_dist),
+                    |(best_plane, best_i, cur_dist)| match this_dist > cur_dist {
+                        true => (plane, i, this_dist),
+                        false => (best_plane, best_i, cur_dist),
+                    },
+                ))
+            },
+        )
+    }
+    pub fn subface_normal_distance_i<V: VectorTrait>(
+        subfaces: &[SubFace<V>],
+        pos: V,
+    ) -> (V, usize, Field) {
+        let (closest_subshape_plane, i, distance) = point_normal_distance_i(
+            pos,
+            subfaces.iter().map(|sf| match sf {
+                SubFace::Convex(_) => panic!("Expected boundary"),
+                SubFace::Boundary(bsf) => &bsf.plane,
+            }),
+        )
+        .unwrap();
+        (closest_subshape_plane.normal, i, distance)
+    }
+
+    let mut shape = make_line_shape();
+    shape.modify(&Transform::identity().with_rotation(0, 1, 0.2));
+    for x in linspace(-2., 2., 40) {
+        let mut line = "".to_string();
+        for y in linspace(-2., 2., 40) {
+            let point = Vec2::new(x, y);
+            // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
+            //   true => "+", false => "_"
+            // };
+            let (_, i, dist) = subface_normal_distance_i(&shape.shape_type.get_subfaces(), point);
+            //println!("{}",dist);
+            //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
+            let mut newstr = match i {
+                0 => "0".magenta(),
+                1 => "1".blue(),
+                2 => "2".yellow(),
+                3 => "3".cyan(),
+                4 => "4".green(),
+                _ => "_".red(),
+            };
+            if dist > 1. {
+                newstr = "+".to_string().white();
+            }
+            line = format!("{} {}", line, newstr);
+        }
+        println!("{}", line);
+    }
+    //assert!(false); //forces cargo test to print this
+    //assert!(!shape.point_within(point,0.))
 }
