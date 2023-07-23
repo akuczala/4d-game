@@ -6,6 +6,7 @@ use crate::components::{
 };
 use crate::constants::{PLAYER_COLLIDE_DISTANCE, ZERO};
 use crate::ecs_utils::{Componentable, ModSystem};
+use crate::geometry::shape::buildshapes::remove_face;
 use crate::geometry::shape::single_face::BoundarySubFace;
 use crate::geometry::shape::subface::SubFace;
 use crate::geometry::shape::FaceIndex;
@@ -14,6 +15,7 @@ use crate::geometry::Face;
 use crate::input::key_map::PRINT_DEBUG;
 use crate::input::Input;
 use crate::spatial_hash::{HashInt, SpatialHashSet};
+use crate::tests::utils::{print_grid, color_number};
 use crate::utils::partial_max;
 use crate::vector::{Field, VectorTrait};
 use itertools::Itertools;
@@ -312,4 +314,32 @@ fn dcoords_cells_test() {
     assert_eq!(get_dcoords_dcells(&vec![1, 1, 0], &mult), vec![0, 1, 2, 3]);
     assert_eq!(get_dcoords_dcells(&vec![0, 1, 1], &mult), vec![0, 2, 4, 6]);
     assert_eq!(get_dcoords_dcells(&vec![1, 0, 1], &mult), vec![0, 1, 4, 5]);
+}
+
+#[test]
+fn test_collision_dist() {
+    use crate::geometry::shape::buildshapes::ShapeBuilder;
+    use crate::vector::linspace;
+    use crate::vector::Vec2;
+    use colored::*;
+
+    let mut shape = ShapeBuilder::<Vec2>::build_prism(2, &[1.0], &[4]).build();
+    shape = remove_face(shape, 3);
+    //shape.modify(Transform::)
+    assert!(shape.point_signed_distance(Vec2::zero()) < 0.0);
+    assert!(shape.point_signed_distance(Vec2::ones() * 2.0) > 0.0);
+    print_grid(2.0, 40, |x, y| {
+        let point = Vec2::new(x, y);
+        // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
+        //   true => "+", false => "_"
+        // };
+        let n = colliding_faces(&shape, 0.2, point).len();
+        //let d = shape.point_signed_distance(point);
+        //let n = if d > 0.0 { 1 } else { 0 };
+        //println!("{}",dist);
+        //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
+        color_number(n)
+    })
+    //assert!(false); //forces cargo test to print this
+    //assert!(!shape.point_within(point,0.))
 }

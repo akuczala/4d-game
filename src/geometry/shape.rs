@@ -76,6 +76,27 @@ impl<V: Copy> ShapeType<V> {
             .filter(move |sf| Self::is_face_subface(face_index, sf))
     }
 }
+impl<V: VectorTrait> ShapeType<V> {
+    pub fn update(&mut self, shape_verts: &[V], shape_faces: &[Face<V>]) {
+        match self {
+            ShapeType::Convex(_) => (),
+            ShapeType::SingleFace(ref mut single_face) => {
+                single_face.update(shape_verts, shape_faces)
+            }
+            ShapeType::Generic(ref mut subfaces) => {
+                for subface in subfaces {
+                    match subface {
+                        SubFace::Convex(_) => (),
+                        SubFace::Boundary(ref mut bsf) => {
+                            bsf.update(shape_verts, shape_faces[bsf.facei].normal())
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
     fn line_intersect(
         &self,
@@ -221,9 +242,7 @@ impl<V: VectorTrait> Shape<V> {
             face.geometry.center = transform.transform_vec(&face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
         }
-        if let ShapeType::SingleFace(ref mut single_face) = self.shape_type {
-            single_face.update(&self.verts, &self.faces)
-        }
+        self.shape_type.update(&self.verts, &self.faces)
     }
     pub fn update_from_ref(&mut self, ref_shape: &Shape<V>, transform: &Transform<V, V::M>) {
         for (v, vr) in self.verts.iter_mut().zip(ref_shape.verts.iter()) {
@@ -236,9 +255,7 @@ impl<V: VectorTrait> Shape<V> {
             face.geometry.center = transform.transform_vec(&ref_face.center());
             face.geometry.plane.threshold = face.normal().dot(face.center());
         }
-        if let ShapeType::SingleFace(ref mut single_face) = self.shape_type {
-            single_face.update(&self.verts, &self.faces)
-        }
+        self.shape_type.update(&self.verts, &self.faces)
     }
 }
 // impl<V: VectorTrait> Transformable<V> for Shape<V> {

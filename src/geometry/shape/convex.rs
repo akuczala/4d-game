@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::geometry::shape::{Face, FaceIndex, Shape};
 use crate::geometry::{line_plane_intersect, Line, Plane};
+use crate::tests::utils::print_grid;
 use crate::vector::{Field, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -122,35 +123,32 @@ fn test_point_within() {
 
 //prints points at different distances from prism
 // TODO: check that the boundary between 2 and 3 in the printout is supposed to be uneven. Was it always like that?
+// TODO: seeing another potential difference: a small square of ones in the center
 #[test]
 fn test_point_within2() {
     use crate::vector::{linspace, Vec3};
     use colored::*;
     let shape = crate::geometry::shape::buildshapes::build_prism_3d::<Vec3>(1.0, 1.0, 4);
-    for x in linspace(-2., 2., 40) {
-        let mut line = "".to_string();
-        for y in linspace(-2., 2., 40) {
-            let point = Vec3::new(x, y, 0.);
-            // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
-            //   true => "+", false => "_"
-            // };
-            let (i, dist) = shape.point_facei_distance(point);
-            //println!("{}",dist);
-            //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
-            let mut newstr = match i {
-                1 => "1".blue(),
-                2 => "2".yellow(),
-                3 => "3".cyan(),
-                4 => "4".green(),
-                _ => "_".red(),
-            };
-            if dist > 1. {
-                newstr = "+".to_string().white();
-            }
-            line = format!("{} {}", line, newstr);
+    print_grid(2.0, 40, |x, y| {
+        let point = Vec3::new(x, y, 0.);
+        // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
+        //   true => "+", false => "_"
+        // };
+        let (i, dist) = shape.point_facei_distance(point);
+        //println!("{}",dist);
+        //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
+        let mut newstr = match i {
+            1 => "1".blue(),
+            2 => "2".yellow(),
+            3 => "3".cyan(),
+            4 => "4".green(),
+            _ => "_".red(),
+        };
+        if dist > 1. {
+            newstr = "+".to_string().white();
         }
-        println!("{}", line);
-    }
+        newstr
+    })
     //assert!(false); //forces cargo test to print this
     //assert!(!shape.point_within(point,0.))
 }

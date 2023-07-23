@@ -10,6 +10,7 @@ use crate::components::{ShapeType, Transform};
 use crate::constants::ZERO;
 use crate::geometry::shape::single_face;
 use crate::geometry::{line_plane_intersect, Line, Plane};
+use crate::tests::utils::{print_grid, color_number};
 use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -77,7 +78,7 @@ impl<V: VectorTrait> SingleFace<V> {
     }
     pub fn update(&mut self, shape_vers: &[V], shape_faces: &[Face<V>]) {
         for subface in self.subfaces.0.iter_mut() {
-            subface.update(shape_vers, shape_faces[0].normal())
+            subface.update(shape_vers, shape_faces[subface.facei].normal())
         }
     }
     //returns points of intersection with shape
@@ -250,31 +251,20 @@ fn test_point_within2() {
 
     let mut shape = make_line_shape();
     shape.modify(&Transform::identity().with_rotation(0, 1, 0.2));
-    for x in linspace(-2., 2., 40) {
-        let mut line = "".to_string();
-        for y in linspace(-2., 2., 40) {
-            let point = Vec2::new(x, y);
-            // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
-            //   true => "+", false => "_"
-            // };
-            let (_, i, dist) = subface_normal_distance_i(&shape.shape_type.get_subfaces(), point);
-            //println!("{}",dist);
-            //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
-            let mut newstr = match i {
-                0 => "0".magenta(),
-                1 => "1".blue(),
-                2 => "2".yellow(),
-                3 => "3".cyan(),
-                4 => "4".green(),
-                _ => "_".red(),
-            };
-            if dist > 1. {
-                newstr = "+".to_string().white();
-            }
-            line = format!("{} {}", line, newstr);
+    print_grid(2.0, 40, |x, y| {
+        let point = Vec2::new(x, y);
+        // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
+        //   true => "+", false => "_"
+        // };
+        let (_, i, dist) = subface_normal_distance_i(&shape.shape_type.get_subfaces(), point);
+        //println!("{}",dist);
+        //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
+        let mut newstr = color_number(i);
+        if dist > 1. {
+            newstr = "+".to_string().white();
         }
-        println!("{}", line);
-    }
+        newstr
+    })
     //assert!(false); //forces cargo test to print this
     //assert!(!shape.point_within(point,0.))
 }

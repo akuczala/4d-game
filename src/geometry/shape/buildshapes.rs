@@ -210,17 +210,9 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
     faces.remove(face_index);
     Shape::new(verts.clone(), edges, faces, ShapeType::Generic(subfaces))
 }
-pub fn remove_faces<V: VectorTrait>(shape: Shape<V>, faceis: Vec<FaceIndex>) -> Shape<V> {
-    let verts = shape.verts;
-    let edges = shape.edges;
-    let faces = shape.faces;
-    let new_faces = faces
-        .into_iter()
-        .enumerate()
-        .filter(|(i, _face)| !faceis.contains(i))
-        .map(|(_i, face)| face)
-        .collect();
-    Shape::new_convex(verts, edges, new_faces)
+
+pub fn remove_faces<V: VectorTrait>(_shape: Shape<V>, _faceis: Vec<FaceIndex>) -> Shape<V> {
+    unimplemented!()
 }
 use crate::geometry::transform::Scaling;
 use crate::geometry::Transform;

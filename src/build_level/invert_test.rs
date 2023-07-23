@@ -2,7 +2,7 @@ use specs::{Builder, World};
 
 use crate::{
     components::{RefShapes, ShapeLabel, StaticCollider, Transformable},
-    constants::{CUBE_LABEL_STR, INVERTED_CUBE_LABEL_STR},
+    constants::{CUBE_LABEL_STR, HALF_PI, INVERTED_CUBE_LABEL_STR},
     draw::texture::{color_cube_texture, fuzzy_color_cube_texture},
     ecs_utils::Componentable,
     shape_entity_builder::ShapeEntityBuilderV,
@@ -20,6 +20,7 @@ where
         .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, 50))
         .with_collider(Some(StaticCollider))
         .with_translation(V::one_hot(0) * 4.0)
+        .with_rotation(0, 1, HALF_PI)
         .build(world)
         .build();
 

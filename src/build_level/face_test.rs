@@ -78,6 +78,7 @@ fn build_test_walls<'a, V: VectorTrait + 'a>(
             .clone()
             .with_translation(V::one_hot(1) * (2.0 * sin) - V::one_hot(-1) * (4.0 + 2.0 * cos))
             .with_color(MAGENTA),
+        //TODO: yellow does not collide??
         floor,
         build_shape
             .clone()
