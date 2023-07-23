@@ -5,6 +5,7 @@ mod shape_library;
 pub mod single_face;
 pub mod subface;
 
+use self::convex::ConvexSubFace;
 use self::single_face::BoundarySubFace;
 use self::subface::SubFace;
 
@@ -61,6 +62,19 @@ impl<V: Copy> ShapeType<V> {
             ShapeType::Generic(subfaces) => subfaces.clone(),
         }
     }
+    pub fn is_face_subface(face_index: FaceIndex, subface: &SubFace<V>) -> bool {
+        match subface {
+            SubFace::Convex(ConvexSubFace { faceis }) => {
+                faceis.0 == face_index || faceis.1 == face_index
+            }
+            SubFace::Boundary(bsf) => bsf.facei == face_index,
+        }
+    }
+    pub fn get_face_subfaces(&self, face_index: FaceIndex) -> impl Iterator<Item = SubFace<V>> {
+        self.get_subfaces()
+            .into_iter()
+            .filter(move |sf| Self::is_face_subface(face_index, sf))
+    }
 }
 impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
     fn line_intersect(
@@ -81,7 +95,7 @@ impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
                 visible_only,
                 face_visibility,
             ),
-            ShapeType::Generic(_) => unimplemented!(),
+            ShapeType::Generic(_) => Vec::new(), // TODO: this is unimplemented
         }
     }
 }
@@ -110,21 +124,10 @@ impl<V: VectorTrait> Shape<V> {
     pub fn new(
         verts: Vec<V>,
         edges: Vec<Edge>,
-        mut faces: Vec<Face<V>>,
+        faces: Vec<Face<V>>,
         shape_type: ShapeType<V>,
     ) -> Self {
-        //compute vertex indices for all faces
-        //we do this before anything else
-        //because it is irritating to do when faces and verts are members of shape
-        //(having both shape and face mutable causes issues)
-        for face in faces.iter_mut() {
-            face.calc_vertis(&edges);
-            let face_verts = face.vertis.iter().map(|verti| verts[*verti]).collect();
-            face.geometry.center = vector::barycenter(&face_verts);
-            //try to do this with iterators
-            //face.center_ref = vector::barycenter_iter(&mut face.vertis.iter().map(|verti| verts[*verti]));
-        }
-        Shape {
+        Self {
             verts,
             edges,
             faces,

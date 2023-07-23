@@ -1,11 +1,34 @@
-use super::{Edge, EdgeIndex, VertIndex};
+use super::{Edge, EdgeIndex, Shape, VertIndex};
 use crate::graphics::colors::Color;
-use crate::vector::{Field, VectorTrait};
+use crate::vector::{self, Field, VectorTrait};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::draw::{Texture, TextureMapping};
-// TODO: move texture + texture mapping to separate component entirely
+
+#[derive(Clone)]
+pub struct FaceBuilder<'a, V> {
+    shape_verts: &'a [V],
+    shape_edges: &'a [Edge],
+}
+impl<'a, V: VectorTrait> FaceBuilder<'a, V> {
+    pub fn new(shape_verts: &'a [V], shape_edges: &'a [Edge]) -> Self {
+        Self {
+            shape_verts,
+            shape_edges,
+        }
+    }
+    pub fn build(&'a self, edgeis: Vec<EdgeIndex>, normal: V, two_sided: bool) -> Face<V> {
+        Face::new(
+            self.shape_verts,
+            self.shape_edges,
+            edgeis,
+            normal,
+            two_sided,
+        )
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Face<V> {
     pub geometry: FaceGeometry<V>,
@@ -22,33 +45,35 @@ pub struct FaceGeometry<V> {
 }
 
 impl<V: VectorTrait> Face<V> {
-    pub fn new(edgeis: Vec<EdgeIndex>, normal: V, two_sided: bool) -> Face<V> {
-        Face {
+    pub fn new(
+        shape_verts: &[V],
+        shape_edges: &[Edge],
+        edgeis: Vec<EdgeIndex>,
+        normal: V,
+        two_sided: bool,
+    ) -> Self {
+        let vertis = Self::calc_vertis(&edgeis, shape_edges);
+        let face_verts = vertis.iter().map(|verti| shape_verts[*verti]).collect();
+        let center = vector::barycenter(&face_verts);
+        Self {
             geometry: FaceGeometry {
-                plane: Plane {
-                    normal: normal.normalize(), //let's make 100% these are normalized
-                    threshold: 0.0,
-                },
-                center: V::zero(),
+                plane: Plane::from_normal_and_point(normal.normalize(), center),
+                center,
             },
-            two_sided,
-
             edgeis,
-            vertis: Vec::new(),
+            vertis,
+            two_sided,
         }
     }
     //compute vertex indices from edge indices and a list of edges
-    pub fn calc_vertis(&mut self, edges: &[Edge]) {
+    pub fn calc_vertis(edgeis: &[EdgeIndex], edges: &[Edge]) -> Vec<VertIndex> {
         let mut vertis: Vec<VertIndex> = Vec::new();
-        for edgei in self.edgeis.iter() {
+        for edgei in edgeis.iter() {
             let edge = &edges[*edgei];
             vertis.push(edge.0);
             vertis.push(edge.1);
         }
-        //this is probably inefficient
-        for verti in vertis.iter().unique() {
-            self.vertis.push(*verti);
-        }
+        vertis.into_iter().unique().collect()
     }
     // convenience getters
     pub fn plane(&self) -> &Plane<V> {

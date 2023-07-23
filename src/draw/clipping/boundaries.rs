@@ -4,7 +4,12 @@ use crate::{
     components::{Convex, Shape, ShapeType, SingleFace},
     constants::ZERO,
     geometry::{
-        shape::{convex::ConvexSubFace, single_face::BoundarySubFace, subface::SubFace, VertIndex},
+        shape::{
+            convex::ConvexSubFace,
+            single_face::{make_line_shape, BoundarySubFace},
+            subface::SubFace,
+            VertIndex,
+        },
         Face, Plane,
     },
     vector::VectorTrait,
@@ -107,7 +112,6 @@ fn calc_single_face_boundary<V: VectorTrait>(
     }
 }
 
-// TODO: fix these tests (again)
 #[test]
 fn test_single_face_boundaries() {
     use crate::geometry::shape::single_face::{make_3d_square, make_3d_triangle};
@@ -130,13 +134,7 @@ fn test_single_face_boundaries() {
         assert_eq!(hits, 1);
     }
 
-    // Line segment
-    let shape = Shape::new_single_face(
-        vec![Vec2::new(1., -1.), Vec2::new(1., 1.)],
-        vec![Edge(0, 1)],
-        Face::new(vec![0], Vec2::new(-1., 0.), false),
-        &[vec![0], vec![1]],
-    );
+    let shape = make_line_shape();
     let boundaries = calc_boundaries(Vec2::zero(), &shape, &[true]);
     assert_on_boundaries(shape.faces[0].normal(), &boundaries);
 

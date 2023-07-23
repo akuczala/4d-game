@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
 
+use super::face::FaceBuilder;
 use super::subface::SubFace;
 use super::{face, Face, FaceIndex, Shape, VertIndex};
 use crate::components::{ShapeType, Transform};
@@ -110,36 +111,37 @@ impl<V: VectorTrait> SingleFace<V> {
 use super::Edge;
 use crate::vector::{Vec2, Vec3};
 pub fn make_line_shape() -> Shape<Vec2> {
-    Shape::new_single_face(
-        vec![Vec2::new(1., -1.), Vec2::new(1., 1.)],
-        vec![Edge(0, 1)],
-        Face::new(vec![0], Vec2::new(-1., 0.), false),
-        &[vec![0], vec![1]],
-    )
+    // TODO: add shape builder functionality for this
+    let verts = vec![Vec2::new(1., -1.), Vec2::new(1., 1.)];
+    let edges = vec![Edge(0, 1)];
+    let face = FaceBuilder::new(&verts, &edges).build(vec![0], Vec2::new(-1., 0.), false);
+    Shape::new_single_face(verts, edges, face, &[vec![0], vec![1]])
 }
 
 pub fn make_3d_triangle() -> Shape<Vec3> {
-    Shape::new_single_face(
-        vec![
-            Vec3::new(1., -1., 1.),
-            Vec3::new(1., 1., 1.),
-            Vec3::new(-1., 0., 1.),
-        ],
-        vec![Edge(0, 1), Edge(1, 2), Edge(2, 0)],
-        Face::new(vec![0, 1, 2], Vec3::new(0., 0., -1.), false),
-        &[vec![0, 1], vec![1, 2], vec![2, 0]],
-    )
+    let verts = vec![
+        Vec3::new(1., -1., 1.),
+        Vec3::new(1., 1., 1.),
+        Vec3::new(-1., 0., 1.),
+    ];
+    let edges = vec![Edge(0, 1), Edge(1, 2), Edge(2, 0)];
+    let face = FaceBuilder::new(&verts, &edges).build(vec![0, 1, 2], Vec3::new(0., 0., -1.), false);
+    Shape::new_single_face(verts, edges, face, &[vec![0, 1], vec![1, 2], vec![2, 0]])
 }
 pub fn make_3d_square() -> Shape<Vec3> {
+    let verts = vec![
+        Vec3::new(-1., -1., 1.),
+        Vec3::new(-1., 1., 1.),
+        Vec3::new(1., -1., 1.),
+        Vec3::new(1., 1., 1.),
+    ];
+    let edges = vec![Edge(0, 1), Edge(0, 2), Edge(1, 3), Edge(2, 3)];
+    let face =
+        FaceBuilder::new(&verts, &edges).build(vec![0, 1, 2, 3], Vec3::new(0., 0., -1.), false);
     Shape::new_single_face(
-        vec![
-            Vec3::new(-1., -1., 1.),
-            Vec3::new(-1., 1., 1.),
-            Vec3::new(1., -1., 1.),
-            Vec3::new(1., 1., 1.),
-        ],
-        vec![Edge(0, 1), Edge(0, 2), Edge(1, 3), Edge(2, 3)],
-        Face::new(vec![0, 1, 2, 3], Vec3::new(0., 0., -1.), false),
+        verts,
+        edges,
+        face,
         &[vec![0, 1], vec![0, 2], vec![1, 3], vec![2, 3]],
     )
 }

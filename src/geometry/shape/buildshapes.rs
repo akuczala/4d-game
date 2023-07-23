@@ -1,6 +1,10 @@
+use super::convex::ConvexSubFace;
+use super::face::FaceBuilder;
+use super::subface::SubFace;
 use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, SingleFace, VertIndex};
 use crate::draw::{Texture, TextureMapping};
-use crate::geometry::Transformable;
+use crate::geometry::shape::single_face::BoundarySubFace;
+use crate::geometry::{Plane, Transformable};
 use crate::graphics::colors::*;
 use crate::vector::Field;
 use crate::vector::PI;
@@ -80,7 +84,7 @@ pub fn convex_shape_to_face_shape<V: VectorTrait>(
         .map(|&v| V::unproject(v))
         .collect_vec();
     let edges = convex_shape.edges.clone();
-    let face = Face::new(
+    let face = FaceBuilder::new(&verts, &edges).build(
         (0..convex_shape.edges.len()).collect_vec(),
         V::one_hot(-1),
         two_sided,
@@ -101,12 +105,12 @@ pub fn build_prism_2d<V: VectorTrait>(r: Field, n: VertIndex) -> Shape<V> {
     let normals = n_angles.map(|angle| circle_vec(angle));
 
     //build edges
-    let edges = (0..n).map(|i| Edge(i, (i + 1) % n)).collect();
+    let edges: Vec<Edge> = (0..n).map(|i| Edge(i, (i + 1) % n)).collect();
 
     //build faces
     let faces = (0..n)
         .zip(normals)
-        .map(|(i, normal)| Face::new(vec![i], normal, false))
+        .map(|(i, normal)| Face::new(&verts, &edges, vec![i], normal, false))
         .collect();
 
     Shape::new_convex(verts, edges, faces)
@@ -137,10 +141,11 @@ pub fn build_prism_3d<V: VectorTrait>(r: Field, h: Field, n: VertIndex) -> Shape
     let edges: Vec<Edge> = top_edges.chain(bottom_edges).chain(long_edges).collect();
 
     //build faces
-    let top_face = Face::new((0..n).collect(), V::one_hot(2), false);
-    let bottom_face = Face::new((n..2 * n).collect(), V::one_hot(2) * (-1.0), false);
+    let face_builder = FaceBuilder::new(&verts, &edges);
+    let top_face = face_builder.build((0..n).collect(), V::one_hot(2), false);
+    let bottom_face = face_builder.build((n..2 * n).collect(), V::one_hot(2) * (-1.0), false);
     let long_faces = (0..n).zip(normals).map(|(i, normal)| {
-        Face::new(
+        face_builder.build(
             vec![i, i + n, 2 * n + i, 2 * n + (i + 1) % n],
             normal,
             false,
@@ -163,11 +168,47 @@ pub fn build_tube_cube_3d<V: VectorTrait>(length: Field, width: Field) -> Shape<
 }
 
 pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Shape<V> {
-    let verts = shape.verts;
+    // TODO: rm orphaned verts + edges
+    let verts = &shape.verts;
     let edges = shape.edges;
-    let mut faces = shape.faces;
+    let face = &shape.faces[face_index];
+    // rm boundary subfaces of removed face, demote convex subfaces to boundary subfaces; leave others alone
+    let subfaces = shape
+        .shape_type
+        .get_subfaces()
+        .into_iter()
+        .flat_map(|subface| {
+            if ShapeType::is_face_subface(face_index, &subface) {
+                match subface {
+                    SubFace::Boundary(_) => None,
+                    SubFace::Convex(ConvexSubFace { faceis }) => {
+                        let other_facei = if faceis.0 == face_index {
+                            faceis.1
+                        } else {
+                            faceis.0
+                        };
+                        let vertis = &face
+                            .vertis
+                            .clone()
+                            .into_iter()
+                            .filter(|vi| shape.faces[other_facei].vertis.iter().contains(vi))
+                            .collect_vec();
+                        let center = barycenter(&vertis.iter().map(|vi| verts[*vi]).collect());
+                        Some(SubFace::Boundary(BoundarySubFace {
+                            vertis: vertis.clone(),
+                            plane: Plane::from_normal_and_point(face.normal(), center),
+                            facei: other_facei,
+                        }))
+                    }
+                }
+            } else {
+                Some(subface)
+            }
+        })
+        .collect_vec();
+    let mut faces = shape.faces.clone();
     faces.remove(face_index);
-    Shape::new_convex(verts, edges, faces)
+    Shape::new(verts.clone(), edges, faces, ShapeType::Generic(subfaces))
 }
 pub fn remove_faces<V: VectorTrait>(shape: Shape<V>, faceis: Vec<FaceIndex>) -> Shape<V> {
     let verts = shape.verts;
@@ -241,6 +282,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
     }
     // we need m n-prisms and n m-prisms
     fn make_face1<V: VectorTrait>(
+        face_builder: &FaceBuilder<'_, V>,
         i: VertIndex,
         ns: &[VertIndex; 2],
         verts: &[V],
@@ -252,9 +294,10 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         let long_edgeis = (0..n).map(|j| m * n + j + i * n);
         let edgeis: Vec<EdgeIndex> = cap1_edgeis.chain(cap2_edgeis).chain(long_edgeis).collect();
         let normal = make_normal(&edgeis, verts, edges);
-        Face::new(edgeis, normal, false)
+        face_builder.build(edgeis, normal, false)
     }
     fn make_face2<V: VectorTrait>(
+        face_builder: &FaceBuilder<'_, V>,
         j: VertIndex,
         ns: &[VertIndex; 2],
         verts: &[V],
@@ -266,10 +309,11 @@ pub fn build_duoprism_4d<V: VectorTrait>(
         let long_edgeis = (0..m).map(|i| j + i * n);
         let edgeis: Vec<EdgeIndex> = cap1_edgeis.chain(cap2_edgeis).chain(long_edgeis).collect();
         let normal = make_normal(&edgeis, verts, edges);
-        Face::new(edgeis, normal, false)
+        face_builder.build(edgeis, normal, false)
     }
-    let faces_1 = (0..ns[0]).map(|i| make_face1(i, &ns.clone(), &verts, &edges));
-    let faces_2 = (0..ns[1]).map(|j| make_face2(j, &ns.clone(), &verts, &edges));
+    let face_builder = FaceBuilder::new(&verts, &edges);
+    let faces_1 = (0..ns[0]).map(|i| make_face1(&face_builder, i, &ns.clone(), &verts, &edges));
+    let faces_2 = (0..ns[1]).map(|j| make_face2(&face_builder, j, &ns.clone(), &verts, &edges));
     let faces: Vec<Face<V>> = faces_1.chain(faces_2).collect();
 
     // for face in &faces {

@@ -15,7 +15,7 @@ use crate::{
 };
 
 use super::{
-    buildshapes::{convex_shape_to_face_shape, invert_normals, ShapeBuilder},
+    buildshapes::{convex_shape_to_face_shape, invert_normals, remove_face, ShapeBuilder},
     Shape,
 };
 
@@ -69,6 +69,7 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     let cube = ShapeBuilder::<V>::build_cube(1.0).build();
     let sub_cube = ShapeBuilder::<V::SubV>::build_cube(1.0).build();
     let inverted_cube = invert_normals(&cube);
+    let open_cube = remove_face(cube.clone(), 5);
     //inverted_cube.faces[0].geometry.plane.normal = -inverted_cube.faces[0].geometry.plane.normal;
 
     let coin: Shape<V> = ShapeBuilder::<V>::build_coin().build();
@@ -83,5 +84,6 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
         convex_shape_to_face_shape(sub_cube, true),
     );
     ref_shapes.insert(ShapeLabel::from_str(INVERTED_CUBE_LABEL_STR), inverted_cube);
+    ref_shapes.insert(ShapeLabel::from_str("OpenCube"), open_cube);
     ref_shapes
 }
