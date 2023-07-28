@@ -54,18 +54,19 @@ fn test_single_face_boundaries() {
 
 #[test]
 fn test_bounded_regions() {
-    let mut shape = ShapeBuilder::build_prism(2, &[1.0], &[4]).build();
-    shape = remove_face(shape, 3);
-    shape.modify(&Transform::identity().with_rotation(0, 1, 2.2));
-    let camera_pos = Vec2::one_hot(1) * 2.0;
+    type V = Vec3;
+    let mut shape = ShapeBuilder::build_cube(1.0).build();
+    shape = remove_face(shape, 5);
+    //shape.modify(&Transform::identity().with_rotation(0, 1, 2.2));
+    let camera_pos = -V::one_hot(1) * 1.0 + V::one_hot(0) * 0.75 + V::one_hot(2) * 0.6;
     let face_visibility: Vec<bool> = shape
         .faces
         .iter()
         .map(|f| f.plane().point_signed_distance(camera_pos) > ZERO)
         .collect();
     let boundaries = calc_boundaries(camera_pos, &shape, &face_visibility);
-    print_grid(2.0, 40, |x, y| {
-        let pos = Vec2::new(x, y);
+    print_grid(2.0, 41, |x, y| {
+        let pos = V::new(x, y, ZERO);
         if shape.verts.iter().any(|&p| (p - pos).norm() < 0.1) {
             ".".black()
         } else if shape.faces.iter().any(|f| (f.center() - pos).norm() < 0.1) {
@@ -81,5 +82,12 @@ fn test_bounded_regions() {
                     .count(),
             )
         }
-    })
+    });
+    println!("n boundaries: {}", boundaries.len());
+    for b in boundaries {
+        println!("{}", b);
+    }
+    for v in shape.verts {
+        println!("{:?}", v);
+    }
 }

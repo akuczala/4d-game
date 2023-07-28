@@ -15,7 +15,7 @@ use crate::geometry::Face;
 use crate::input::key_map::PRINT_DEBUG;
 use crate::input::Input;
 use crate::spatial_hash::{HashInt, SpatialHashSet};
-use crate::tests::utils::{print_grid, color_number};
+use crate::tests::utils::{color_number, print_grid};
 use crate::utils::partial_max;
 use crate::vector::{Field, VectorTrait};
 use itertools::Itertools;

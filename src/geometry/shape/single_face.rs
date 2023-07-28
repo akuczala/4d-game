@@ -10,7 +10,7 @@ use crate::components::{ShapeType, Transform};
 use crate::constants::ZERO;
 use crate::geometry::shape::single_face;
 use crate::geometry::{line_plane_intersect, Line, Plane};
-use crate::tests::utils::{print_grid, color_number};
+use crate::tests::utils::{color_number, print_grid};
 use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]

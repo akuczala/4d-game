@@ -25,7 +25,13 @@ where
         .build();
 
     ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
-        .with_translation(V::one_hot(0) * 6.0)
+        .with_translation(V::one_hot(0) * 8.0)
+        .with_collider(Some(StaticCollider))
+        .build(world)
+        .build();
+
+        ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
+        .with_translation(V::one_hot(0) * 1.0)
         .with_collider(Some(StaticCollider))
         .build(world)
         .build();

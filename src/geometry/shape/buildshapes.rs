@@ -1,6 +1,6 @@
 use super::convex::ConvexSubFace;
 use super::face::FaceBuilder;
-use super::subface::SubFace;
+use super::subface::{self, SubFace};
 use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, SingleFace, VertIndex};
 use crate::draw::{Texture, TextureMapping};
 use crate::geometry::shape::single_face::BoundarySubFace;
@@ -11,6 +11,7 @@ use crate::vector::PI;
 use crate::vector::{barycenter, Vec2, Vec3, Vec4};
 use crate::vector::{VecIndex, VectorTrait};
 use itertools::Itertools;
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 #[derive(Clone)]
@@ -166,6 +167,32 @@ pub fn build_tube_cube_3d<V: VectorTrait>(length: Field, width: Field) -> Shape<
     let rect = build_prism_3d(width / (2.0 as Field).sqrt(), length, 4);
     remove_faces(rect, vec![0, 1])
 }
+/// Reindex faces from a shape that has had a face removed
+pub fn reindex_faces<V: Copy>(
+    removed_index: FaceIndex,
+    faces: &[Face<V>],
+    subfaces: &[SubFace<V>],
+) -> Vec<SubFace<V>> {
+    let index_map: HashMap<FaceIndex, FaceIndex> = (0..faces.len() + 1)
+        .map(|i| (i, if i > removed_index { i - 1 } else { i }))
+        .collect();
+    subfaces
+        .iter()
+        .map(|subface: &SubFace<V>| match subface {
+            SubFace::Convex(ConvexSubFace { faceis }) => SubFace::Convex(ConvexSubFace {
+                faceis: (
+                    *index_map.get(&faceis.0).unwrap(),
+                    *index_map.get(&faceis.1).unwrap(),
+                ),
+            }),
+            SubFace::Boundary(bsf) => SubFace::Boundary(BoundarySubFace {
+                facei: *index_map.get(&bsf.facei).unwrap(),
+                vertis: bsf.vertis.clone(),
+                plane: bsf.plane.clone(),
+            }),
+        })
+        .collect_vec()
+}
 
 pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Shape<V> {
     // TODO: rm orphaned verts + edges
@@ -208,6 +235,7 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
         .collect_vec();
     let mut faces = shape.faces.clone();
     faces.remove(face_index);
+    let subfaces = reindex_faces(face_index, &shape.faces, &subfaces);
     Shape::new(verts.clone(), edges, faces, ShapeType::Generic(subfaces))
 }
 

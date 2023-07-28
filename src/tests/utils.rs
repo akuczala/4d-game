@@ -16,12 +16,14 @@ pub fn print_grid<T: Display, F: Fn(Field, Field) -> T>(r: Field, n: usize, f: F
 
 pub fn color_number(n: usize) -> ColoredString {
     match n {
-        0 => "0".white(),
+        0 => "0".bright_red(),
         1 => "1".blue(),
         2 => "2".yellow(),
-        3 => "3".cyan(),
+        3 => "3".on_truecolor(u8::MAX, u8::MAX / 2, 0),
         4 => "4".green(),
-        5 => "5".red(),
+        5 => "5".bright_red(),
+        6 => "6".purple(),
+        7 => "7".on_truecolor(u8::MAX, u8::MAX / 2, 0),
         x if x > 9 => format!("{}", x % 10).bright_black(),
         x => format!("{}", x).bright_black(),
     }
