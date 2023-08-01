@@ -78,7 +78,7 @@ impl Convex {
             .zip(face_visibility.iter())
             .filter(|(_, &visible)| !visible_only || visible)
             .flat_map(|(face, _)| line_plane_intersect(line, face.plane()))
-            .filter(|p| crate::vector::is_close(shape.point_signed_distance_inverted(*p), 0.)) // TODO: testing inversion
+            .filter(|p| crate::vector::is_close(shape.point_signed_distance(*p), 0.))
             .collect_vec()
     }
 }

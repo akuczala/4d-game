@@ -241,7 +241,7 @@ fn test_point_within2() {
         let (closest_subshape_plane, i, distance) = point_normal_distance_i(
             pos,
             subfaces.iter().map(|sf| match sf {
-                SubFace::Convex(_) => panic!("Expected boundary"),
+                SubFace::Interior(_) => panic!("Expected boundary"),
                 SubFace::Boundary(bsf) => &bsf.plane,
             }),
         )

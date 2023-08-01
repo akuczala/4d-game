@@ -93,6 +93,13 @@ impl<V: VectorTrait> Plane<V> {
             ))
         })
     }
+    /// flip plane normal, geometrically. this also means negating the threshold
+    pub fn flip_normal(&self) -> Self {
+        Self {
+            normal: -self.normal,
+            threshold: -self.threshold,
+        }
+    }
 }
 impl<V: fmt::Display> fmt::Display for Plane<V> {
     // This trait requires `fmt` with this exact signature.

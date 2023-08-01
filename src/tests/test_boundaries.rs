@@ -1,5 +1,7 @@
 use colored::Colorize;
 
+use crate::components::ShapeType;
+use crate::draw::clipping::boundaries::ConvexBoundarySet;
 use crate::geometry::shape::single_face::{make_3d_square, make_3d_triangle};
 use crate::geometry::shape::Edge;
 use crate::vector::is_close;
@@ -22,7 +24,9 @@ use super::utils::{color_number, print_grid};
 
 #[test]
 fn test_single_face_boundaries() {
-    fn assert_on_boundaries<V: VectorTrait>(face_normal: V, boundaries: &[Plane<V>]) {
+    fn assert_on_boundaries<V: VectorTrait>(face_normal: V, boundaries: &[ConvexBoundarySet<V>]) {
+        assert_eq!(boundaries.len(), 1);
+        let boundaries = &boundaries[0].0;
         let mut hits = 0;
         for boundary in boundaries {
             if !V::is_close(boundary.normal, face_normal) {
@@ -54,19 +58,24 @@ fn test_single_face_boundaries() {
 
 #[test]
 fn test_bounded_regions() {
-    type V = Vec3;
+    type V = Vec2;
     let mut shape = ShapeBuilder::build_cube(1.0).build();
-    shape = remove_face(shape, 5);
+    shape = remove_face(shape, 3);
+    //let shape = make_line_shape().to_generic();
+    if let ShapeType::Generic(gst) = &shape.shape_type {
+        println!("{}", serde_json::to_string(&gst).unwrap());
+    }
     //shape.modify(&Transform::identity().with_rotation(0, 1, 2.2));
-    let camera_pos = -V::one_hot(1) * 1.0 + V::one_hot(0) * 0.75 + V::one_hot(2) * 0.6;
+    let camera_pos = V::one_hot(1) * 2.0 + V::one_hot(0) * 1.5; //+ V::one_hot(2) * 0.6;
     let face_visibility: Vec<bool> = shape
         .faces
         .iter()
         .map(|f| f.plane().point_signed_distance(camera_pos) > ZERO)
         .collect();
     let boundaries = calc_boundaries(camera_pos, &shape, &face_visibility);
+    assert!(boundaries.len() > 0);
     print_grid(2.0, 41, |x, y| {
-        let pos = V::new(x, y, ZERO);
+        let pos = V::new(x, y);
         if shape.verts.iter().any(|&p| (p - pos).norm() < 0.1) {
             ".".black()
         } else if shape.faces.iter().any(|f| (f.center() - pos).norm() < 0.1) {
@@ -77,17 +86,27 @@ fn test_bounded_regions() {
             color_number(
                 boundaries
                     .iter()
-                    .map(|b| b.point_signed_distance(pos) > ZERO)
-                    .filter(|x| *x)
+                    .filter(|cbs| cbs.0.iter().any(|b| b.point_signed_distance(pos) > ZERO))
                     .count(),
             )
+            // color_number(
+            //     boundaries[1]
+            //         .0
+            //         .iter()
+            //         .map(|b| b.point_signed_distance(pos) > ZERO)
+            //         .filter(|x| *x)
+            //         .count(),
+            // )
         }
     });
     println!("n boundaries: {}", boundaries.len());
-    for b in boundaries {
-        println!("{}", b);
+    for (i, cbs) in boundaries.iter().enumerate() {
+        println!("Set {}", i);
+        for b in &cbs.0 {
+            println!("{}", b);
+        }
     }
-    for v in shape.verts {
-        println!("{:?}", v);
-    }
+    // for v in shape.verts {
+    //     println!("{:?}", v);
+    // }
 }

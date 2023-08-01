@@ -14,6 +14,7 @@ use specs::{Component, Entities, Entity, Join, ReadStorage, VecStorage, WriteSto
 use std::marker::PhantomData;
 
 use self::bball::BBall;
+use self::boundaries::ConvexBoundarySet;
 
 pub struct ClipState<V> {
     //pub in_front : Vec<Vec<bool>>,
@@ -62,7 +63,7 @@ impl<V> ClipState<V> {
 pub struct ShapeClipState<V> {
     pub in_front: HashSet<Entity>,
     pub separators: HashMap<Entity, Separator<V>>,
-    pub boundaries: Vec<Plane<V>>,
+    pub boundaries: Vec<ConvexBoundarySet<V>>,
     pub transparent: bool,
     pub face_visibility: Vec<bool>,
 }
@@ -373,7 +374,33 @@ pub enum ReturnLines<V> {
     OneLine(Line<V>),
     NoLines,
 }
-pub fn clip_line<V: VectorTrait>(line: Line<V>, boundaries: &Vec<Plane<V>>) -> ReturnLines<V> {
+pub fn clip_line<V: VectorTrait>(
+    line: Line<V>,
+    boundaries: &Vec<ConvexBoundarySet<V>>,
+) -> Vec<Line<V>> {
+    let mut clipped_lines = vec![line];
+    for convex_boundary_set in boundaries {
+        let mut new_lines = Vec::new();
+        for line in clipped_lines {
+            match clip_line_convex(line, &convex_boundary_set.0) {
+                ReturnLines::TwoLines(line0, line1) => {
+                    //additional_lines.push(Some(line1)); //push extra lines on to other vector
+                    new_lines.push(line0);
+                    new_lines.push(line1);
+                }
+                ReturnLines::OneLine(line) => new_lines.push(line),
+                ReturnLines::NoLines => (),
+            }
+        }
+        clipped_lines = new_lines
+    }
+    clipped_lines
+}
+
+pub fn clip_line_convex<V: VectorTrait>(
+    line: Line<V>,
+    boundaries: &Vec<Plane<V>>,
+) -> ReturnLines<V> {
     //if no boundaries, return original line
     if boundaries.is_empty() {
         return ReturnLines::OneLine(line);
@@ -467,16 +494,12 @@ where
             //right now i just push on to a new Vec every time
             for opt_draw_line in clipped_lines.into_iter() {
                 {
-                    let color = opt_draw_line.color;
-                    match clip_line(opt_draw_line.line, &clipping_shape.boundaries) {
-                        ReturnLines::TwoLines(line0, line1) => {
-                            //additional_lines.push(Some(line1)); //push extra lines on to other vector
-                            new_lines.push(DrawLine { line: line0, color });
-                            new_lines.push(DrawLine { line: line1, color });
-                        }
-                        ReturnLines::OneLine(line) => new_lines.push(DrawLine { line, color }),
-                        ReturnLines::NoLines => (),
-                    }
+                    let color: crate::graphics::colors::Color = opt_draw_line.color;
+                    new_lines.extend(
+                        clip_line(opt_draw_line.line, &clipping_shape.boundaries)
+                            .into_iter()
+                            .map(|line| DrawLine { line, color }),
+                    )
                 }
             }
             clipped_lines = new_lines;

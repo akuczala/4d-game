@@ -1,11 +1,13 @@
 pub mod buildshapes;
 pub mod convex;
 pub mod face;
+pub mod generic;
 mod shape_library;
 pub mod single_face;
 pub mod subface;
 
 use self::convex::ConvexSubFace;
+use self::generic::GenericShapeType;
 use self::single_face::BoundarySubFace;
 use self::subface::SubFace;
 
@@ -48,23 +50,23 @@ pub trait ShapeTypeTrait<V: VectorTrait> {
 pub enum ShapeType<V> {
     Convex(convex::Convex),
     SingleFace(single_face::SingleFace<V>),
-    Generic(Vec<SubFace<V>>),
+    Generic(GenericShapeType<V>),
 }
 impl<V: Copy> ShapeType<V> {
     pub fn get_subfaces(&self) -> Vec<SubFace<V>> {
         match self {
             ShapeType::Convex(Convex { subfaces }) => {
-                subfaces.0.iter().cloned().map(SubFace::Convex).collect()
+                subfaces.0.iter().cloned().map(SubFace::Interior).collect()
             }
             ShapeType::SingleFace(SingleFace { subfaces }) => {
                 subfaces.0.iter().cloned().map(SubFace::Boundary).collect()
             }
-            ShapeType::Generic(subfaces) => subfaces.clone(),
+            ShapeType::Generic(GenericShapeType { subfaces, .. }) => subfaces.clone(),
         }
     }
     pub fn is_face_subface(face_index: FaceIndex, subface: &SubFace<V>) -> bool {
         match subface {
-            SubFace::Convex(ConvexSubFace { faceis }) => {
+            SubFace::Interior(ConvexSubFace { faceis }) => {
                 faceis.0 == face_index || faceis.1 == face_index
             }
             SubFace::Boundary(bsf) => bsf.facei == face_index,
@@ -75,6 +77,10 @@ impl<V: Copy> ShapeType<V> {
             .into_iter()
             .filter(move |sf| Self::is_face_subface(face_index, sf))
     }
+    pub fn to_generic(&self) -> Self {
+        let subfaces = self.get_subfaces();
+        Self::Generic(GenericShapeType::new(&subfaces))
+    }
 }
 impl<V: VectorTrait> ShapeType<V> {
     pub fn update(&mut self, shape_verts: &[V], shape_faces: &[Face<V>]) {
@@ -83,10 +89,10 @@ impl<V: VectorTrait> ShapeType<V> {
             ShapeType::SingleFace(ref mut single_face) => {
                 single_face.update(shape_verts, shape_faces)
             }
-            ShapeType::Generic(ref mut subfaces) => {
-                for subface in subfaces {
+            ShapeType::Generic(ref mut generic) => {
+                for subface in &mut generic.subfaces {
                     match subface {
-                        SubFace::Convex(_) => (),
+                        SubFace::Interior(_) => (),
                         SubFace::Boundary(ref mut bsf) => {
                             bsf.update(shape_verts, shape_faces[bsf.facei].normal())
                         }
@@ -256,6 +262,15 @@ impl<V: VectorTrait> Shape<V> {
             face.geometry.plane.threshold = face.normal().dot(face.center());
         }
         self.shape_type.update(&self.verts, &self.faces)
+    }
+
+    pub fn to_generic(&self) -> Self {
+        Self::new(
+            self.verts.clone(),
+            self.edges.clone(),
+            self.faces.clone(),
+            self.shape_type.to_generic(),
+        )
     }
 }
 // impl<V: VectorTrait> Transformable<V> for Shape<V> {

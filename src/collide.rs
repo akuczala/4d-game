@@ -230,7 +230,7 @@ pub fn face_max_subface_dist<V: VectorTrait>(
     let face_boundary_subfaces: Vec<&BoundarySubFace<V>> = shape_subfaces
         .iter()
         .flat_map(|sf| match sf {
-            SubFace::Convex(_) => None,
+            SubFace::Interior(_) => None,
             SubFace::Boundary(bsf) => (bsf.facei == face_i).then_some(bsf),
         })
         .collect();

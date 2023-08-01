@@ -1,5 +1,6 @@
 use super::convex::ConvexSubFace;
 use super::face::FaceBuilder;
+use super::generic::GenericShapeType;
 use super::subface::{self, SubFace};
 use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, SingleFace, VertIndex};
 use crate::draw::{Texture, TextureMapping};
@@ -179,7 +180,7 @@ pub fn reindex_faces<V: Copy>(
     subfaces
         .iter()
         .map(|subface: &SubFace<V>| match subface {
-            SubFace::Convex(ConvexSubFace { faceis }) => SubFace::Convex(ConvexSubFace {
+            SubFace::Interior(ConvexSubFace { faceis }) => SubFace::Interior(ConvexSubFace {
                 faceis: (
                     *index_map.get(&faceis.0).unwrap(),
                     *index_map.get(&faceis.1).unwrap(),
@@ -208,7 +209,7 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
             if ShapeType::is_face_subface(face_index, &subface) {
                 match subface {
                     SubFace::Boundary(_) => None,
-                    SubFace::Convex(ConvexSubFace { faceis }) => {
+                    SubFace::Interior(ConvexSubFace { faceis }) => {
                         let other_facei = if faceis.0 == face_index {
                             faceis.1
                         } else {
@@ -236,7 +237,12 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
     let mut faces = shape.faces.clone();
     faces.remove(face_index);
     let subfaces = reindex_faces(face_index, &shape.faces, &subfaces);
-    Shape::new(verts.clone(), edges, faces, ShapeType::Generic(subfaces))
+    Shape::new(
+        verts.clone(),
+        edges,
+        faces,
+        ShapeType::Generic(GenericShapeType::new(&subfaces)),
+    )
 }
 
 pub fn remove_faces<V: VectorTrait>(_shape: Shape<V>, _faceis: Vec<FaceIndex>) -> Shape<V> {
