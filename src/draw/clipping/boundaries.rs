@@ -96,13 +96,8 @@ fn calc_subface_boundary<V: VectorTrait>(
         SubFace::Interior(ConvexSubFace { faceis }) => {
             let convex_boundary =
                 calc_convex_boundary(faces[faceis.0].plane(), faces[faceis.1].plane(), camera_pos);
-            let other_face = &faces[if faceis.0 == face_index {
-                faceis.1
-            } else {
-                faceis.0
-            }];
-            //.make sure the normal is pointing along the other face's normal
-            if convex_boundary.normal.dot(other_face.normal()) > ZERO {
+            // make sure the normal is pointing away from the face center
+            if convex_boundary.point_signed_distance(faces[face_index].center()) < ZERO {
                 Some(convex_boundary)
             } else {
                 Some(convex_boundary.flip_normal())

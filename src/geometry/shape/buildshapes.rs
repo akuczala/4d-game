@@ -352,8 +352,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
 pub fn invert_normals<V: VectorTrait>(shape: &Shape<V>) -> Shape<V> {
     let mut new_shape = shape.clone();
     for face in &mut new_shape.faces {
-        face.geometry.plane.normal = -face.normal();
+        face.geometry.plane = face.geometry.plane.flip_normal();
     }
-    //new_shape.update_from_ref(shape, &Transform::identity());
     new_shape
 }

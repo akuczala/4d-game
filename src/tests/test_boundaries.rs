@@ -2,6 +2,7 @@ use colored::Colorize;
 
 use crate::components::ShapeType;
 use crate::draw::clipping::boundaries::ConvexBoundarySet;
+use crate::geometry::shape::buildshapes::invert_normals;
 use crate::geometry::shape::single_face::{make_3d_square, make_3d_triangle};
 use crate::geometry::shape::Edge;
 use crate::vector::is_close;
@@ -60,13 +61,15 @@ fn test_single_face_boundaries() {
 fn test_bounded_regions() {
     type V = Vec2;
     let mut shape = ShapeBuilder::build_cube(1.0).build();
+    shape = invert_normals(&shape);
     shape = remove_face(shape, 3);
+    //shape = invert_normals(&shape);
     //let shape = make_line_shape().to_generic();
     if let ShapeType::Generic(gst) = &shape.shape_type {
         println!("{}", serde_json::to_string(&gst).unwrap());
     }
     //shape.modify(&Transform::identity().with_rotation(0, 1, 2.2));
-    let camera_pos = V::one_hot(1) * 2.0 + V::one_hot(0) * 1.5; //+ V::one_hot(2) * 0.6;
+    let camera_pos = -V::one_hot(1) * 2.0; //+ V::one_hot(2) * 0.6;
     let face_visibility: Vec<bool> = shape
         .faces
         .iter()
@@ -86,7 +89,7 @@ fn test_bounded_regions() {
             color_number(
                 boundaries
                     .iter()
-                    .filter(|cbs| cbs.0.iter().any(|b| b.point_signed_distance(pos) > ZERO))
+                    .filter(|cbs| cbs.0.iter().all(|b| b.point_signed_distance(pos) <= ZERO))
                     .count(),
             )
             // color_number(
