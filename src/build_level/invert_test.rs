@@ -26,19 +26,19 @@ where
         .build(world)
         .build();
 
-    // ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
-    //     .with_translation(V::one_hot(0) * 8.0)
-    //     .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, 500))
-    //     .with_color(WHITE)
-    //     .with_collider(Some(StaticCollider))
-    //     .build(world)
-    //     .build();
+    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
+        .with_translation(V::one_hot(0) * 8.0)
+        .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, 500))
+        .with_color(WHITE)
+        .with_collider(Some(StaticCollider))
+        .build(world)
+        .build();
 
-    // ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
-    //     .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, 500))
-    //     .with_color(WHITE)
-    //     .with_translation(V::one_hot(0) * 1.0)
-    //     .with_collider(Some(StaticCollider))
-    //     .build(world)
-    //     .build();
+    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
+        .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, 500))
+        .with_color(WHITE)
+        .with_translation(V::one_hot(0) * 1.0)
+        .with_collider(Some(StaticCollider))
+        .build(world)
+        .build();
 }

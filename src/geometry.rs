@@ -9,7 +9,7 @@ use std::fmt;
 pub use transform::{Transform, Transformable};
 
 /// Represents a line or line segment. Defined by two points.
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Line<V>(pub V, pub V);
 impl<V: fmt::Display> fmt::Display for Line<V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

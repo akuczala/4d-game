@@ -1,7 +1,10 @@
 use colored::Colorize;
+use itertools::Itertools;
 
 use crate::components::ShapeType;
 use crate::draw::clipping::boundaries::ConvexBoundarySet;
+use crate::draw::clipping::{clip_line, clip_line_convex};
+use crate::geometry::Line;
 use crate::geometry::shape::buildshapes::invert_normals;
 use crate::geometry::shape::single_face::{make_3d_square, make_3d_triangle};
 use crate::geometry::shape::Edge;
@@ -69,7 +72,7 @@ fn test_bounded_regions() {
         println!("{}", serde_json::to_string(&gst).unwrap());
     }
     //shape.modify(&Transform::identity().with_rotation(0, 1, 2.2));
-    let camera_pos = -V::one_hot(1) * 2.0; //+ V::one_hot(2) * 0.6;
+    let camera_pos = -V::one_hot(1) * 2.1; //+ V::one_hot(2) * 0.6;
     let face_visibility: Vec<bool> = shape
         .faces
         .iter()
@@ -109,7 +112,34 @@ fn test_bounded_regions() {
             println!("{}", b);
         }
     }
-    // for v in shape.verts {
-    //     println!("{:?}", v);
-    // }
+    // clip line
+    let line = Line(V::new(-0.7, 1.4), V::new(0.7, 1.4));
+    // println!("{}", serde_json::to_string(&[line.clone()]).unwrap());
+
+    let clipped_lines = clip_line(line, &boundaries);
+
+    //let clipped_lines = clip_line_convex(line, &boundaries[1].0).into_iter().collect_vec();
+    //println!("{}", serde_json::to_string(&clipped_lines).unwrap());
+
+    // let clipped_lines = clip_line_convex(line, &boundaries[0].0).into_iter().collect_vec();
+    // println!("{}", serde_json::to_string(&clipped_lines).unwrap());
+    // let clipped_lines = clipped_lines
+    //     .into_iter()
+    //     .flat_map(
+    //         |line| clip_line_convex(line, &boundaries[1].0)
+    //     )
+    //     .collect_vec();
+    // println!("{}", serde_json::to_string(&clipped_lines).unwrap());
+    // let clipped_lines = clipped_lines
+    //     .into_iter()
+    //     .flat_map(
+    //         |line| clip_line_convex(line, &boundaries[2].0)
+    //     )
+    //     .collect_vec();
+
+    println!("{}", serde_json::to_string(&clipped_lines).unwrap());
+
+    // let line = Line(V::new(-0.7, 1.0), V::new(0.6, 1.0));
+    // let clipped_lines = clip_line_convex(line, &boundaries[1].0).into_iter().collect_vec();
+    // println!("{}", serde_json::to_string(&clipped_lines).unwrap());
 }

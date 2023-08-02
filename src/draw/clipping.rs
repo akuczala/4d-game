@@ -374,6 +374,20 @@ pub enum ReturnLines<V> {
     OneLine(Line<V>),
     NoLines,
 }
+impl<V> Iterator for ReturnLines<V> {
+    type Item = Line<V>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let out: Option<Self::Item>;
+        // do the ol switcheroo
+        (*self, out) = match std::mem::replace(self, Self::NoLines) {
+            Self::NoLines => (Self::NoLines, None),
+            Self::OneLine(line) => (Self::NoLines, Some(line)),
+            Self::TwoLines(line_1, line_2) => (Self::OneLine(line_2), Some(line_1)),
+        };
+        out
+    }
+}
 pub fn clip_line<V: VectorTrait>(
     line: Line<V>,
     boundaries: &Vec<ConvexBoundarySet<V>>,
@@ -397,6 +411,7 @@ pub fn clip_line<V: VectorTrait>(
     clipped_lines
 }
 
+// TODO: robustly cover edge cases
 pub fn clip_line_convex<V: VectorTrait>(
     line: Line<V>,
     boundaries: &Vec<Plane<V>>,
@@ -416,7 +431,7 @@ pub fn clip_line_convex<V: VectorTrait>(
         let th = boundary.threshold;
 
         let (p0n, p1n) = (p0.dot(n), p1.dot(n));
-        let (p0_safe, p1_safe) = (p0n >= th, p1n >= th);
+        let (p0_safe, p1_safe) = (p0n > th, p1n > th); // using > rather than >= here seems to reduce rogue lines
 
         if p0_safe && p1_safe {
             a = 0.0;
@@ -439,7 +454,7 @@ pub fn clip_line_convex<V: VectorTrait>(
     //both endpoints visible
     if p0_all_safe && p1_all_safe {
         //return two lines if we've intersected the shape
-        if a > 0.0 && b < 1.0 {
+        if a > 0.0 && b <= 1.0 { //using b <= 1 rather than b < 1 seems to reduce rogue lines
             return ReturnLines::TwoLines(
                 Line(p0, V::linterp(p0, p1, a)),
                 Line(V::linterp(p0, p1, b), p1),
