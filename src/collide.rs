@@ -6,10 +6,11 @@ use crate::components::{
 };
 use crate::constants::{PLAYER_COLLIDE_DISTANCE, ZERO};
 use crate::ecs_utils::{Componentable, ModSystem};
-use crate::geometry::shape::buildshapes::remove_face;
+use crate::geometry::shape::buildshapes::{invert_normals, remove_face};
+use crate::geometry::shape::convex::closest_face_distance;
 use crate::geometry::shape::single_face::BoundarySubFace;
 use crate::geometry::shape::subface::SubFace;
-use crate::geometry::shape::FaceIndex;
+use crate::geometry::shape::{generic, FaceIndex};
 use crate::geometry::transform::Scaling;
 use crate::geometry::Face;
 use crate::input::key_map::PRINT_DEBUG;
@@ -242,30 +243,52 @@ pub fn face_max_subface_dist<V: VectorTrait>(
 }
 
 /// returns vec of faces within some distance of the player
-/// We currently assume that all faces are one-sided and form a convex hull
 pub fn colliding_faces<V: VectorTrait>(
     shape: &Shape<V>,
     collide_distance: Field,
     player_pos: V,
 ) -> Vec<&Face<V>> {
     // TODO: handle two-sided case
-    // TODO: reduce redundant work by integrating this calculation with below
-    let (_, convex_dist) = shape.point_normal_distance(player_pos);
-
-    let mut out = Vec::new();
-    let subfaces = shape.shape_type.get_subfaces();
-    for (face_i, face) in shape.faces.iter().enumerate() {
-        let face_dist = face.plane().point_signed_distance(player_pos);
-        if (convex_dist < collide_distance)
-            && (face_dist > ZERO)
-            && (face_dist < collide_distance)
-            && face_max_subface_dist(&subfaces, face_i, player_pos)
-                .map_or(true, |d| d < collide_distance)
-        {
-            out.push(face)
+    match &shape.shape_type {
+        ShapeType::Convex(_) => match closest_face_distance(&shape.faces, player_pos) {
+            Some((closest_face, dist)) if dist < collide_distance => vec![closest_face],
+            _ => Vec::new(),
+        },
+        ShapeType::SingleFace(sf) => {
+            let face_plane_dist = shape.faces[0].plane().point_signed_distance(player_pos);
+            let max_subface_dist = SingleFace::subface_normal_distance(&sf.subfaces, player_pos).1;
+            if (face_plane_dist > ZERO)
+                && (face_plane_dist < collide_distance)
+                && (max_subface_dist < collide_distance)
+            {
+                vec![&shape.faces[0]]
+            } else {
+                Vec::new()
+            }
         }
+        ShapeType::Generic(g) => shape
+            .faces
+            .iter()
+            .enumerate()
+            .filter_map(|(face_index, face)| {
+                let face_plane_dist = face.plane().point_signed_distance(player_pos);
+                let face_subfaces = g.face_subfaces[face_index]
+                    .iter()
+                    .map(|&subface_i| &g.subfaces[subface_i])
+                    .collect_vec();
+                let max_subface_dist =
+                    generic::max_subface_dist(&shape.faces, face_index, &face_subfaces, player_pos);
+                if (face_plane_dist > ZERO)
+                    && (face_plane_dist < collide_distance)
+                    && (max_subface_dist < collide_distance)
+                {
+                    Some(face)
+                } else {
+                    None
+                }
+            })
+            .collect(),
     }
-    out
 }
 
 pub fn check_player_static_collisions<'a, I, V: VectorTrait + 'a>(
@@ -281,10 +304,10 @@ pub fn check_player_static_collisions<'a, I, V: VectorTrait + 'a>(
     } = move_next
     {
         for shape in shape_iter {
-            let next_dpos = move_next.next_dpos.unwrap();
             //this is more convoluted than it needs to be
             // for concave shapes, more than one face can push the player away simultaneously (at the corner)
             for face in colliding_faces(shape, PLAYER_COLLIDE_DISTANCE, player_pos) {
+                let next_dpos = move_next.next_dpos.unwrap();
                 let normal = face.normal();
                 //push player away along normal of nearest face (projects out -normal)
                 //but i use abs here to guarantee the face always repels the player
@@ -320,16 +343,18 @@ fn dcoords_cells_test() {
 fn test_collision_dist() {
     use crate::geometry::shape::buildshapes::ShapeBuilder;
     use crate::vector::linspace;
-    use crate::vector::Vec2;
+    use crate::vector::{Vec2, Vec3};
     use colored::*;
+    type V = Vec2;
 
-    let mut shape = ShapeBuilder::<Vec2>::build_prism(2, &[1.0], &[4]).build();
+    let mut shape = ShapeBuilder::<V>::build_cube(1.0).build();
+    shape = invert_normals(&shape);
     shape = remove_face(shape, 3);
     //shape.modify(Transform::)
-    assert!(shape.point_signed_distance(Vec2::zero()) < 0.0);
-    assert!(shape.point_signed_distance(Vec2::ones() * 2.0) > 0.0);
+    //assert!(shape.point_signed_distance(V::zero()) < 0.0);
+    //assert!(shape.point_signed_distance(V::ones() * 2.0) > 0.0);
     print_grid(2.0, 40, |x, y| {
-        let point = Vec2::new(x, y);
+        let point = V::new(x, y);
         // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
         //   true => "+", false => "_"
         // };
@@ -339,7 +364,17 @@ fn test_collision_dist() {
         //println!("{}",dist);
         //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
         color_number(n)
-    })
+    });
+    for (face_index, face) in shape.faces.iter().enumerate() {
+        println!("Face {}: {}", face_index, face.plane());
+        for subface in shape.shape_type.get_face_subfaces(face_index) {
+            println!(
+                "{}: {}",
+                face_index,
+                generic::subface_plane(&shape.faces, face_index, &subface)
+            );
+        }
+    }
     //assert!(false); //forces cargo test to print this
     //assert!(!shape.point_within(point,0.))
 }

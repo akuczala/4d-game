@@ -6,7 +6,14 @@ use std::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use super::{convex::ConvexSubFace, face, subface::SubFace, FaceIndex};
+use crate::{
+    constants::ZERO,
+    geometry::{line_plane_intersect, Line, Plane},
+    utils::partial_max,
+    vector::{Field, VectorTrait},
+};
+
+use super::{convex::ConvexSubFace, face, subface::SubFace, Face, FaceIndex, ShapeTypeTrait};
 
 fn add_pair(
     map: &mut HashMap<FaceIndex, HashSet<usize>>,
@@ -54,5 +61,78 @@ impl<V: Clone> GenericShapeType<V> {
             subfaces: subfaces.iter().cloned().collect_vec(),
             face_subfaces,
         }
+    }
+}
+impl<V: VectorTrait> GenericShapeType<V> {
+    pub fn line_intersect(
+        &self,
+        faces: &[Face<V>],
+        line: &Line<V>,
+        visible_only: bool,
+        face_visibility: &[bool],
+    ) -> Vec<V> {
+        faces
+            .iter()
+            .zip(face_visibility.iter())
+            .filter(|(_, visible)| (!visible_only || **visible))
+            .filter_map(|(face, _)| line_plane_intersect(line, face.plane()))
+            .filter(|p| subface_signed_distance(faces, todo!(), todo!(), *p) < 0.0)
+            .collect()
+    }
+}
+
+pub fn max_subface_dist<V: VectorTrait>(
+    shape_faces: &[Face<V>],
+    face_index: FaceIndex,
+    subfaces: &[&SubFace<V>],
+    pos: V,
+) -> Field {
+    partial_max(
+        subfaces
+            .iter()
+            .map(|subface| subface_signed_distance(shape_faces, face_index, subface, pos)),
+    )
+    .unwrap()
+}
+
+pub fn subface_signed_distance<V: VectorTrait>(
+    shape_faces: &[Face<V>],
+    face_index: FaceIndex,
+    subface: &SubFace<V>,
+    pos: V,
+) -> Field {
+    match subface {
+        SubFace::Interior(isf) => {
+            interior_subface_plane(shape_faces, face_index, isf).point_signed_distance(pos)
+        }
+        SubFace::Boundary(bsf) => bsf.plane.point_signed_distance(pos),
+    }
+}
+
+pub fn subface_plane<V: VectorTrait>(
+    shape_faces: &[Face<V>],
+    face_index: FaceIndex,
+    subface: &SubFace<V>,
+) -> Plane<V> {
+    match subface {
+        SubFace::Interior(isf) => interior_subface_plane(shape_faces, face_index, isf),
+        SubFace::Boundary(bsf) => bsf.plane.clone(),
+    }
+}
+
+/// return plane of adjoining face
+fn interior_subface_plane<V: VectorTrait>(
+    shape_faces: &[Face<V>],
+    face_index: FaceIndex,
+    interior_subface: &ConvexSubFace,
+) -> Plane<V> {
+    let (face_0, face_1) = interior_subface.faceis;
+    let plane = shape_faces[if face_index == face_0 { face_1 } else { face_0 }]
+        .plane()
+        .clone();
+    if plane.point_signed_distance(shape_faces[face_index].center()) < ZERO {
+        plane
+    } else {
+        plane.flip_normal()
     }
 }

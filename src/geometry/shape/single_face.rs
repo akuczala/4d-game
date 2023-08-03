@@ -101,7 +101,7 @@ impl<V: VectorTrait> SingleFace<V> {
         }
         out_points
     }
-    //returns distance to nearest subface plane
+    // returns distance to nearest subface plane
     pub fn subface_normal_distance(subfaces: &SubFaces<V>, pos: V) -> (V, Field) {
         let (closest_subshape_plane, distance) =
             Plane::point_normal_distance(pos, subfaces.0.iter().map(|sf| &sf.plane)).unwrap();

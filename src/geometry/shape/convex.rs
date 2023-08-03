@@ -94,6 +94,20 @@ fn count_common_verts<V: VectorTrait>(face1: &Face<V>, face2: &Face<V>) -> usize
     total_verts - unique_verts
 }
 
+//returns closest face and distance to it
+pub fn closest_face_distance<V: VectorTrait>(
+    faces: &[Face<V>],
+    point: V,
+) -> Option<(&Face<V>, Field)> {
+    faces
+        .iter()
+        .map(|face| (face, face.plane().point_signed_distance(point)))
+        .reduce(|(f1, a), (f2, b)| match a > b {
+            true => (f1, a),
+            false => (f2, b),
+        })
+}
+
 fn count_common_edges<V: VectorTrait>(face1: &Face<V>, face2: &Face<V>) -> usize {
     let total_edges = face1.edgeis.len() + face2.edgeis.len();
     let unique_edges = face1

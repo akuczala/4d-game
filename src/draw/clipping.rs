@@ -454,7 +454,8 @@ pub fn clip_line_convex<V: VectorTrait>(
     //both endpoints visible
     if p0_all_safe && p1_all_safe {
         //return two lines if we've intersected the shape
-        if a > 0.0 && b <= 1.0 { //using b <= 1 rather than b < 1 seems to reduce rogue lines
+        //using b <= 1 rather than b < 1 seems to reduce rogue lines
+        if a > 0.0 && b <= 1.0 {
             return ReturnLines::TwoLines(
                 Line(p0, V::linterp(p0, p1, a)),
                 Line(V::linterp(p0, p1, b), p1),

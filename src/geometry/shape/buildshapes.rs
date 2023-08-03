@@ -3,6 +3,7 @@ use super::face::FaceBuilder;
 use super::generic::GenericShapeType;
 use super::subface::{self, SubFace};
 use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, SingleFace, VertIndex};
+use crate::constants::ZERO;
 use crate::draw::{Texture, TextureMapping};
 use crate::geometry::shape::single_face::BoundarySubFace;
 use crate::geometry::{Plane, Transformable};
@@ -222,9 +223,14 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
                             .filter(|vi| shape.faces[other_facei].vertis.iter().contains(vi))
                             .collect_vec();
                         let center = barycenter(&vertis.iter().map(|vi| verts[*vi]).collect());
+                        let mut plane = Plane::from_normal_and_point(face.normal(), center);
+                        // make sure the subface normals point away from the face center
+                        if plane.point_signed_distance(shape.faces[other_facei].center()) > ZERO {
+                            plane = plane.flip_normal()
+                        }
                         Some(SubFace::Boundary(BoundarySubFace {
                             vertis: vertis.clone(),
-                            plane: Plane::from_normal_and_point(face.normal(), center),
+                            plane,
                             facei: other_facei,
                         }))
                     }

@@ -22,7 +22,8 @@ where
         .with_collider(Some(StaticCollider))
         .with_translation(V::one_hot(0) * 4.0)
         .with_rotation(0, 1, HALF_PI)
-        .with_rotation(1, 2, 0.2)
+        // TODO: When this angle is small (~0.2), we can sometimes go through the front (cyan) face
+        .with_rotation(1, 2, 1.0)
         .build(world)
         .build();
 

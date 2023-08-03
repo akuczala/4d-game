@@ -4,10 +4,10 @@ use itertools::Itertools;
 use crate::components::ShapeType;
 use crate::draw::clipping::boundaries::ConvexBoundarySet;
 use crate::draw::clipping::{clip_line, clip_line_convex};
-use crate::geometry::Line;
 use crate::geometry::shape::buildshapes::invert_normals;
 use crate::geometry::shape::single_face::{make_3d_square, make_3d_triangle};
 use crate::geometry::shape::Edge;
+use crate::geometry::Line;
 use crate::vector::is_close;
 use crate::vector::{Vec2, Vec3};
 use crate::{
