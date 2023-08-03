@@ -1,10 +1,7 @@
-use super::{Edge, EdgeIndex, Shape, VertIndex};
-use crate::graphics::colors::Color;
+use super::{Edge, EdgeIndex, VertIndex};
 use crate::vector::{self, Field, VectorTrait};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-
-use crate::draw::{Texture, TextureMapping};
 
 #[derive(Clone)]
 pub struct FaceBuilder<'a, V> {
@@ -44,6 +41,15 @@ pub struct FaceGeometry<V> {
     pub center: V,
 }
 
+impl<V: VectorTrait> From<PointedPlane<V>> for FaceGeometry<V> {
+    fn from(value: PointedPlane<V>) -> Self {
+        Self {
+            plane: Plane::from(value.clone()),
+            center: value.point,
+        }
+    }
+}
+
 impl<V: VectorTrait> Face<V> {
     pub fn new(
         shape_verts: &[V],
@@ -56,10 +62,7 @@ impl<V: VectorTrait> Face<V> {
         let face_verts = vertis.iter().map(|verti| shape_verts[*verti]).collect();
         let center = vector::barycenter(&face_verts);
         Self {
-            geometry: FaceGeometry {
-                plane: Plane::from_normal_and_point(normal.normalize(), center),
-                center,
-            },
+            geometry: FaceGeometry::from(PointedPlane::new(normal, center)),
             edgeis,
             vertis,
             two_sided,
@@ -87,7 +90,7 @@ impl<V: VectorTrait> Face<V> {
     }
 }
 
-use crate::geometry::Plane;
+use crate::geometry::{Plane, PointedPlane};
 use std::fmt;
 
 impl<V: VectorTrait> fmt::Display for Face<V> {

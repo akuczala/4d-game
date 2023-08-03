@@ -108,6 +108,25 @@ impl<V: fmt::Display> fmt::Display for Plane<V> {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct PointedPlane<V> {
+    pub normal: V,
+    pub point: V,
+}
+impl<V: VectorTrait> PointedPlane<V> {
+    pub fn new(normal: V, point: V) -> Self {
+        Self {
+            normal: normal.normalize(),
+            point,
+        }
+    }
+}
+impl<V: VectorTrait> From<PointedPlane<V>> for Plane<V> {
+    fn from(value: PointedPlane<V>) -> Self {
+        Self::from_normal_and_point(value.normal, value.point)
+    }
+}
+
 fn is_point_in_sphere<V: VectorTrait>(r: Field, p: V) -> bool {
     p.norm_sq() < r * r
 }

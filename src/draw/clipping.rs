@@ -10,6 +10,7 @@ use crate::components::{Shape, Transform};
 use crate::draw::DrawLine;
 use crate::geometry::{sphere_line_intersect, sphere_t_intersect_infinite_normed, Line, Plane};
 
+use itertools::Itertools;
 use specs::{Component, Entities, Entity, Join, ReadStorage, VecStorage, WriteStorage};
 use std::marker::PhantomData;
 
@@ -394,19 +395,10 @@ pub fn clip_line<V: VectorTrait>(
 ) -> Vec<Line<V>> {
     let mut clipped_lines = vec![line];
     for convex_boundary_set in boundaries {
-        let mut new_lines = Vec::new();
-        for line in clipped_lines {
-            match clip_line_convex(line, &convex_boundary_set.0) {
-                ReturnLines::TwoLines(line0, line1) => {
-                    //additional_lines.push(Some(line1)); //push extra lines on to other vector
-                    new_lines.push(line0);
-                    new_lines.push(line1);
-                }
-                ReturnLines::OneLine(line) => new_lines.push(line),
-                ReturnLines::NoLines => (),
-            }
-        }
-        clipped_lines = new_lines
+        clipped_lines = clipped_lines
+            .into_iter()
+            .flat_map(|line| clip_line_convex(line, &convex_boundary_set.0))
+            .collect_vec();
     }
     clipped_lines
 }
