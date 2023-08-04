@@ -274,10 +274,9 @@ pub fn colliding_faces<V: VectorTrait>(
                 let face_plane_dist = face.plane().point_signed_distance(player_pos);
                 let face_subfaces = g.face_subfaces[face_index]
                     .iter()
-                    .map(|&subface_i| &g.subfaces[subface_i])
-                    .collect_vec();
+                    .map(|&subface_i| &g.subfaces[subface_i]);
                 let max_subface_dist =
-                    generic::max_subface_dist(&shape.faces, face_index, &face_subfaces, player_pos);
+                    generic::max_subface_dist(&shape.faces, face_index, face_subfaces, player_pos);
                 if (face_plane_dist > ZERO)
                     && (face_plane_dist < collide_distance)
                     && (max_subface_dist < collide_distance)

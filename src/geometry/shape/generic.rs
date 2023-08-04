@@ -62,6 +62,11 @@ impl<V: Clone> GenericShapeType<V> {
             face_subfaces,
         }
     }
+    pub fn get_face_subfaces(&self, face_index: FaceIndex) -> impl Iterator<Item = &SubFace<V>> {
+        self.face_subfaces[face_index]
+            .iter()
+            .map(|&subface_index| &self.subfaces[subface_index])
+    }
 }
 impl<V: VectorTrait> GenericShapeType<V> {
     pub fn line_intersect(
@@ -74,23 +79,33 @@ impl<V: VectorTrait> GenericShapeType<V> {
         faces
             .iter()
             .zip(face_visibility.iter())
-            .filter(|(_, visible)| (!visible_only || **visible))
-            .filter_map(|(face, _)| line_plane_intersect(line, face.plane()))
-            .filter(|p| subface_signed_distance(faces, todo!(), todo!(), *p) < 0.0)
+            .enumerate()
+            .filter_map(|(face_index, (face, visible))| {
+                (!visible_only || *visible)
+                    .then(|| line_plane_intersect(line, face.plane()))
+                    .flatten()
+                    .and_then(|p| {
+                        (max_subface_dist(faces, face_index, self.get_face_subfaces(face_index), p)
+                            < 0.0)
+                            .then_some(p)
+                    })
+            })
             .collect()
     }
 }
 
-pub fn max_subface_dist<V: VectorTrait>(
+pub fn max_subface_dist<'a, V, I>(
     shape_faces: &[Face<V>],
     face_index: FaceIndex,
-    subfaces: &[&SubFace<V>],
+    subfaces: I,
     pos: V,
-) -> Field {
+) -> Field
+where
+    V: VectorTrait + 'a,
+    I: Iterator<Item = &'a SubFace<V>>,
+{
     partial_max(
-        subfaces
-            .iter()
-            .map(|subface| subface_signed_distance(shape_faces, face_index, subface, pos)),
+        subfaces.map(|subface| subface_signed_distance(shape_faces, face_index, subface, pos)),
     )
     .unwrap()
 }

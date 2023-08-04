@@ -53,37 +53,6 @@ pub fn calc_boundaries<V: VectorTrait>(
     }
 }
 
-// pub fn calc_convex_boundaries<V: VectorTrait>(
-//     camera_pos: V,
-//     shape: &Shape<V>,
-//     face_visibility: &[bool],
-// ) -> Vec<Plane<V>> {
-//     let subfaces = shape.shape_type.get_subfaces(); // TODO: we clone for now, this won't be needed when ShapeType is gone
-
-//     let mut boundaries: Vec<Plane<V>> =
-//         Vec::with_capacity(shape.shape_type.get_subfaces().len() + shape.faces.len()); // set capacity to max # boundaries
-
-//     // yes, I could have just done this with if + push statements. but what fun would that be
-//     // not sure what overhead is introduced here by exuberant iterator use
-//     let subface_boundaries = subfaces.iter().filter_map(|subface| {
-//         calc_subface_boundary(
-//             camera_pos,
-//             &shape.verts,
-//             &shape.faces,
-//             face_visibility,
-//             subface,
-//         )
-//     });
-//     //visible faces are boundaries
-//     let face_boundaries = shape
-//         .faces
-//         .iter()
-//         .zip(face_visibility.iter())
-//         .filter_map(|(face, visible)| (*visible).then(|| calc_face_boundary(camera_pos, face)));
-//     boundaries.extend(subface_boundaries.chain(face_boundaries));
-//     boundaries
-// }
-
 fn calc_subface_boundary<V: VectorTrait>(
     camera_pos: V,
     verts: &[V],

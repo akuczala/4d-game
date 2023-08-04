@@ -391,13 +391,13 @@ impl<V> Iterator for ReturnLines<V> {
 }
 pub fn clip_line<V: VectorTrait>(
     line: Line<V>,
-    boundaries: &Vec<ConvexBoundarySet<V>>,
+    boundaries: &[ConvexBoundarySet<V>],
 ) -> Vec<Line<V>> {
     let mut clipped_lines = vec![line];
     for convex_boundary_set in boundaries {
         clipped_lines = clipped_lines
             .into_iter()
-            .flat_map(|line| clip_line_convex(line, &convex_boundary_set.0))
+            .flat_map(|line| clip_line_convex(line, convex_boundary_set))
             .collect_vec();
     }
     clipped_lines
@@ -406,9 +406,10 @@ pub fn clip_line<V: VectorTrait>(
 // TODO: robustly cover edge cases
 pub fn clip_line_convex<V: VectorTrait>(
     line: Line<V>,
-    boundaries: &Vec<Plane<V>>,
+    boundary_set: &ConvexBoundarySet<V>,
 ) -> ReturnLines<V> {
     //if no boundaries, return original line
+    let boundaries = &boundary_set.0;
     if boundaries.is_empty() {
         return ReturnLines::OneLine(line);
     }

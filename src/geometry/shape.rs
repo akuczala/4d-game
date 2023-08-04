@@ -122,7 +122,9 @@ impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
                 visible_only,
                 face_visibility,
             ),
-            ShapeType::Generic(_) => Vec::new(), // TODO: this is unimplemented
+            ShapeType::Generic(g) => {
+                g.line_intersect(&shape.faces, line, visible_only, face_visibility)
+            }
         }
     }
 }
