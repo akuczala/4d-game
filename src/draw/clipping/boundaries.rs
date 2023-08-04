@@ -5,9 +5,8 @@ use crate::{
     constants::ZERO,
     geometry::{
         shape::{
-            convex::ConvexSubFace,
-            single_face::{self, make_line_shape, BoundarySubFace},
-            subface::SubFace,
+            single_face::{self, make_line_shape},
+            subface::{BoundarySubFace, InteriorSubFace, SubFace},
             FaceIndex, VertIndex,
         },
         Face, Plane,
@@ -27,12 +26,12 @@ pub fn calc_boundaries<V: VectorTrait>(
     face_visibility: &[bool],
 ) -> Vec<ConvexBoundarySet<V>> {
     match shape.shape_type {
-        ShapeType::Convex(ref convex) => vec![ConvexBoundarySet(calc_convex_boundaries(
+        ShapeType::Convex(ref convex) => vec![calc_convex_boundaries(
             convex,
             camera_pos,
             &shape.faces,
             face_visibility,
-        ))],
+        )],
         ShapeType::Generic(ref generic) => calc_generic_boundaries(
             camera_pos,
             shape,
@@ -41,6 +40,8 @@ pub fn calc_boundaries<V: VectorTrait>(
             &generic.subfaces,
         ),
         ShapeType::SingleFace(_) => {
+            // below demonstrates that we can think of SingleFace as a special case of Generic
+            // we do unnecessary copying here with .get_subfaces()
             let subfaces = shape.shape_type.get_subfaces();
             calc_generic_boundaries(
                 camera_pos,
@@ -51,41 +52,6 @@ pub fn calc_boundaries<V: VectorTrait>(
             )
         }
     }
-}
-
-fn calc_subface_boundary<V: VectorTrait>(
-    camera_pos: V,
-    verts: &[V],
-    faces: &[Face<V>],
-    face_visibility: &[bool],
-    subface: &SubFace<V>,
-    face_index: FaceIndex,
-) -> Option<Plane<V>> {
-    match subface {
-        SubFace::Interior(ConvexSubFace { faceis }) => {
-            let convex_boundary =
-                calc_convex_boundary(faces[faceis.0].plane(), faces[faceis.1].plane(), camera_pos);
-            // make sure the normal is pointing away from the face center
-            if convex_boundary.point_signed_distance(faces[face_index].center()) < ZERO {
-                Some(convex_boundary)
-            } else {
-                Some(convex_boundary.flip_normal())
-            }
-        }
-        SubFace::Boundary(bsf) => (face_visibility[bsf.facei]).then(|| {
-            calc_single_face_boundary(&bsf.vertis, camera_pos, verts, faces[bsf.facei].center())
-        }),
-    }
-}
-fn calc_face_boundary<V: VectorTrait>(camera_pos: V, face: &Face<V>) -> Plane<V> {
-    Plane::from_normal_and_point(
-        if face.two_sided && (face.normal().dot(camera_pos - face.center()) < ZERO) {
-            -face.normal()
-        } else {
-            face.normal()
-        },
-        face.center(),
-    )
 }
 
 fn calc_generic_boundaries<V: VectorTrait>(
@@ -102,12 +68,11 @@ fn calc_generic_boundaries<V: VectorTrait>(
             ConvexBoundarySet(
                 subface_indexes
                     .iter()
-                    .flat_map(|&subface_index| {
-                        calc_subface_boundary(
+                    .map(|&subface_index| {
+                        calc_generic_subface_boundary(
                             camera_pos,
                             &shape.verts,
                             &shape.faces,
-                            face_visibility,
                             &subfaces[subface_index],
                             face_index,
                         )
@@ -124,24 +89,24 @@ fn calc_convex_boundaries<V: VectorTrait>(
     origin: V,
     faces: &[Face<V>],
     face_visibility: &[bool],
-) -> Vec<Plane<V>> {
-    let mut boundaries: Vec<Plane<V>> = Vec::new();
-
-    for subface in &convex.subfaces.0 {
-        let face1 = &faces[subface.faceis.0];
-        let face2 = &faces[subface.faceis.1];
-        if face_visibility[subface.faceis.0] != face_visibility[subface.faceis.1] {
-            let boundary = calc_convex_boundary(face1.plane(), face2.plane(), origin);
-            boundaries.push(boundary);
-        }
-    }
-    //visible faces are boundaries
-    for (face, visible) in faces.iter().zip(face_visibility.iter()) {
-        if *visible {
-            boundaries.push(face.plane().clone())
-        }
-    }
-    boundaries
+) -> ConvexBoundarySet<V> {
+    let n_boundaries = convex.subfaces.0.len() + faces.len();
+    let mut boundaries: Vec<Plane<V>> = Vec::with_capacity(n_boundaries);
+    let subface_boundaries =
+        convex
+            .subfaces
+            .0
+            .iter()
+            .filter_map(|InteriorSubFace { faceis: (fi0, fi1) }| {
+                (face_visibility[*fi0] != face_visibility[*fi1])
+                    .then(|| calc_convex_boundary(faces[*fi0].plane(), faces[*fi1].plane(), origin))
+            });
+    let face_boundaries = faces
+        .iter()
+        .zip(face_visibility.iter())
+        .filter_map(|(face, visible)| (*visible).then(|| calc_face_boundary(origin, face)));
+    boundaries.extend(subface_boundaries.chain(face_boundaries));
+    ConvexBoundarySet(boundaries)
 }
 
 fn calc_convex_boundary<V: VectorTrait>(face1: &Plane<V>, face2: &Plane<V>, origin: V) -> Plane<V> {
@@ -164,7 +129,18 @@ fn calc_convex_boundary<V: VectorTrait>(face1: &Plane<V>, face2: &Plane<V>, orig
     }
 }
 
-fn calc_single_face_boundary<V: VectorTrait>(
+fn calc_face_boundary<V: VectorTrait>(camera_pos: V, face: &Face<V>) -> Plane<V> {
+    Plane::from_normal_and_point(
+        if face.two_sided && (face.normal().dot(camera_pos - face.center()) < ZERO) {
+            -face.normal()
+        } else {
+            face.normal()
+        },
+        face.center(),
+    )
+}
+
+fn calc_boundary_subface_boundary<V: VectorTrait>(
     subface_vertis: &[VertIndex],
     origin: V,
     verts: &[V],
@@ -178,11 +154,49 @@ fn calc_single_face_boundary<V: VectorTrait>(
     )
     .normalize();
     //not sure about the sign here
-    if boundary_normal.dot(face_center - origin) > 0. {
+    if boundary_normal.dot(face_center - origin) > ZERO {
         boundary_normal = -boundary_normal;
     }
     Plane {
         normal: boundary_normal,
         threshold: boundary_normal.dot(origin),
+    }
+}
+
+fn calc_generic_interior_boundary<V: VectorTrait>(
+    camera_pos: V,
+    faces: &[Face<V>],
+    face_index: FaceIndex,
+    interior_subface: &InteriorSubFace,
+) -> Plane<V> {
+    let InteriorSubFace { faceis: (fi0, fi1) } = interior_subface;
+    let convex_boundary =
+        calc_convex_boundary(faces[*fi0].plane(), faces[*fi1].plane(), camera_pos);
+    // make sure the normal is pointing away from the face center
+    if convex_boundary.point_signed_distance(faces[face_index].center()) < ZERO {
+        convex_boundary
+    } else {
+        convex_boundary.flip_normal()
+    }
+}
+
+fn calc_generic_subface_boundary<V: VectorTrait>(
+    camera_pos: V,
+    verts: &[V],
+    faces: &[Face<V>],
+    subface: &SubFace<V>,
+    face_index: FaceIndex,
+) -> Plane<V> {
+    // it's assumed that we've already established that one of the adjoining faces is visile
+    match subface {
+        SubFace::Interior(isf) => {
+            calc_generic_interior_boundary(camera_pos, faces, face_index, isf)
+        }
+        SubFace::Boundary(bsf) => calc_boundary_subface_boundary(
+            &bsf.vertis,
+            camera_pos,
+            verts,
+            faces[bsf.facei].center(),
+        ),
     }
 }

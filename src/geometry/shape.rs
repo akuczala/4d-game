@@ -6,9 +6,7 @@ mod shape_library;
 pub mod single_face;
 pub mod subface;
 
-use self::convex::ConvexSubFace;
 use self::generic::GenericShapeType;
-use self::single_face::BoundarySubFace;
 use self::subface::SubFace;
 
 use super::{line_plane_intersect, Line, Plane, Transform, Transformable};
@@ -64,18 +62,10 @@ impl<V: Copy> ShapeType<V> {
             ShapeType::Generic(GenericShapeType { subfaces, .. }) => subfaces.clone(),
         }
     }
-    pub fn is_face_subface(face_index: FaceIndex, subface: &SubFace<V>) -> bool {
-        match subface {
-            SubFace::Interior(ConvexSubFace { faceis }) => {
-                faceis.0 == face_index || faceis.1 == face_index
-            }
-            SubFace::Boundary(bsf) => bsf.facei == face_index,
-        }
-    }
     pub fn get_face_subfaces(&self, face_index: FaceIndex) -> impl Iterator<Item = SubFace<V>> {
         self.get_subfaces()
             .into_iter()
-            .filter(move |sf| Self::is_face_subface(face_index, sf))
+            .filter(move |sf| sf.is_face_subface(face_index))
     }
     pub fn to_generic(&self) -> Self {
         let subfaces = self.get_subfaces();

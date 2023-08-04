@@ -1,11 +1,9 @@
-use super::convex::ConvexSubFace;
 use super::face::FaceBuilder;
 use super::generic::GenericShapeType;
-use super::subface::{self, SubFace};
+use super::subface::{self, BoundarySubFace, InteriorSubFace, SubFace};
 use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, SingleFace, VertIndex};
 use crate::constants::ZERO;
 use crate::draw::{Texture, TextureMapping};
-use crate::geometry::shape::single_face::BoundarySubFace;
 use crate::geometry::{Plane, Transformable};
 use crate::graphics::colors::*;
 use crate::vector::Field;
@@ -181,7 +179,7 @@ pub fn reindex_faces<V: Copy>(
     subfaces
         .iter()
         .map(|subface: &SubFace<V>| match subface {
-            SubFace::Interior(ConvexSubFace { faceis }) => SubFace::Interior(ConvexSubFace {
+            SubFace::Interior(InteriorSubFace { faceis }) => SubFace::Interior(InteriorSubFace {
                 faceis: (
                     *index_map.get(&faceis.0).unwrap(),
                     *index_map.get(&faceis.1).unwrap(),
@@ -207,10 +205,10 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
         .get_subfaces()
         .into_iter()
         .flat_map(|subface| {
-            if ShapeType::is_face_subface(face_index, &subface) {
+            if subface.is_face_subface(face_index) {
                 match subface {
                     SubFace::Boundary(_) => None,
-                    SubFace::Interior(ConvexSubFace { faceis }) => {
+                    SubFace::Interior(InteriorSubFace { faceis }) => {
                         let other_facei = if faceis.0 == face_index {
                             faceis.1
                         } else {

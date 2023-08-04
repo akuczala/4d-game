@@ -13,7 +13,11 @@ use crate::{
     vector::{Field, VectorTrait},
 };
 
-use super::{convex::ConvexSubFace, face, subface::SubFace, Face, FaceIndex, ShapeTypeTrait};
+use super::{
+    face,
+    subface::{InteriorSubFace, SubFace},
+    Face, FaceIndex, ShapeTypeTrait,
+};
 
 fn add_pair(
     map: &mut HashMap<FaceIndex, HashSet<usize>>,
@@ -39,7 +43,7 @@ fn build_face_subface_map<V>(subfaces: &[SubFace<V>]) -> HashMap<FaceIndex, Hash
     let mut face_subface_map: HashMap<FaceIndex, HashSet<usize>> = HashMap::new();
     for (subface_index, subface) in subfaces.iter().enumerate() {
         match subface {
-            SubFace::Interior(ConvexSubFace { faceis }) => {
+            SubFace::Interior(InteriorSubFace { faceis }) => {
                 add_pair(&mut face_subface_map, faceis.0, subface_index);
                 add_pair(&mut face_subface_map, faceis.1, subface_index);
             }
@@ -139,7 +143,7 @@ pub fn subface_plane<V: VectorTrait>(
 fn interior_subface_plane<V: VectorTrait>(
     shape_faces: &[Face<V>],
     face_index: FaceIndex,
-    interior_subface: &ConvexSubFace,
+    interior_subface: &InteriorSubFace,
 ) -> Plane<V> {
     let (face_0, face_1) = interior_subface.faceis;
     let plane = shape_faces[if face_index == face_0 { face_1 } else { face_0 }]

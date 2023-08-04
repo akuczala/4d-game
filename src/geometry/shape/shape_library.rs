@@ -69,7 +69,8 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     let cube = ShapeBuilder::<V>::build_cube(1.0).build();
     let sub_cube = ShapeBuilder::<V::SubV>::build_cube(1.0).build();
     let inverted_cube = invert_normals(&cube);
-    let open_cube = remove_face(inverted_cube.clone(), inverted_cube.faces.len() - 1);
+    let open_cube = remove_face(cube.clone(), cube.faces.len() - 1);
+    let open_inverted_cube = remove_face(inverted_cube.clone(), inverted_cube.faces.len() - 1);
     //let open_cube = remove_face(open_cube.clone(), open_cube.faces.len() - 2);
     //let open_cube = remove_face(open_cube.clone(), open_cube.faces.len() - 1);
     //inverted_cube.faces[0].geometry.plane.normal = -inverted_cube.faces[0].geometry.plane.normal;
@@ -87,5 +88,6 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     );
     ref_shapes.insert(ShapeLabel::from_str(INVERTED_CUBE_LABEL_STR), inverted_cube);
     ref_shapes.insert(ShapeLabel::from_str("OpenCube"), open_cube);
+    ref_shapes.insert(ShapeLabel::from_str("OpenInvertedCube"), open_inverted_cube);
     ref_shapes
 }

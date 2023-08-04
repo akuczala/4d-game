@@ -17,6 +17,7 @@ use std::marker::PhantomData;
 use self::bball::BBall;
 use self::boundaries::ConvexBoundarySet;
 
+// TODO: split into smaller modules
 pub struct ClipState<V> {
     //pub in_front : Vec<Vec<bool>>,
     //pub separators : Vec<Vec<Separator<V>>>,

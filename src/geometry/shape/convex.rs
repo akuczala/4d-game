@@ -6,28 +6,21 @@ use crate::geometry::{line_plane_intersect, Line, Plane};
 use crate::tests::utils::print_grid;
 use crate::vector::{Field, VectorTrait};
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct ConvexSubFace {
-    pub faceis: (FaceIndex, FaceIndex),
-}
 use std::fmt;
-impl fmt::Display for ConvexSubFace {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SubFace({},{})", self.faceis.0, self.faceis.1)
-    }
-}
+
+use super::subface::InteriorSubFace;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ConvexSubfaces(pub Vec<ConvexSubFace>);
+pub struct ConvexSubfaces(pub Vec<InteriorSubFace>);
 impl ConvexSubfaces {
     //find indices of (d-1) faces that are joined by a (d-2) edge
     fn calc_subfaces<V: VectorTrait>(faces: &[Face<V>]) -> ConvexSubfaces {
-        let mut subfaces: Vec<ConvexSubFace> = Vec::new();
+        let mut subfaces: Vec<InteriorSubFace> = Vec::new();
         if V::DIM == 2 {
             for i in 0..faces.len() {
                 for j in 0..i {
                     if count_common_verts(&faces[i], &faces[j]) >= 1 {
-                        subfaces.push(ConvexSubFace { faceis: (i, j) })
+                        subfaces.push(InteriorSubFace { faceis: (i, j) })
                     }
                 }
             }
@@ -41,7 +34,7 @@ impl ConvexSubfaces {
         for i in 0..faces.len() {
             for j in 0..i {
                 if count_common_edges(&faces[i], &faces[j]) >= n_target {
-                    subfaces.push(ConvexSubFace { faceis: (i, j) })
+                    subfaces.push(InteriorSubFace { faceis: (i, j) })
                 }
             }
         }
