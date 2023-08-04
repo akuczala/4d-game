@@ -13,7 +13,7 @@ pub use crate::draw::clipping::{bball::BBall, ClipState, ShapeClipState};
 pub use crate::draw::DrawLineList;
 pub use crate::geometry::{
     shape::RefShapes,
-    shape::{Convex, Shape, ShapeLabel, ShapeType, ShapeTypeTrait, SingleFace},
+    shape::{Convex, Shape, ShapeLabel, ShapeType, SingleFace},
     transform::{Transform, Transformable},
 };
 pub use crate::player::{Cursor, Heading, MaybeSelected, MaybeTarget, Selected};

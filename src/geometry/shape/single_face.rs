@@ -50,18 +50,12 @@ impl<V: VectorTrait> SingleFace<V> {
         line: &Line<V>,
         visible_only: bool,
         face_visibility: &[bool],
-    ) -> Vec<V> {
-        //impl std::iter::Iterator<Item=Option<V>> {
-        let mut out_points = Vec::<V>::new();
+    ) -> Option<V> {
         let face = &shape.faces[0];
-        if !visible_only || face_visibility[0] {
-            if let Some(p) = line_plane_intersect(line, face.plane()) {
-                if SingleFace::subface_normal_distance(subfaces, p).1 < 0.0 {
-                    out_points.push(p)
-                }
-            }
-        }
-        out_points
+        (!visible_only || face_visibility[0])
+            .then(|| line_plane_intersect(line, face.plane()))
+            .flatten()
+            .and_then(|p| (SingleFace::subface_normal_distance(subfaces, p).1 < 0.0).then_some(p))
     }
     // returns distance to nearest subface plane
     pub fn subface_normal_distance(subfaces: &SubFaces<V>, pos: V) -> (V, Field) {

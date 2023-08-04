@@ -16,7 +16,7 @@ use crate::{
 use super::{
     face,
     subface::{InteriorSubFace, SubFace},
-    Face, FaceIndex, ShapeTypeTrait,
+    Face, FaceIndex,
 };
 
 fn add_pair(
@@ -73,32 +73,35 @@ impl<V: Clone> GenericShapeType<V> {
     }
 }
 impl<V: VectorTrait> GenericShapeType<V> {
-    pub fn line_intersect(
-        &self,
-        faces: &[Face<V>],
-        line: &Line<V>,
+    pub fn line_intersect<'a>(
+        &'a self,
+        faces: &'a [Face<V>],
+        line: &'a Line<V>,
         visible_only: bool,
-        face_visibility: &[bool],
-    ) -> Vec<V> {
+        face_visibility: &'a [bool],
+    ) -> impl Iterator<Item = V> + 'a {
         faces
             .iter()
             .zip(face_visibility.iter())
             .enumerate()
-            .filter_map(|(face_index, (face, visible))| {
+            .filter_map(move |(face_index, (face, visible))| {
                 (!visible_only || *visible)
                     .then(|| line_plane_intersect(line, face.plane()))
                     .flatten()
                     .and_then(|p| {
-                        (max_subface_dist(faces, face_index, self.get_face_subfaces(face_index), p)
-                            < 0.0)
+                        (max_subface_signed_dist(
+                            faces,
+                            face_index,
+                            self.get_face_subfaces(face_index),
+                            p,
+                        ) < 0.0)
                             .then_some(p)
                     })
             })
-            .collect()
     }
 }
 
-pub fn max_subface_dist<'a, V, I>(
+pub fn max_subface_signed_dist<'a, V, I>(
     shape_faces: &[Face<V>],
     face_index: FaceIndex,
     subfaces: I,
@@ -114,6 +117,7 @@ where
     .unwrap()
 }
 
+/// Signed distance to the subface's plane, relative to face_index (plane faces away from face_index face)
 pub fn subface_signed_distance<V: VectorTrait>(
     shape_faces: &[Face<V>],
     face_index: FaceIndex,
@@ -139,14 +143,13 @@ pub fn subface_plane<V: VectorTrait>(
     }
 }
 
-/// return plane of adjoining face
+/// return plane of adjoining face (the one that is not face_index)
 fn interior_subface_plane<V: VectorTrait>(
     shape_faces: &[Face<V>],
     face_index: FaceIndex,
     interior_subface: &InteriorSubFace,
 ) -> Plane<V> {
-    let (face_0, face_1) = interior_subface.faceis;
-    let plane = shape_faces[if face_index == face_0 { face_1 } else { face_0 }]
+    let plane = shape_faces[interior_subface.other_face_index(face_index).unwrap()]
         .plane()
         .clone();
     if plane.point_signed_distance(shape_faces[face_index].center()) < ZERO {

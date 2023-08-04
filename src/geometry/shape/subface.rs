@@ -7,7 +7,7 @@ use crate::{
     vector::{barycenter_iter, VectorTrait},
 };
 
-use super::{FaceIndex, VertIndex};
+use super::{face, FaceIndex, VertIndex};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum SubFace<V> {
@@ -31,6 +31,15 @@ pub struct InteriorSubFace {
 impl InteriorSubFace {
     pub fn is_face_subface(&self, face_index: FaceIndex) -> bool {
         self.faceis.0 == face_index || self.faceis.1 == face_index
+    }
+
+    /// returns other face index if face_index belongs to subface, otherwise None
+    pub fn other_face_index(&self, face_index: FaceIndex) -> Option<FaceIndex> {
+        match face_index {
+            _ if face_index == self.faceis.0 => Some(self.faceis.1),
+            _ if face_index == self.faceis.1 => Some(self.faceis.0),
+            _ => None,
+        }
     }
 }
 impl fmt::Display for InteriorSubFace {

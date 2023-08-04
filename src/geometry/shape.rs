@@ -11,6 +11,7 @@ use self::subface::SubFace;
 
 use super::{line_plane_intersect, Line, Plane, Transform, Transformable};
 use crate::graphics::colors::Color;
+use crate::utils::BranchIterator;
 use crate::vector;
 use crate::vector::{barycenter, Field, VectorTrait};
 pub use convex::Convex;
@@ -23,27 +24,7 @@ use crate::geometry::transform::Scaling;
 use std::fmt::{self, Display};
 
 pub use shape_library::*;
-pub trait ShapeTypeTrait<V: VectorTrait> {
-    fn line_intersect(
-        &self,
-        shape: &Shape<V>,
-        line: &Line<V>,
-        visible_only: bool,
-        face_visibility: &[bool],
-    ) -> Vec<V>;
-}
 
-// TODO: rework how ShapeType, Shape, Convex, and SingleFace work.
-// do we really need BOTH a ShapeType + Shape for each entity? Can we combine these into a single ADT?
-// is there a more general struct we could use to capture both cases?
-
-//TODO: add a third type / replace singleface with struct representing an adhoc collection of (convex) faces
-// this would have, in general, a combination of both subface types. Subfaces connecting faces would be of the convex type,
-// and subfaces on the boundary would be of the single face type
-
-// so in general, the maximum data needed for a subface is
-// the 1 or 2 faces it belongs to
-// the normal
 #[derive(Clone, Serialize, Deserialize)]
 pub enum ShapeType<V> {
     Convex(convex::Convex),
@@ -51,6 +32,7 @@ pub enum ShapeType<V> {
     Generic(GenericShapeType<V>),
 }
 impl<V: Copy> ShapeType<V> {
+    // TODO: find a way to return refs here or don't use
     pub fn get_subfaces(&self) -> Vec<SubFace<V>> {
         match self {
             ShapeType::Convex(Convex { subfaces }) => {
@@ -93,28 +75,37 @@ impl<V: VectorTrait> ShapeType<V> {
     }
 }
 
-impl<V: VectorTrait> ShapeTypeTrait<V> for ShapeType<V> {
-    fn line_intersect(
-        &self,
-        shape: &Shape<V>,
-        line: &Line<V>,
+impl<V: VectorTrait> ShapeType<V> {
+    pub fn line_intersect<'a>(
+        &'a self,
+        shape: &'a Shape<V>,
+        line: &'a Line<V>,
         visible_only: bool,
-        face_visibility: &[bool],
-    ) -> Vec<V> {
+        face_visibility: &'a [bool],
+    ) -> impl Iterator<Item = V> + 'a {
         match self {
-            ShapeType::Convex(_) => {
-                Convex::line_intersect(shape, line, visible_only, face_visibility)
-            }
-            ShapeType::SingleFace(single_face) => SingleFace::line_intersect(
-                &single_face.subfaces,
+            ShapeType::Convex(_) => BranchIterator::Option1(Convex::line_intersect(
                 shape,
                 line,
                 visible_only,
                 face_visibility,
+            )),
+            ShapeType::SingleFace(single_face) => BranchIterator::Option2(
+                SingleFace::line_intersect(
+                    &single_face.subfaces,
+                    shape,
+                    line,
+                    visible_only,
+                    face_visibility,
+                )
+                .into_iter(),
             ),
-            ShapeType::Generic(g) => {
-                g.line_intersect(&shape.faces, line, visible_only, face_visibility)
-            }
+            ShapeType::Generic(g) => BranchIterator::Option3(g.line_intersect(
+                &shape.faces,
+                line,
+                visible_only,
+                face_visibility,
+            )),
         }
     }
 }

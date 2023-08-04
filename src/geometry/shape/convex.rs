@@ -58,21 +58,20 @@ impl Convex {
             .all(|p| p.point_signed_distance(point) < distance)
     }
     //returns points of intersection with shape
-    pub fn line_intersect<V: VectorTrait>(
-        shape: &Shape<V>,
-        line: &Line<V>,
+    pub fn line_intersect<'a, V: VectorTrait>(
+        shape: &'a Shape<V>,
+        line: &'a Line<V>,
         visible_only: bool,
-        face_visibility: &[bool],
-    ) -> Vec<V> {
+        face_visibility: &'a [bool],
+    ) -> impl Iterator<Item = V> + 'a {
         //for (face, _) in shape
         shape
             .faces
             .iter()
             .zip(face_visibility.iter())
-            .filter(|(_, &visible)| !visible_only || visible)
+            .filter(move |(_, &visible)| !visible_only || visible)
             .flat_map(|(face, _)| line_plane_intersect(line, face.plane()))
             .filter(|p| crate::vector::is_close(shape.point_signed_distance(*p), 0.))
-            .collect_vec()
     }
 }
 
