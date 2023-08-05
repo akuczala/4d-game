@@ -36,10 +36,10 @@ impl<V: Copy> ShapeType<V> {
     pub fn get_subfaces(&self) -> Vec<SubFace<V>> {
         match self {
             ShapeType::Convex(Convex { subfaces }) => {
-                subfaces.0.iter().cloned().map(SubFace::Interior).collect()
+                subfaces.iter().cloned().map(SubFace::Interior).collect()
             }
             ShapeType::SingleFace(SingleFace { subfaces }) => {
-                subfaces.0.iter().cloned().map(SubFace::Boundary).collect()
+                subfaces.iter().cloned().map(SubFace::Boundary).collect()
             }
             ShapeType::Generic(GenericShapeType { subfaces, .. }) => subfaces.clone(),
         }
@@ -91,8 +91,7 @@ impl<V: VectorTrait> ShapeType<V> {
                 face_visibility,
             )),
             ShapeType::SingleFace(single_face) => BranchIterator::Option2(
-                SingleFace::line_intersect(
-                    &single_face.subfaces,
+                single_face.line_intersect(
                     shape,
                     line,
                     visible_only,

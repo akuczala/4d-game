@@ -2,15 +2,17 @@ use super::face::FaceBuilder;
 use super::generic::GenericShapeType;
 use super::subface::{self, BoundarySubFace, InteriorSubFace, SubFace};
 use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, SingleFace, VertIndex};
+use crate::components::Transform;
 use crate::constants::ZERO;
 use crate::draw::{Texture, TextureMapping};
+use crate::geometry::transform::Scaling;
 use crate::geometry::{Plane, Transformable};
 use crate::graphics::colors::*;
 use crate::vector::Field;
 use crate::vector::PI;
 use crate::vector::{barycenter, Vec2, Vec3, Vec4};
 use crate::vector::{VecIndex, VectorTrait};
-use itertools::Itertools;
+use itertools::{Itertools, multizip};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
@@ -252,9 +254,14 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
 pub fn remove_faces<V: VectorTrait>(_shape: Shape<V>, _faceis: Vec<FaceIndex>) -> Shape<V> {
     unimplemented!()
 }
-use crate::geometry::transform::Scaling;
-use crate::geometry::Transform;
-use itertools::multizip;
+
+/// prune verts and edges that are no longer part of a face
+pub fn prune_orphans<V: VectorTrait>(shape: &mut Shape<V>) {
+    let used_edgeis = shape.faces.iter().flat_map(|face| face.edgeis.iter());
+    let used_vertis = shape.faces.iter().flat_map(|face| face.vertis.iter());
+    shape.verts = used_vertis.map(|&vi| shape.verts[vi]).collect();
+    shape.edges = used_edgeis.map(|&ei| shape.edges[ei].clone()).collect();
+}
 
 //builds 4d duoprism
 //n_circ points is a length two list of # points around each perp circle

@@ -90,12 +90,11 @@ fn calc_convex_boundaries<V: VectorTrait>(
     faces: &[Face<V>],
     face_visibility: &[bool],
 ) -> ConvexBoundarySet<V> {
-    let n_boundaries = convex.subfaces.0.len() + faces.len();
+    let n_boundaries = convex.subfaces.len() + faces.len();
     let mut boundaries: Vec<Plane<V>> = Vec::with_capacity(n_boundaries);
     let subface_boundaries =
         convex
             .subfaces
-            .0
             .iter()
             .filter_map(|InteriorSubFace { faceis: (fi0, fi1) }| {
                 (face_visibility[*fi0] != face_visibility[*fi1])

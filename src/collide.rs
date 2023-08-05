@@ -237,7 +237,7 @@ pub fn colliding_faces<V: VectorTrait>(
         },
         ShapeType::SingleFace(sf) => {
             let face_plane_dist = shape.faces[0].plane().point_signed_distance(player_pos);
-            let max_subface_dist = SingleFace::subface_normal_distance(&sf.subfaces, player_pos).1;
+            let max_subface_dist = sf.subface_normal_distance(player_pos).1;
             if (face_plane_dist > ZERO)
                 && (face_plane_dist < collide_distance)
                 && (max_subface_dist < collide_distance)

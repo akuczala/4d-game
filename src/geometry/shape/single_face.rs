@@ -14,11 +14,8 @@ use crate::tests::utils::{color_number, print_grid};
 use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct SubFaces<V>(pub Vec<BoundarySubFace<V>>);
-
-#[derive(Clone, Serialize, Deserialize)]
 pub struct SingleFace<V> {
-    pub subfaces: SubFaces<V>,
+    pub subfaces: Vec<BoundarySubFace<V>>
 }
 impl<V: VectorTrait> SingleFace<V> {
     pub fn new(
@@ -28,24 +25,23 @@ impl<V: VectorTrait> SingleFace<V> {
         face_index: FaceIndex,
     ) -> Self {
         Self {
-            subfaces: SubFaces(
+            subfaces: 
                 subface_vertis
                     .iter()
                     .map(|vertis| {
                         BoundarySubFace::new(vertis, shape_verts, face_normal, face_index)
                     })
                     .collect(),
-            ),
         }
     }
     pub fn update(&mut self, shape_vers: &[V], shape_faces: &[Face<V>]) {
-        for subface in self.subfaces.0.iter_mut() {
+        for subface in self.subfaces.iter_mut() {
             subface.update(shape_vers, shape_faces[subface.facei].normal())
         }
     }
     //returns points of intersection with shape
     pub fn line_intersect(
-        subfaces: &SubFaces<V>,
+        &self,
         shape: &Shape<V>,
         line: &Line<V>,
         visible_only: bool,
@@ -55,12 +51,12 @@ impl<V: VectorTrait> SingleFace<V> {
         (!visible_only || face_visibility[0])
             .then(|| line_plane_intersect(line, face.plane()))
             .flatten()
-            .and_then(|p| (SingleFace::subface_normal_distance(subfaces, p).1 < 0.0).then_some(p))
+            .and_then(|p| (self.subface_normal_distance( p).1 < 0.0).then_some(p))
     }
     // returns distance to nearest subface plane
-    pub fn subface_normal_distance(subfaces: &SubFaces<V>, pos: V) -> (V, Field) {
+    pub fn subface_normal_distance(&self, pos: V) -> (V, Field) {
         let (closest_subshape_plane, distance) =
-            Plane::point_normal_distance(pos, subfaces.0.iter().map(|sf| &sf.plane)).unwrap();
+            Plane::point_normal_distance(pos, self.subfaces.iter().map(|sf| &sf.plane)).unwrap();
         (closest_subshape_plane.normal, distance)
     }
 }
@@ -113,7 +109,7 @@ fn test_subface_planes() {
     };
     type V = Vec3;
     let expected_normals = vec![-V::one_hot(0), -V::one_hot(1), V::one_hot(1), V::one_hot(0)];
-    for (subface, &expected_normal) in single_face.subfaces.0.iter().zip(expected_normals.iter()) {
+    for (subface, &expected_normal) in single_face.subfaces.iter().zip(expected_normals.iter()) {
         assert!(
             is_close(subface.plane.threshold, 1.0),
             "th={}",
@@ -136,7 +132,7 @@ fn test_subface_planes() {
         Plane::from_normal_and_point(V::new(-1.0, 2.0, 0.0).normalize(), V::new(0.0, 0.5, 0.0)),
         Plane::from_normal_and_point(V::new(-1.0, -2.0, 0.0).normalize(), V::new(0.0, -0.5, 0.0)),
     ];
-    for (subface, expected_plane) in single_face.subfaces.0.iter().zip(expected_planes.iter()) {
+    for (subface, expected_plane) in single_face.subfaces.iter().zip(expected_planes.iter()) {
         assert!(
             is_close(subface.plane.threshold, expected_plane.threshold),
             "th={}",
@@ -158,11 +154,11 @@ fn test_subface_dist() {
         _ => panic!("Expected single face variant"),
     };
     let (n, d) =
-        SingleFace::subface_normal_distance(&single_face.subfaces, Vec3::new(0.5, 0.0, 0.0));
+        SingleFace::subface_normal_distance(&single_face, Vec3::new(0.5, 0.0, 0.0));
     assert!(Vec3::is_close(n, Vec3::one_hot(0)), "n={}", n);
     assert!(is_close(d, -0.5), "d={}", d);
     let (n, d) =
-        SingleFace::subface_normal_distance(&single_face.subfaces, Vec3::new(0.5, 2.0, 0.0));
+        SingleFace::subface_normal_distance(&single_face, Vec3::new(0.5, 2.0, 0.0));
     assert!(Vec3::is_close(n, Vec3::one_hot(1)), "n={}", n);
     assert!(is_close(d, 1.0), "d={}", d);
 }
