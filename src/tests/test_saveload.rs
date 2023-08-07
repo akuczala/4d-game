@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use specs::{prelude::*, saveload::SimpleMarkerAllocator, world};
+use specs::prelude::*;
 
 use crate::{
     build_level::build_level,
@@ -7,26 +7,16 @@ use crate::{
     config::{load_config, Config, LevelConfig},
     engine::get_engine_dispatcher_builder,
     geometry::shape::build_shape_library,
-    saveload::{load_level_from_file, save_level_to_file, Save, SaveMarker},
+    saveload::{load_level_from_file, save_level_to_file},
+    tests::new_world,
     vector::Vec3,
 };
 
 type V = Vec3;
 
-// copied from tests because i don't know how modules work
-pub fn new_world() -> World {
-    let mut world = World::new();
-    world.register::<SaveMarker>();
-    world.insert(load_config());
-    world.insert::<SimpleMarkerAllocator<Save>>(SimpleMarkerAllocator::default());
-    let mut dispatcher = get_engine_dispatcher_builder::<Vec3>().build();
-    dispatcher.setup(&mut world);
-    world
-}
-
 #[test]
 fn test_saveload() {
-    let mut world = new_world();
+    let mut world = new_world::<V>();
     let ref_shapes = build_shape_library::<V>();
 
     let mut config = world.fetch_mut::<Config>();
@@ -37,7 +27,7 @@ fn test_saveload() {
     save_level_to_file::<V>("./test_save_level.ron", &mut world).unwrap();
     let initial_count = world.read_component::<StaticCollider>().count();
 
-    let mut deserialized_world = new_world();
+    let mut deserialized_world = new_world::<V>();
     let ref_shapes = build_shape_library::<V>();
     load_level_from_file(
         "./test_save_level.ron",

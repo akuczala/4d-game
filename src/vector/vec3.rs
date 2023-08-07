@@ -7,12 +7,10 @@ use super::Mat3;
 use crate::vector::{Field, Vec2, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct Vec3 {
-    arr: [Field; 3],
-}
+pub struct Vec3([Field; 3]);
 impl Vec3 {
     pub fn new(v0: Field, v1: Field, v2: Field) -> Vec3 {
-        Vec3 { arr: [v0, v1, v2] }
+        Vec3([v0, v1, v2])
     }
 }
 impl Index<VecIndex> for Vec3 {
@@ -30,9 +28,9 @@ impl Index<VecIndex> for Vec3 {
 impl IndexMut<VecIndex> for Vec3 {
     fn index_mut(&mut self, index: VecIndex) -> &mut Self::Output {
         match index {
-            0 | -3 => &mut self.arr[0],
-            1 | -2 => &mut self.arr[1],
-            2 | -1 => &mut self.arr[2],
+            0 | -3 => &mut self.0[0],
+            1 | -2 => &mut self.0[1],
+            2 | -1 => &mut self.0[2],
             _ => panic!("Invalid index {} for Vec3", index),
         }
     }
@@ -85,7 +83,7 @@ impl VectorTrait for Vec3 {
     const DIM: VecIndex = 3;
 
     fn from_arr(arr: &Self::Arr) -> Self {
-        Self { arr: *arr }
+        Self(*arr)
     }
     fn from_iter(mut iter: Iter<Field>) -> Self {
         Vec3::new(
@@ -95,7 +93,7 @@ impl VectorTrait for Vec3 {
         )
     }
     fn get_arr(&self) -> &[Field; 3] {
-        &self.arr
+        &self.0
     }
     fn iter(&self) -> std::slice::Iter<Field> {
         self.get_arr().iter()

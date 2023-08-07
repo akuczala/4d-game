@@ -8,12 +8,10 @@ use super::Mat2;
 use crate::vector::{Field, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct Vec2 {
-    pub arr: [Field; 2],
-}
+pub struct Vec2([Field; 2]);
 impl Vec2 {
     pub fn new(v0: Field, v1: Field) -> Vec2 {
-        Vec2 { arr: [v0, v1] }
+        Vec2([v0, v1])
     }
 }
 impl Index<VecIndex> for Vec2 {
@@ -32,8 +30,8 @@ impl Index<VecIndex> for Vec2 {
 impl IndexMut<VecIndex> for Vec2 {
     fn index_mut(&mut self, index: VecIndex) -> &mut Self::Output {
         match index {
-            0 | -2 => &mut self.arr[0],
-            1 | -1 => &mut self.arr[1],
+            0 | -2 => &mut self.0[0],
+            1 | -1 => &mut self.0[1],
             _ => panic!("Invalid index {} for Vec2", index),
         }
     }
@@ -86,7 +84,7 @@ impl VectorTrait for Vec2 {
     const DIM: VecIndex = 2;
 
     fn from_arr(arr: &Self::Arr) -> Self {
-        Self { arr: *arr }
+        Self(*arr)
     }
     fn from_iter(mut iter: Iter<Field>) -> Self {
         Vec2::new(
@@ -95,7 +93,7 @@ impl VectorTrait for Vec2 {
         )
     }
     fn get_arr(&self) -> &[Field; 2] {
-        &self.arr
+        &self.0
     }
     fn iter(&self) -> std::slice::Iter<Field> {
         self.get_arr().iter()

@@ -1,7 +1,6 @@
 mod dispatcher;
 pub use dispatcher::get_engine_dispatcher_builder;
 use serde::de::DeserializeOwned;
-use specs::saveload; // TODO: revert to private
 
 use crate::collide;
 use crate::config::load_config;
@@ -10,9 +9,6 @@ use crate::ecs_utils::Componentable;
 use crate::graphics::DefaultGraphics;
 use crate::graphics::GraphicsTrait;
 use crate::input::ShapeManipulationState;
-use crate::saveload::Save;
-use crate::saveload::SaveMarker;
-use crate::saveload::SaveMarkerAllocator;
 use crate::vector::MatrixTrait;
 use crate::FPSTimer;
 use glium::Display;
@@ -56,10 +52,6 @@ where
         maybe_gui: Option<crate::gui::System>,
     ) -> Self {
         let mut world = World::new();
-
-        // TODO: rm these when they are registered as part of a save/load system
-        world.register::<SaveMarker>();
-        world.insert::<SaveMarkerAllocator>(SaveMarkerAllocator::default());
 
         let mut dispatcher = get_engine_dispatcher_builder::<V>().build();
 

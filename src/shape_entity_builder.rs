@@ -6,7 +6,6 @@ use crate::draw::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::{buildshapes, RefShapes};
 use crate::graphics::colors::Color;
-use crate::saveload::SaveMarker;
 use crate::vector::VectorTrait;
 
 use crate::geometry::transform::Scaling;
@@ -92,7 +91,6 @@ where
             .with(shape_texture)
             .with(ShapeClipState::<V>::default())
             .maybe_with(static_collider)
-            .marked::<SaveMarker>()
     }
     pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>) {
         let Self {
@@ -113,8 +111,6 @@ where
         if let Some(c) = static_collider {
             lazy.insert(e, c)
         };
-
-        // TODO: mark with SaveMarker
     }
     pub fn load(self, e: Entity, lazy: &Read<LazyUpdate>) {
         let Self {
