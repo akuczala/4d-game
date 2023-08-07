@@ -1,5 +1,5 @@
 [fuzz_lines]
-face_num = 200
+face_num = 2
 sky_num = 1000
 horizon_num = 500
 
@@ -11,11 +11,14 @@ focal = 1.0
 spin_speed = 0.02
 
 [scene]
-grid = true
-sky = true
-horizon = true
+grid = false
+sky = false
+horizon = false
 stars = true
-level = "Test3" # Supported: Level1, Empty, Test1, Test2, Test3
+level = "Load" # Supported: Level1, Empty, Test1, Test2, Test3, Load
+
+[scene.load]
+path = "./test_save_level.ron"
 
 [editor]
 enabled = true

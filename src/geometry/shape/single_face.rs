@@ -15,7 +15,7 @@ use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SingleFace<V> {
-    pub subfaces: Vec<BoundarySubFace<V>>
+    pub subfaces: Vec<BoundarySubFace<V>>,
 }
 impl<V: VectorTrait> SingleFace<V> {
     pub fn new(
@@ -25,13 +25,10 @@ impl<V: VectorTrait> SingleFace<V> {
         face_index: FaceIndex,
     ) -> Self {
         Self {
-            subfaces: 
-                subface_vertis
-                    .iter()
-                    .map(|vertis| {
-                        BoundarySubFace::new(vertis, shape_verts, face_normal, face_index)
-                    })
-                    .collect(),
+            subfaces: subface_vertis
+                .iter()
+                .map(|vertis| BoundarySubFace::new(vertis, shape_verts, face_normal, face_index))
+                .collect(),
         }
     }
     pub fn update(&mut self, shape_vers: &[V], shape_faces: &[Face<V>]) {
@@ -51,7 +48,7 @@ impl<V: VectorTrait> SingleFace<V> {
         (!visible_only || face_visibility[0])
             .then(|| line_plane_intersect(line, face.plane()))
             .flatten()
-            .and_then(|p| (self.subface_normal_distance( p).1 < 0.0).then_some(p))
+            .and_then(|p| (self.subface_normal_distance(p).1 < 0.0).then_some(p))
     }
     // returns distance to nearest subface plane
     pub fn subface_normal_distance(&self, pos: V) -> (V, Field) {
@@ -153,12 +150,10 @@ fn test_subface_dist() {
         ShapeType::SingleFace(f) => f,
         _ => panic!("Expected single face variant"),
     };
-    let (n, d) =
-        SingleFace::subface_normal_distance(&single_face, Vec3::new(0.5, 0.0, 0.0));
+    let (n, d) = SingleFace::subface_normal_distance(&single_face, Vec3::new(0.5, 0.0, 0.0));
     assert!(Vec3::is_close(n, Vec3::one_hot(0)), "n={}", n);
     assert!(is_close(d, -0.5), "d={}", d);
-    let (n, d) =
-        SingleFace::subface_normal_distance(&single_face, Vec3::new(0.5, 2.0, 0.0));
+    let (n, d) = SingleFace::subface_normal_distance(&single_face, Vec3::new(0.5, 2.0, 0.0));
     assert!(Vec3::is_close(n, Vec3::one_hot(1)), "n={}", n);
     assert!(is_close(d, 1.0), "d={}", d);
 }

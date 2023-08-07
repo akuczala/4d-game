@@ -11,10 +11,9 @@ use crate::vector::{Field, VecIndex, VectorTrait};
 use crate::graphics::colors::*;
 
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
-
-// keep VectorTrait bound for now...
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ShapeTexture<U> {
     pub face_textures: Vec<FaceTexture<U>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
@@ -59,7 +58,7 @@ impl<U: Clone> ShapeTexture<U> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct FaceTexture<U> {
     pub texture: Texture<U>,
     pub texture_mapping: Option<TextureMapping>,
@@ -103,7 +102,7 @@ pub fn draw_face_texture<V: VectorTrait>(
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum Texture<V> {
     DefaultLines { color: Color },
     Lines { lines: Vec<Line<V>>, color: Color },
@@ -240,7 +239,7 @@ impl<V: VectorTrait> Texture<V> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TextureMapping {
     pub frame_vertis: Vec<VertIndex>,
     pub origin_verti: VertIndex,

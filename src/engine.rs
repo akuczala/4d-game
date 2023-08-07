@@ -1,5 +1,6 @@
 mod dispatcher;
 pub use dispatcher::get_engine_dispatcher_builder;
+use serde::de::DeserializeOwned;
 use specs::saveload; // TODO: revert to private
 
 use crate::collide;
@@ -233,9 +234,9 @@ where
 
 impl<V, G> EngineD<V, G>
 where
-    V: VectorTrait + Componentable,
-    V::SubV: Componentable,
-    V::M: Componentable,
+    V: VectorTrait + Componentable + DeserializeOwned,
+    V::SubV: Componentable + DeserializeOwned,
+    V::M: Componentable + DeserializeOwned,
     G: GraphicsTrait,
 {
     fn init(display: &Display, gui: Option<crate::gui::System>) -> Self {

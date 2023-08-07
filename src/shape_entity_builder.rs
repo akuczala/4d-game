@@ -72,6 +72,7 @@ where
     V::SubV: Componentable,
     V::M: Componentable,
 {
+    // TODO: use macro to specify components in both methods?
     pub fn build(self, world: &mut World) -> EntityBuilder {
         let Self {
             mut shape,
@@ -114,6 +115,20 @@ where
         };
 
         // TODO: mark with SaveMarker
+    }
+    pub fn load(self, e: Entity, lazy: &Read<LazyUpdate>) {
+        let Self {
+            mut shape,
+            shape_label: _,
+            transformation,
+            shape_texture: _,
+            static_collider: _,
+        } = self;
+        shape.update_from_ref(&shape.clone(), &transformation);
+        lazy.insert(e, shape.calc_bbox());
+        lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
+        lazy.insert(e, shape);
+        lazy.insert(e, ShapeClipState::<V>::default());
     }
 }
 impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilderV<V> {

@@ -12,7 +12,7 @@ pub use texture::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 
 use crate::components::*;
 use crate::config::ViewConfig;
-use crate::constants::{CURSOR_COLOR, SELECTION_COLOR, SMALL_Z, Z0, Z_NEAR};
+use crate::constants::{CURSOR_COLOR, SELECTION_COLOR, SMALL_Z, Z0, ZERO, Z_NEAR};
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{shape::VertIndex, Line, Shape};
@@ -50,7 +50,7 @@ where
     pub color: Color,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DrawLine<V> {
     pub line: Line<V>,
     pub color: Color,
@@ -204,7 +204,10 @@ pub fn update_shape_visibility<V: VectorTrait>(
 }
 
 pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>, camera_pos: V, two_sided: bool) -> bool {
-    return two_sided | (face.plane().point_signed_distance(camera_pos) > 0.0);
+    // TODO: this commented out condition is intended to eliminate faces that the camera is not facing, but can cause some artifacts
+    // the threshold can probably be calculated from the focal length + viewport size; focal length = infinity corresponding to threshold of zero
+    // (face.normal().dot(camera_dir) < 0.8)
+    two_sided || (face.plane().point_signed_distance(camera_pos) > ZERO)
 }
 
 pub fn calc_shapes_lines<V>(

@@ -91,13 +91,9 @@ impl<V: VectorTrait> ShapeType<V> {
                 face_visibility,
             )),
             ShapeType::SingleFace(single_face) => BranchIterator::Option2(
-                single_face.line_intersect(
-                    shape,
-                    line,
-                    visible_only,
-                    face_visibility,
-                )
-                .into_iter(),
+                single_face
+                    .line_intersect(shape, line, visible_only, face_visibility)
+                    .into_iter(),
             ),
             ShapeType::Generic(g) => BranchIterator::Option3(g.line_intersect(
                 &shape.faces,

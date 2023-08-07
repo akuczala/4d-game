@@ -106,13 +106,9 @@ where
         &mut self,
         (shapes, mut shape_clip_states, transform, player, clip_state): Self::SystemData,
     ) {
+        let player_pos = transform.get(player.0).unwrap().pos;
         for (shape, shape_clip_state) in (&shapes, &mut shape_clip_states).join() {
-            update_shape_visibility(
-                transform.get(player.0).unwrap().pos,
-                shape,
-                shape_clip_state,
-                &clip_state,
-            )
+            update_shape_visibility(player_pos, shape, shape_clip_state, &clip_state)
         }
     }
 }

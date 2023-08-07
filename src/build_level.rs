@@ -17,8 +17,10 @@ use crate::geometry::shape::{build_shape_library, RefShapes, ShapeLabel};
 use crate::geometry::transform::{Scaling, Transformable};
 use crate::geometry::Shape;
 use crate::graphics::colors::*;
+use crate::saveload::load_level_from_file;
 use crate::shape_entity_builder::ShapeEntityBuilderV;
 use crate::vector::{Field, VectorTrait};
+use serde::de::DeserializeOwned;
 use specs::prelude::*;
 
 use self::face_test::build_test_level;
@@ -45,9 +47,9 @@ where
 
 pub fn build_scene<V>(world: &mut World)
 where
-    V: VectorTrait + Componentable,
-    V::SubV: Componentable,
-    V::M: Componentable,
+    V: VectorTrait + Componentable + DeserializeOwned,
+    V::SubV: Componentable + DeserializeOwned,
+    V::M: Componentable + DeserializeOwned,
 {
     let ref_shapes = build_shape_library::<V>();
     build_level(&ref_shapes, world);
@@ -57,9 +59,9 @@ where
 
 pub fn build_level<V: VectorTrait>(ref_shapes: &RefShapes<V>, world: &mut World)
 where
-    V: VectorTrait + Componentable,
-    V::SubV: Componentable,
-    V::M: Componentable,
+    V: VectorTrait + Componentable + DeserializeOwned,
+    V::SubV: Componentable + DeserializeOwned,
+    V::M: Componentable + DeserializeOwned,
 {
     let config: Config = (*world.read_resource::<Config>()).clone();
     match config.scene.level {
@@ -75,6 +77,13 @@ where
                 .for_each(|b| insert_static_collider(world, b));
         }
         LevelConfig::Test3 => build_inverted_test_level(ref_shapes, world),
+        LevelConfig::Load => config
+            .scene
+            .load
+            .ok_or(())
+            .map_err(|_| println!("No load path specified"))
+            .map(|load| load_level_from_file(&load.path, ref_shapes, world).unwrap_or_default())
+            .unwrap_or_default(),
         LevelConfig::Empty => (),
     };
     build_empty_level::<V>(world);

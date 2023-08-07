@@ -1,4 +1,5 @@
 mod test_boundaries;
+mod test_saveload;
 pub mod utils;
 #[cfg(test)]
 mod tests {
@@ -22,7 +23,7 @@ mod tests {
         vector::{is_close, Mat3, Vec2, Vec3, VectorTrait},
     };
 
-    fn new_world() -> World {
+    pub fn new_world() -> World {
         let mut world = World::new();
         world.register::<SaveMarker>();
         //world.write_resource::<SimpleMarkerAllocator<Save>>();
@@ -68,9 +69,10 @@ mod tests {
 
     #[test]
     fn serialize_world() {
-        let mut ref_shapes = build_shape_library::<Vec3>();
+        let ref_shapes = build_shape_library::<Vec3>();
         let mut world = new_world();
-        build_level(&mut ref_shapes, &mut world);
+        build_level(&ref_shapes, &mut world);
+        world.insert(ref_shapes);
         let initial_count = world.read_component::<Shape<Vec3>>().count();
         //let mut writer = Vec::new();
         let mut serializer = serde_json::Serializer::new(Vec::new());
@@ -80,9 +82,10 @@ mod tests {
             Ok(_) => String::from_utf8(serializer.into_inner()).unwrap(),
             Result::Err(_) => "Err!!!".to_string(),
         };
+        let ref_shapes = build_shape_library::<Vec3>();
         let mut deserialized_world = new_world();
         let mut deserializer = serde_json::Deserializer::from_str(&serialized);
-        let result = load_level::<Vec3>(&mut deserialized_world, &mut deserializer);
+        let result = load_level::<Vec3>(&mut deserialized_world, ref_shapes, &mut deserializer);
         if let Result::Err(_) = result {
             panic!("Boy did that go wrong");
         }

@@ -19,6 +19,7 @@ use crate::tests::utils::{color_number, print_grid};
 use crate::utils::partial_max;
 use crate::vector::{Field, VectorTrait};
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use specs::prelude::*;
 use specs::Component;
 use std::marker::PhantomData;
@@ -26,7 +27,7 @@ use std::marker::PhantomData;
 pub use self::bbox::{BBox, HasBBox};
 use self::systems::BBoxHashingSystem;
 
-#[derive(Clone, Component)]
+#[derive(Clone, Component, Serialize, Deserialize)]
 #[storage(VecStorage)]
 pub struct StaticCollider;
 

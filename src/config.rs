@@ -46,12 +46,18 @@ pub enum LevelConfig {
     Test1,
     Test2,
     Test3,
+    Load,
     Empty,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct Level1Config {
     pub open_center: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+pub struct LoadLevelConfig {
+    pub path: String,
 }
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SceneConfig {
@@ -61,6 +67,7 @@ pub struct SceneConfig {
     pub stars: bool,
     pub level: LevelConfig,
     pub level_1: Option<Level1Config>,
+    pub load: Option<LoadLevelConfig>,
 }
 impl Default for SceneConfig {
     fn default() -> Self {
@@ -71,6 +78,7 @@ impl Default for SceneConfig {
             stars: true,
             level: LevelConfig::Level1,
             level_1: None,
+            load: None,
         }
     }
 }

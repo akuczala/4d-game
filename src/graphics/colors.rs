@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::vector::scalar_linterp;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Color(pub [f32; 4]);
 impl Color {
     pub const fn get_arr(&self) -> &[f32; 4] {

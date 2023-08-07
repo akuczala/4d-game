@@ -12,7 +12,7 @@ use crate::vector::Field;
 use crate::vector::PI;
 use crate::vector::{barycenter, Vec2, Vec3, Vec4};
 use crate::vector::{VecIndex, VectorTrait};
-use itertools::{Itertools, multizip};
+use itertools::{multizip, Itertools};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
