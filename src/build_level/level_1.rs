@@ -1,12 +1,19 @@
+use glium::texture::buffer_texture::TextureBufferContent;
+use itertools::Itertools;
 use specs::{World, WorldExt};
 
 use crate::{
     components::{RefShapes, Shape, ShapeLabel, ShapeTexture, Transformable},
     config::Config,
-    constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FACE_SCALE},
+    constants::{CARDINAL_COLORS, COIN_LABEL_STR, CUBE_LABEL_STR, FACE_SCALE},
     draw::{
         self,
-        texture::{color_cube_texture, fuzzy_color_cube_texture},
+        texture::{
+            color_cube_shape_texture, fuzzy_color_cube_texture,
+            texture_builder::{TextureBuilder, TextureBuilderStep, TexturePrim},
+            FaceTextureGeneric, ShapeTextureGeneric,
+        },
+        FaceTexture,
     },
     ecs_utils::Componentable,
     geometry::transform::Scaling,
@@ -23,45 +30,42 @@ fn build_corridor_cross<V: VectorTrait>(
     config: &Config,
     open_center: bool,
 ) -> Vec<ShapeEntityBuilderV<V>> {
-    // todo figure out why texture is now off after changes to transform
     pub fn build_texture<V: VectorTrait>(
         shape: &Shape<V>,
         scale: &Scaling<V>,
         config: &Config,
-    ) -> ShapeTexture<V::SubV> {
-        let mut cube_texture = color_cube_texture(shape);
-        for (face, face_texture) in shape
-            .faces
-            .iter()
-            .zip(cube_texture.face_textures.iter_mut())
-        {
-            let target_face_color = match face_texture.texture {
-                draw::Texture::DefaultLines { color } => color,
-                _ => panic!("build corridor cross expected DefaultLines"), //don't bother handling the other cases
-            };
-            face_texture.texture = draw::Texture::make_tile_texture(
-                &[FACE_SCALE],
-                &match V::DIM {
-                    3 => vec![3, 1],
-                    4 => vec![3, 1, 1],
-                    _ => panic!(),
-                },
-            )
-            .merged_with(
-                &draw::Texture::make_fuzz_texture(config.fuzz_lines.face_num)
-                    .set_color(target_face_color),
-            )
-            .set_color(target_face_color);
-
-            // must use scaled verts to properly align textures
-            let scaled_verts: Vec<V> = shape.verts.iter().map(|v| scale.scale_vec(*v)).collect();
-            face_texture.texture_mapping = Some(draw::TextureMapping::calc_cube_vertis(
-                face,
-                &scaled_verts,
-                &shape.edges,
-            ))
+    ) -> ShapeTextureGeneric<TextureBuilder> {
+        ShapeTextureGeneric {
+            face_textures: shape
+                .faces
+                .iter()
+                .enumerate()
+                .map(|(face_index, face)| FaceTextureGeneric {
+                    texture: TextureBuilder::new(config.fuzz_lines.face_num)
+                        .with_step(TextureBuilderStep::WithTexture(TexturePrim::Tile {
+                            scales: vec![FACE_SCALE],
+                            n_divisions: match V::DIM {
+                                3 => vec![3, 1],
+                                4 => vec![3, 1, 1],
+                                _ => panic!(),
+                            },
+                        }))
+                        .with_step(TextureBuilderStep::MergedWith(vec![
+                            TextureBuilderStep::WithTexture(TexturePrim::Fuzz),
+                        ]))
+                        .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index])),
+                    texture_mapping: {
+                        let scaled_verts: Vec<V> =
+                            shape.verts.iter().map(|v| scale.scale_vec(*v)).collect();
+                        Some(draw::TextureMapping::calc_cube_vertis(
+                            face,
+                            &scaled_verts,
+                            &shape.edges,
+                        ))
+                    },
+                })
+                .collect_vec(),
         }
-        cube_texture
     }
     let corr_width = 1.0;
     let wall_height = 1.0;

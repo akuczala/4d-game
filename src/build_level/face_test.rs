@@ -1,4 +1,6 @@
 use crate::constants::TWO_SIDED_FACE_LABEL_STR;
+use crate::draw::texture::texture_builder::TextureBuilder;
+use crate::draw::texture::FaceTextureGeneric;
 use crate::draw::FaceTexture;
 use crate::geometry::shape::buildshapes::{convex_shape_to_face_shape, ShapeBuilder};
 use crate::graphics::colors::*;
@@ -13,7 +15,7 @@ use crate::{
     constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FACE_SCALE},
     draw::{
         self,
-        texture::{color_cube_texture, fuzzy_color_cube_texture},
+        texture::{color_cube_shape_texture, fuzzy_color_cube_texture},
     },
     ecs_utils::Componentable,
     geometry::transform::Scaling,
@@ -108,8 +110,8 @@ where
         ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR),
     )
     .with_scale(Scaling::Scalar(2.0))
-    .with_face_texture(FaceTexture {
-        texture: draw::Texture::make_tile_texture(&[0.8], &n_divisions),
+    .with_face_texture(FaceTextureGeneric {
+        texture: TextureBuilder::new(0).make_tile_texture(vec![0.8], n_divisions),
         texture_mapping: Some(draw::TextureMapping {
             origin_verti: 0,
             frame_vertis,

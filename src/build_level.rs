@@ -9,7 +9,7 @@ use crate::components::{Cursor, Transform};
 use crate::config::{Config, FuzzLinesConfig, LevelConfig};
 use crate::constants::{COIN_LABEL_STR, CUBE_LABEL_STR};
 use crate::draw::draw_line_collection::DrawLineCollection;
-use crate::draw::texture::{color_cube_texture, fuzzy_color_cube_texture};
+use crate::draw::texture::{color_cube_shape_texture, fuzzy_color_cube_texture};
 use crate::draw::visual_aids::{calc_grid_lines, draw_horizon, draw_sky, draw_stars};
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::buildshapes::ShapeBuilder;

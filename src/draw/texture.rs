@@ -1,7 +1,12 @@
+pub mod texture_builder;
+
+use self::texture_builder::TextureBuilder;
+
 use super::visual_aids::random_sphere_point;
 use super::DrawLine;
 
 use crate::constants::{CARDINAL_COLORS, FACE_SCALE};
+use crate::geometry::shape::FaceIndex;
 use crate::geometry::{
     shape::{Edge, Face, Shape, VertIndex},
     Line,
@@ -14,15 +19,20 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ShapeTexture<U> {
-    pub face_textures: Vec<FaceTexture<U>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
+pub struct ShapeTextureGeneric<T> {
+    pub face_textures: Vec<FaceTextureGeneric<T>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
-impl<U> ShapeTexture<U> {
+impl<T: Default> ShapeTextureGeneric<T> {
     pub fn new_default(n_faces: usize) -> Self {
         Self {
             face_textures: (0..n_faces).map(|_| Default::default()).collect(),
         }
     }
+}
+
+pub type ShapeTexture<U> = ShapeTextureGeneric<Texture<U>>;
+
+impl<U> ShapeTexture<U> {
     pub fn with_color(mut self, color: Color) -> Self {
         for face in &mut self.face_textures {
             face.set_color(color);
@@ -30,8 +40,25 @@ impl<U> ShapeTexture<U> {
         self
     }
 }
-impl<U: Clone> ShapeTexture<U> {
-    pub fn with_texture(mut self, face_texture: FaceTexture<U>) -> Self {
+impl ShapeTextureGeneric<TextureBuilder> {
+    pub fn with_color(mut self, color: Color) -> Self {
+        for face in &mut self.face_textures {
+            face.set_color(color);
+        }
+        self
+    }
+    pub fn build<U: VectorTrait>(self) -> ShapeTexture<U> {
+        ShapeTexture {
+            face_textures: self
+                .face_textures
+                .into_iter()
+                .map(|ft| ft.build())
+                .collect(),
+        }
+    }
+}
+impl<T: Clone> ShapeTextureGeneric<T> {
+    pub fn with_texture(mut self, face_texture: FaceTextureGeneric<T>) -> Self {
         for face in self.face_textures.iter_mut() {
             *face = face_texture.clone();
         }
@@ -39,17 +66,17 @@ impl<U: Clone> ShapeTexture<U> {
     }
     pub fn map_textures<F>(mut self, f: F) -> Self
     where
-        F: Fn(FaceTexture<U>) -> FaceTexture<U>,
+        F: Fn(FaceTextureGeneric<T>) -> FaceTextureGeneric<T>,
     {
         for face in self.face_textures.iter_mut() {
             take_mut::take(face, &f);
         }
         self
     }
-    pub fn zip_textures_with<I, T, F>(mut self, iter: I, f: F) -> Self
+    pub fn zip_textures_with<I, S, F>(mut self, iter: I, f: F) -> Self
     where
-        F: Fn(FaceTexture<U>, T) -> FaceTexture<U>,
-        I: Iterator<Item = T>,
+        F: Fn(FaceTextureGeneric<T>, S) -> FaceTextureGeneric<T>,
+        I: Iterator<Item = S>,
     {
         for (face, item) in self.face_textures.iter_mut().zip(iter) {
             take_mut::take(face, |face| f(face, item));
@@ -59,11 +86,13 @@ impl<U: Clone> ShapeTexture<U> {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct FaceTexture<U> {
-    pub texture: Texture<U>,
+pub struct FaceTextureGeneric<T> {
+    pub texture: T,
     pub texture_mapping: Option<TextureMapping>,
 }
-impl<U> Default for FaceTexture<U> {
+pub type FaceTexture<U> = FaceTextureGeneric<Texture<U>>;
+
+impl<T: Default> Default for FaceTextureGeneric<T> {
     fn default() -> Self {
         Self {
             texture: Default::default(),
@@ -74,6 +103,17 @@ impl<U> Default for FaceTexture<U> {
 impl<U> FaceTexture<U> {
     pub fn set_color(&mut self, color: Color) {
         take_mut::take(&mut self.texture, |tex| tex.set_color(color));
+    }
+}
+impl FaceTextureGeneric<TextureBuilder> {
+    pub fn set_color(&mut self, color: Color) {
+        take_mut::take(&mut self.texture, |tex| tex.with_color(color));
+    }
+    pub fn build<U: VectorTrait>(self) -> FaceTexture<U> {
+        FaceTexture {
+            texture: self.texture.build(),
+            texture_mapping: self.texture_mapping,
+        }
     }
 }
 // this was originally a method of FaceTexture, but I didn't know how to tell rust that U = V::SubV
@@ -343,37 +383,41 @@ pub fn color_cube<V: VectorTrait>(
     shape_texture
 }
 
-// TODO: this really only needs the number of faces.
-// in fact we don't really need any arguments - we know the number of faces from V::DIM
-pub fn color_cube_texture<V: VectorTrait>(shape: &Shape<V>) -> ShapeTexture<V::SubV> {
-    ShapeTexture {
-        face_textures: shape
-            .faces
-            .iter()
+pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureGeneric<TextureBuilder> {
+    ShapeTextureGeneric {
+        face_textures: (0..V::DIM * 2)
             .zip(&CARDINAL_COLORS)
-            .map(|(_face, &color)| FaceTexture {
-                texture: Texture::DefaultLines {
-                    color: color.set_alpha(0.5),
-                },
+            .map(|(_face, &color)| FaceTextureGeneric {
+                texture: TextureBuilder::new(0).with_color(color.set_alpha(0.5)),
                 texture_mapping: None,
             })
             .collect(),
     }
 }
 
+pub fn color_cube_texture<V: VectorTrait>(face_index: FaceIndex) -> Texture<V::SubV> {
+    Texture::DefaultLines {
+        color: CARDINAL_COLORS[face_index].set_alpha(0.5),
+    }
+}
+
+// TODO: fix this
 pub fn fuzzy_color_cube_texture<V: VectorTrait>(
     shape: &Shape<V>,
     n_lines: usize,
-) -> ShapeTexture<V::SubV> {
-    color_cube_texture(shape).zip_textures_with(shape.faces.iter(), |face_tex, face| FaceTexture {
-        texture: face_tex
-            .texture
-            .merged_with(&Texture::make_fuzz_texture(n_lines)),
-        texture_mapping: Some(TextureMapping::calc_cube_vertis(
-            face,
-            &shape.verts,
-            &shape.edges,
-        )),
+) -> ShapeTextureGeneric<TextureBuilder> {
+    let texture_builder = TextureBuilder::new(n_lines);
+    color_cube_shape_texture::<V>().zip_textures_with(shape.faces.iter(), |face_tex, face| {
+        FaceTextureGeneric {
+            texture: face_tex
+                .texture
+                .merged_with(texture_builder.clone().make_fuzz_texture()),
+            texture_mapping: Some(TextureMapping::calc_cube_vertis(
+                face,
+                &shape.verts,
+                &shape.edges,
+            )),
+        }
     })
 }
 

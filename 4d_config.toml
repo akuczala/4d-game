@@ -1,5 +1,5 @@
 [fuzz_lines]
-face_num = 2
+face_num = 100
 sky_num = 1000
 horizon_num = 500
 

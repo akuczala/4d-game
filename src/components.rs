@@ -2,6 +2,8 @@ use specs::{Component, FlaggedStorage, HashMapStorage, VecStorage};
 
 use crate::coin::Coin;
 pub use crate::draw::draw_line_collection::DrawLineCollection;
+use crate::draw::texture::texture_builder::TextureBuilder;
+use crate::draw::texture::ShapeTextureGeneric;
 pub use crate::draw::ShapeTexture;
 use crate::ecs_utils::Componentable;
 //resources
@@ -33,6 +35,9 @@ impl<V: Componentable> Component for Shape<V> {
     type Storage = FlaggedStorage<Self, DefaultStorage<Self>>;
 }
 impl<V: Componentable> Component for ShapeClipState<V> {
+    type Storage = DefaultStorage<Self>;
+}
+impl Component for ShapeTextureGeneric<TextureBuilder> {
     type Storage = DefaultStorage<Self>;
 }
 impl<U: Componentable> Component for ShapeTexture<U> {

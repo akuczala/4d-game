@@ -8,35 +8,36 @@ use transform::{Transform, Transformable};
 
 use crate::coin::Coin;
 use crate::components::{RefShapes, ShapeLabel, ShapeTexture, StaticCollider};
+use crate::draw::texture::texture_builder::TextureBuilder;
+use crate::draw::texture::ShapeTextureGeneric;
 use crate::{
     ecs_utils::Componentable, geometry::transform, shape_entity_builder::ShapeEntityBuilderV,
     vector::VectorTrait,
 };
 
 // TODO: practice macros?
-type LevelSaveComponents<'a, V, M, U> = (
+type LevelSaveComponents<'a, V, M> = (
     ReadStorage<'a, ShapeLabel>,
     ReadStorage<'a, Transform<V, M>>,
-    ReadStorage<'a, ShapeTexture<U>>,
-    ReadStorage<'a, StaticCollider>, // TODO: this saves ALL THE LINES for fuzz textures
+    ReadStorage<'a, ShapeTextureGeneric<TextureBuilder>>,
+    ReadStorage<'a, StaticCollider>,
     ReadStorage<'a, Coin>,
 );
-type LevelSaveComponentsV<'a, V> =
-    LevelSaveComponents<'a, V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
+type LevelSaveComponentsV<'a, V> = LevelSaveComponents<'a, V, <V as VectorTrait>::M>;
 
-type EntitySave<V, U, M> = (
+type EntitySave<V, M> = (
     ShapeLabel,
     Transform<V, M>,
-    ShapeTexture<U>,
+    ShapeTextureGeneric<TextureBuilder>,
     Option<StaticCollider>,
     Option<Coin>,
 );
 
 #[derive(Clone, Serialize, Deserialize)]
-struct SaveStructure<V, U, M> {
-    components: Vec<EntitySave<V, U, M>>,
+struct SaveStructure<V, M> {
+    components: Vec<EntitySave<V, M>>,
 }
-type SaveStructureV<V> = SaveStructure<V, <V as VectorTrait>::SubV, <V as VectorTrait>::M>;
+type SaveStructureV<V> = SaveStructure<V, <V as VectorTrait>::M>;
 
 /// Clones components into a stucture for serialization
 fn build_save_structure<V>(world: &World) -> SaveStructureV<V>

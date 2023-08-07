@@ -4,6 +4,8 @@ use std::marker::PhantomData;
 
 use crate::cleanup::DeletedEntities;
 use crate::config::Config;
+use crate::draw::texture::texture_builder::TextureBuilder;
+use crate::draw::texture::ShapeTextureGeneric;
 use crate::ecs_utils::ModSystem;
 use crate::{components::*, config};
 use crate::{ecs_utils::Componentable, vector::VectorTrait};
@@ -179,7 +181,7 @@ where
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, ShapeLabel>,
-        ReadStorage<'a, ShapeTexture<U>>,
+        ReadStorage<'a, ShapeTextureGeneric<TextureBuilder>>,
         ReadStorage<'a, StaticCollider>,
         Entities<'a>,
     );
