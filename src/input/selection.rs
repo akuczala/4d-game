@@ -220,9 +220,7 @@ pub fn create_shape<V: VectorTrait>(
                 )
                 .with_transform(Transform::pos(shape_pos))
                 .with_scale(Scaling::Scalar(1.0))
-                .with_texturing_fn(|shape| {
-                    fuzzy_color_cube_texture(shape, config.fuzz_lines.face_num)
-                })
+                .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape))
                 .with_collider(Some(StaticCollider))
                 // TODO: add to spatial hash set (use BBox hash system)
             })

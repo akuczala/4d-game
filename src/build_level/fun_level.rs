@@ -24,10 +24,7 @@ use crate::{
 
 use super::{insert_coin, insert_static_collider};
 
-pub fn build_fun_level<V: VectorTrait>(
-    fuzz_config: FuzzLinesConfig,
-    ref_shapes: &RefShapes<V>,
-) -> Vec<ShapeEntityBuilderV<V>> {
+pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEntityBuilderV<V>> {
     let (n_divisions, frame_vertis) = match V::DIM {
         3 => (vec![2, 2], vec![1, 3]),
         4 => (vec![2, 2, 2], vec![1, 3, 4]),
@@ -35,7 +32,7 @@ pub fn build_fun_level<V: VectorTrait>(
     };
     let len = 4.0;
     let wall_label = ShapeLabel::from_str(ONE_SIDED_FACE_LABEL_STR);
-    let texture_builder = TextureBuilder::new(fuzz_config.face_num);
+    let texture_builder = TextureBuilder::new();
     let wall_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, wall_label)
         .with_scale(Scaling::Scalar(len))
         .with_face_texture(FaceTextureGeneric {

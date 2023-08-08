@@ -4,7 +4,8 @@ use crate::components::{
     BBall, Convex, HasBBox, Shape, ShapeClipState, ShapeLabel, ShapeType, SingleFace,
     StaticCollider, Transform, Transformable,
 };
-use crate::draw::texture::texture_builder::TextureBuilder;
+use crate::config::Config;
+use crate::draw::texture::texture_builder::{TextureBuilder, TextureBuilderConfig};
 use crate::draw::texture::{FaceTextureGeneric, ShapeTextureGeneric};
 use crate::draw::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 use crate::ecs_utils::Componentable;
@@ -88,7 +89,7 @@ where
             ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        let st = shape_texture.clone().build::<V::SubV>();
+        let st = make_shape_texture::<V::SubV>(&world.fetch::<Config>(), shape_texture.clone());
         world
             .create_entity()
             .with(shape.calc_bbox())
@@ -101,7 +102,7 @@ where
             .with(ShapeClipState::<V>::default())
             .maybe_with(static_collider)
     }
-    pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>) {
+    pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>, config: &Config) {
         let Self {
             mut shape,
             shape_label,
@@ -111,7 +112,7 @@ where
             ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        let st = shape_texture.clone().build::<V::SubV>();
+        let st = make_shape_texture::<V::SubV>(config, shape_texture.clone());
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, transformation);
@@ -124,7 +125,7 @@ where
             lazy.insert(e, c)
         };
     }
-    pub fn load(self, e: Entity, lazy: &Read<LazyUpdate>) {
+    pub fn load(self, e: Entity, lazy: &Read<LazyUpdate>, config: &Config) {
         let Self {
             mut shape,
             shape_label: _,
@@ -134,7 +135,7 @@ where
             ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        let st = shape_texture.build::<V::SubV>();
+        let st = make_shape_texture::<V::SubV>(config, shape_texture);
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, shape);
@@ -146,4 +147,11 @@ impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilderV<V> {
     fn transform(&mut self, transformation: Transform<V, V::M>) {
         self.transformation = self.transformation.with_transform(transformation);
     }
+}
+
+fn make_shape_texture<U: VectorTrait>(
+    config: &Config,
+    builder: ShapeTextureGeneric<TextureBuilder>,
+) -> ShapeTexture<U> {
+    builder.build::<U>(&config.into())
 }

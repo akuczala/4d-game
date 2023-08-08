@@ -1,6 +1,6 @@
 pub mod texture_builder;
 
-use self::texture_builder::TextureBuilder;
+use self::texture_builder::{TextureBuilder, TextureBuilderConfig};
 
 use super::visual_aids::random_sphere_point;
 use super::DrawLine;
@@ -47,12 +47,12 @@ impl ShapeTextureGeneric<TextureBuilder> {
         }
         self
     }
-    pub fn build<U: VectorTrait>(self) -> ShapeTexture<U> {
+    pub fn build<U: VectorTrait>(self, config: &TextureBuilderConfig) -> ShapeTexture<U> {
         ShapeTexture {
             face_textures: self
                 .face_textures
                 .into_iter()
-                .map(|ft| ft.build())
+                .map(|ft| ft.build(config))
                 .collect(),
         }
     }
@@ -109,9 +109,9 @@ impl FaceTextureGeneric<TextureBuilder> {
     pub fn set_color(&mut self, color: Color) {
         take_mut::take(&mut self.texture, |tex| tex.with_color(color));
     }
-    pub fn build<U: VectorTrait>(self) -> FaceTexture<U> {
+    pub fn build<U: VectorTrait>(self, config: &TextureBuilderConfig) -> FaceTexture<U> {
         FaceTexture {
-            texture: self.texture.build(),
+            texture: self.texture.build(config),
             texture_mapping: self.texture_mapping,
         }
     }
@@ -388,7 +388,7 @@ pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureGeneric<Texture
         face_textures: (0..V::DIM * 2)
             .zip(&CARDINAL_COLORS)
             .map(|(_face, &color)| FaceTextureGeneric {
-                texture: TextureBuilder::new(0).with_color(color.set_alpha(0.5)),
+                texture: TextureBuilder::new().with_color(color.set_alpha(0.5)),
                 texture_mapping: None,
             })
             .collect(),
@@ -404,9 +404,8 @@ pub fn color_cube_texture<V: VectorTrait>(face_index: FaceIndex) -> Texture<V::S
 // TODO: fix this
 pub fn fuzzy_color_cube_texture<V: VectorTrait>(
     shape: &Shape<V>,
-    n_lines: usize,
 ) -> ShapeTextureGeneric<TextureBuilder> {
-    let texture_builder = TextureBuilder::new(n_lines);
+    let texture_builder = TextureBuilder::new();
     color_cube_shape_texture::<V>().zip_textures_with(shape.faces.iter(), |face_tex, face| {
         FaceTextureGeneric {
             texture: face_tex

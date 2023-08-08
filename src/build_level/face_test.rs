@@ -111,7 +111,7 @@ where
     )
     .with_scale(Scaling::Scalar(2.0))
     .with_face_texture(FaceTextureGeneric {
-        texture: TextureBuilder::new(0).make_tile_texture(vec![0.8], n_divisions),
+        texture: TextureBuilder::new().make_tile_texture(vec![0.8], n_divisions),
         texture_mapping: Some(draw::TextureMapping {
             origin_verti: 0,
             frame_vertis,

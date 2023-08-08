@@ -72,7 +72,7 @@ where
         ),
         LevelConfig::Test1 => build_test_level(world, ref_shapes),
         LevelConfig::Test2 => {
-            build_fun_level(config.fuzz_lines, ref_shapes)
+            build_fun_level(ref_shapes)
                 .into_iter()
                 .for_each(|b| insert_static_collider(world, b));
         }

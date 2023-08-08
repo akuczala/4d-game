@@ -161,7 +161,7 @@ where
             &config,
             read_transform.get(player.0).unwrap(),
         ) {
-            builder.insert(entities.create(), &lazy);
+            builder.insert(entities.create(), &lazy, &config);
         }
     }
 }
@@ -178,6 +178,7 @@ where
         ReadExpect<'a, Player>,
         ReadStorage<'a, MaybeSelected>,
         ReadExpect<'a, RefShapes<V>>,
+        ReadExpect<'a, Config>,
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Transform<V, V::M>>,
         ReadStorage<'a, ShapeLabel>,
@@ -193,6 +194,7 @@ where
             player,
             maybe_selected_storage,
             ref_shapes,
+            config,
             lazy,
             read_transform,
             shape_label_storage,
@@ -214,7 +216,7 @@ where
                 shape_textures.get(selected_entity).unwrap(),
                 static_colliders.get(selected_entity),
             ) {
-                builder.insert(entities.create(), &lazy);
+                builder.insert(entities.create(), &lazy, &config);
             }
         }
     }

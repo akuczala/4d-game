@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    config::Config,
     graphics::colors::Color,
     vector::{Field, VectorTrait},
 };
@@ -24,18 +25,26 @@ pub enum TextureBuilderStep {
     MergedWith(Vec<TextureBuilderStep>),
 }
 
+#[derive(Clone)]
+pub struct TextureBuilderConfig {
+    n_fuzz_lines: usize,
+}
+impl From<&Config> for TextureBuilderConfig {
+    fn from(value: &Config) -> Self {
+        Self {
+            n_fuzz_lines: value.fuzz_lines.face_num,
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct TextureBuilder {
     steps: Vec<TextureBuilderStep>,
-    n_fuzz_lines: usize, //TODO: rm and add to build()
 }
 
 impl TextureBuilder {
-    pub fn new(n_fuzz_lines: usize) -> Self {
-        Self {
-            steps: Vec::new(),
-            n_fuzz_lines,
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
     pub fn make_tile_texture(self, scales: Vec<Field>, n_divisions: Vec<i32>) -> Self {
         self.with_step(TextureBuilderStep::WithTexture(TexturePrim::Tile {
@@ -60,16 +69,15 @@ impl TextureBuilder {
     pub fn with_color(self, color: Color) -> Self {
         self.with_step(TextureBuilderStep::WithColor(color))
     }
-    pub fn build<U: VectorTrait>(self) -> Texture<U> {
-        let n_fuzz_lines = self.n_fuzz_lines;
+    pub fn build<U: VectorTrait>(self, config: &TextureBuilderConfig) -> Texture<U> {
         self.steps
             .into_iter()
             .fold(Default::default(), |texture, step| {
-                Self::apply_step(n_fuzz_lines, texture, step)
+                Self::apply_step(config, texture, step)
             })
     }
     pub fn apply_step<V: VectorTrait>(
-        n_fuzz_lines: usize,
+        config: &TextureBuilderConfig,
         texture: Texture<V>,
         step: TextureBuilderStep,
     ) -> Texture<V> {
@@ -80,11 +88,11 @@ impl TextureBuilder {
                     scales,
                     n_divisions,
                 } => Texture::make_tile_texture(&scales, &n_divisions),
-                TexturePrim::Fuzz => Texture::make_fuzz_texture(n_fuzz_lines),
+                TexturePrim::Fuzz => Texture::make_fuzz_texture(config.n_fuzz_lines),
             },
             TextureBuilderStep::WithColor(color) => texture.set_color(color),
             TextureBuilderStep::MergedWith(steps) => {
-                let new_texture = Self::new(n_fuzz_lines).with_steps(steps).build::<V>();
+                let new_texture = Self::new().with_steps(steps).build::<V>(config);
                 texture.merged_with(&new_texture)
             }
         }

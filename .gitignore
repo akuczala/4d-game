@@ -9,3 +9,4 @@ game-ideas.txt
 **/mesh-try4.rs
 *.gv
 .vscode/*
+test_save_level.*

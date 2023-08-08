@@ -27,13 +27,11 @@ use super::{insert_coin, insert_static_collider};
 fn build_corridor_cross<V: VectorTrait>(
     cube_builder: &ShapeEntityBuilderV<V>,
     wall_length: Field,
-    config: &Config,
     open_center: bool,
 ) -> Vec<ShapeEntityBuilderV<V>> {
     pub fn build_texture<V: VectorTrait>(
         shape: &Shape<V>,
         scale: &Scaling<V>,
-        config: &Config,
     ) -> ShapeTextureGeneric<TextureBuilder> {
         ShapeTextureGeneric {
             face_textures: shape
@@ -41,7 +39,7 @@ fn build_corridor_cross<V: VectorTrait>(
                 .iter()
                 .enumerate()
                 .map(|(face_index, face)| FaceTextureGeneric {
-                    texture: TextureBuilder::new(config.fuzz_lines.face_num)
+                    texture: TextureBuilder::new()
                         .with_step(TextureBuilderStep::WithTexture(TexturePrim::Tile {
                             scales: vec![FACE_SCALE],
                             n_divisions: match V::DIM {
@@ -102,8 +100,7 @@ fn build_corridor_cross<V: VectorTrait>(
             })
             .collect();
     for builder in &mut walls1 {
-        builder.shape_texture =
-            build_texture(&builder.shape, &builder.transformation.scale, config);
+        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
     }
 
     shape_builders.append(&mut walls1);
@@ -115,7 +112,7 @@ fn build_corridor_cross<V: VectorTrait>(
             .clone()
             .with_translation(V::one_hot(i) * (wall_length + corr_width) * (*sign))
             .stretch(&(V::one_hot(1) * (wall_height - corr_width) + V::ones() * corr_width))
-            .with_texturing_fn(|s| fuzzy_color_cube_texture(s, config.fuzz_lines.face_num))
+            .with_texturing_fn(|s| fuzzy_color_cube_texture(s))
     });
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
@@ -140,12 +137,10 @@ fn build_corridor_cross<V: VectorTrait>(
         .collect();
 
     for builder in &mut floors_long {
-        builder.shape_texture =
-            build_texture(&builder.shape, &builder.transformation.scale, config);
+        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
     }
     for builder in &mut ceilings_long {
-        builder.shape_texture =
-            build_texture(&builder.shape, &builder.transformation.scale, config);
+        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
     }
 
     shape_builders.append(&mut floors_long);
@@ -155,7 +150,7 @@ fn build_corridor_cross<V: VectorTrait>(
         cube_builder
             .clone()
             .with_translation(-V::one_hot(1) * (wall_height + corr_width) / 2.0)
-            .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape, config.fuzz_lines.face_num)),
+            .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape)),
     );
     //center ceiling
     if !open_center {
@@ -179,9 +174,8 @@ where
         ShapeEntityBuilder::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR));
 
     let wall_length = 3.0;
-    let config = (*world.read_resource::<Config>()).clone();
     let walls: Vec<ShapeEntityBuilderV<V>> =
-        build_corridor_cross(&cube_builder, wall_length, &config, open_center);
+        build_corridor_cross(&cube_builder, wall_length, open_center);
 
     for wall in walls.into_iter() {
         insert_static_collider(world, wall)
