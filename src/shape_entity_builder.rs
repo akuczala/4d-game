@@ -18,18 +18,17 @@ use specs::prelude::*;
 use specs::saveload::MarkedBuilder;
 
 #[derive(Clone)]
-pub struct ShapeEntityBuilder<V, U, M> {
-    pub shape: Shape<V>, // remove this field?
+pub struct ShapeEntityBuilder<V, M> {
+    pub shape: Shape<V>, // this field is only needed for with_texturing_fn
     shape_label: ShapeLabel,
     pub transformation: Transform<V, M>,
     pub shape_texture_builder: ShapeTextureBuilder,
     static_collider: Option<StaticCollider>,
-    ph: PhantomData<U>, // TODO: remove if unnecessary
 }
 
 //shorthand
 pub type ShapeEntityBuilderV<V> =
-    ShapeEntityBuilder<V, <V as VectorTrait>::SubV, <V as VectorTrait>::M>;
+    ShapeEntityBuilder<V, <V as VectorTrait>::M>;
 
 impl<V: VectorTrait> ShapeEntityBuilderV<V> {
     pub fn new_from_ref_shape(ref_shapes: &RefShapes<V>, label: ShapeLabel) -> Self {
@@ -40,7 +39,6 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
             transformation: Transform::identity(),
             shape_texture_builder: ShapeTextureBuilder::new_default(ref_shape.verts.len()),
             static_collider: None,
-            ph: PhantomData::<V::SubV>,
         }
     }
     pub fn with_texture(mut self, texture: ShapeTextureBuilder) -> Self {
@@ -60,7 +58,6 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
     }
     pub fn with_color(mut self, color: Color) -> Self {
         self.shape_texture_builder = self.shape_texture_builder.with_color(color);
-
         self
     }
     pub fn with_collider(mut self, static_collider: Option<StaticCollider>) -> Self {
@@ -86,7 +83,6 @@ where
             transformation,
             shape_texture_builder,
             static_collider,
-            ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
         let shape_texture =
@@ -110,7 +106,6 @@ where
             transformation,
             shape_texture_builder,
             static_collider,
-            ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
         let shape_texture = make_shape_texture::<V::SubV>(config, shape_texture_builder.clone());
@@ -133,7 +128,6 @@ where
             transformation,
             shape_texture_builder,
             static_collider: _,
-            ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
         let shape_texture = make_shape_texture::<V::SubV>(config, shape_texture_builder);
