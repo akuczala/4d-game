@@ -11,10 +11,9 @@ use crate::cleanup::DeletedEntities;
 use crate::config::Config;
 use crate::constants::{CUBE_LABEL_STR, SELECTION_COLOR};
 use crate::draw::draw_line_collection::DrawLineCollection;
+use crate::draw::texture::shape_texture::fuzzy_color_cube_texture;
 use crate::draw::texture::texture_builder::TextureBuilder;
-use crate::draw::texture::{
-    color_cube, color_cube_shape_texture, fuzzy_color_cube_texture, ShapeTextureGeneric,
-};
+use crate::draw::texture::ShapeTextureBuilder;
 use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
 use crate::draw::ShapeTexture;
 use crate::ecs_utils::Componentable;
@@ -233,7 +232,7 @@ pub fn duplicate_shape<V: VectorTrait>(
     ref_shapes: &RefShapes<V>,
     shape_label: &ShapeLabel,
     shape_transform: &Transform<V, V::M>,
-    shape_texture: &ShapeTextureGeneric<TextureBuilder>,
+    shape_texture: &ShapeTextureBuilder,
     shape_collider: Option<&StaticCollider>,
 ) -> Option<ShapeEntityBuilderV<V>> {
     input.toggle_keys.trigger_once(DUPLICATE_SHAPE, || {

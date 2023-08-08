@@ -9,9 +9,11 @@ use crate::{
     draw::{
         self,
         texture::{
-            color_cube_shape_texture, fuzzy_color_cube_texture,
+            shape_texture::{
+                color_cube_shape_texture, fuzzy_color_cube_texture, FaceTextureGeneric,
+                ShapeTextureGeneric,
+            },
             texture_builder::{TextureBuilder, TextureBuilderStep, TexturePrim},
-            FaceTextureGeneric, ShapeTextureGeneric,
         },
         FaceTexture,
     },
@@ -100,7 +102,8 @@ fn build_corridor_cross<V: VectorTrait>(
             })
             .collect();
     for builder in &mut walls1 {
-        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
+        builder.shape_texture_builder =
+            build_texture(&builder.shape, &builder.transformation.scale);
     }
 
     shape_builders.append(&mut walls1);
@@ -137,10 +140,12 @@ fn build_corridor_cross<V: VectorTrait>(
         .collect();
 
     for builder in &mut floors_long {
-        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
+        builder.shape_texture_builder =
+            build_texture(&builder.shape, &builder.transformation.scale);
     }
     for builder in &mut ceilings_long {
-        builder.shape_texture = build_texture(&builder.shape, &builder.transformation.scale);
+        builder.shape_texture_builder =
+            build_texture(&builder.shape, &builder.transformation.scale);
     }
 
     shape_builders.append(&mut floors_long);

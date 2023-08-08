@@ -2,14 +2,14 @@ use specs::{World, WorldExt};
 
 use crate::constants::{CARDINAL_COLORS, ONE_SIDED_FACE_LABEL_STR, PI, TWO_SIDED_FACE_LABEL_STR};
 use crate::draw::texture::texture_builder::TextureBuilder;
-use crate::draw::texture::FaceTextureGeneric;
+use crate::draw::texture::FaceTextureBuilder;
 use crate::graphics::colors::*;
 use crate::{
     components::{RefShapes, Shape, ShapeLabel, ShapeTexture, Transformable},
     config::{Config, FuzzLinesConfig},
     draw::{
         self,
-        texture::{color_cube_shape_texture, fuzzy_color_cube_texture},
+        texture::shape_texture::{color_cube_shape_texture, fuzzy_color_cube_texture},
         FaceTexture, Texture,
     },
     ecs_utils::Componentable,
@@ -35,7 +35,7 @@ pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEn
     let texture_builder = TextureBuilder::new();
     let wall_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, wall_label)
         .with_scale(Scaling::Scalar(len))
-        .with_face_texture(FaceTextureGeneric {
+        .with_face_texture(FaceTextureBuilder {
             texture: texture_builder
                 .clone()
                 .make_tile_texture(vec![0.8], n_divisions)

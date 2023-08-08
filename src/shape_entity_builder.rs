@@ -6,7 +6,7 @@ use crate::components::{
 };
 use crate::config::Config;
 use crate::draw::texture::texture_builder::{TextureBuilder, TextureBuilderConfig};
-use crate::draw::texture::{FaceTextureGeneric, ShapeTextureGeneric};
+use crate::draw::texture::{FaceTextureBuilder, ShapeTextureBuilder};
 use crate::draw::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::{buildshapes, RefShapes};
@@ -22,7 +22,7 @@ pub struct ShapeEntityBuilder<V, U, M> {
     pub shape: Shape<V>, // remove this field?
     shape_label: ShapeLabel,
     pub transformation: Transform<V, M>,
-    pub shape_texture: ShapeTextureGeneric<TextureBuilder>,
+    pub shape_texture_builder: ShapeTextureBuilder,
     static_collider: Option<StaticCollider>,
     ph: PhantomData<U>, // TODO: remove if unnecessary
 }
@@ -38,28 +38,28 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
             shape: ref_shape.clone(),
             shape_label: label,
             transformation: Transform::identity(),
-            shape_texture: ShapeTextureGeneric::new_default(ref_shape.verts.len()),
+            shape_texture_builder: ShapeTextureBuilder::new_default(ref_shape.verts.len()),
             static_collider: None,
             ph: PhantomData::<V::SubV>,
         }
     }
-    pub fn with_texture(mut self, texture: ShapeTextureGeneric<TextureBuilder>) -> Self {
-        self.shape_texture = texture;
+    pub fn with_texture(mut self, texture: ShapeTextureBuilder) -> Self {
+        self.shape_texture_builder = texture;
         self
     }
-    pub fn with_face_texture(mut self, face_texture: FaceTextureGeneric<TextureBuilder>) -> Self {
-        self.shape_texture = self.shape_texture.with_texture(face_texture);
+    pub fn with_face_texture(mut self, face_texture: FaceTextureBuilder) -> Self {
+        self.shape_texture_builder = self.shape_texture_builder.with_texture(face_texture);
         self
     }
     pub fn with_texturing_fn<F>(mut self, f: F) -> Self
     where
-        F: Fn(&Shape<V>) -> ShapeTextureGeneric<TextureBuilder>,
+        F: Fn(&Shape<V>) -> ShapeTextureBuilder,
     {
-        self.shape_texture = f(&self.shape);
+        self.shape_texture_builder = f(&self.shape);
         self
     }
     pub fn with_color(mut self, color: Color) -> Self {
-        self.shape_texture = self.shape_texture.with_color(color);
+        self.shape_texture_builder = self.shape_texture_builder.with_color(color);
 
         self
     }
@@ -84,12 +84,13 @@ where
             mut shape,
             shape_label,
             transformation,
-            shape_texture,
+            shape_texture_builder,
             static_collider,
             ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        let st = make_shape_texture::<V::SubV>(&world.fetch::<Config>(), shape_texture.clone());
+        let shape_texture =
+            make_shape_texture::<V::SubV>(&world.fetch::<Config>(), shape_texture_builder.clone());
         world
             .create_entity()
             .with(shape.calc_bbox())
@@ -97,8 +98,8 @@ where
             .with(transformation)
             .with(shape)
             .with(shape_label)
+            .with(shape_texture_builder)
             .with(shape_texture)
-            .with(st)
             .with(ShapeClipState::<V>::default())
             .maybe_with(static_collider)
     }
@@ -107,18 +108,18 @@ where
             mut shape,
             shape_label,
             transformation,
-            shape_texture,
+            shape_texture_builder,
             static_collider,
             ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        let st = make_shape_texture::<V::SubV>(config, shape_texture.clone());
+        let shape_texture = make_shape_texture::<V::SubV>(config, shape_texture_builder.clone());
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, transformation);
         lazy.insert(e, shape);
+        lazy.insert(e, shape_texture_builder);
         lazy.insert(e, shape_texture);
-        lazy.insert(e, st);
         lazy.insert(e, ShapeClipState::<V>::default());
         lazy.insert(e, shape_label);
         if let Some(c) = static_collider {
@@ -130,16 +131,16 @@ where
             mut shape,
             shape_label: _,
             transformation,
-            shape_texture,
+            shape_texture_builder,
             static_collider: _,
             ph: _,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        let st = make_shape_texture::<V::SubV>(config, shape_texture);
+        let shape_texture = make_shape_texture::<V::SubV>(config, shape_texture_builder);
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, shape);
-        lazy.insert(e, st);
+        lazy.insert(e, shape_texture);
         lazy.insert(e, ShapeClipState::<V>::default());
     }
 }
@@ -151,7 +152,7 @@ impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilderV<V> {
 
 fn make_shape_texture<U: VectorTrait>(
     config: &Config,
-    builder: ShapeTextureGeneric<TextureBuilder>,
+    builder: ShapeTextureBuilder,
 ) -> ShapeTexture<U> {
     builder.build::<U>(&config.into())
 }

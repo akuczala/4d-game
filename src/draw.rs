@@ -21,7 +21,7 @@ use crate::vector::{barycenter, linspace, Field, VecIndex, VectorTrait};
 
 use self::clipping::boundaries::calc_boundaries;
 use self::clipping::{clip_line_cylinder, clip_line_sphere, clip_line_tube};
-use self::texture::draw_face_texture;
+use self::texture::shape_texture::draw_face_texture;
 use self::visual_aids::{calc_wireframe_lines, draw_axes};
 
 pub mod clipping;

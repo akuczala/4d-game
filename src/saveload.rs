@@ -9,7 +9,7 @@ use transform::{Transform, Transformable};
 use crate::coin::Coin;
 use crate::components::{RefShapes, ShapeLabel, ShapeTexture, StaticCollider};
 use crate::draw::texture::texture_builder::TextureBuilder;
-use crate::draw::texture::ShapeTextureGeneric;
+use crate::draw::texture::ShapeTextureBuilder;
 use crate::{
     ecs_utils::Componentable, geometry::transform, shape_entity_builder::ShapeEntityBuilderV,
     vector::VectorTrait,
@@ -19,7 +19,7 @@ use crate::{
 type LevelSaveComponents<'a, V, M> = (
     ReadStorage<'a, ShapeLabel>,
     ReadStorage<'a, Transform<V, M>>,
-    ReadStorage<'a, ShapeTextureGeneric<TextureBuilder>>,
+    ReadStorage<'a, ShapeTextureBuilder>,
     ReadStorage<'a, StaticCollider>,
     ReadStorage<'a, Coin>,
 );
@@ -28,7 +28,7 @@ type LevelSaveComponentsV<'a, V> = LevelSaveComponents<'a, V, <V as VectorTrait>
 type EntitySave<V, M> = (
     ShapeLabel,
     Transform<V, M>,
-    ShapeTextureGeneric<TextureBuilder>,
+    ShapeTextureBuilder,
     Option<StaticCollider>,
     Option<Coin>,
 );
