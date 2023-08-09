@@ -79,7 +79,7 @@ fn test_bounded_regions() {
         .map(|f| f.plane().point_signed_distance(camera_pos) > ZERO)
         .collect();
     let boundaries = calc_boundaries(camera_pos, &shape, &face_visibility);
-    assert!(boundaries.len() > 0);
+    assert!(!boundaries.is_empty());
     print_grid(2.0, 41, |x, y| {
         let pos = V::new(x, y);
         if shape.verts.iter().any(|&p| (p - pos).norm() < 0.1) {

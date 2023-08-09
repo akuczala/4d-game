@@ -26,7 +26,7 @@ fn test_saveload() {
     drop(config);
 
     build_level(&ref_shapes, &mut world);
-    save_level_to_file::<V>(&Path::new("./test_save_level.ron"), &mut world).unwrap();
+    save_level_to_file::<V>(Path::new("./test_save_level.ron"), &mut world).unwrap();
     let initial_count = world.read_component::<StaticCollider>().count();
 
     let mut deserialized_world = new_world::<V>();

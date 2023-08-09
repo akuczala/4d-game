@@ -302,17 +302,17 @@ fn dcoords_cells_test() {
     let mult = vec![1, 2, 4];
     //let dcoords = vec![1,1,1];
 
-    assert_eq!(get_dcoords_dcells(&vec![1, 1, 1], &mult), {
+    assert_eq!(get_dcoords_dcells(&[1, 1, 1], &mult), {
         let r: Vec<HashInt> = (0..8).collect();
         r
     });
-    assert_eq!(get_dcoords_dcells(&vec![0, 0, 0], &mult), vec![0]);
-    assert_eq!(get_dcoords_dcells(&vec![1, 0, 0], &mult), vec![0, 1]);
-    assert_eq!(get_dcoords_dcells(&vec![0, 1, 0], &mult), vec![0, 2]);
-    assert_eq!(get_dcoords_dcells(&vec![0, 0, 1], &mult), vec![0, 4]);
-    assert_eq!(get_dcoords_dcells(&vec![1, 1, 0], &mult), vec![0, 1, 2, 3]);
-    assert_eq!(get_dcoords_dcells(&vec![0, 1, 1], &mult), vec![0, 2, 4, 6]);
-    assert_eq!(get_dcoords_dcells(&vec![1, 0, 1], &mult), vec![0, 1, 4, 5]);
+    assert_eq!(get_dcoords_dcells(&[0, 0, 0], &mult), vec![0]);
+    assert_eq!(get_dcoords_dcells(&[1, 0, 0], &mult), vec![0, 1]);
+    assert_eq!(get_dcoords_dcells(&[0, 1, 0], &mult), vec![0, 2]);
+    assert_eq!(get_dcoords_dcells(&[0, 0, 1], &mult), vec![0, 4]);
+    assert_eq!(get_dcoords_dcells(&[1, 1, 0], &mult), vec![0, 1, 2, 3]);
+    assert_eq!(get_dcoords_dcells(&[0, 1, 1], &mult), vec![0, 2, 4, 6]);
+    assert_eq!(get_dcoords_dcells(&[1, 0, 1], &mult), vec![0, 1, 4, 5]);
 }
 
 #[test]
