@@ -1,6 +1,9 @@
 mod dispatcher;
 pub use dispatcher::get_engine_dispatcher_builder;
+use futures_lite::future;
+use glium::glutin::event_loop::EventLoopProxy;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 use crate::collide;
 use crate::config::load_config;
@@ -8,12 +11,16 @@ use crate::constants::FRAME_MS;
 use crate::ecs_utils::Componentable;
 use crate::graphics::DefaultGraphics;
 use crate::graphics::GraphicsTrait;
+use crate::input::custom_events::CustomEvent;
+use crate::input::saveload_dialog::select_save_file_async;
 use crate::input::ShapeManipulationState;
+use crate::saveload::save_level_to_file;
 use crate::vector::MatrixTrait;
 use crate::FPSTimer;
 use glium::Display;
 use specs::prelude::*;
 use std::marker::PhantomData;
+use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::draw;
@@ -41,9 +48,9 @@ pub struct EngineD<V, G> {
 }
 impl<V, G> EngineD<V, G>
 where
-    V: VectorTrait + Componentable,
-    V::SubV: Componentable,
-    V::M: Componentable,
+    V: VectorTrait + Componentable + Serialize,
+    V::SubV: Componentable + Serialize,
+    V::M: Componentable + Serialize,
     G: GraphicsTrait,
 {
     pub fn new<F: Fn(&mut World)>(
@@ -84,9 +91,10 @@ where
 
     //currently returns bool that tells main whether to swap engines
     //runs for each event
-    pub fn update<E>(
+    pub fn update(
         &mut self,
-        event: &Event<E>,
+        event: &Event<CustomEvent>,
+        event_loop_proxy: &EventLoopProxy<CustomEvent>,
         control_flow: &mut ControlFlow,
         display: &Display,
         fps_timer: &mut FPSTimer,
@@ -104,6 +112,38 @@ where
             if input.closed {
                 println!("Escape button pressed; exiting.");
                 *control_flow = ControlFlow::Exit;
+            }
+            // TODO: clean up
+            // check for save event
+            if input.save_requested(event) {
+                input.last_movement_mode = input.movement_mode;
+                input.movement_mode = MovementMode::Dialog;
+                drop(input);
+                println!("Save requested");
+                let dialog = select_save_file_async();
+
+                let event_loop_proxy = event_loop_proxy.clone();
+                thread::spawn(move || {
+                    future::block_on(async move {
+                        let file = dialog.await;
+                        event_loop_proxy
+                            .send_event(CustomEvent::SaveDialog(file))
+                            .ok();
+                    })
+                });
+            } else {
+                drop(input);
+            }
+            if let Event::UserEvent(CustomEvent::SaveDialog(maybe_file)) = event {
+                if let Some(file) = maybe_file {
+                    println!("Saving level to {}", file.file_name());
+                    save_level_to_file::<V>(file.path(), &mut self.world)
+                        .map(|_| println!("Level saved!"))
+                        .unwrap_or_else(|_| println!("Could not save level."));
+                }
+
+                let mut input = self.world.write_resource::<Input>();
+                input.movement_mode = input.last_movement_mode;
             }
         }
         //window / game / redraw events
@@ -190,9 +230,7 @@ where
     }
 
     fn center_mouse(input: &mut Input, display: &Display) {
-        if let MovementMode::Player(PlayerMovementMode::Mouse) | MovementMode::Shape(_) =
-            input.movement_mode
-        {
+        if input.is_mouse_locked() {
             display
                 .gl_window()
                 .window()
@@ -226,9 +264,9 @@ where
 
 impl<V, G> EngineD<V, G>
 where
-    V: VectorTrait + Componentable + DeserializeOwned,
-    V::SubV: Componentable + DeserializeOwned,
-    V::M: Componentable + DeserializeOwned,
+    V: VectorTrait + Componentable + Serialize + DeserializeOwned,
+    V::SubV: Componentable + Serialize + DeserializeOwned,
+    V::M: Componentable + Serialize + DeserializeOwned,
     G: GraphicsTrait,
 {
     fn init(display: &Display, gui: Option<crate::gui::System>) -> Self {
@@ -274,16 +312,17 @@ impl Engine {
             }
         }
     }
-    pub fn update<E>(
+    pub fn update(
         &mut self,
-        event: &Event<E>,
+        event: &Event<CustomEvent>,
+        event_loop_proxy: &EventLoopProxy<CustomEvent>,
         control_flow: &mut ControlFlow,
         display: &Display,
         fps_timer: &mut FPSTimer,
     ) -> bool {
         match self {
-            Engine::Three(e) => e.update(event, control_flow, display, fps_timer),
-            Engine::Four(e) => e.update(event, control_flow, display, fps_timer),
+            Engine::Three(e) => e.update(event, event_loop_proxy, control_flow, display, fps_timer),
+            Engine::Four(e) => e.update(event, event_loop_proxy, control_flow, display, fps_timer),
         }
     }
 }

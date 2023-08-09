@@ -27,8 +27,7 @@ pub struct ShapeEntityBuilder<V, M> {
 }
 
 //shorthand
-pub type ShapeEntityBuilderV<V> =
-    ShapeEntityBuilder<V, <V as VectorTrait>::M>;
+pub type ShapeEntityBuilderV<V> = ShapeEntityBuilder<V, <V as VectorTrait>::M>;
 
 impl<V: VectorTrait> ShapeEntityBuilderV<V> {
     pub fn new_from_ref_shape(ref_shapes: &RefShapes<V>, label: ShapeLabel) -> Self {

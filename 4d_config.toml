@@ -18,7 +18,7 @@ stars = true
 level = "Load" # Supported: Level1, Empty, Test1, Test2, Test3, Load
 
 [scene.load]
-path = "./test_save_level.ron"
+path = "./test2.ron"
 
 [editor]
 enabled = true

@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::Path;
 
 use ron::error::SpannedResult;
 use ron::ser::to_string_pretty;
@@ -107,7 +108,7 @@ fn append_shape_components<V>(
     }
 }
 
-pub fn save_level_to_file<V>(path: &str, world: &mut World) -> std::result::Result<(), ()>
+pub fn save_level_to_file<V>(path: &Path, world: &mut World) -> std::result::Result<(), ()>
 where
     V: Componentable + VectorTrait + Serialize,
     V::M: Componentable + Serialize,
@@ -115,7 +116,10 @@ where
 {
     serialize_level(&build_save_structure::<V>(world))
         .map_err(|e| println!("Could not serialize level: {}", e))
-        .and_then(|s| fs::write(path, s).map_err(|e| println!("Could not save to {}: {}", path, e)))
+        .and_then(|s| {
+            fs::write(path, s)
+                .map_err(|e| println!("Could not save to {}: {}", path.to_str().unwrap(), e))
+        })
 }
 
 pub fn load_level_from_file<V>(

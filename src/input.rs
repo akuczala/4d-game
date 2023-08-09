@@ -1,9 +1,12 @@
+pub mod custom_events;
 pub mod input_to_transform;
 pub mod key_map; // this can be private when we're not debugging
+pub mod saveload_dialog;
 mod selection;
 pub mod systems;
 mod update_camera;
 
+use glium::glutin::event::{ElementState, KeyboardInput};
 pub use selection::*;
 pub use update_camera::*;
 
@@ -28,6 +31,7 @@ use crate::vector::{Field, VecIndex, VectorTrait};
 use crate::geometry::shape::RefShapes;
 use glutin::event::{Event, WindowEvent};
 
+use self::custom_events::CustomEvent;
 use self::key_map::{
     MOVEMENT_MODE, PRINT_DEBUG, QUIT, TOGGLEABLE_KEYS, TOGGLE_CLIPPING, TOGGLE_DIMENSION,
 };
@@ -61,9 +65,11 @@ pub enum ShapeMovementMode {
     Free,
 }
 
+#[derive(Copy, Clone)]
 pub enum MovementMode {
     Player(PlayerMovementMode),
     Shape(ShapeMovementMode),
+    Dialog,
 } //add flying tank mode, maybe flying mouse mode
 
 #[derive(Default)]
@@ -141,6 +147,7 @@ pub struct Input {
     pub mouse: MouseData,
     pub toggle_keys: ToggleKeys,
     pub movement_mode: MovementMode,
+    pub last_movement_mode: MovementMode,
 }
 impl Default for Input {
     fn default() -> Self {
@@ -159,10 +166,9 @@ impl Input {
             mouse: Default::default(),
             toggle_keys: Default::default(),
             movement_mode: MovementMode::Player(PlayerMovementMode::Mouse),
+            last_movement_mode: MovementMode::Player(PlayerMovementMode::Mouse),
         }
     }
-}
-impl Input {
     pub fn get_dt(&self) -> Field {
         (self.frame_duration as Field).min(MAX_DT)
     }
@@ -240,6 +246,29 @@ impl Input {
         if self.helper.update(ev) {
             self.listen_inputs();
         }
+    }
+    pub fn is_mouse_locked(&self) -> bool {
+        matches!(
+            self.movement_mode,
+            MovementMode::Player(PlayerMovementMode::Mouse) | MovementMode::Shape(_)
+        )
+    }
+    pub fn save_requested(&self, event: &Event<CustomEvent>) -> bool {
+        // we explicitly event match here to get one event; winit helper generates multiple events
+        matches!(
+            event,
+            Event::WindowEvent {
+                event: WindowEvent::KeyboardInput {
+                    input: KeyboardInput {
+                        state: ElementState::Released,
+                        virtual_keycode: Some(VKC::S),
+                        ..
+                    },
+                    ..
+                },
+                ..
+            }
+        ) && self.helper.key_held(VKC::LWin)
     }
 }
 fn add_mod(x: &mut f32, dx: f32, x_max: f32) {

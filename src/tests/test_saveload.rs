@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;
 
@@ -20,15 +22,16 @@ fn test_saveload() {
     let ref_shapes = build_shape_library::<V>();
 
     let mut config = world.fetch_mut::<Config>();
-    config.scene.level = LevelConfig::Test3;
+    config.scene.level = LevelConfig::Test1;
     drop(config);
 
     build_level(&ref_shapes, &mut world);
-    save_level_to_file::<V>("./test_save_level.ron", &mut world).unwrap();
+    save_level_to_file::<V>(&Path::new("./test_save_level.ron"), &mut world).unwrap();
     let initial_count = world.read_component::<StaticCollider>().count();
 
     let mut deserialized_world = new_world::<V>();
     let ref_shapes = build_shape_library::<V>();
+
     load_level_from_file(
         "./test_save_level.ron",
         &ref_shapes,

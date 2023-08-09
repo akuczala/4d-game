@@ -12,6 +12,7 @@ use glium::glutin::event_loop::EventLoop;
 
 use engine::Engine;
 use fps::FPSTimer;
+use input::custom_events::CustomEvent;
 
 //extern crate imgui;
 //extern crate imgui_glium_renderer;
@@ -59,6 +60,8 @@ fn main() {
 
     display.gl_window().window().set_cursor_visible(false);
 
+    let event_loop_proxy = event_loop.create_proxy();
+
     //POINT OF NO RETURN. Thanks winit
     event_loop.run(move |event, _, control_flow| {
         //let mut engine = tengine.take_mut().unwrap();
@@ -70,7 +73,13 @@ fn main() {
         //could use for menus??
         //*control_flow = ControlFlow::Wait;
 
-        let swap = engine.update(&event, control_flow, &display, &mut fps_timer);
+        let swap = engine.update(
+            &event,
+            &event_loop_proxy,
+            control_flow,
+            &display,
+            &mut fps_timer,
+        );
 
         if swap {
             dim = match dim {
@@ -84,8 +93,8 @@ fn main() {
     }); //end of event loop
 }
 
-fn init_glium() -> (EventLoop<()>, glium::Display) {
-    let event_loop = glutin::event_loop::EventLoop::new();
+fn init_glium() -> (EventLoop<CustomEvent>, glium::Display) {
+    let event_loop = glutin::event_loop::EventLoopBuilder::<CustomEvent>::with_user_event().build();
     let size = LogicalSize {
         width: 1024.0,
         height: 768.0,
