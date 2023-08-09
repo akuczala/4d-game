@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use super::Vec4;
-use crate::vector::{Field, Mat2, Mat3, MatrixTrait, Vec2, VecIndex, VectorTrait};
+use crate::vector::{Field, MatrixTrait, VecIndex, VectorTrait};
 use std::fmt;
 use std::ops::{Add, Index, Mul, Sub};
-use std::slice::Iter;
 
 //column major
 

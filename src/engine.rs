@@ -15,7 +15,6 @@ use crate::input::custom_events::CustomEvent;
 use crate::input::saveload_dialog::select_save_file_async;
 use crate::input::ShapeManipulationState;
 use crate::saveload::save_level_to_file;
-use crate::vector::MatrixTrait;
 use crate::FPSTimer;
 use glium::Display;
 use specs::prelude::*;
@@ -32,10 +31,10 @@ use glium::glutin::{
 //NOTES:
 // include visual indicator of what direction a collision is in
 
-use crate::input::{Input, MovementMode, PlayerMovementMode};
+use crate::input::{Input, MovementMode};
 
 use crate::components::*;
-use crate::geometry::shape::RefShapes;
+
 use crate::vector::{Vec3, Vec4, VecIndex, VectorTrait};
 
 // TODO: reduce number of explicit constraints needed by introducing a componentable-constrained trait?

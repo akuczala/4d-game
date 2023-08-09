@@ -1,21 +1,17 @@
-use std::marker::PhantomData;
-
 use crate::components::{
-    BBall, Convex, HasBBox, Shape, ShapeClipState, ShapeLabel, ShapeType, SingleFace,
-    StaticCollider, Transform, Transformable,
+    BBall, HasBBox, Shape, ShapeClipState, ShapeLabel, StaticCollider, Transform, Transformable,
 };
 use crate::config::Config;
-use crate::draw::texture::texture_builder::{TextureBuilder, TextureBuilderConfig};
+
 use crate::draw::texture::{FaceTextureBuilder, ShapeTextureBuilder};
-use crate::draw::{FaceTexture, ShapeTexture, Texture, TextureMapping};
+use crate::draw::ShapeTexture;
 use crate::ecs_utils::Componentable;
-use crate::geometry::shape::{buildshapes, RefShapes};
+use crate::geometry::shape::RefShapes;
 use crate::graphics::colors::Color;
 use crate::vector::VectorTrait;
 
 use crate::geometry::transform::Scaling;
 use specs::prelude::*;
-use specs::saveload::MarkedBuilder;
 
 #[derive(Clone)]
 pub struct ShapeEntityBuilder<V, M> {

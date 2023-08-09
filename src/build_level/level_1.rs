@@ -1,21 +1,15 @@
-use glium::texture::buffer_texture::TextureBufferContent;
 use itertools::Itertools;
-use specs::{World, WorldExt};
+use specs::World;
 
 use crate::{
-    components::{RefShapes, Shape, ShapeLabel, ShapeTexture, Transformable},
-    config::Config,
+    components::{RefShapes, Shape, ShapeLabel, Transformable},
     constants::{CARDINAL_COLORS, COIN_LABEL_STR, CUBE_LABEL_STR, FACE_SCALE},
     draw::{
         self,
         texture::{
-            shape_texture::{
-                color_cube_shape_texture, fuzzy_color_cube_texture, FaceTextureGeneric,
-                ShapeTextureGeneric,
-            },
+            shape_texture::{fuzzy_color_cube_texture, FaceTextureGeneric, ShapeTextureGeneric},
             texture_builder::{TextureBuilder, TextureBuilderStep, TexturePrim},
         },
-        FaceTexture,
     },
     ecs_utils::Componentable,
     geometry::transform::Scaling,

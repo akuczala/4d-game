@@ -1,5 +1,5 @@
 use super::{Edge, EdgeIndex, VertIndex};
-use crate::vector::{self, Field, VectorTrait};
+use crate::vector::{self, VectorTrait};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 

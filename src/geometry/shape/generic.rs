@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -14,7 +11,6 @@ use crate::{
 };
 
 use super::{
-    face,
     subface::{InteriorSubFace, SubFace},
     Face, FaceIndex,
 };

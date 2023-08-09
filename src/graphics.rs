@@ -4,7 +4,6 @@ use glium::Display;
 use glium::IndexBuffer;
 use glium::Surface;
 use glium::VertexBuffer;
-use specs::Write;
 
 use crate::constants::BACKGROUND_COLOR;
 use crate::draw::{DrawLine, DrawVertex};
@@ -16,7 +15,6 @@ use self::matrices::build_perspective_matrix;
 use self::matrices::build_view_matrix;
 use self::matrices::IDENTITY_MATRIX;
 use self::proj_line_vertex::ProjLineVertex;
-use self::simple_vertex::SimpleVertex;
 
 pub mod colors;
 mod matrices;

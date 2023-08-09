@@ -1,6 +1,6 @@
 use crate::ecs_utils::{Componentable, ModSystem, SystemName};
 use crate::systems::*;
-use crate::vector::{MatrixTrait, VectorTrait};
+use crate::vector::VectorTrait;
 use specs::prelude::*;
 use std::marker::PhantomData;
 

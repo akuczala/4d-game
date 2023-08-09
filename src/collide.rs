@@ -1,31 +1,20 @@
 pub mod bbox;
 pub mod systems;
 
-use crate::components::{
-    Camera, Convex, Player, Shape, ShapeType, SingleFace, Transform, Transformable,
-};
+use crate::components::{Camera, Shape, ShapeType, Transform, Transformable};
 use crate::constants::{PLAYER_COLLIDE_DISTANCE, ZERO};
-use crate::ecs_utils::{Componentable, ModSystem};
-use crate::geometry::shape::buildshapes::{invert_normals, remove_face};
+use crate::ecs_utils::Componentable;
 use crate::geometry::shape::convex::closest_face_distance;
-use crate::geometry::shape::subface::{BoundarySubFace, SubFace};
-use crate::geometry::shape::{generic, FaceIndex};
-use crate::geometry::transform::Scaling;
+use crate::geometry::shape::generic;
 use crate::geometry::Face;
-use crate::input::key_map::PRINT_DEBUG;
-use crate::input::Input;
 use crate::spatial_hash::{HashInt, SpatialHashSet};
-use crate::tests::utils::{color_number, print_grid};
-use crate::utils::partial_max;
 use crate::vector::{Field, VectorTrait};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;
 use specs::Component;
-use std::marker::PhantomData;
 
 pub use self::bbox::{BBox, HasBBox};
-use self::systems::BBoxHashingSystem;
 
 #[derive(Clone, Component, Serialize, Deserialize)]
 #[storage(VecStorage)]
@@ -318,9 +307,12 @@ fn dcoords_cells_test() {
 #[test]
 fn test_collision_dist() {
     use crate::geometry::shape::buildshapes::ShapeBuilder;
-    use crate::vector::linspace;
-    use crate::vector::{Vec2, Vec3};
-    use colored::*;
+    use crate::tests::utils::print_grid;
+
+    use crate::vector::Vec2;
+
+    use crate::geometry::shape::buildshapes::{invert_normals, remove_face};
+    use crate::tests::utils::color_number;
     type V = Vec2;
 
     let mut shape = ShapeBuilder::<V>::build_cube(1.0).build();

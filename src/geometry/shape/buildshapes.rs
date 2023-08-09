@@ -1,20 +1,19 @@
 use super::face::FaceBuilder;
 use super::generic::GenericShapeType;
-use super::subface::{self, BoundarySubFace, InteriorSubFace, SubFace};
-use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, SingleFace, VertIndex};
+use super::subface::{BoundarySubFace, InteriorSubFace, SubFace};
+use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, VertIndex};
 use crate::components::Transform;
 use crate::constants::ZERO;
-use crate::draw::{Texture, TextureMapping};
+
 use crate::geometry::transform::Scaling;
 use crate::geometry::{Plane, Transformable};
-use crate::graphics::colors::*;
+
 use crate::vector::Field;
 use crate::vector::PI;
-use crate::vector::{barycenter, Vec2, Vec3, Vec4};
+use crate::vector::{barycenter, Vec2};
 use crate::vector::{VecIndex, VectorTrait};
 use itertools::{multizip, Itertools};
 use std::collections::HashMap;
-use std::marker::PhantomData;
 
 #[derive(Clone)]
 pub struct ShapeBuilder<V> {

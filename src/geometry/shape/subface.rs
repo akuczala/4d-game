@@ -7,7 +7,7 @@ use crate::{
     vector::{barycenter_iter, VectorTrait},
 };
 
-use super::{face, FaceIndex, VertIndex};
+use super::{FaceIndex, VertIndex};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum SubFace<V> {

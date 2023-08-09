@@ -1,28 +1,23 @@
-use std::marker::PhantomData;
-
-use itertools::Itertools;
-use rand::seq::IteratorRandom;
-use serde::__private::de;
 use serde::{Deserialize, Serialize};
 
 use clipping::{clip_line_cube, clip_line_plane, ClipState};
-use specs::rayon::iter::Chain;
+
 use specs::{Join, ReadStorage};
 pub use texture::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 
 use crate::components::*;
 use crate::config::ViewConfig;
-use crate::constants::{CURSOR_COLOR, SELECTION_COLOR, SMALL_Z, Z0, ZERO, Z_NEAR};
+use crate::constants::{CURSOR_COLOR, SMALL_Z, Z0, ZERO, Z_NEAR};
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
-use crate::geometry::{shape::VertIndex, Line, Shape};
+use crate::geometry::{Line, Shape};
 use crate::graphics::colors::*;
-use crate::vector::{barycenter, linspace, Field, VecIndex, VectorTrait};
+use crate::vector::{Field, VectorTrait};
 
 use self::clipping::boundaries::calc_boundaries;
 use self::clipping::{clip_line_cylinder, clip_line_sphere, clip_line_tube};
 use self::texture::shape_texture::draw_face_texture;
-use self::visual_aids::{calc_wireframe_lines, draw_axes};
+use self::visual_aids::calc_wireframe_lines;
 
 pub mod clipping;
 pub mod draw_line_collection;

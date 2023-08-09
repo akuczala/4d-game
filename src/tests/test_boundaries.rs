@@ -1,30 +1,22 @@
 use colored::Colorize;
-use itertools::Itertools;
 
-use crate::components::ShapeType;
-use crate::draw::clipping::boundaries::ConvexBoundarySet;
-use crate::draw::clipping::{clip_line, clip_line_convex};
-use crate::geometry::shape::buildshapes::invert_normals;
-use crate::geometry::shape::single_face::{make_3d_square, make_3d_triangle};
-use crate::geometry::shape::Edge;
-use crate::geometry::Line;
-use crate::vector::is_close;
-use crate::vector::{Vec2, Vec3};
 use crate::{
-    components::Transform,
+    components::ShapeType,
     constants::ZERO,
-    draw::clipping::boundaries::{self, calc_boundaries},
+    draw::clipping::{
+        boundaries::{calc_boundaries, ConvexBoundarySet},
+        clip_line,
+    },
     geometry::{
         shape::{
-            buildshapes::{remove_face, ShapeBuilder},
-            single_face::make_line_shape,
+            buildshapes::{invert_normals, remove_face, ShapeBuilder},
+            single_face::{make_3d_square, make_3d_triangle, make_line_shape},
         },
-        Plane,
+        Line,
     },
-    vector::VectorTrait,
+    tests::utils::{color_number, print_grid},
+    vector::{is_close, Vec2, Vec3, VectorTrait},
 };
-
-use super::utils::{color_number, print_grid};
 
 #[test]
 fn test_single_face_boundaries() {

@@ -6,7 +6,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use super::{mat1::Mat1, Field, MatrixTrait, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
+use super::{mat1::Mat1, Field, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Vec1([Field; 1]);

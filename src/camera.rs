@@ -1,7 +1,6 @@
-use crate::components::{Transform, Transformable};
-use crate::constants::{ANG_SPEED, MAX_TILT, PI};
+use crate::components::Transform;
 use crate::geometry::Plane;
-use crate::vector::{rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait};
+use crate::vector::{rotation_matrix, VectorTrait};
 
 pub struct Camera<V> {
     pub plane: Plane<V>,

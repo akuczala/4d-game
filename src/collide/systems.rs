@@ -7,13 +7,12 @@ use crate::{
     components::*,
     ecs_utils::{Componentable, ModSystem, SystemName},
     input::{key_map::PRINT_DEBUG, Input},
-    spatial_hash::{HashInt, SpatialHashSet},
+    spatial_hash::SpatialHashSet,
     vector::VectorTrait,
 };
 
 use super::{
-    check_player_static_collisions, get_bbox_cells, get_dcoords_dcells, insert_static_bboxes,
-    move_player, update_player_bbox, update_static_bboxes,
+    check_player_static_collisions, move_player, update_player_bbox, update_static_bboxes,
 };
 
 pub struct MovePlayerSystem<V>(pub PhantomData<V>);

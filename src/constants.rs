@@ -1,7 +1,7 @@
 pub use std::f32::consts::{E, PI};
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_3};
 
-use crate::{components::ShapeLabel, draw::ViewportShape, graphics::colors::*, vector::Field};
+use crate::{graphics::colors::*, vector::Field};
 
 pub const HALF_PI: Field = FRAC_PI_2;
 pub const ZERO: Field = 0.0;

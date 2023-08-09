@@ -1,12 +1,11 @@
 use std::iter;
 
 use crate::{
-    components::{Convex, Shape, ShapeType, SingleFace},
+    components::{Convex, Shape, ShapeType},
     constants::ZERO,
     geometry::{
         shape::{
-            single_face::{self, make_line_shape},
-            subface::{BoundarySubFace, InteriorSubFace, SubFace},
+            subface::{InteriorSubFace, SubFace},
             FaceIndex, VertIndex,
         },
         Face, Plane,

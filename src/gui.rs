@@ -1,9 +1,9 @@
 use crate::components::*;
 use crate::ecs_utils::Componentable;
 use crate::fps::FPSFloat;
-use crate::geometry::shape::RefShapes;
-use crate::input::{Input, ShapeManipulationMode, ShapeManipulationState};
-use crate::vector::{MatrixTrait, VectorTrait};
+
+use crate::input::{ShapeManipulationMode, ShapeManipulationState};
+use crate::vector::VectorTrait;
 use glium::glutin::event::{Event, WindowEvent};
 use glium::glutin::event_loop::ControlFlow;
 use glium::Display;
@@ -11,7 +11,6 @@ use glium::Frame;
 use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, ProgressBar, Ui};
 use imgui_glium_renderer::Renderer;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
-use map_in_place::MapVecInPlace;
 use specs::prelude::*;
 use std::time::Instant;
 //mod clipboard;
@@ -233,7 +232,7 @@ impl UIArgs {
 }
 
 fn hello_world(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
-    use imgui::{Condition, Window};
+    use imgui::Condition;
     ui.window("Debug info")
         .position([20.0, 20.0], Condition::Appearing)
         .size([300.0, 110.0], Condition::FirstUseEver)
@@ -259,7 +258,7 @@ fn hello_world(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
         });
 }
 fn simple_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
-    use imgui::{Condition, Window};
+    use imgui::Condition;
     ui.window("Press M to toggle mouse control")
         .position([0., 0.], Condition::Appearing)
         .size([190.0, 110.0], Condition::FirstUseEver)
@@ -301,7 +300,7 @@ fn simple_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
         });
 }
 fn debug_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs, state: &mut State) {
-    use imgui::{Condition, Window};
+    use imgui::Condition;
     ui.window("Press M to toggle mouse control")
         .position([0., 0.], Condition::Appearing)
         .size([190.0, 500.0], Condition::FirstUseEver)

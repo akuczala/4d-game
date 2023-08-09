@@ -2,14 +2,13 @@ pub mod shape_texture;
 pub mod texture_builder;
 
 pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, ShapeTextureBuilder};
-use self::texture_builder::{TextureBuilder, TextureBuilderConfig};
 
 use super::visual_aids::random_sphere_point;
 use super::DrawLine;
 
 use crate::components::Shape;
 use crate::constants::FACE_SCALE;
-use crate::geometry::shape::{Edge, FaceIndex, VertIndex};
+use crate::geometry::shape::{Edge, VertIndex};
 use crate::geometry::{Face, Line};
 use crate::vector::{Field, VecIndex, VectorTrait};
 

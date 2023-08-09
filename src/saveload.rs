@@ -3,13 +3,13 @@ use std::path::Path;
 
 use ron::error::SpannedResult;
 use ron::ser::to_string_pretty;
-use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use specs::prelude::*;
 use transform::{Transform, Transformable};
 
 use crate::coin::Coin;
-use crate::components::{RefShapes, ShapeLabel, ShapeTexture, StaticCollider};
-use crate::draw::texture::texture_builder::TextureBuilder;
+use crate::components::{RefShapes, ShapeLabel, StaticCollider};
+
 use crate::draw::texture::ShapeTextureBuilder;
 use crate::{
     ecs_utils::Componentable, geometry::transform, shape_entity_builder::ShapeEntityBuilderV,

@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     components::Shape,
     constants::CARDINAL_COLORS,
-    draw::{visual_aids::random_sphere_point, DrawLine},
-    geometry::{shape::FaceIndex, Face, Line},
+    draw::DrawLine,
+    geometry::{shape::FaceIndex, Face},
     graphics::colors::Color,
     vector::{Field, VectorTrait},
 };

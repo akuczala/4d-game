@@ -5,42 +5,34 @@ use super::key_map::{
     CANCEL_MANIPULATION, CREATE_SHAPE, DELETE_SHAPE, DUPLICATE_SHAPE, FREE_MODE, ROTATE_MODE,
     SCALE_MODE, TRANSLATE_MODE,
 };
-use super::{Input, MovementMode, PlayerMovementMode, ShapeMovementMode, MOUSE_SENSITIVITY};
+use super::{Input, MovementMode, PlayerMovementMode, ShapeMovementMode};
 
 use crate::cleanup::DeletedEntities;
 use crate::config::Config;
 use crate::constants::{CUBE_LABEL_STR, SELECTION_COLOR};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::shape_texture::fuzzy_color_cube_texture;
-use crate::draw::texture::texture_builder::TextureBuilder;
+
 use crate::draw::texture::ShapeTextureBuilder;
 use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
-use crate::draw::ShapeTexture;
-use crate::ecs_utils::Componentable;
-use crate::geometry::transform::{self, Scaling};
-use crate::player::Player;
+
+use crate::geometry::transform::Scaling;
+
 use crate::shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV};
-use crate::spatial_hash::{SpatialHash, SpatialHashSet};
-use std::collections::HashMap;
-use std::marker::PhantomData;
 
 use glium::glutin;
-use glutin::dpi::LogicalPosition;
+
 use glutin::event::VirtualKeyCode as VKC;
-use glutin::event::{MouseScrollDelta, TouchPhase};
 
-use specs::{Entity, WriteStorage};
-use winit_input_helper::WinitInputHelper;
+use specs::Entity;
 
-use crate::vector::{barycenter, Field, MatrixTrait, VecIndex, VectorTrait};
-use crate::{camera, components::*};
+use crate::components::*;
+use crate::vector::{barycenter, Field, VecIndex, VectorTrait};
 
-use crate::geometry::shape::{self, RefShapes};
+use crate::geometry::shape::RefShapes;
 use crate::input::input_to_transform::{
     scrolling_axis_scaling, scrolling_axis_translation, update_transform,
 };
-use crate::input::ShapeMovementMode::Scale;
-use glutin::event::{Event, WindowEvent};
 
 // would have liked to make this part of the Input struct, but I don't feel like adding <V> to every input object.
 // Plus it is nice to keep Input dimension agnostic

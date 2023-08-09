@@ -1,28 +1,14 @@
-use specs::{World, WorldExt};
-
 use crate::constants::{CARDINAL_COLORS, ONE_SIDED_FACE_LABEL_STR, PI, TWO_SIDED_FACE_LABEL_STR};
 use crate::draw::texture::texture_builder::TextureBuilder;
 use crate::draw::texture::FaceTextureBuilder;
-use crate::graphics::colors::*;
+
 use crate::{
-    components::{RefShapes, Shape, ShapeLabel, ShapeTexture, Transformable},
-    config::{Config, FuzzLinesConfig},
-    draw::{
-        self,
-        texture::shape_texture::{color_cube_shape_texture, fuzzy_color_cube_texture},
-        FaceTexture, Texture,
-    },
-    ecs_utils::Componentable,
-    geometry::{
-        shape::buildshapes::{convex_shape_to_face_shape, ShapeBuilder},
-        transform::Scaling,
-    },
-    graphics::colors::YELLOW,
+    components::{RefShapes, ShapeLabel, Transformable},
+    draw::{self},
+    geometry::transform::Scaling,
     shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV},
     vector::{Field, VectorTrait},
 };
-
-use super::{insert_coin, insert_static_collider};
 
 pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEntityBuilderV<V>> {
     let (n_divisions, frame_vertis) = match V::DIM {

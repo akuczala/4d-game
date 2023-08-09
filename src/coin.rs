@@ -1,13 +1,11 @@
 use crate::cleanup::DeletedEntities;
 use crate::components::*;
 use crate::ecs_utils::Componentable;
-use crate::geometry::shape::RefShapes;
 use crate::input::Input;
 use crate::vector::{Field, VectorTrait};
 use core::marker::PhantomData;
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;
-use specs::{Component, VecStorage};
 
 #[derive(Default, Debug)]
 pub struct CoinsCollected(pub u32);

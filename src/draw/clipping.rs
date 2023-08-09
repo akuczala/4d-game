@@ -2,17 +2,16 @@ pub mod bball;
 pub mod boundaries;
 
 use crate::ecs_utils::Componentable;
-use crate::player::Player;
+
 use crate::vector::{Field, VecIndex, VectorTrait};
 use std::collections::{HashMap, HashSet};
 
-use crate::components::{Shape, Transform};
+use crate::components::Shape;
 use crate::draw::DrawLine;
-use crate::geometry::{sphere_line_intersect, sphere_t_intersect_infinite_normed, Line, Plane};
+use crate::geometry::{sphere_t_intersect_infinite_normed, Line, Plane};
 
 use itertools::Itertools;
-use specs::{Component, Entities, Entity, Join, ReadStorage, VecStorage, WriteStorage};
-use std::marker::PhantomData;
+use specs::{Entities, Entity, Join, ReadStorage, WriteStorage};
 
 use self::bball::BBall;
 use self::boundaries::ConvexBoundarySet;
@@ -91,7 +90,6 @@ impl<V: VectorTrait + Componentable> ShapeClipState<V> {
     //     outstr
     // }
     pub fn this_in_front_debug(&self) -> String {
-        use itertools::Itertools;
         let mut outstr = "".to_string();
         for e in self.in_front.iter().sorted() {
             outstr = format!("{} {} ", outstr, e.id());

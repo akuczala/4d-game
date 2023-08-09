@@ -11,9 +11,9 @@ use fmt::Display;
 pub use mat2_tuple2::Mat2;
 pub use mat3_tuple2::Mat3;
 pub use mat4_tuple2::Mat4;
-use serde::{Deserialize, Serialize};
-use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Range, Sub};
-use std::{array, fmt};
+
+use std::fmt;
+use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 pub use vec2::Vec2;
 pub use vec3::Vec3;
 pub use vec4::Vec4;

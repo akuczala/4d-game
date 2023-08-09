@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, ops::Deref};
+use std::marker::PhantomData;
 
 use specs::{
     hibitset::BitSetOr,
@@ -7,7 +7,7 @@ use specs::{
     BitSet, ReaderId,
 };
 
-use crate::vector::{Mat2, Mat3, Mat4, Vec2, Vec3, Vec4, VectorTrait};
+use crate::vector::{Mat2, Mat3, Mat4, Vec2, Vec3, Vec4};
 
 //the 'static lifetime here tells the compiler that any type with the componentable trait
 //does not hold any references that might require lifetimes

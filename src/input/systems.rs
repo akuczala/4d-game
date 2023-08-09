@@ -1,20 +1,17 @@
-use glium::backend::glutin::headless;
 use specs::prelude::*;
 use std::marker::PhantomData;
 
 use crate::cleanup::DeletedEntities;
 use crate::config::Config;
-use crate::draw::texture::texture_builder::TextureBuilder;
+
+use crate::components::*;
 use crate::draw::texture::ShapeTextureBuilder;
 use crate::ecs_utils::ModSystem;
-use crate::{components::*, config};
 use crate::{ecs_utils::Componentable, vector::VectorTrait};
 
-use super::input_to_transform::{pos_to_grid, reset_orientation_and_scale};
 use super::{
-    cancel_manipulation, create_shape, delete_shape, duplicate_shape, manipulate_shape,
-    manipulate_shape_outer, print_debug, selection_box, set_manipulation_mode,
-    update_camera::update_camera, Input, MovementMode, ShapeManipulationState,
+    create_shape, delete_shape, duplicate_shape, manipulate_shape_outer, print_debug,
+    selection_box, update_camera::update_camera, Input, MovementMode, ShapeManipulationState,
 };
 
 pub struct UpdateCameraSystem<V>(pub PhantomData<V>);

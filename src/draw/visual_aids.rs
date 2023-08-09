@@ -9,16 +9,16 @@ use crate::{
     },
     geometry::{
         shape::{
-            buildshapes::{build_prism_2d, convex_shape_to_face_shape, ShapeBuilder},
+            buildshapes::{convex_shape_to_face_shape, ShapeBuilder},
             VertIndex,
         },
         Line,
     },
-    graphics::colors::{blend, Color, BLUE, CYAN, GREEN, MAGENTA, RED},
+    graphics::colors::{blend, BLUE, CYAN},
     vector::{linspace, Field, VecIndex, VectorTrait},
 };
 
-use super::{texture::pointlike_line, DrawLine};
+use super::DrawLine;
 
 pub fn calc_grid_lines<V: VectorTrait>(center: V, cell_size: Field, n: usize) -> Vec<Line<V>> {
     let axes = (0, 2, 3);

@@ -1,8 +1,8 @@
 use crate::components::*;
-use crate::input::{Input, MovementMode, ShapeMovementMode, MOUSE_SENSITIVITY};
+use crate::input::{Input, MOUSE_SENSITIVITY};
 use crate::vector::{Field, VecIndex, VectorTrait};
 use std::f32::consts::PI;
-use std::ops::{Index, IndexMut};
+use std::ops::IndexMut;
 
 use crate::geometry::transform::Scaling;
 use glium::glutin;
@@ -11,7 +11,7 @@ use glutin::event::VirtualKeyCode as VKC;
 use super::key_map::{
     AXIS_KEYMAP, MOVE_BACKWARDS, MOVE_FORWARDS, MOVE_KEYMAP, RESET_ORIENTATION, SNAPPING,
 };
-use super::{ShapeManipulationState, ToggleKeys};
+use super::ToggleKeys;
 
 const SPEED: Field = 1.5;
 const ANG_SPEED: Field = 1.5 * PI / 3.0;

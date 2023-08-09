@@ -1,30 +1,22 @@
 use crate::constants::TWO_SIDED_FACE_LABEL_STR;
 use crate::draw::texture::texture_builder::TextureBuilder;
 use crate::draw::texture::FaceTextureBuilder;
-use crate::draw::FaceTexture;
-use crate::geometry::shape::buildshapes::{convex_shape_to_face_shape, ShapeBuilder};
+
 use crate::graphics::colors::*;
 use crate::vector::VecIndex;
 use crate::{components::StaticCollider, constants::PI};
 
-use specs::{Builder, World, WorldExt};
+use specs::{Builder, World};
 
 use crate::{
-    components::{RefShapes, Shape, ShapeLabel, ShapeTexture, Transformable},
-    config::Config,
-    constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FACE_SCALE},
-    draw::{
-        self,
-        texture::shape_texture::{color_cube_shape_texture, fuzzy_color_cube_texture},
-    },
+    components::{RefShapes, ShapeLabel, Transformable},
+    draw::{self},
     ecs_utils::Componentable,
     geometry::transform::Scaling,
     graphics::colors::YELLOW,
     shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV},
     vector::{Field, VectorTrait},
 };
-
-use super::{insert_coin, insert_static_collider};
 
 fn build_wall<V: VectorTrait>(
     pos: V,

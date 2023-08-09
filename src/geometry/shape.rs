@@ -9,19 +9,17 @@ pub mod subface;
 use self::generic::GenericShapeType;
 use self::subface::SubFace;
 
-use super::{line_plane_intersect, Line, Plane, Transform, Transformable};
-use crate::graphics::colors::Color;
+use super::{Line, Transform};
+
 use crate::utils::BranchIterator;
-use crate::vector;
-use crate::vector::{barycenter, Field, VectorTrait};
+
+use crate::vector::{Field, VectorTrait};
 pub use convex::Convex;
 pub use face::Face;
 use serde::{Deserialize, Serialize};
 pub use single_face::SingleFace;
 
-use crate::geometry::shape::face::FaceGeometry;
-use crate::geometry::transform::Scaling;
-use std::fmt::{self, Display};
+use std::fmt::{self};
 
 pub use shape_library::*;
 

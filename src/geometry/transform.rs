@@ -1,7 +1,5 @@
-use crate::vector::{rotation_matrix, Field, MatrixTrait, Vec4, VecIndex, VectorTrait};
+use crate::vector::{rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait};
 use serde::{Deserialize, Serialize};
-use specs::prelude::*;
-use specs::Component;
 
 pub trait Transformable<V: VectorTrait> {
     fn with_transform(mut self, transformation: Transform<V, V::M>) -> Self

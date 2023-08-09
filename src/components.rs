@@ -2,7 +2,7 @@ use specs::{Component, FlaggedStorage, HashMapStorage, VecStorage};
 
 use crate::coin::Coin;
 pub use crate::draw::draw_line_collection::DrawLineCollection;
-use crate::draw::texture::texture_builder::TextureBuilder;
+
 use crate::draw::texture::ShapeTextureBuilder;
 pub use crate::draw::ShapeTexture;
 use crate::ecs_utils::Componentable;
@@ -19,7 +19,6 @@ pub use crate::geometry::{
     transform::{Transform, Transformable},
 };
 pub use crate::player::{Cursor, Heading, MaybeSelected, MaybeTarget, Selected};
-use crate::vector::VectorTrait;
 
 type DefaultStorage<V> = VecStorage<V>;
 

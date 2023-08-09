@@ -1,12 +1,11 @@
 use std::{
     fmt,
-    ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub},
-    slice::Iter,
+    ops::{Add, Index, Mul, Sub},
 };
 
 use serde::{Deserialize, Serialize};
 
-use super::{vec1::Vec1, Field, MatrixTrait, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
+use super::{vec1::Vec1, Field, MatrixTrait, VecIndex, VectorTrait};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Mat1(pub Vec1);

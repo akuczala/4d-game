@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-#![allow(unused_imports)]
 #[macro_use]
 extern crate glium;
 #[macro_use]
@@ -40,6 +39,7 @@ mod saveload;
 mod shape_entity_builder;
 mod spatial_hash;
 mod systems;
+#[cfg(test)]
 mod tests;
 mod utils;
 

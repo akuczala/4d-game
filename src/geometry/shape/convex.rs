@@ -1,12 +1,10 @@
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::geometry::shape::{Face, FaceIndex, Shape};
-use crate::geometry::{line_plane_intersect, Line, Plane};
-use crate::tests::utils::print_grid;
-use crate::vector::{Field, VectorTrait};
+use crate::geometry::shape::{Face, Shape};
+use crate::geometry::{line_plane_intersect, Line};
 
-use std::fmt;
+use crate::vector::{Field, VectorTrait};
 
 use super::subface::InteriorSubFace;
 
@@ -127,7 +125,8 @@ fn test_point_within() {
 // TODO: seeing another potential difference: a small square of ones in the center
 #[test]
 fn test_point_within2() {
-    use crate::vector::{linspace, Vec3};
+    use crate::tests::utils::print_grid;
+    use crate::vector::Vec3;
     use colored::*;
     let shape = crate::geometry::shape::buildshapes::build_prism_3d::<Vec3>(1.0, 1.0, 4);
     print_grid(2.0, 40, |x, y| {

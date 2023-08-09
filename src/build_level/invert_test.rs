@@ -2,8 +2,8 @@ use specs::{Builder, World};
 
 use crate::{
     components::{RefShapes, ShapeLabel, StaticCollider, Transformable},
-    constants::{CUBE_LABEL_STR, HALF_PI, INVERTED_CUBE_LABEL_STR},
-    draw::texture::shape_texture::{color_cube_shape_texture, fuzzy_color_cube_texture},
+    constants::{CUBE_LABEL_STR, HALF_PI},
+    draw::texture::shape_texture::fuzzy_color_cube_texture,
     ecs_utils::Componentable,
     graphics::colors::WHITE,
     shape_entity_builder::ShapeEntityBuilderV,

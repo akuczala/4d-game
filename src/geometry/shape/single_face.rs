@@ -1,17 +1,12 @@
-use std::iter;
-use std::marker::PhantomData;
-
 use serde::{Deserialize, Serialize};
 
 use super::face::FaceBuilder;
-use super::subface::{BoundarySubFace, SubFace};
-use super::{face, Face, FaceIndex, Shape, VertIndex};
-use crate::components::{ShapeType, Transform};
-use crate::constants::ZERO;
-use crate::geometry::shape::single_face;
+use super::subface::BoundarySubFace;
+use super::{Face, FaceIndex, Shape, VertIndex};
+
 use crate::geometry::{line_plane_intersect, Line, Plane};
-use crate::tests::utils::{color_number, print_grid};
-use crate::vector::{barycenter_iter, Field, VecIndex, VectorTrait};
+
+use crate::vector::{Field, VectorTrait};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SingleFace<V> {
@@ -98,6 +93,7 @@ pub fn make_3d_square() -> Shape<Vec3> {
 
 #[test]
 fn test_subface_planes() {
+    use crate::components::ShapeType;
     use crate::vector::is_close;
     let shape = make_3d_square();
     let single_face = match shape.shape_type {
@@ -144,6 +140,7 @@ fn test_subface_planes() {
 }
 #[test]
 fn test_subface_dist() {
+    use crate::components::ShapeType;
     use crate::vector::is_close;
     let shape = make_3d_square();
     let single_face = match shape.shape_type {
@@ -160,7 +157,9 @@ fn test_subface_dist() {
 
 #[test]
 fn test_point_within2() {
-    use crate::vector::linspace;
+    use crate::components::Transform;
+    use crate::geometry::shape::subface::SubFace;
+    use crate::tests::utils::{color_number, print_grid};
     use colored::*;
 
     fn point_normal_distance_i<'a, V: VectorTrait, I: Iterator<Item = &'a Plane<V>>>(

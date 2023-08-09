@@ -4,25 +4,11 @@ use super::{Input, MovementMode, MOUSE_SENSITIVITY};
 
 use crate::config::ViewConfig;
 use crate::constants::{ANG_SPEED, MAX_TILT, SPEED};
-use crate::ecs_utils::Componentable;
-use crate::player::Player;
-use std::marker::PhantomData;
-
-use glium::glutin;
-use glutin::dpi::LogicalPosition;
-use glutin::event::VirtualKeyCode as VKC;
-use glutin::event::{MouseScrollDelta, TouchPhase};
-
-use winit_input_helper::WinitInputHelper;
-
-use specs::prelude::*;
 
 use crate::components::*;
 use crate::vector::{rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait};
 
-use crate::geometry::shape::RefShapes;
-use crate::input::{PlayerMovementMode, ShapeMovementMode};
-use glutin::event::{Event, WindowEvent};
+use crate::input::PlayerMovementMode;
 
 //heading-based rotation affecting both frame and heading
 pub fn delta_turn_matrix<V: VectorTrait>(

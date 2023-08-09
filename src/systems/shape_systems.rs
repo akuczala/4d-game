@@ -3,12 +3,10 @@ use std::collections::{HashMap, HashSet};
 use specs::prelude::*;
 use specs::{ReadStorage, System, World, WriteStorage};
 
-use crate::components::{
-    BBox, HasBBox, MaybeSelected, Player, ShapeClipState, ShapeLabel, ShapeType,
-};
+use crate::components::{BBox, HasBBox, ShapeClipState, ShapeLabel};
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::RefShapes;
-use crate::vector::MatrixTrait;
+
 use crate::{
     components::{BBall, Shape, Transform},
     ecs_utils::ModSystem,

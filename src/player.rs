@@ -4,8 +4,7 @@ use crate::collide::MoveNext;
 use crate::components::*;
 use crate::constants::MAX_TARGET_DIST;
 use crate::ecs_utils::Componentable;
-use crate::geometry::shape::buildshapes::ShapeBuilder;
-use crate::geometry::transform::Scaling;
+
 use crate::geometry::Line;
 use crate::vector::MatrixTrait;
 use crate::vector::{Field, VectorTrait};

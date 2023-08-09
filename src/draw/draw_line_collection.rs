@@ -1,17 +1,8 @@
-use std::marker::PhantomData;
-
-use itertools::Itertools;
-use specs::{Join, ReadExpect, ReadStorage, System, WriteExpect};
-
 use crate::{
-    components::{ClipState, ShapeClipState},
-    ecs_utils::Componentable,
-    geometry::Line,
-    graphics::colors::Color,
-    vector::VectorTrait,
+    components::ShapeClipState, geometry::Line, graphics::colors::Color, vector::VectorTrait,
 };
 
-use super::{clipping::clip_draw_lines, DrawLine, DrawLineList};
+use super::{clipping::clip_draw_lines, DrawLine};
 
 pub struct DrawLineCollection<V>(pub Vec<DrawLine<V>>);
 impl<V> DrawLineCollection<V> {

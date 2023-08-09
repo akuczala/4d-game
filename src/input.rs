@@ -10,25 +10,19 @@ use glium::glutin::event::{ElementState, KeyboardInput};
 pub use selection::*;
 pub use update_camera::*;
 
-use crate::ecs_utils::Componentable;
-use crate::player::Player;
 use std::collections::HashSet;
-use std::marker::PhantomData;
 
 use glium::glutin;
 use glium::glutin::dpi::PhysicalPosition;
-use glutin::dpi::LogicalPosition;
+
 use glutin::event::VirtualKeyCode as VKC;
 use glutin::event::{MouseScrollDelta, TouchPhase};
 
 use winit_input_helper::WinitInputHelper;
 
-use specs::prelude::*;
-
 use crate::components::*;
-use crate::vector::{Field, VecIndex, VectorTrait};
+use crate::vector::{Field, VectorTrait};
 
-use crate::geometry::shape::RefShapes;
 use glutin::event::{Event, WindowEvent};
 
 use self::custom_events::CustomEvent;

@@ -1,3 +1,4 @@
+#[cfg(test)]
 use specs::{World, WorldExt};
 
 use crate::{

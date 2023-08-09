@@ -3,21 +3,19 @@ use std::marker::PhantomData;
 use specs::{Entities, Join, ReadExpect, ReadStorage, System, WriteExpect, WriteStorage};
 
 use crate::{
-    components::{
-        BBall, Camera, ClipState, Cursor, Player, Shape, ShapeClipState, ShapeType, Transform,
-    },
+    components::{BBall, Camera, ClipState, Cursor, Player, Shape, ShapeClipState, Transform},
     config::Config,
     constants::FACE_SCALE,
     ecs_utils::{Componentable, SystemName},
-    vector::{Field, VectorTrait},
+    vector::VectorTrait,
 };
 
 use super::{
     calc_shapes_lines,
-    clipping::{calc_in_front, calc_in_front_pair, InFrontArg},
+    clipping::calc_in_front,
     draw_cursor,
     draw_line_collection::{draw_collection, DrawLineCollection},
-    transform_draw_line, update_shape_visibility, DrawLine, DrawLineList, ShapeTexture,
+    transform_draw_line, update_shape_visibility, DrawLineList, ShapeTexture,
 };
 
 //would be nicer to move lines out of read_in_lines rather than clone them
