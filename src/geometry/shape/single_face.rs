@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::face::FaceBuilder;
+
 use super::subface::BoundarySubFace;
 use super::{Face, FaceIndex, Shape, VertIndex};
 

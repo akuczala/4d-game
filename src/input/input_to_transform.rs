@@ -2,7 +2,7 @@ use crate::components::*;
 use crate::input::{Input, MOUSE_SENSITIVITY};
 use crate::vector::{Field, VecIndex, VectorTrait};
 use std::f32::consts::PI;
-use std::ops::IndexMut;
+
 
 use crate::geometry::transform::Scaling;
 use glium::glutin;
@@ -98,16 +98,6 @@ fn sliding_and_turning<V: VectorTrait>(
         };
     }
     any_slide_turn
-}
-
-fn get_axis<V: VectorTrait>(input: &Input) -> Option<VecIndex> {
-    let mut axis = None;
-    for (key_code, ax) in AXIS_KEYMAP.iter() {
-        if input.helper.key_held(*key_code) & (*ax < V::DIM) {
-            axis = Some(*ax)
-        }
-    }
-    axis
 }
 
 pub fn set_axes(toggle_keys: &mut ToggleKeys, locked_axes: &mut Vec<VecIndex>, dim: VecIndex) {

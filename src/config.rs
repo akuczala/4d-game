@@ -87,11 +87,20 @@ pub struct EditorConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
+pub enum GuiConfig {
+    #[default]
+    None,
+    Simple,
+    Debug
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct Config {
     pub fuzz_lines: FuzzLinesConfig,
     pub view: ViewConfig,
     pub scene: SceneConfig,
     pub editor: EditorConfig,
+    pub gui: GuiConfig
 }
 
 pub fn load_config() -> Config {

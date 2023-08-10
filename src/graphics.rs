@@ -1,13 +1,13 @@
 use glium::buffer::WriteMapping;
 use glium::vertex::Vertex;
 use glium::Display;
-use glium::IndexBuffer;
+
 use glium::Surface;
 use glium::VertexBuffer;
 
 use crate::constants::BACKGROUND_COLOR;
 use crate::draw::{DrawLine, DrawVertex};
-use crate::geometry::shape::VertIndex;
+
 use crate::vector::VecIndex;
 use crate::vector::VectorTrait;
 
