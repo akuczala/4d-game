@@ -23,8 +23,6 @@ pub const DELETE_SHAPE: VKC = VKC::Slash;
 pub const DUPLICATE_SHAPE: VKC = VKC::Semicolon;
 pub const RESET_ORIENTATION: VKC = VKC::Comma;
 
-pub const TOGGLE_CLIPPING: VKC = VKC::C;
-
 pub const QUIT: VKC = VKC::Escape;
 pub const TOGGLE_DIMENSION: VKC = VKC::Back;
 

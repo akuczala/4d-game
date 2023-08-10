@@ -21,16 +21,13 @@ use glutin::event::{MouseScrollDelta, TouchPhase};
 
 use winit_input_helper::WinitInputHelper;
 
-use crate::components::*;
 use crate::input::saveload_dialog::request_save;
-use crate::vector::{Field, VectorTrait};
+use crate::vector::Field;
 
 use glutin::event::{Event, WindowEvent};
 
 use self::custom_events::CustomEvent;
-use self::key_map::{
-    MOVEMENT_MODE, PRINT_DEBUG, QUIT, TOGGLEABLE_KEYS, TOGGLE_CLIPPING, TOGGLE_DIMENSION,
-};
+use self::key_map::{MOVEMENT_MODE, QUIT, TOGGLEABLE_KEYS, TOGGLE_DIMENSION};
 
 // fn duration_as_field(duration : &Duration) -> f32 {
 //  (duration.as_secs() as Field) + 0.001*(duration.subsec_millis() as Field)
@@ -136,8 +133,6 @@ impl ToggleKeys {
 pub struct Input {
     pub helper: WinitInputHelper,
     //pub pressed : ButtonsPressed,
-    pub closed: bool,
-    pub swap_engine: bool,
     pub update: bool,
     pub frame_duration: crate::fps::FPSFloat,
     pub mouse: MouseData,
@@ -155,8 +150,6 @@ impl Input {
         Input {
             helper: WinitInputHelper::new(),
             //pressed : ButtonsPressed::new(),
-            closed: false,
-            swap_engine: false,
             update: true,
             frame_duration: crate::fps::TARGET_FPS,
             mouse: Default::default(),
@@ -176,41 +169,18 @@ impl Input {
     }
 }
 
-pub fn print_debug<V: VectorTrait>(input: &mut Input, clip_state: &mut ClipState<V>) {
-    if input.helper.key_released(PRINT_DEBUG) {
-        //println!("camera.pos = {}",camera.pos);
-        //rintln!("camera.heading = {}",camera.heading);
-        //println!("camera.frame = {}",camera.frame);
-        //println!("game time elapsed: {}", duration_as_field(game_time));
-        //let frame_seconds = duration_as_field(frame_len);
-        println!(
-            "frame time: {}, fps: {}",
-            input.frame_duration,
-            1.0 / input.frame_duration
-        );
-        //clipping::print_in_front(&clip_state.in_front);
-        //clip_state.print_debug();
-        //clipping::test_dyn_separate(&shapes,&camera.pos);
-        //input.pressed.space = true;
-    }
-    //toggle clipping
-    if input.helper.key_released(TOGGLE_CLIPPING) {
-        //TEMPORARILY DISABLED
-        clip_state.clipping_enabled = !clip_state.clipping_enabled;
-        println!("clipping={}", clip_state.clipping_enabled);
-        //input.pressed.c = true;
-        input.update = true;
-    }
-}
-
 impl Input {
-    pub fn listen_inputs(&mut self) {
+    pub fn listen_inputs(&mut self, event_loop_proxy: &EventLoopProxy<CustomEvent>) {
         self.toggle_keys.update_toggle_keys(&self.helper);
         if self.helper.key_released(QUIT) {
-            self.closed = true
+            event_loop_proxy
+                .send_event(CustomEvent::Quit)
+                .unwrap_or_default()
         }
         if self.helper.key_released(TOGGLE_DIMENSION) {
-            self.swap_engine = true
+            event_loop_proxy
+                .send_event(CustomEvent::SwapEngine)
+                .unwrap_or_default()
         }
         if self.helper.key_released(MOVEMENT_MODE) {
             self.movement_mode = match self.movement_mode {
@@ -228,12 +198,13 @@ impl Input {
         event_loop_proxy: &EventLoopProxy<CustomEvent>,
         ev: &Event<CustomEvent>,
     ) {
-        let closed = &mut self.closed;
         let update = &mut self.update;
 
         if let Event::WindowEvent { event, .. } = ev {
             match event {
-                WindowEvent::CloseRequested => *closed = true,
+                WindowEvent::CloseRequested => event_loop_proxy
+                    .send_event(CustomEvent::Quit)
+                    .unwrap_or_default(),
                 WindowEvent::Resized(_) => *update = true,
                 WindowEvent::Touch(glutin::event::Touch { phase, .. }) => match phase {
                     glutin::event::TouchPhase::Started => (),
@@ -249,7 +220,7 @@ impl Input {
             request_save(event_loop_proxy);
         }
         if self.helper.update(ev) {
-            self.listen_inputs();
+            self.listen_inputs(event_loop_proxy);
         }
     }
     pub fn is_mouse_locked(&self) -> bool {

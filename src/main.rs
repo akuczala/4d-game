@@ -5,6 +5,7 @@ extern crate itertools;
 
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
+use glium::glutin::event::Event;
 use glium::glutin::event_loop::EventLoop;
 
 use engine::Engine;
@@ -69,7 +70,7 @@ fn main() {
         //could use for menus??
         //*control_flow = ControlFlow::Wait;
 
-        let swap = engine.update(
+        engine.update(
             &event,
             &event_loop_proxy,
             control_flow,
@@ -77,7 +78,7 @@ fn main() {
             &mut fps_timer,
         );
 
-        if swap {
+        if let Event::UserEvent(CustomEvent::SwapEngine) = event {
             dim = match dim {
                 3 => Ok(4),
                 4 => Ok(3),
@@ -85,6 +86,11 @@ fn main() {
             }
             .unwrap();
             engine = engine.swap_dim(&display);
+        }
+
+        if let Event::UserEvent(CustomEvent::Quit) = event {
+            println!("Exiting.");
+            *control_flow = ControlFlow::Exit;
         }
     }); //end of event loop
 }

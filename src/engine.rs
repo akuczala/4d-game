@@ -88,7 +88,6 @@ where
         }
     }
 
-    //currently returns bool that tells main whether to swap engines
     //runs for each event
     pub fn update(
         &mut self,
@@ -97,46 +96,36 @@ where
         control_flow: &mut ControlFlow,
         display: &Display,
         fps_timer: &mut FPSTimer,
-    ) -> bool {
-        //brackets here used to prevent borrowing issues between input + self
-        //would probably be sensible to move this into its own function
-        {
-            let mut input = self.world.write_resource::<Input>();
-            //swap / reset engine
-            if input.swap_engine {
-                return true;
-            }
-            //input events
-            input.listen_events(event_loop_proxy, event);
-            if input.closed {
-                println!("Escape button pressed; exiting.");
-                *control_flow = ControlFlow::Exit;
-            }
-            // TODO: clean up
-            drop(input);
-            if let Event::UserEvent(CustomEvent::SaveDialog(maybe_file)) = event {
-                if let Some(file) = maybe_file {
-                    println!("Saving level to {}", file.file_name());
-                    save_level_to_file::<V>(file.path(), &mut self.world)
-                        .map(|_| println!("Level saved!"))
-                        .unwrap_or_else(|_| println!("Could not save level."));
-                }
+    ) {
+        //input events
+        self.world
+            .write_resource::<Input>()
+            .listen_events(event_loop_proxy, event);
 
-                let mut input = self.world.write_resource::<Input>();
-                input.movement_mode = input.last_movement_mode;
-            }
-        }
         //window / game / redraw events
         match event {
+            Event::UserEvent(custom_event) => match custom_event {
+                CustomEvent::LoadDialog => todo!(),
+                CustomEvent::SaveDialog(maybe_file) => {
+                    if let Some(file) = maybe_file {
+                        println!("Saving level to {}", file.file_name());
+                        save_level_to_file::<V>(file.path(), &mut self.world)
+                            .map(|_| println!("Level saved!"))
+                            .unwrap_or_else(|_| println!("Could not save level."));
+                    }
+
+                    let mut input = self.world.write_resource::<Input>();
+                    input.movement_mode = input.last_movement_mode;
+                }
+                _ => (),
+            },
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
-            } => {
-                println!("The close button was pressed; stopping");
-                *control_flow = ControlFlow::Exit
-            }
+            } => event_loop_proxy
+                .send_event(CustomEvent::Quit)
+                .unwrap_or_default(),
             Event::MainEventsCleared => {
-                // Application update code.
                 //display.gl_window().window().request_redraw();
                 //if input.update {}
                 if Instant::now() > fps_timer.start + Duration::from_millis(FRAME_MS) {
@@ -154,9 +143,8 @@ where
         };
         // this catches e.g. all window resizing events
         self.update_ui(display, control_flow, event, fps_timer);
-
-        false //don't switch engines
     }
+
     fn update_ui<E>(
         &mut self,
         display: &Display,
@@ -293,7 +281,7 @@ impl Engine {
         control_flow: &mut ControlFlow,
         display: &Display,
         fps_timer: &mut FPSTimer,
-    ) -> bool {
+    ) {
         match self {
             Engine::Three(e) => e.update(event, event_loop_proxy, control_flow, display, fps_timer),
             Engine::Four(e) => e.update(event, event_loop_proxy, control_flow, display, fps_timer),

@@ -10,8 +10,8 @@ use crate::ecs_utils::ModSystem;
 use crate::{ecs_utils::Componentable, vector::VectorTrait};
 
 use super::{
-    create_shape, delete_shape, duplicate_shape, manipulate_shape_outer, print_debug,
-    selection_box, update_camera::update_camera, Input, MovementMode, ShapeManipulationState,
+    create_shape, delete_shape, duplicate_shape, manipulate_shape_outer, selection_box,
+    update_camera::update_camera, Input, MovementMode, ShapeManipulationState,
 };
 
 pub struct UpdateCameraSystem<V>(pub PhantomData<V>);
@@ -287,14 +287,5 @@ where
     fn setup(&mut self, world: &mut World) {
         Self::SystemData::setup(world);
         self.0.reader_id = Some(WriteStorage::<Shape<V>>::fetch(world).register_reader());
-    }
-}
-
-pub struct PrintDebugSystem<V>(pub PhantomData<V>);
-impl<'a, V: VectorTrait + Componentable> System<'a> for PrintDebugSystem<V> {
-    type SystemData = (Write<'a, Input>, Write<'a, ClipState<V>>);
-
-    fn run(&mut self, (mut input, mut clip_state): Self::SystemData) {
-        print_debug::<V>(&mut input, &mut clip_state);
     }
 }
