@@ -11,6 +11,7 @@ use crate::coin::Coin;
 use crate::components::{RefShapes, ShapeLabel, StaticCollider};
 
 use crate::draw::texture::ShapeTextureBuilder;
+
 use crate::{
     ecs_utils::Componentable, geometry::transform, shape_entity_builder::ShapeEntityBuilderV,
     vector::VectorTrait,

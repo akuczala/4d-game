@@ -1,6 +1,6 @@
 mod dispatcher;
 pub use dispatcher::get_engine_dispatcher_builder;
-use futures_lite::future;
+
 use glium::glutin::event_loop::EventLoopProxy;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -13,14 +13,13 @@ use crate::ecs_utils::Componentable;
 use crate::graphics::DefaultGraphics;
 use crate::graphics::GraphicsTrait;
 use crate::input::custom_events::CustomEvent;
-use crate::input::saveload_dialog::select_save_file_async;
 use crate::input::ShapeManipulationState;
 use crate::saveload::save_level_to_file;
 use crate::FPSTimer;
 use glium::Display;
 use specs::prelude::*;
 use std::marker::PhantomData;
-use std::thread;
+
 use std::time::{Duration, Instant};
 
 use crate::draw;
@@ -32,7 +31,7 @@ use glium::glutin::{
 //NOTES:
 // include visual indicator of what direction a collision is in
 
-use crate::input::{Input, MovementMode};
+use crate::input::Input;
 
 use crate::components::*;
 
@@ -108,32 +107,13 @@ where
                 return true;
             }
             //input events
-            input.listen_events(event);
+            input.listen_events(event_loop_proxy, event);
             if input.closed {
                 println!("Escape button pressed; exiting.");
                 *control_flow = ControlFlow::Exit;
             }
             // TODO: clean up
-            // check for save event
-            if input.save_requested(event) {
-                input.last_movement_mode = input.movement_mode;
-                input.movement_mode = MovementMode::Dialog;
-                drop(input);
-                println!("Save requested");
-                let dialog = select_save_file_async();
-
-                let event_loop_proxy = event_loop_proxy.clone();
-                thread::spawn(move || {
-                    future::block_on(async move {
-                        let file = dialog.await;
-                        event_loop_proxy
-                            .send_event(CustomEvent::SaveDialog(file))
-                            .ok();
-                    })
-                });
-            } else {
-                drop(input);
-            }
+            drop(input);
             if let Event::UserEvent(CustomEvent::SaveDialog(maybe_file)) = event {
                 if let Some(file) = maybe_file {
                     println!("Saving level to {}", file.file_name());

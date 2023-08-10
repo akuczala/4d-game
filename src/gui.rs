@@ -236,23 +236,21 @@ fn simple_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
         .scroll_bar(false)
         .menu_bar(false)
         .build(|| {
-            match ui_args {
-                UIArgs::Simple {
-                    ref frame_duration,
-                    ref coins_collected,
-                    ref coins_left,
-                } => {
-                    let total_coins = coins_left + coins_collected;
-                    let coin_text = format!("Coins: {}/{}", coins_collected, total_coins);
-                    ui.text(format!("FPS: {:0.0}", 1. / frame_duration));
-                    ui.text(coin_text);
-                    ProgressBar::new((*coins_collected as f32) / (total_coins as f32))
-                        //.size([200.0, 20.0])
-                        .build(ui);
-                    ui.text("Press M to toggle mouse");
-                    ui.text("Backspace toggles 3D/4D");
-                }
-                _ => (),
+            if let UIArgs::Simple {
+                ref frame_duration,
+                ref coins_collected,
+                ref coins_left,
+            } = ui_args
+            {
+                let total_coins = coins_left + coins_collected;
+                let coin_text = format!("Coins: {}/{}", coins_collected, total_coins);
+                ui.text(format!("FPS: {:0.0}", 1. / frame_duration));
+                ui.text(coin_text);
+                ProgressBar::new((*coins_collected as f32) / (total_coins as f32))
+                    //.size([200.0, 20.0])
+                    .build(ui);
+                ui.text("Press M to toggle mouse");
+                ui.text("Backspace toggles 3D/4D");
             };
         });
 }

@@ -7,6 +7,7 @@ pub mod systems;
 mod update_camera;
 
 use glium::glutin::event::{ElementState, KeyboardInput};
+use glium::glutin::event_loop::EventLoopProxy;
 pub use selection::*;
 pub use update_camera::*;
 
@@ -21,6 +22,7 @@ use glutin::event::{MouseScrollDelta, TouchPhase};
 use winit_input_helper::WinitInputHelper;
 
 use crate::components::*;
+use crate::input::saveload_dialog::request_save;
 use crate::vector::{Field, VectorTrait};
 
 use glutin::event::{Event, WindowEvent};
@@ -221,7 +223,11 @@ impl Input {
         }
     }
     // run for every winit event
-    pub fn listen_events<E>(&mut self, ev: &Event<E>) {
+    pub fn listen_events(
+        &mut self,
+        event_loop_proxy: &EventLoopProxy<CustomEvent>,
+        ev: &Event<CustomEvent>,
+    ) {
         let closed = &mut self.closed;
         let update = &mut self.update;
 
@@ -236,6 +242,11 @@ impl Input {
                 },
                 e => mouse_event(&mut self.mouse, e),
             }
+        }
+        if self.save_requested(ev) {
+            self.last_movement_mode = self.movement_mode;
+            self.movement_mode = MovementMode::Dialog;
+            request_save(event_loop_proxy);
         }
         if self.helper.update(ev) {
             self.listen_inputs();
