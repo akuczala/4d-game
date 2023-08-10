@@ -91,7 +91,7 @@ pub enum GuiConfig {
     #[default]
     None,
     Simple,
-    Debug
+    Debug,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
@@ -100,7 +100,7 @@ pub struct Config {
     pub view: ViewConfig,
     pub scene: SceneConfig,
     pub editor: EditorConfig,
-    pub gui: GuiConfig
+    pub gui: GuiConfig,
 }
 
 pub fn load_config() -> Config {

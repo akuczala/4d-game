@@ -3,7 +3,6 @@ use crate::input::{Input, MOUSE_SENSITIVITY};
 use crate::vector::{Field, VecIndex, VectorTrait};
 use std::f32::consts::PI;
 
-
 use crate::geometry::transform::Scaling;
 use glium::glutin;
 use glutin::event::VirtualKeyCode as VKC;

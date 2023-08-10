@@ -6,8 +6,8 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::collide;
-use crate::config::Config;
 use crate::config::load_config;
+use crate::config::Config;
 use crate::constants::FRAME_MS;
 use crate::ecs_utils::Componentable;
 use crate::graphics::DefaultGraphics;
@@ -186,13 +186,15 @@ where
     ) {
         let gui_config = &self.world.fetch::<Config>().gui;
         let ui_args = match gui_config {
-            crate::config::GuiConfig::None =>  UIArgs::None,
-            crate::config::GuiConfig::Simple =>  UIArgs::Simple {
-                    frame_duration: fps_timer.get_frame_length(),
-                    coins_collected: self.world.read_resource::<crate::coin::CoinsCollected>().0,
-                    coins_left: self.world.read_storage::<crate::coin::Coin>().count() as u32,
+            crate::config::GuiConfig::None => UIArgs::None,
+            crate::config::GuiConfig::Simple => UIArgs::Simple {
+                frame_duration: fps_timer.get_frame_length(),
+                coins_collected: self.world.read_resource::<crate::coin::CoinsCollected>().0,
+                coins_left: self.world.read_storage::<crate::coin::Coin>().count() as u32,
             },
-            crate::config::GuiConfig::Debug => UIArgs::new_debug::<V>(&self.world, fps_timer.get_frame_length()),
+            crate::config::GuiConfig::Debug => {
+                UIArgs::new_debug::<V>(&self.world, fps_timer.get_frame_length())
+            }
         };
 
         //gui update (all events)

@@ -4,7 +4,7 @@ use crate::{
     components::Shape,
     constants::CARDINAL_COLORS,
     draw::DrawLine,
-    geometry::{Face},
+    geometry::Face,
     graphics::colors::Color,
     vector::{Field, VectorTrait},
 };

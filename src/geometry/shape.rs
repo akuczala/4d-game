@@ -166,7 +166,7 @@ impl<V: VectorTrait> Shape<V> {
                 false => b,
             })
     }
-    
+
     pub fn modify(&mut self, transform: &Transform<V, V::M>) {
         for v in self.verts.iter_mut() {
             *v = transform.transform_vec(v);

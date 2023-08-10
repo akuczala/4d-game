@@ -1,3 +1,5 @@
+gui = "None"
+
 [fuzz_lines]
 face_num = 100
 sky_num = 1000

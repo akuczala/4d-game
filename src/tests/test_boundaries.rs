@@ -8,12 +8,13 @@ use crate::{
         clip_line,
     },
     geometry::{
-        shape::{
-            buildshapes::{invert_normals, remove_face, ShapeBuilder},
-        },
+        shape::buildshapes::{invert_normals, remove_face, ShapeBuilder},
         Line,
     },
-    tests::{utils::{color_number, print_grid}, test_single_face::{make_line_shape, make_3d_triangle, make_3d_square}},
+    tests::{
+        test_single_face::{make_3d_square, make_3d_triangle, make_line_shape},
+        utils::{color_number, print_grid},
+    },
     vector::{is_close, Vec2, Vec3, VectorTrait},
 };
 

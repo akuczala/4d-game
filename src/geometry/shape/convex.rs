@@ -130,7 +130,8 @@ fn test_point_within2() {
     use colored::*;
 
     fn point_facei_distance<V: VectorTrait>(shape: &Shape<V>, point: V) -> (usize, Field) {
-        shape.faces
+        shape
+            .faces
             .iter()
             .enumerate()
             .map(|(i, f)| (i, f.plane().point_signed_distance(point)))

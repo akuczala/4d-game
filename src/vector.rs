@@ -222,9 +222,7 @@ where
 
 #[test]
 pub fn test_vectors() {
-
-    fn diagnostic<V: VectorTrait>(v1: V, v2: V)
-    {
+    fn diagnostic<V: VectorTrait>(v1: V, v2: V) {
         let mat = rotation_matrix(v1, v2, None);
         println!("rot mat:{}", mat);
         assert!(V::is_close(v2.normalize(), mat * v1.normalize()));
