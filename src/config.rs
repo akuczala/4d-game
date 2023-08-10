@@ -1,5 +1,3 @@
-use std::error;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{constants::CONFIG_FILE_PATH_STR, draw::ViewportShape, vector::Field};
@@ -96,14 +94,6 @@ pub struct Config {
     pub editor: EditorConfig,
 }
 
-type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
-
-pub fn load_config_2() -> Result<Config> {
-    let r1 = std::fs::read_to_string(CONFIG_FILE_PATH_STR)?;
-    let r2 = toml::from_str::<Config>(&r1)?;
-    Ok(r2)
-}
-
 pub fn load_config() -> Config {
     std::fs::read_to_string(CONFIG_FILE_PATH_STR)
         .map_err(|e| println!("Error loading config {}: {}", CONFIG_FILE_PATH_STR, e))
@@ -114,12 +104,7 @@ pub fn load_config() -> Config {
         .unwrap_or(Config::default())
 }
 
-pub fn get_config() -> Config {
-    load_config_2()
-        .map_err(|e| println!("Error loading config: {}", e))
-        .unwrap_or(Config::default())
-}
-
+#[allow(dead_code)]
 pub fn save_config(config: Config) -> std::result::Result<(), ()> {
     toml::to_string_pretty(&config)
         .map_err(|e| println!("Could not serialize config {:?}: {}", config, e))

@@ -80,24 +80,7 @@ impl<V: VectorTrait> Default for ShapeClipState<V> {
         }
     }
 }
-impl<V: VectorTrait + Componentable> ShapeClipState<V> {
-    // pub fn in_front_debug(world : &World) -> String {
-    //     let mut outstr = "In front debug \n".to_string();
-    //     for (i,state) in world.read_storage::<ShapeClipState<V>>().join().enumerate() {
-    //         outstr = format!("{}entity {}",outstr,i);
-    //         outstr = format!("{} \n {}",outstr,state.this_in_front_debug());
-    //     }
-    //     outstr
-    // }
-    pub fn this_in_front_debug(&self) -> String {
-        let mut outstr = "".to_string();
-        for e in self.in_front.iter().sorted() {
-            outstr = format!("{} {} ", outstr, e.id());
-        }
-        outstr = format!("{}\n", outstr);
-        outstr
-    }
-}
+
 impl<V: VectorTrait> ShapeClipState<V> {
     pub fn remove(&mut self, e: &Entity) {
         self.in_front.remove(e);
@@ -684,6 +667,7 @@ pub fn print_in_front(in_front: &[Vec<bool>]) {
     println!();
 }
 
+#[allow(dead_code)]
 pub fn test_dyn_separate<V: VectorTrait>(bballs: &[BBall<V>], origin: &V) {
     use colored::*;
     for (i, bball1) in bballs.iter().enumerate() {

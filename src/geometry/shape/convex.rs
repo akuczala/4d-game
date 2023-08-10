@@ -128,13 +128,24 @@ fn test_point_within2() {
     use crate::tests::utils::print_grid;
     use crate::vector::Vec3;
     use colored::*;
+
+    fn point_facei_distance<V: VectorTrait>(shape: &Shape<V>, point: V) -> (usize, Field) {
+        shape.faces
+            .iter()
+            .enumerate()
+            .map(|(i, f)| (i, f.plane().point_signed_distance(point)))
+            .fold((0, f32::NEG_INFINITY), |(i1, a), (i2, b)| match a > b {
+                true => (i1, a),
+                false => (i2, b),
+            })
+    }
     let shape = crate::geometry::shape::buildshapes::build_prism_3d::<Vec3>(1.0, 1.0, 4);
     print_grid(2.0, 40, |x, y| {
         let point = Vec3::new(x, y, 0.);
         // let newstr = match shape.point_within(Vec3::new(x,y,0.),0.) {
         //   true => "+", false => "_"
         // };
-        let (i, dist) = shape.point_facei_distance(point);
+        let (i, dist) = point_facei_distance(&shape, point);
         //println!("{}",dist);
         //let newstr = match dist {a if a > 1. => "#", a if a > 0. => "+", a if a <= 0. => "_", _ => "^"};
         let mut newstr = match i {

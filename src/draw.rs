@@ -51,6 +51,7 @@ pub struct DrawLine<V> {
     pub color: Color,
 }
 impl<V: VectorTrait> DrawLine<V> {
+    #[allow(dead_code)]
     pub fn map_line<F, U>(self, f: F) -> DrawLine<U>
     where
         U: VectorTrait,
@@ -116,9 +117,11 @@ where
 #[derive(Default)]
 pub struct DrawLineList<V>(pub Vec<DrawLine<V>>);
 impl<V: VectorTrait> DrawLineList<V> {
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.0.len()
     }
+    #[allow(dead_code)]
     pub fn map<F, U>(&self, f: F) -> DrawLineList<U>
     where
         U: VectorTrait,
@@ -126,6 +129,7 @@ impl<V: VectorTrait> DrawLineList<V> {
     {
         DrawLineList(self.0.iter().map(|l| f(l.clone())).collect()) //another questionable clone
     }
+    #[allow(dead_code)]
     pub fn flat_map<F, U>(&self, f: F) -> DrawLineList<U>
     where
         U: VectorTrait,

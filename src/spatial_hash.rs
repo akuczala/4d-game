@@ -9,7 +9,6 @@ pub type HashInt = u32;
 pub struct SpatialHash<K, V> {
     map: HashMap<HashInt, V>,
     min: K,
-    max: K,
     length: K,
     //cell_size : K, //not strictly necessary
     n_cells: Vec<HashInt>,        //size K::DIM
@@ -46,7 +45,6 @@ impl<K: VectorTrait, V> SpatialHash<K, V> {
         Self {
             map: HashMap::new(),
             min,
-            max,
             length,
             n_cells,
             multiplier,
@@ -72,9 +70,11 @@ impl<K: VectorTrait, V> SpatialHash<K, V> {
             .map(|(f, &n)| (f * (n as Field)) as HashInt)
             .collect()
     }
+    #[allow(dead_code)]
     fn get(&self, point: &K) -> Option<&V> {
         self.get_from_cell(self.hash(point))
     }
+    #[allow(dead_code)]
     fn get_mut(&mut self, point: &K) -> Option<&mut V> {
         self.get_mut_from_cell(self.hash(point))
     }
@@ -85,15 +85,18 @@ impl<K: VectorTrait, V> SpatialHash<K, V> {
     fn get_mut_from_cell(&mut self, cell: HashInt) -> Option<&mut V> {
         self.map.get_mut(&cell)
     }
+    #[allow(dead_code)]
     fn insert(&mut self, point: &K, value: V) -> Option<V> {
         self.insert_at_cell(self.hash(point), value)
     }
     fn insert_at_cell(&mut self, cell: HashInt, value: V) -> Option<V> {
         self.map.insert(cell, value)
     }
+    #[allow(dead_code)]
     fn remove(&mut self, point: &K) -> Option<V> {
         self.remove_at_cell(self.hash(point))
     }
+    #[allow(dead_code)]
     fn remove_at_cell(&mut self, cell: HashInt) -> Option<V> {
         self.map.remove(&cell)
     }
@@ -127,6 +130,7 @@ where
     pub fn get_cell_coords(&self, point: &K) -> Vec<HashInt> {
         self.0.get_cell_coords(point)
     }
+    #[allow(dead_code)]
     pub fn get(&self, point: &K) -> Option<&HashSet<T>> {
         self.0.get(point)
     }
@@ -151,9 +155,11 @@ where
         };
     }
     //create new set in bin or append to existing set
+    #[allow(dead_code)]
     pub fn insert(&mut self, point: &K, item: T) {
         self.insert_at_cell(self.hash(point), item)
     }
+    #[allow(dead_code)]
     pub fn remove(&mut self, point: &K, item: &T) -> bool {
         let maybe_set = self.0.get_mut(point);
         match maybe_set {
@@ -166,12 +172,10 @@ where
             set.remove(item);
         }
     }
-    pub fn clear_cell(&mut self, point: &K) -> Option<HashSet<T>> {
-        self.0.remove(point)
-    }
 }
 use specs::Entity;
 impl<K: VectorTrait> SpatialHashSet<K, Entity> {
+    #[allow(dead_code)]
     pub fn print(&self) {
         let mut out: String = "".to_owned();
         for (key, val) in self.0.map.iter() {
@@ -180,28 +184,7 @@ impl<K: VectorTrait> SpatialHashSet<K, Entity> {
         println!("{}", out)
     }
 }
-// impl<K : VectorTrait, T : std::fmt::Display> std::fmt::Display for SpatialHashSet<K, T>
-// where T : Eq + Hash {
-// 	// This trait requires `fmt` with this exact signature.
-//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//     	let mut out : String = "".to_owned();
-//     	for (key, val) in self.0.map.iter() {
-//     		out = format!("{} \n key: {} val: {}",out, key, hashset_string(val));
-// 		}
-//         write!(f, "{}",out)
-// 	}
-// }
-// trait CheapTrick: std::fmt::Display {}
-// impl<T : std::fmt::Display> CheapTrick for SpatialHashSet<T> {
-// 	// This trait requires `fmt` with this exact signature.
-//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//     	let mut out : String = "".to_owned();
-//     	for item in self.iter() {
-//     		out = format!("{}, {}",out, item);
-// 		}
-//         write!(f, "{}", out)
-// 	}
-// }
+
 fn entity_string(entity: &Entity) -> String {
     format!("{}", entity.id())
 }

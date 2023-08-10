@@ -4,7 +4,7 @@ use crate::{
     components::Shape,
     constants::CARDINAL_COLORS,
     draw::DrawLine,
-    geometry::{shape::FaceIndex, Face},
+    geometry::{Face},
     graphics::colors::Color,
     vector::{Field, VectorTrait},
 };
@@ -31,6 +31,7 @@ pub type ShapeTexture<U> = ShapeTextureGeneric<Texture<U>>;
 pub type ShapeTextureBuilder = ShapeTextureGeneric<TextureBuilder>;
 
 impl<U> ShapeTexture<U> {
+    #[allow(dead_code)]
     pub fn with_color(mut self, color: Color) -> Self {
         for face in &mut self.face_textures {
             face.set_color(color);
@@ -62,6 +63,8 @@ impl<T: Clone> ShapeTextureGeneric<T> {
         }
         self
     }
+
+    #[allow(dead_code)]
     pub fn map_textures<F>(mut self, f: F) -> Self
     where
         F: Fn(FaceTextureGeneric<T>) -> FaceTextureGeneric<T>,
@@ -141,23 +144,6 @@ pub fn draw_face_texture<V: VectorTrait>(
     }
 }
 
-pub fn color_cube<V: VectorTrait>(
-    mut shape_texture: ShapeTexture<V::SubV>,
-) -> ShapeTexture<V::SubV> {
-    for (face, &color) in shape_texture.face_textures.iter_mut().zip(&CARDINAL_COLORS) {
-        face.texture = Texture::DefaultLines {
-            color: color.set_alpha(0.5),
-        };
-    }
-    shape_texture
-}
-
-pub fn color_cube_texture<V: VectorTrait>(face_index: FaceIndex) -> Texture<V::SubV> {
-    Texture::DefaultLines {
-        color: CARDINAL_COLORS[face_index].set_alpha(0.5),
-    }
-}
-
 pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureGeneric<TextureBuilder> {
     ShapeTextureGeneric {
         face_textures: (0..V::DIM * 2)
@@ -188,6 +174,7 @@ pub fn fuzzy_color_cube_texture<V: VectorTrait>(
     })
 }
 
+#[allow(dead_code)]
 pub fn color_duocylinder<V: VectorTrait>(
     shape_texture: &mut ShapeTexture<V::SubV>,
     m: usize,

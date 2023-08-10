@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::vector::{Field, MatrixTrait, VectorTrait};
 
 use super::transform::Scaling;

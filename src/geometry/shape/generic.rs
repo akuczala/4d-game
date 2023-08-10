@@ -128,6 +128,7 @@ pub fn subface_signed_distance<V: VectorTrait>(
     }
 }
 
+#[allow(dead_code)]
 pub fn subface_plane<V: VectorTrait>(
     shape_faces: &[Face<V>],
     face_index: FaceIndex,

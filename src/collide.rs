@@ -133,17 +133,6 @@ pub fn insert_static_bbox<V: VectorTrait>(
     }
 }
 
-pub fn insert_static_bboxes<'a, V: VectorTrait + 'a, I>(
-    hash: &mut SpatialHashSet<V, Entity>,
-    bbox_entity_iter: I,
-) where
-    I: Iterator<Item = (&'a BBox<V>, Entity)>,
-{
-    for (bbox, entity) in bbox_entity_iter {
-        insert_static_bbox(hash, bbox, entity)
-    }
-}
-
 pub fn update_static_bboxes<'a, V: VectorTrait + 'a, I>(
     hash: &mut SpatialHashSet<V, Entity>,
     bbox_entity_iter: I,

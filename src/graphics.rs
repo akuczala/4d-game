@@ -76,30 +76,8 @@ impl<X: VertexTrait> Graphics<X> {
     }
 }
 
-fn verts_to_gl<X: VertexTrait, V: VectorTrait>(verts: &[DrawVertex<V>]) -> Vec<X> {
-    verts.iter().map(X::vert_to_gl).collect()
-}
-fn vertis_to_gl(vertis: &[VertIndex]) -> Vec<u16> {
-    vertis.iter().map(|v| *v as u16).collect()
-}
 fn opt_lines_to_gl<X: VertexTrait, V: VectorTrait>(opt_lines: &[DrawLine<V>]) -> Vec<X> {
     opt_lines.iter().flat_map(X::line_to_gl).collect()
-}
-
-fn new_index_buffer(vertis: &[VertIndex], display: &Display) -> IndexBuffer<u16> {
-    glium::IndexBuffer::dynamic(
-        display,
-        glium::index::PrimitiveType::LinesList,
-        &vertis_to_gl(vertis),
-    )
-    .unwrap()
-}
-
-fn new_vertex_buffer<X: VertexTrait, V: VectorTrait>(
-    verts: &[DrawVertex<V>],
-    display: &Display,
-) -> VertexBuffer<X> {
-    glium::VertexBuffer::dynamic(display, &verts_to_gl(verts)).unwrap()
 }
 
 fn new_vertex_buffer_from_lines<X: VertexTrait, V: VectorTrait>(

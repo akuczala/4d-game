@@ -8,6 +8,7 @@ use crate::{
 
 mod test_boundaries;
 mod test_saveload;
+mod test_single_face;
 pub mod utils;
 
 pub fn new_world<V>() -> World

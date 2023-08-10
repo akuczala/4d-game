@@ -51,12 +51,6 @@ impl<V: VectorTrait> RefShapes<V> {
     pub fn insert(&mut self, key: ShapeLabel, value: Shape<V>) -> Option<Shape<V>> {
         self.0.insert(key, value)
     }
-    pub fn remove(&mut self, key: &ShapeLabel) -> Option<Shape<V>> {
-        self.0.remove(key)
-    }
-    pub fn get_all(&self) -> impl Iterator<Item = &Shape<V>> {
-        self.0.values()
-    }
 }
 impl<V: VectorTrait> Default for RefShapes<V> {
     fn default() -> Self {

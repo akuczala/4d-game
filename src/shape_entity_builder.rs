@@ -116,22 +116,6 @@ where
             lazy.insert(e, c)
         };
     }
-    pub fn load(self, e: Entity, lazy: &Read<LazyUpdate>, config: &Config) {
-        let Self {
-            mut shape,
-            shape_label: _,
-            transformation,
-            shape_texture_builder,
-            static_collider: _,
-        } = self;
-        shape.update_from_ref(&shape.clone(), &transformation);
-        let shape_texture = make_shape_texture::<V::SubV>(config, shape_texture_builder);
-        lazy.insert(e, shape.calc_bbox());
-        lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
-        lazy.insert(e, shape);
-        lazy.insert(e, shape_texture);
-        lazy.insert(e, ShapeClipState::<V>::default());
-    }
 }
 impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilderV<V> {
     fn transform(&mut self, transformation: Transform<V, V::M>) {

@@ -5,7 +5,6 @@ use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, VertIndex};
 use crate::components::Transform;
 use crate::constants::ZERO;
 
-use crate::geometry::transform::Scaling;
 use crate::geometry::{Plane, Transformable};
 
 use crate::vector::Field;
@@ -55,10 +54,6 @@ impl<V: VectorTrait> ShapeBuilder<V> {
             _ => panic!("build_coin not supported in {} dim", V::DIM),
         };
         Self::new(coin)
-    }
-    pub fn stretch(mut self, scales: Scaling<V>) -> Self {
-        self.shape.modify(&Transform::identity().with_scale(scales));
-        self
     }
     pub fn build(self) -> Shape<V> {
         self.shape
@@ -161,13 +156,7 @@ pub fn build_prism_3d<V: VectorTrait>(r: Field, h: Field, n: VertIndex) -> Shape
 
     Shape::new_convex(verts, edges, faces)
 }
-pub fn build_long_cube_3d<V: VectorTrait>(length: Field, width: Field) -> Shape<V> {
-    build_prism_3d(width / (2.0 as Field).sqrt(), length, 4)
-}
-pub fn build_tube_cube_3d<V: VectorTrait>(length: Field, width: Field) -> Shape<V> {
-    let rect = build_prism_3d(width / (2.0 as Field).sqrt(), length, 4);
-    remove_faces(rect, vec![0, 1])
-}
+
 /// Reindex faces from a shape that has had a face removed
 pub fn reindex_faces<V: Copy>(
     removed_index: FaceIndex,
@@ -195,8 +184,9 @@ pub fn reindex_faces<V: Copy>(
         .collect_vec()
 }
 
+/// remove face at face_index. Does not remove orphaned verts or edges
 pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Shape<V> {
-    // TODO: rm orphaned verts + edges
+    let shape = shape.to_generic();
     let verts = &shape.verts;
     let edges = shape.edges;
     let face = &shape.faces[face_index];
@@ -250,11 +240,8 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
     )
 }
 
-pub fn remove_faces<V: VectorTrait>(_shape: Shape<V>, _faceis: Vec<FaceIndex>) -> Shape<V> {
-    unimplemented!()
-}
-
 /// prune verts and edges that are no longer part of a face
+#[allow(dead_code)]
 pub fn prune_orphans<V: VectorTrait>(shape: &mut Shape<V>) {
     let used_edgeis = shape.faces.iter().flat_map(|face| face.edgeis.iter());
     let used_vertis = shape.faces.iter().flat_map(|face| face.vertis.iter());

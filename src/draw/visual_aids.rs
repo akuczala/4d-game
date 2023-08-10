@@ -83,6 +83,8 @@ pub fn calc_wireframe_lines<V: VectorTrait>(shape: &Shape<V>) -> Vec<Line<V>> {
         .map(|pair| Line(shape.verts[pair[0]], shape.verts[pair[1]]))
         .collect()
 }
+
+#[allow(dead_code)]
 pub fn calc_normals_lines<V: VectorTrait>(shape: &Shape<V>) -> Vec<Line<V>> {
     shape
         .faces
@@ -170,6 +172,7 @@ fn random_hemisphere_point<V: VectorTrait>(normal: V) -> V {
     }
 }
 
+#[allow(dead_code)]
 fn random_ball_point<V: VectorTrait>() -> V {
     random_sphere_point::<V>() * rand::random::<Field>().sqrt()
 }

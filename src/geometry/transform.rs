@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::vector::{rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait};
 use serde::{Deserialize, Serialize};
 
@@ -142,7 +143,7 @@ impl<V: VectorTrait> Transform<V, V::M> {
         self.frame = rot.frame.dot(self.frame)
     }
 
-    //todo update
+    //todo test and / or update
     pub fn rotate_about(&mut self, axis1: VecIndex, axis2: VecIndex, angle: Field, pos: V) {
         let rot_mat = rotation_matrix(self.frame[axis1], self.frame[axis2], Some(angle));
         self.frame = self.frame.dot(rot_mat);

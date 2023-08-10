@@ -1,10 +1,8 @@
-#![allow(dead_code)]
 #[macro_use]
 extern crate glium;
 #[macro_use]
 extern crate itertools;
 
-//use specs::prelude::*;
 use glium::glutin;
 use glium::glutin::dpi::LogicalSize;
 use glium::glutin::event_loop::EventLoop;
@@ -13,8 +11,6 @@ use engine::Engine;
 use fps::FPSTimer;
 use input::custom_events::CustomEvent;
 
-//extern crate imgui;
-//extern crate imgui_glium_renderer;
 mod camera;
 mod constants;
 mod draw;

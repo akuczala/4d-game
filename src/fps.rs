@@ -89,6 +89,8 @@ impl FPSTimer {
         // 	_ => Some(cur_fps)
         // }
     }
+
+    #[allow(dead_code)]
     pub fn get_fps(&self) -> FPSFloat {
         match self.fps {
             Some(f) => f,

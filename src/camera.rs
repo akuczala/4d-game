@@ -14,6 +14,7 @@ impl<V: VectorTrait> Camera<V> {
             },
         }
     }
+    #[allow(dead_code)]
     pub fn look_at(&mut self, transform: &mut Transform<V, V::M>, point: &V) {
         transform.frame = rotation_matrix(*point - transform.pos, V::one_hot(-1), None);
         self.update(transform);

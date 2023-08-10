@@ -42,6 +42,7 @@ impl<V: Copy> ShapeType<V> {
             ShapeType::Generic(GenericShapeType { subfaces, .. }) => subfaces.clone(),
         }
     }
+    #[allow(dead_code)]
     pub fn get_face_subfaces(&self, face_index: FaceIndex) -> impl Iterator<Item = SubFace<V>> {
         self.get_subfaces()
             .into_iter()
@@ -154,13 +155,6 @@ impl<V: VectorTrait> Shape<V> {
         Self::new(verts, edges, vec![face], shape_type)
     }
 
-    pub fn get_facei_verts(&self, facei: FaceIndex) -> Vec<V> {
-        self.faces[facei]
-            .vertis
-            .iter()
-            .map(|vi| self.verts[*vi])
-            .collect()
-    }
     /// returns the max signed distance to any face plane
     /// for a convex shape, only
     pub fn point_signed_distance(&self, point: V) -> Field {
@@ -172,49 +166,7 @@ impl<V: VectorTrait> Shape<V> {
                 false => b,
             })
     }
-    pub fn point_signed_distance_inverted(&self, point: V) -> Field {
-        self.faces
-            .iter()
-            .map(|f| f.plane().point_signed_distance(point))
-            .fold(Field::INFINITY, |a, b| match a < b {
-                true => a,
-                false => b,
-            })
-    }
-    //returns distance and normal of closest face
-    pub fn point_normal_distance(&self, point: V) -> (V, Field) {
-        self.faces
-            .iter()
-            .map(Face::plane)
-            .map(|plane| (plane.normal, plane.point_signed_distance(point)))
-            .fold((V::zero(), f32::NEG_INFINITY), |(n1, a), (n2, b)| {
-                match a > b {
-                    true => (n1, a),
-                    false => (n2, b),
-                }
-            })
-    }
-    pub fn point_normal_distance_inverted(&self, point: V) -> (V, Field) {
-        self.faces
-            .iter()
-            .map(Face::plane)
-            .map(|plane| (plane.normal, plane.point_signed_distance(point)))
-            .fold((V::zero(), f32::INFINITY), |(n1, a), (n2, b)| match a < b {
-                true => (n1, a),
-                false => (n2, b),
-            })
-    }
-    //returns distance and normal of closest face
-    pub fn point_facei_distance(&self, point: V) -> (usize, Field) {
-        self.faces
-            .iter()
-            .enumerate()
-            .map(|(i, f)| (i, f.plane().point_signed_distance(point)))
-            .fold((0, f32::NEG_INFINITY), |(i1, a), (i2, b)| match a > b {
-                true => (i1, a),
-                false => (i2, b),
-            })
-    }
+    
     pub fn modify(&mut self, transform: &Transform<V, V::M>) {
         for v in self.verts.iter_mut() {
             *v = transform.transform_vec(v);

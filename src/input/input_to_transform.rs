@@ -14,7 +14,6 @@ use super::key_map::{
 use super::ToggleKeys;
 
 const SPEED: Field = 1.5;
-const ANG_SPEED: Field = 1.5 * PI / 3.0;
 
 pub fn get_slide_dpos<V: VectorTrait>(direction: V, speed: Field, time: Field) -> V {
     direction.normalize() * speed * time
@@ -169,16 +168,6 @@ pub fn mouse_to_space<V: VectorTrait>(
     camera_transform: &Transform<V, V::M>,
 ) -> V {
     camera_transform.frame[0] * dx - camera_transform.frame[1] * dy
-}
-
-pub fn clear_components<V: IndexMut<VecIndex, Output = Field>>(
-    axes: &Vec<VecIndex>,
-    mut v: V,
-) -> V {
-    for ax in axes {
-        v[*ax] = 0.0
-    }
-    v
 }
 
 pub fn apply_locked_axes<V: VectorTrait>(locked_axes: &Vec<VecIndex>, mut defaults: V, v: V) -> V {

@@ -8,12 +8,14 @@ pub struct BBox<V> {
 }
 
 impl<V: VectorTrait> BBox<V> {
+    #[allow(dead_code)]
     pub fn max_length(&self) -> Field {
         (self.max - self.min).fold(Some(0.0), |x, y| match x > y {
             true => x,
             false => y,
         })
     }
+    #[allow(dead_code)]
     pub fn center(&self) -> V {
         (self.max + self.min) / 2.0
     }

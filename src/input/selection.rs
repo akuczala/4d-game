@@ -255,7 +255,3 @@ pub fn delete_shape(
         }
     })
 }
-
-pub fn update_selection_box() {
-    todo!()
-}

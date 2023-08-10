@@ -87,12 +87,6 @@ pub fn init(title: &str, display: &Display) -> System {
 }
 pub enum UIArgs {
     None,
-    Test {
-        frame_duration: FPSFloat,
-        elapsed_time: u64,
-        mouse_diff: (f32, f32),
-        mouse_pos: Option<(f32, f32)>,
-    },
     Simple {
         frame_duration: FPSFloat,
         coins_collected: u32,
@@ -231,32 +225,6 @@ impl UIArgs {
     }
 }
 
-fn hello_world(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
-    use imgui::Condition;
-    ui.window("Debug info")
-        .position([20.0, 20.0], Condition::Appearing)
-        .size([300.0, 110.0], Condition::FirstUseEver)
-        .build(|| {
-            if let UIArgs::Test {
-                ref frame_duration,
-                ref elapsed_time,
-                ref mouse_diff,
-                ref mouse_pos,
-            } = ui_args
-            {
-                ui.text(format!("FPS: {}", 1. / frame_duration));
-                ui.text(format!("elapsed_time (ms): {}", elapsed_time));
-                ui.text(format!("dmouse: {:?}", mouse_diff));
-                ui.text(format!("mouse_pos: {:?}", mouse_pos));
-            };
-            ui.separator();
-            let mouse_pos = ui.io().mouse_pos;
-            ui.text(format!(
-                "Mouse Position: ({:.1},{:.1})",
-                mouse_pos[0], mouse_pos[1]
-            ));
-        });
-}
 fn simple_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
     use imgui::Condition;
     ui.window("Press M to toggle mouse control")
@@ -269,17 +237,6 @@ fn simple_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
         .menu_bar(false)
         .build(|| {
             match ui_args {
-                UIArgs::Test {
-                    ref frame_duration,
-                    ref elapsed_time,
-                    ref mouse_diff,
-                    ref mouse_pos,
-                } => {
-                    ui.text(format!("FPS: {0:0}", 1. / frame_duration));
-                    ui.text(format!("elapsed_time (ms): {}", elapsed_time));
-                    ui.text(format!("dmouse: {:?}", mouse_diff));
-                    ui.text(format!("mouse_pos: {:?}", mouse_pos));
-                }
                 UIArgs::Simple {
                     ref frame_duration,
                     ref coins_collected,
@@ -371,7 +328,6 @@ impl System {
         match self.ui_args {
             UIArgs::Debug { .. } => debug_ui(&mut run, ui, &mut self.ui_args, &mut self.state),
             UIArgs::Simple { .. } => simple_ui(&mut run, ui, &mut self.ui_args),
-            UIArgs::Test { .. } => hello_world(&mut run, ui, &mut self.ui_args),
             UIArgs::None => (),
         };
         if !run {

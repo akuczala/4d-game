@@ -10,11 +10,10 @@ use crate::{
     geometry::{
         shape::{
             buildshapes::{invert_normals, remove_face, ShapeBuilder},
-            single_face::{make_3d_square, make_3d_triangle, make_line_shape},
         },
         Line,
     },
-    tests::utils::{color_number, print_grid},
+    tests::{utils::{color_number, print_grid}, test_single_face::{make_line_shape, make_3d_triangle, make_3d_square}},
     vector::{is_close, Vec2, Vec3, VectorTrait},
 };
 
