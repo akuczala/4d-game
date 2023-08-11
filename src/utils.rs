@@ -1,3 +1,5 @@
+use crate::vector::VecIndex;
+
 pub fn partial_max<I, T: PartialOrd>(iter: I) -> Option<T>
 where
     I: Iterator<Item = T>,
@@ -22,6 +24,32 @@ where
             BranchIterator::Option1(a) => a.next(),
             BranchIterator::Option2(b) => b.next(),
             BranchIterator::Option3(c) => c.next(),
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub enum ValidDimension {
+    Three,
+    Four,
+}
+
+impl From<VecIndex> for ValidDimension {
+    fn from(value: VecIndex) -> Self {
+        match value {
+            3 => Self::Three,
+            4 => Self::Four,
+            x => panic!("Invalid dimension {}", x),
+        }
+    }
+}
+
+impl ValidDimension {
+    #[allow(dead_code)]
+    pub fn to_index(self) -> VecIndex {
+        match self {
+            Self::Three => 3,
+            Self::Four => 4,
         }
     }
 }

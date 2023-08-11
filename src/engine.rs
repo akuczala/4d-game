@@ -15,6 +15,7 @@ use crate::graphics::GraphicsTrait;
 use crate::input::custom_events::CustomEvent;
 use crate::input::ShapeManipulationState;
 use crate::saveload::save_level_to_file;
+use crate::utils::ValidDimension;
 use crate::FPSTimer;
 use glium::Display;
 use specs::prelude::*;
@@ -32,7 +33,7 @@ use crate::input::Input;
 
 use crate::components::*;
 
-use crate::vector::{Vec3, Vec4, VecIndex, VectorTrait};
+use crate::vector::{Vec3, Vec4, VectorTrait};
 
 // TODO: reduce number of explicit constraints needed by introducing a componentable-constrained trait?
 pub struct EngineD<V, G> {
@@ -231,24 +232,23 @@ pub enum Engine {
 }
 impl Engine {
     pub fn init(
-        dim: VecIndex,
+        dim: ValidDimension,
         config: &Config,
         display: &Display,
         gui: Option<crate::gui::System>,
     ) -> Engine {
         match dim {
-            3 => Engine::Three(EngineD::<Vec3, _>::init(config, display, gui)),
-            4 => Engine::Four(EngineD::<Vec4, _>::init(config, display, gui)),
-            _ => panic!("Invalid dimension {} for game engine", dim),
+            ValidDimension::Three => Engine::Three(EngineD::<Vec3, _>::init(config, display, gui)),
+            ValidDimension::Four => Engine::Four(EngineD::<Vec4, _>::init(config, display, gui)),
         }
     }
 
-    pub fn new(dim: VecIndex, config: &Config, display: &Display) -> Engine {
+    pub fn new(dim: ValidDimension, config: &Config, display: &Display) -> Engine {
         let gui = Some(crate::gui::init("test", display));
         Self::init(dim, config, display, gui)
     }
 
-    pub fn restart(&mut self, dim: VecIndex, config: &Config, display: &Display) -> Engine {
+    pub fn restart(&mut self, dim: ValidDimension, config: &Config, display: &Display) -> Engine {
         let mut gui = None;
         std::mem::swap(
             &mut gui,

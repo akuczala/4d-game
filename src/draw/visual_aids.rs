@@ -1,5 +1,3 @@
-use core::panic;
-
 use itertools::Itertools;
 
 use crate::{
@@ -15,6 +13,7 @@ use crate::{
         Line,
     },
     graphics::colors::{blend, BLUE, CYAN},
+    utils::ValidDimension,
     vector::{linspace, Field, VecIndex, VectorTrait},
 };
 
@@ -51,9 +50,9 @@ pub fn calc_grid_lines<V: VectorTrait>(center: V, cell_size: Field, n: usize) ->
         .map(|&s| make_line(center, V::one_hot(axes.1), V::one_hot(axes.0), si, sf, s));
 
     let xz_lines = x_lines.chain(z_lines).collect();
-    match V::DIM {
-        3 => xz_lines,
-        4 => {
+    match V::DIM.into() {
+        ValidDimension::Three => xz_lines,
+        ValidDimension::Four => {
             let xz_planes = deltas.iter().flat_map(|&s| {
                 xz_lines
                     .iter()
@@ -65,7 +64,6 @@ pub fn calc_grid_lines<V: VectorTrait>(center: V, cell_size: Field, n: usize) ->
             });
             xz_planes.chain(w_lines).collect()
         }
-        i => panic!("Unsupported dimension {} for calc_grid_lines", i),
     }
 }
 
@@ -129,13 +127,13 @@ fn draw_star<V: VectorTrait>(axis: VecIndex, sign: bool) -> Vec<Line<V>> {
 }
 
 pub fn draw_horizon<V: VectorTrait>(n_lines: usize) -> Vec<Line<V>> {
-    match V::DIM {
-        3 => calc_wireframe_lines(
+    match V::DIM.into() {
+        ValidDimension::Three => calc_wireframe_lines(
             &(ShapeBuilder::build_prism(2, &[SKY_DISTANCE], &[12]))
                 .with_rotation(-1, 1, HALF_PI)
                 .build(),
         ),
-        4 => (0..n_lines)
+        ValidDimension::Four => (0..n_lines)
             .map(|_| {
                 pointlike_sky_line({
                     let u = random_sphere_point::<V::SubV>() * SKY_DISTANCE;
@@ -143,7 +141,6 @@ pub fn draw_horizon<V: VectorTrait>(n_lines: usize) -> Vec<Line<V>> {
                 })
             })
             .collect(),
-        _ => panic!("draw_horizon not supported in {} dim", V::DIM),
     }
 }
 

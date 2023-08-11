@@ -75,7 +75,7 @@ where
         LevelConfig::Test3 => build_inverted_test_level(ref_shapes, world),
         LevelConfig::Load => config
             .scene
-            .load_config(V::DIM)
+            .load_config(V::DIM.into())
             .as_ref()
             .ok_or(())
             .map_err(|_| println!("No load path specified"))

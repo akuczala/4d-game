@@ -7,6 +7,7 @@ use rfd::{AsyncFileDialog, FileHandle};
 use crate::{
     config::{Config, LevelConfig, LoadLevelConfig},
     constants::DEFAULT_SAVELOAD_PATH_STR,
+    utils::ValidDimension,
     vector::VecIndex,
 };
 
@@ -65,20 +66,6 @@ pub fn request_load(event_loop_proxy: &EventLoopProxy<CustomEvent>) {
 
 fn save_file_extension(dim: VecIndex) -> String {
     format!("{}d.ron", dim)
-}
-
-#[derive(Copy, Clone)]
-pub enum ValidDimension {
-    Three,
-    Four,
-}
-impl ValidDimension {
-    pub fn to_index(self) -> VecIndex {
-        match self {
-            Self::Three => 3,
-            Self::Four => 4,
-        }
-    }
 }
 
 fn get_file_dimension(path: &Path) -> Result<ValidDimension, String> {

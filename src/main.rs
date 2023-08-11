@@ -12,7 +12,9 @@ use engine::Engine;
 use fps::FPSTimer;
 use input::custom_events::CustomEvent;
 
-use crate::{config::load_config, input::saveload_dialog::set_load_file_in_config};
+use crate::{
+    config::load_config, input::saveload_dialog::set_load_file_in_config, utils::ValidDimension,
+};
 
 mod camera;
 mod constants;
@@ -54,7 +56,7 @@ fn main() {
 
     let (event_loop, display) = init_glium();
 
-    let mut dim = 3;
+    let mut dim = ValidDimension::Three;
     let mut engine = Engine::new(dim, &config, &display);
 
     let mut fps_timer = FPSTimer::new();
@@ -71,9 +73,8 @@ fn main() {
 
         if let Event::UserEvent(CustomEvent::SwapEngine) = event {
             dim = match dim {
-                3 => 4,
-                4 => 3,
-                _ => panic!("Invalid dimension {}", dim),
+                ValidDimension::Three => ValidDimension::Four,
+                ValidDimension::Four => ValidDimension::Three,
             };
             engine = engine.restart(dim, &config, &display);
         }
@@ -81,7 +82,7 @@ fn main() {
         if let Event::UserEvent(CustomEvent::LoadLevel(ref file)) = event {
             match set_load_file_in_config(&mut config, file) {
                 Ok(vd) => {
-                    dim = vd.to_index();
+                    dim = vd;
                     engine = engine.restart(dim, &config, &display);
                 }
                 Err(msg) => println!("{}", msg),

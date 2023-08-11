@@ -2,6 +2,7 @@ use crate::constants::{CARDINAL_COLORS, ONE_SIDED_FACE_LABEL_STR, PI, TWO_SIDED_
 use crate::draw::texture::texture_builder::TextureBuilder;
 use crate::draw::texture::FaceTextureBuilder;
 
+use crate::utils::ValidDimension;
 use crate::{
     components::{RefShapes, ShapeLabel, Transformable},
     draw::{self},
@@ -11,10 +12,9 @@ use crate::{
 };
 
 pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEntityBuilderV<V>> {
-    let (n_divisions, frame_vertis) = match V::DIM {
-        3 => (vec![2, 2], vec![1, 3]),
-        4 => (vec![2, 2, 2], vec![1, 3, 4]),
-        _ => panic!("Cannot build test level in {} dimensions.", { V::DIM }),
+    let (n_divisions, frame_vertis) = match V::DIM.into() {
+        ValidDimension::Three => (vec![2, 2], vec![1, 3]),
+        ValidDimension::Four => (vec![2, 2, 2], vec![1, 3, 4]),
     };
     let len = 4.0;
     let wall_label = ShapeLabel::from_str(ONE_SIDED_FACE_LABEL_STR);

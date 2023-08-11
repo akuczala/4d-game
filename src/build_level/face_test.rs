@@ -3,6 +3,7 @@ use crate::draw::texture::texture_builder::TextureBuilder;
 use crate::draw::texture::FaceTextureBuilder;
 
 use crate::graphics::colors::*;
+use crate::utils::ValidDimension;
 use crate::vector::VecIndex;
 use crate::{components::StaticCollider, constants::PI};
 
@@ -92,10 +93,9 @@ where
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    let (n_divisions, frame_vertis) = match V::DIM {
-        3 => (vec![4, 4], vec![1, 3]),
-        4 => (vec![4, 4, 4], vec![1, 3, 4]),
-        _ => panic!("Cannot build test level in {} dimensions.", { V::DIM }),
+    let (n_divisions, frame_vertis) = match V::DIM.into() {
+        ValidDimension::Three => (vec![4, 4], vec![1, 3]),
+        ValidDimension::Four => (vec![4, 4, 4], vec![1, 3, 4]),
     };
     let build_shape: ShapeEntityBuilderV<V> = ShapeEntityBuilder::new_from_ref_shape(
         ref_shapes,

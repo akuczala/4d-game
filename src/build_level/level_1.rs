@@ -15,6 +15,7 @@ use crate::{
     geometry::transform::Scaling,
     graphics::colors::YELLOW,
     shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV},
+    utils::ValidDimension,
     vector::{Field, VectorTrait},
 };
 
@@ -38,10 +39,9 @@ fn build_corridor_cross<V: VectorTrait>(
                     texture: TextureBuilder::new()
                         .with_step(TextureBuilderStep::WithTexture(TexturePrim::Tile {
                             scales: vec![FACE_SCALE],
-                            n_divisions: match V::DIM {
-                                3 => vec![3, 1],
-                                4 => vec![3, 1, 1],
-                                _ => panic!(),
+                            n_divisions: match V::DIM.into() {
+                                ValidDimension::Three => vec![3, 1],
+                                ValidDimension::Four => vec![3, 1, 1],
                             },
                         }))
                         .with_step(TextureBuilderStep::MergedWith(vec![
@@ -65,15 +65,13 @@ fn build_corridor_cross<V: VectorTrait>(
     let wall_height = 1.0;
     //let origin = V::zero();
     let signs = vec![-1.0, 1.0];
-    let axis_pairs = match V::DIM {
-        3 => vec![(0, 2)],
-        4 => vec![(0, 2), (2, 3), (3, 0)],
-        _ => panic!("Invalid dimension for build_corridor_cross"),
+    let axis_pairs = match V::DIM.into() {
+        ValidDimension::Three => vec![(0, 2)],
+        ValidDimension::Four => vec![(0, 2), (2, 3), (3, 0)],
     };
-    let axes = match V::DIM {
-        3 => -1..1,
-        4 => -2..1,
-        _ => panic!("Invalid dimension for build_corridor_cross"),
+    let axes = match V::DIM.into() {
+        ValidDimension::Three => -1..1,
+        ValidDimension::Four => -2..1,
     };
 
     let mut shape_builders: Vec<ShapeEntityBuilderV<V>> = Vec::new();
@@ -182,10 +180,9 @@ where
     //let (m,n) = (4,4);
     //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
     for (axis, dir) in iproduct!(
-        match V::DIM {
-            3 => vec![0, 2],
-            4 => vec![0, 2, 3],
-            _ => panic!("Invalid dimension"),
+        match V::DIM.into() {
+            ValidDimension::Three => vec![0, 2],
+            ValidDimension::Four => vec![0, 2, 3],
         },
         vec![-1., 1.]
     ) {
