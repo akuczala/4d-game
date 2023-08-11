@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{constants::CONFIG_FILE_PATH_STR, draw::ViewportShape, vector::Field};
+use crate::{
+    constants::CONFIG_FILE_PATH_STR,
+    draw::ViewportShape,
+    vector::{Field, VecIndex},
+};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ViewConfig {
@@ -65,7 +69,8 @@ pub struct SceneConfig {
     pub stars: bool,
     pub level: LevelConfig,
     pub level_1: Option<Level1Config>,
-    pub load: Option<LoadLevelConfig>,
+    pub load_3d: Option<LoadLevelConfig>,
+    pub load_4d: Option<LoadLevelConfig>,
 }
 impl Default for SceneConfig {
     fn default() -> Self {
@@ -76,7 +81,17 @@ impl Default for SceneConfig {
             stars: true,
             level: LevelConfig::Level1,
             level_1: None,
-            load: None,
+            load_3d: None,
+            load_4d: None,
+        }
+    }
+}
+impl SceneConfig {
+    pub fn load_config(&self, dim: VecIndex) -> &Option<LoadLevelConfig> {
+        match dim {
+            3 => &self.load_3d,
+            4 => &self.load_4d,
+            _ => panic!("Invalid dimension {}", dim),
         }
     }
 }

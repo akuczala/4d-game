@@ -21,12 +21,14 @@ use glutin::event::{MouseScrollDelta, TouchPhase};
 
 use winit_input_helper::WinitInputHelper;
 
-use crate::vector::Field;
+use crate::vector::{Field, VecIndex};
 
 use glutin::event::{Event, WindowEvent};
 
 use self::custom_events::CustomEvent;
-use self::key_map::{MOVEMENT_MODE, QUIT, TOGGLEABLE_KEYS, TOGGLE_DIMENSION};
+use self::key_map::{
+    KeyCombo, LOAD_LEVEL, MOVEMENT_MODE, QUIT, SAVE_LEVEL, TOGGLEABLE_KEYS, TOGGLE_DIMENSION,
+};
 use self::saveload_dialog::{request_load, request_save};
 
 // fn duration_as_field(duration : &Duration) -> f32 {
@@ -195,6 +197,7 @@ impl Input {
     // run for every winit event
     pub fn listen_events(
         &mut self,
+        dim: VecIndex,
         event_loop_proxy: &EventLoopProxy<CustomEvent>,
         ev: &Event<CustomEvent>,
     ) {
@@ -217,7 +220,7 @@ impl Input {
         if self.save_requested(ev) {
             self.last_movement_mode = self.movement_mode;
             self.movement_mode = MovementMode::Dialog;
-            request_save(event_loop_proxy);
+            request_save(dim, event_loop_proxy);
         }
         if self.load_requested(ev) {
             self.last_movement_mode = self.movement_mode;
@@ -235,14 +238,14 @@ impl Input {
         )
     }
     fn save_requested(&self, event: &Event<CustomEvent>) -> bool {
-        self.key_combo(VKC::LWin, VKC::S, event)
+        self.key_combo(SAVE_LEVEL, event)
     }
     fn load_requested(&self, event: &Event<CustomEvent>) -> bool {
-        self.key_combo(VKC::LWin, VKC::L, event)
+        self.key_combo(LOAD_LEVEL, event)
     }
-    fn key_combo(&self, key_held: VKC, key_released: VKC, event: &Event<CustomEvent>) -> bool {
+    fn key_combo(&self, key_combo: KeyCombo, event: &Event<CustomEvent>) -> bool {
         // we explicitly event match here to get one event; winit helper generates multiple events
-        // TODO: make this less terrible?
+        // TODO: make this look nicer?
         if matches!(event,
             Event::WindowEvent {
                 event: WindowEvent::KeyboardInput {
@@ -254,9 +257,9 @@ impl Input {
                     ..
                 },
                 ..
-            } if (*key as usize) == (key_released as usize))
+            } if (*key as usize) == (key_combo.release as usize))
         {
-            self.helper.key_held(key_held)
+            self.helper.key_held(key_combo.hold)
         } else {
             false
         }
@@ -282,34 +285,31 @@ fn mouse_event(mouse: &mut MouseData, window_event: &WindowEvent) {
                 MOUSE_INTEGRATION_MAX,
             );
         }
-        WindowEvent::MouseWheel { delta, phase, .. } => {
-            match phase {
-                TouchPhase::Started => {}
-                TouchPhase::Moved => {
-                    mouse.scroll_dpos = match delta {
-                        MouseScrollDelta::LineDelta(x, y) => Some((*x, *y)),
-                        MouseScrollDelta::PixelDelta(PhysicalPosition { x, y }) => {
-                            Some((*x as f32, *y as f32))
-                        }
-                    };
-                    let (dx, dy) = mouse.scroll_dpos.unwrap();
-                    add_mod(
-                        &mut mouse.integrated_scroll_dpos.0,
-                        dx,
-                        MOUSE_INTEGRATION_MAX,
-                    );
-                    add_mod(
-                        &mut mouse.integrated_scroll_dpos.1,
-                        dy,
-                        MOUSE_INTEGRATION_MAX,
-                    );
-                }
-                TouchPhase::Cancelled | TouchPhase::Ended => {
-                    mouse.scroll_dpos = None;
-                }
+        WindowEvent::MouseWheel { delta, phase, .. } => match phase {
+            TouchPhase::Started => {}
+            TouchPhase::Moved => {
+                mouse.scroll_dpos = match delta {
+                    MouseScrollDelta::LineDelta(x, y) => Some((*x, *y)),
+                    MouseScrollDelta::PixelDelta(PhysicalPosition { x, y }) => {
+                        Some((*x as f32, *y as f32))
+                    }
+                };
+                let (dx, dy) = mouse.scroll_dpos.unwrap();
+                add_mod(
+                    &mut mouse.integrated_scroll_dpos.0,
+                    dx,
+                    MOUSE_INTEGRATION_MAX,
+                );
+                add_mod(
+                    &mut mouse.integrated_scroll_dpos.1,
+                    dy,
+                    MOUSE_INTEGRATION_MAX,
+                );
             }
-            //println!("{:?}, {:?}",delta, phase)
-        }
+            TouchPhase::Cancelled | TouchPhase::Ended => {
+                mouse.scroll_dpos = None;
+            }
+        },
         _ => (),
     }
 }

@@ -12,7 +12,7 @@ use engine::Engine;
 use fps::FPSTimer;
 use input::custom_events::CustomEvent;
 
-use crate::config::{load_config, LevelConfig, LoadLevelConfig};
+use crate::{config::load_config, input::saveload_dialog::set_load_file_in_config};
 
 mod camera;
 mod constants;
@@ -71,22 +71,22 @@ fn main() {
 
         if let Event::UserEvent(CustomEvent::SwapEngine) = event {
             dim = match dim {
-                3 => Ok(4),
-                4 => Ok(3),
-                _ => Err("Invalid dimension"),
-            }
-            .unwrap();
+                3 => 4,
+                4 => 3,
+                _ => panic!("Invalid dimension {}", dim),
+            };
             engine = engine.restart(dim, &config, &display);
         }
 
         if let Event::UserEvent(CustomEvent::LoadLevel(ref file)) = event {
-            config.scene.level = LevelConfig::Load;
-            config.scene.load = Some(LoadLevelConfig {
-                path: file.to_str().unwrap_or_default().to_string(),
-            });
-            engine = engine.restart(dim, &config, &display)
+            match set_load_file_in_config(&mut config, file) {
+                Ok(vd) => {
+                    dim = vd.to_index();
+                    engine = engine.restart(dim, &config, &display);
+                }
+                Err(msg) => println!("{}", msg),
+            }
         }
-
         if let Event::UserEvent(CustomEvent::Quit) = event {
             println!("Exiting.");
             *control_flow = ControlFlow::Exit;

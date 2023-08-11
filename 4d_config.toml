@@ -17,7 +17,7 @@ grid = false
 sky = false
 horizon = false
 stars = true
-level = "Load" # Supported: Level1, Empty, Test1, Test2, Test3, Load
+level = "Empty" # Supported: Level1, Empty, Test1, Test2, Test3, Load
 
 [scene.load]
 path = "./test2.ron"

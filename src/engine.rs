@@ -88,7 +88,7 @@ where
         //input events
         self.world
             .write_resource::<Input>()
-            .listen_events(event_loop_proxy, event);
+            .listen_events(V::DIM, event_loop_proxy, event);
 
         //window / game / redraw events
         match event {

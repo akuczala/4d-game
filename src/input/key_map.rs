@@ -2,6 +2,12 @@ use glium::glutin::event::VirtualKeyCode as VKC;
 
 use crate::vector::VecIndex;
 
+#[derive(Copy, Clone)]
+pub struct KeyCombo {
+    pub hold: VKC,
+    pub release: VKC,
+}
+
 pub const MOVEMENT_MODE: VKC = VKC::M;
 pub const CANCEL_MANIPULATION: VKC = VKC::Backslash;
 pub const SNAPPING: VKC = VKC::Grave;
@@ -47,3 +53,12 @@ pub const TOGGLEABLE_KEYS: [VKC; 7] = [
     DUPLICATE_SHAPE,
     DELETE_SHAPE,
 ];
+
+pub const SAVE_LEVEL: KeyCombo = KeyCombo {
+    hold: VKC::LWin,
+    release: VKC::S,
+};
+pub const LOAD_LEVEL: KeyCombo = KeyCombo {
+    hold: VKC::LWin,
+    release: VKC::L,
+};
