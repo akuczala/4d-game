@@ -4,8 +4,8 @@ use crate::fps::FPSFloat;
 
 use crate::input::{ShapeManipulationMode, ShapeManipulationState};
 use crate::vector::VectorTrait;
-use glium::glutin::event::{Event, WindowEvent};
-use glium::glutin::event_loop::ControlFlow;
+use glium::glutin::event::Event;
+
 use glium::Display;
 use glium::Frame;
 use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, ProgressBar, Ui};
@@ -287,7 +287,6 @@ impl System {
         display: &Display,
         last_frame: &mut Instant,
         event: &Event<E>,
-        control_flow: &mut ControlFlow,
         ui_args: UIArgs,
     ) {
         let imgui = &mut self.imgui;
@@ -306,10 +305,6 @@ impl System {
                     .expect("Failed to prepare frame");
                 gl_window.window().request_redraw();
             }
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => *control_flow = ControlFlow::Exit,
             event => {
                 let gl_window = display.gl_window();
                 platform.handle_event(imgui.io_mut(), gl_window.window(), event);

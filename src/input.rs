@@ -21,13 +21,13 @@ use glutin::event::{MouseScrollDelta, TouchPhase};
 
 use winit_input_helper::WinitInputHelper;
 
-use crate::input::saveload_dialog::request_save;
 use crate::vector::Field;
 
 use glutin::event::{Event, WindowEvent};
 
 use self::custom_events::CustomEvent;
 use self::key_map::{MOVEMENT_MODE, QUIT, TOGGLEABLE_KEYS, TOGGLE_DIMENSION};
+use self::saveload_dialog::{request_load, request_save};
 
 // fn duration_as_field(duration : &Duration) -> f32 {
 //  (duration.as_secs() as Field) + 0.001*(duration.subsec_millis() as Field)
@@ -219,6 +219,11 @@ impl Input {
             self.movement_mode = MovementMode::Dialog;
             request_save(event_loop_proxy);
         }
+        if self.load_requested(ev) {
+            self.last_movement_mode = self.movement_mode;
+            self.movement_mode = MovementMode::Dialog;
+            request_load(event_loop_proxy);
+        }
         if self.helper.update(ev) {
             self.listen_inputs(event_loop_proxy);
         }
@@ -229,22 +234,32 @@ impl Input {
             MovementMode::Player(PlayerMovementMode::Mouse) | MovementMode::Shape(_)
         )
     }
-    pub fn save_requested(&self, event: &Event<CustomEvent>) -> bool {
+    fn save_requested(&self, event: &Event<CustomEvent>) -> bool {
+        self.key_combo(VKC::LWin, VKC::S, event)
+    }
+    fn load_requested(&self, event: &Event<CustomEvent>) -> bool {
+        self.key_combo(VKC::LWin, VKC::L, event)
+    }
+    fn key_combo(&self, key_held: VKC, key_released: VKC, event: &Event<CustomEvent>) -> bool {
         // we explicitly event match here to get one event; winit helper generates multiple events
-        matches!(
-            event,
+        // TODO: make this less terrible?
+        if matches!(event,
             Event::WindowEvent {
                 event: WindowEvent::KeyboardInput {
                     input: KeyboardInput {
                         state: ElementState::Released,
-                        virtual_keycode: Some(VKC::S),
+                        virtual_keycode: Some(ref key),
                         ..
                     },
                     ..
                 },
                 ..
-            }
-        ) && self.helper.key_held(VKC::LWin)
+            } if (*key as usize) == (key_released as usize))
+        {
+            self.helper.key_held(key_held)
+        } else {
+            false
+        }
     }
 }
 fn add_mod(x: &mut f32, dx: f32, x_max: f32) {

@@ -1,8 +1,11 @@
+use std::path::PathBuf;
+
 use rfd::FileHandle;
 
 pub enum CustomEvent {
-    LoadDialog,
+    LoadDialog(Option<FileHandle>),
     SaveDialog(Option<FileHandle>),
     Quit,
     SwapEngine,
+    LoadLevel(PathBuf),
 }

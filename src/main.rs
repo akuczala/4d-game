@@ -12,6 +12,8 @@ use engine::Engine;
 use fps::FPSTimer;
 use input::custom_events::CustomEvent;
 
+use crate::config::{load_config, LevelConfig, LoadLevelConfig};
+
 mod camera;
 mod constants;
 mod draw;
@@ -48,10 +50,12 @@ mod utils;
 fn main() {
     use glutin::event_loop::ControlFlow;
 
+    let mut config = load_config();
+
     let (event_loop, display) = init_glium();
 
     let mut dim = 3;
-    let mut engine = Engine::init(dim, &display);
+    let mut engine = Engine::new(dim, &config, &display);
 
     let mut fps_timer = FPSTimer::new();
 
@@ -61,22 +65,9 @@ fn main() {
 
     //POINT OF NO RETURN. Thanks winit
     event_loop.run(move |event, _, control_flow| {
-        //let mut engine = tengine.take_mut().unwrap();
-
-        //ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
-        // dispatched any events. This is ideal for games and similar applications.
         *control_flow = ControlFlow::Poll;
 
-        //could use for menus??
-        //*control_flow = ControlFlow::Wait;
-
-        engine.update(
-            &event,
-            &event_loop_proxy,
-            control_flow,
-            &display,
-            &mut fps_timer,
-        );
+        engine.update(&event, &event_loop_proxy, &display, &mut fps_timer);
 
         if let Event::UserEvent(CustomEvent::SwapEngine) = event {
             dim = match dim {
@@ -85,7 +76,15 @@ fn main() {
                 _ => Err("Invalid dimension"),
             }
             .unwrap();
-            engine = engine.swap_dim(&display);
+            engine = engine.restart(dim, &config, &display);
+        }
+
+        if let Event::UserEvent(CustomEvent::LoadLevel(ref file)) = event {
+            config.scene.level = LevelConfig::Load;
+            config.scene.load = Some(LoadLevelConfig {
+                path: file.to_str().unwrap_or_default().to_string(),
+            });
+            engine = engine.restart(dim, &config, &display)
         }
 
         if let Event::UserEvent(CustomEvent::Quit) = event {

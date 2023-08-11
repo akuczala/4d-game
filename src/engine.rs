@@ -5,8 +5,8 @@ use glium::glutin::event_loop::EventLoopProxy;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use crate::build_level::build_scene;
 use crate::collide;
-use crate::config::load_config;
 use crate::config::Config;
 use crate::constants::FRAME_MS;
 use crate::ecs_utils::Componentable;
@@ -24,10 +24,7 @@ use std::time::{Duration, Instant};
 
 use crate::draw;
 use crate::gui::UIArgs;
-use glium::glutin::{
-    event::{Event, WindowEvent},
-    event_loop::ControlFlow,
-};
+use glium::glutin::event::{Event, WindowEvent};
 //NOTES:
 // include visual indicator of what direction a collision is in
 
@@ -47,16 +44,12 @@ pub struct EngineD<V, G> {
 }
 impl<V, G> EngineD<V, G>
 where
-    V: VectorTrait + Componentable + Serialize,
-    V::SubV: Componentable + Serialize,
-    V::M: Componentable + Serialize,
+    V: VectorTrait + Componentable + Serialize + DeserializeOwned,
+    V::SubV: Componentable + Serialize + DeserializeOwned,
+    V::M: Componentable + Serialize + DeserializeOwned,
     G: GraphicsTrait,
 {
-    pub fn new<F: Fn(&mut World)>(
-        build_scene: F,
-        graphics: G,
-        maybe_gui: Option<crate::gui::System>,
-    ) -> Self {
+    pub fn new(config: &Config, graphics: G, maybe_gui: Option<crate::gui::System>) -> Self {
         let mut world = World::new();
 
         let mut dispatcher = get_engine_dispatcher_builder::<V>().build();
@@ -65,19 +58,15 @@ where
 
         world.insert(Input::new());
         world.insert(ShapeManipulationState::default() as ShapeManipulationState<V, V::M>);
-        world.insert(load_config());
+        world.insert(config.clone());
 
-        build_scene(&mut world);
+        build_scene::<V>(&mut world);
 
         collide::create_spatial_hash::<V>(&mut world);
 
-        let clip_state = ClipState::<V>::new();
-        let draw_lines: DrawLineList<V> = draw::DrawLineList::<V>(vec![]);
-        let proj_lines = DrawLineList::<V::SubV>(vec![]);
-
-        world.insert(clip_state); // decompose into single entity properties
-        world.insert(draw_lines); // unclear if this would be better as entities; might be able to thread
-        world.insert(proj_lines);
+        world.insert(ClipState::<V>::new()); // decompose into single entity properties
+        world.insert(draw::DrawLineList::<V>(vec![])); // unclear if this would be better as entities; might be able to thread
+        world.insert(DrawLineList::<V::SubV>(vec![]));
 
         EngineD {
             world,
@@ -93,7 +82,6 @@ where
         &mut self,
         event: &Event<CustomEvent>,
         event_loop_proxy: &EventLoopProxy<CustomEvent>,
-        control_flow: &mut ControlFlow,
         display: &Display,
         fps_timer: &mut FPSTimer,
     ) {
@@ -105,7 +93,16 @@ where
         //window / game / redraw events
         match event {
             Event::UserEvent(custom_event) => match custom_event {
-                CustomEvent::LoadDialog => todo!(),
+                CustomEvent::LoadDialog(maybe_file) => {
+                    if let Some(file) = maybe_file {
+                        println!("Loading level {}...", file.file_name());
+                        event_loop_proxy
+                            .send_event(CustomEvent::LoadLevel(file.path().to_owned()))
+                            .unwrap_or_default();
+                    }
+                    let mut input = self.world.write_resource::<Input>();
+                    input.movement_mode = input.last_movement_mode;
+                }
                 CustomEvent::SaveDialog(maybe_file) => {
                     if let Some(file) = maybe_file {
                         println!("Saving level to {}", file.file_name());
@@ -142,16 +139,10 @@ where
             _ => (),
         };
         // this catches e.g. all window resizing events
-        self.update_ui(display, control_flow, event, fps_timer);
+        self.update_ui(display, event, fps_timer);
     }
 
-    fn update_ui<E>(
-        &mut self,
-        display: &Display,
-        control_flow: &mut ControlFlow,
-        event: &Event<E>,
-        fps_timer: &mut FPSTimer,
-    ) {
+    fn update_ui<E>(&mut self, display: &Display, event: &Event<E>, fps_timer: &mut FPSTimer) {
         let gui_config = &self.world.fetch::<Config>().gui;
         let ui_args = match gui_config {
             crate::config::GuiConfig::None => UIArgs::None,
@@ -167,13 +158,7 @@ where
 
         //gui update (all events)
         if let Some(ref mut gui) = &mut self.gui {
-            gui.update(
-                display,
-                &mut fps_timer.gui_last_time,
-                event,
-                control_flow,
-                ui_args,
-            )
+            gui.update(display, &mut fps_timer.gui_last_time, event, ui_args)
         };
     }
 
@@ -231,9 +216,9 @@ where
     V::M: Componentable + Serialize + DeserializeOwned,
     G: GraphicsTrait,
 {
-    fn init(display: &Display, gui: Option<crate::gui::System>) -> Self {
+    fn init(config: &Config, display: &Display, gui: Option<crate::gui::System>) -> Self {
         println!("Starting {}d engine", V::DIM);
-        Self::new(crate::build_level::build_scene::<V>, G::init(display), gui)
+        Self::new(config, G::init(display), gui)
     }
 }
 
@@ -245,46 +230,45 @@ pub enum Engine {
     Four(EngineD<Vec4, DefaultGraphics>),
 }
 impl Engine {
-    pub fn init(dim: VecIndex, display: &Display) -> Engine {
-        let gui = Some(crate::gui::init("test", display));
-        //let gui = None;
+    pub fn init(
+        dim: VecIndex,
+        config: &Config,
+        display: &Display,
+        gui: Option<crate::gui::System>,
+    ) -> Engine {
         match dim {
-            3 => Ok(Engine::Three(EngineD::<Vec3, DefaultGraphics>::init(
-                display, gui,
-            ))),
-            4 => Ok(Engine::Four(EngineD::<Vec4, DefaultGraphics>::init(
-                display, gui,
-            ))),
-            _ => Err("Invalid dimension for game engine"),
+            3 => Engine::Three(EngineD::<Vec3, _>::init(config, display, gui)),
+            4 => Engine::Four(EngineD::<Vec4, _>::init(config, display, gui)),
+            _ => panic!("Invalid dimension {} for game engine", dim),
         }
-        .unwrap()
     }
-    pub fn swap_dim(&mut self, display: &Display) -> Engine {
-        let mut gui: Option<crate::gui::System> = None;
-        match self {
-            Engine::Four(engined) => std::mem::swap(&mut gui, &mut engined.gui),
-            Engine::Three(engined) => std::mem::swap(&mut gui, &mut engined.gui),
-        }
-        match self {
-            Engine::Four(_engined) => {
-                Engine::Three(EngineD::<Vec3, DefaultGraphics>::init(display, gui))
-            }
-            Engine::Three(_engined) => {
-                Engine::Four(EngineD::<Vec4, DefaultGraphics>::init(display, gui))
-            }
-        }
+
+    pub fn new(dim: VecIndex, config: &Config, display: &Display) -> Engine {
+        let gui = Some(crate::gui::init("test", display));
+        Self::init(dim, config, display, gui)
+    }
+
+    pub fn restart(&mut self, dim: VecIndex, config: &Config, display: &Display) -> Engine {
+        let mut gui = None;
+        std::mem::swap(
+            &mut gui,
+            match self {
+                Engine::Three(EngineD { gui, .. }) => gui,
+                Engine::Four(EngineD { gui, .. }) => gui,
+            },
+        );
+        Self::init(dim, config, display, gui)
     }
     pub fn update(
         &mut self,
         event: &Event<CustomEvent>,
         event_loop_proxy: &EventLoopProxy<CustomEvent>,
-        control_flow: &mut ControlFlow,
         display: &Display,
         fps_timer: &mut FPSTimer,
     ) {
         match self {
-            Engine::Three(e) => e.update(event, event_loop_proxy, control_flow, display, fps_timer),
-            Engine::Four(e) => e.update(event, event_loop_proxy, control_flow, display, fps_timer),
+            Engine::Three(e) => e.update(event, event_loop_proxy, display, fps_timer),
+            Engine::Four(e) => e.update(event, event_loop_proxy, display, fps_timer),
         }
     }
 }
