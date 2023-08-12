@@ -98,6 +98,11 @@ pub struct Transform<V, M> {
     pub frame: M,
     pub scale: Scaling<V>,
 }
+impl<V: VectorTrait> Default for Transform<V, V::M> {
+    fn default() -> Self {
+        Self::identity()
+    }
+}
 
 // todo figure out how to "snap" transforms to e.g. integer scales, deg of rotation, grid pos
 

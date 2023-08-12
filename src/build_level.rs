@@ -5,7 +5,7 @@ mod level_1;
 
 use crate::coin::Coin;
 use crate::collide::StaticCollider;
-use crate::components::{Cursor, Transform};
+use crate::components::{Cursor, Player, Transform};
 use crate::config::{Config, LevelConfig};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::visual_aids::{calc_grid_lines, draw_horizon, draw_sky, draw_stars};
@@ -30,7 +30,10 @@ where
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    shape_builder.build(world).with(StaticCollider).build();
+    shape_builder
+        .with_collider(Some(StaticCollider))
+        .build(world)
+        .build();
 }
 pub fn insert_coin<V>(world: &mut World, shape_builder: ShapeEntityBuilderV<V>)
 where
@@ -50,7 +53,6 @@ where
     let ref_shapes = build_shape_library::<V>();
     build_level(&ref_shapes, world);
     world.insert(ref_shapes);
-    init_player(world, V::zero());
 }
 
 pub fn build_level<V: VectorTrait>(ref_shapes: &RefShapes<V>, world: &mut World)
@@ -83,10 +85,14 @@ where
             .unwrap_or_default(),
         LevelConfig::Empty => (),
     };
-    build_empty_level::<V>(world);
+    // Default player placement
+    if world.try_fetch::<Player>().is_none() {
+        init_player::<V>(world, None);
+    }
+    build_scenery::<V>(world);
 }
 
-pub fn build_empty_level<V: VectorTrait + Componentable>(world: &mut World) {
+pub fn build_scenery<V: VectorTrait + Componentable>(world: &mut World) {
     let config: Config = (*world.read_resource::<Config>()).clone();
     let scene_config = config.scene;
     vec![
@@ -115,14 +121,13 @@ pub fn build_empty_level<V: VectorTrait + Componentable>(world: &mut World) {
     });
 }
 
-pub fn init_player<V>(world: &mut World, pos: V)
+pub fn init_player<V>(world: &mut World, transform: Option<Transform<V, V::M>>)
 where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    let transform = Transform::identity().with_translation(pos);
-    crate::player::build_player(world, &transform, None);
+    crate::player::build_player(world, transform.unwrap_or_default(), None);
     init_cursor::<V>(world);
 }
 

@@ -16,16 +16,16 @@ pub struct Player(pub Entity); //specifies entity of player
 
 pub fn build_player<V>(
     world: &mut World,
-    transform: &Transform<V, V::M>,
+    transform: Transform<V, V::M>,
     heading: Option<Heading<V::M>>,
 ) where
     V: VectorTrait + Componentable,
     V::M: Componentable + Clone,
 {
-    let camera = Camera::new(transform);
+    let camera = Camera::new(&transform);
     let player_entity = world
         .create_entity()
-        .with(*transform)
+        .with(transform)
         .with(heading.unwrap_or(Heading(V::M::id())))
         .with(BBox {
             min: V::ones() * (-0.1) + transform.pos,

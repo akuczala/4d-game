@@ -60,5 +60,5 @@ pub const SAVE_LEVEL: KeyCombo = KeyCombo {
 };
 pub const LOAD_LEVEL: KeyCombo = KeyCombo {
     hold: VKC::LWin,
-    release: VKC::L,
+    release: VKC::O,
 };

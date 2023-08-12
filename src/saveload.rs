@@ -7,8 +7,9 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use specs::prelude::*;
 use transform::{Transform, Transformable};
 
+use crate::build_level::init_player;
 use crate::coin::Coin;
-use crate::components::{RefShapes, ShapeLabel, StaticCollider};
+use crate::components::{Player, RefShapes, ShapeLabel, StaticCollider};
 
 use crate::draw::texture::ShapeTextureBuilder;
 
@@ -38,6 +39,7 @@ type EntitySave<V, M> = (
 #[derive(Clone, Serialize, Deserialize)]
 struct SaveStructure<V, M> {
     components: Vec<EntitySave<V, M>>,
+    player_transform: Transform<V, M>,
 }
 type SaveStructureV<V> = SaveStructure<V, <V as VectorTrait>::M>;
 
@@ -68,7 +70,11 @@ where
             )
         })
         .collect();
-    SaveStructure { components }
+    let player_transform = *transforms.get(world.fetch::<Player>().0).unwrap();
+    SaveStructure {
+        components,
+        player_transform,
+    }
 }
 
 fn serialize_level<V>(save_struct: &SaveStructureV<V>) -> Result<String, ron::Error>
@@ -89,7 +95,7 @@ where
     ron::from_str(level_str)
 }
 
-fn append_shape_components<V>(
+fn append_components<V>(
     save_struct: SaveStructureV<V>,
     ref_shapes: &RefShapes<V>,
     world: &mut World,
@@ -133,10 +139,12 @@ where
     V::M: DeserializeOwned + Componentable,
     V::SubV: DeserializeOwned + Componentable,
 {
-    std::fs::read_to_string(path)
+    let save_struct = std::fs::read_to_string(path)
         .map_err(|e| println!("Error loading level {}: {}", path, e))
         .and_then(|s| {
             deserialize_level(&s).map_err(|e| println!("Could not parse level file: {}", e))
-        })
-        .map(|save_struct| append_shape_components(save_struct, ref_shapes, world))
+        })?;
+    init_player(world, Some(save_struct.player_transform));
+    append_components(save_struct, ref_shapes, world);
+    Ok(())
 }
