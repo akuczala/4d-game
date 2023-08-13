@@ -8,7 +8,8 @@ pub const ZERO: Field = 0.0;
 pub const HALF: Field = 0.5;
 
 pub const DARK_TINT: f32 = 0.01;
-pub const BACKGROUND_COLOR: [f32; 4] = [DARK_TINT, DARK_TINT, DARK_TINT, 1.0];
+pub const DARK_BACKGROUND_COLOR: [f32; 4] = [DARK_TINT, DARK_TINT, DARK_TINT, 1.0];
+pub const BACKGROUND_COLOR: [f32; 4] = DARK_BACKGROUND_COLOR;
 
 pub const CARDINAL_COLORS: [Color; 8] = [RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW, ORANGE, WHITE];
 pub const AXES_COLORS: [Color; 4] = [RED, GREEN, CYAN, MAGENTA];
@@ -44,4 +45,4 @@ pub const FRAME_MS: u64 = 16;
 pub const CONFIG_FILE_PATH_STR: &str = "./4d_config.toml";
 pub const DEFAULT_SAVELOAD_PATH_STR: &str = "./";
 
-pub const FACE_SCALE: Field = 0.8;
+pub const FACE_SCALE: Field = 0.95;

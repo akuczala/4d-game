@@ -5,7 +5,7 @@ mod level_1;
 
 use crate::coin::Coin;
 use crate::collide::StaticCollider;
-use crate::components::{Cursor, Player, Transform};
+use crate::components::{Cursor, Heading, Player, Transform};
 use crate::config::{Config, LevelConfig};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::visual_aids::{calc_grid_lines, draw_horizon, draw_sky, draw_stars};
@@ -87,7 +87,7 @@ where
     };
     // Default player placement
     if world.try_fetch::<Player>().is_none() {
-        init_player::<V>(world, None);
+        init_player::<V>(world, None, None);
     }
     build_scenery::<V>(world);
 }
@@ -121,13 +121,16 @@ pub fn build_scenery<V: VectorTrait + Componentable>(world: &mut World) {
     });
 }
 
-pub fn init_player<V>(world: &mut World, transform: Option<Transform<V, V::M>>)
-where
+pub fn init_player<V>(
+    world: &mut World,
+    transform: Option<Transform<V, V::M>>,
+    heading: Option<Heading<V::M>>,
+) where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    crate::player::build_player(world, transform.unwrap_or_default(), None);
+    crate::player::build_player(world, transform.unwrap_or_default(), heading);
     init_cursor::<V>(world);
 }
 

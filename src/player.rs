@@ -8,6 +8,8 @@ use crate::ecs_utils::Componentable;
 use crate::geometry::Line;
 use crate::vector::MatrixTrait;
 use crate::vector::{Field, VectorTrait};
+use serde::Deserialize;
+use serde::Serialize;
 use specs::prelude::*;
 use specs::{Component, HashMapStorage};
 use std::marker::PhantomData;
@@ -44,6 +46,7 @@ pub fn build_player<V>(
 // e.g. the player has transform = heading, camera has transform where player is looking. would be
 // nice to have a parent relationship between the two transforms a la unity
 // I wanted to be able to impl a method that returns M[-1], but it doesn't work because MatrixTrait has a free generic parameter V
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Heading<M>(pub M);
 
 pub struct ShapeTargetingSystem<V>(pub PhantomData<V>);

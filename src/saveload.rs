@@ -9,7 +9,7 @@ use transform::{Transform, Transformable};
 
 use crate::build_level::init_player;
 use crate::coin::Coin;
-use crate::components::{Player, RefShapes, ShapeLabel, StaticCollider};
+use crate::components::{Heading, Player, RefShapes, ShapeLabel, StaticCollider};
 
 use crate::draw::texture::ShapeTextureBuilder;
 
@@ -37,9 +37,31 @@ type EntitySave<V, M> = (
 );
 
 #[derive(Clone, Serialize, Deserialize)]
+struct PlayerData<V, M> {
+    transform: Transform<V, M>,
+    heading: Heading<M>,
+}
+impl<V> PlayerData<V, V::M>
+where
+    V: VectorTrait + Componentable,
+    V::M: Componentable,
+    V::SubV: Componentable,
+{
+    fn build(world: &World) -> Self {
+        let player_entity = world.fetch::<Player>().0;
+        let transforms = world.read_storage();
+        let headings = world.read_storage::<Heading<V::M>>();
+        Self {
+            transform: *transforms.get(player_entity).unwrap(),
+            heading: *headings.get(player_entity).unwrap(),
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 struct SaveStructure<V, M> {
     components: Vec<EntitySave<V, M>>,
-    player_transform: Transform<V, M>,
+    player_data: PlayerData<V, M>,
 }
 type SaveStructureV<V> = SaveStructure<V, <V as VectorTrait>::M>;
 
@@ -70,10 +92,9 @@ where
             )
         })
         .collect();
-    let player_transform = *transforms.get(world.fetch::<Player>().0).unwrap();
     SaveStructure {
         components,
-        player_transform,
+        player_data: PlayerData::build(world),
     }
 }
 
@@ -144,7 +165,11 @@ where
         .and_then(|s| {
             deserialize_level(&s).map_err(|e| println!("Could not parse level file: {}", e))
         })?;
-    init_player(world, Some(save_struct.player_transform));
+    init_player(
+        world,
+        Some(save_struct.player_data.transform),
+        Some(save_struct.player_data.heading),
+    );
     append_components(save_struct, ref_shapes, world);
     Ok(())
 }

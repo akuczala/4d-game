@@ -1,7 +1,7 @@
 gui = "Debug"
 
 [fuzz_lines]
-face_num = 100
+face_num = 500
 sky_num = 1000
 horizon_num = 500
 
@@ -13,9 +13,9 @@ focal = 1.0
 spin_speed = 0.02
 
 [scene]
-grid = false
-sky = false
-horizon = false
+grid = true
+sky = true
+horizon = true
 stars = true
 level = "Empty" # Supported: Level1, Empty, Test1, Test2, Test3, Load
 
