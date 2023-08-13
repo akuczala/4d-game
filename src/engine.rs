@@ -80,8 +80,8 @@ where
 
     fn init_gui(world: &mut World) {
         let init_args = GuiInitArgs::new(&world.fetch::<RefShapes<V>>().get_labels());
+        world.insert(GuiState::new(&init_args));
         world.insert(init_args);
-        world.insert(GuiState::default());
     }
 
     //runs for each event

@@ -5,7 +5,6 @@ use specs::{Entities, Join, ReadExpect, ReadStorage, System, WriteExpect, WriteS
 use crate::{
     components::{BBall, Camera, ClipState, Cursor, Player, Shape, ShapeClipState, Transform},
     config::Config,
-    constants::FACE_SCALE,
     ecs_utils::{Componentable, SystemName},
     vector::VectorTrait,
 };
@@ -127,18 +126,19 @@ where
         ReadStorage<'a, ShapeTexture<V::SubV>>,
         ReadStorage<'a, ShapeClipState<V>>,
         ReadExpect<'a, ClipState<V>>,
+        ReadExpect<'a, Config>,
         WriteExpect<'a, DrawLineList<V>>, // TODO: break up into components so that these can be processed more in parallel with par_iter?
     );
 
     fn run(
         &mut self,
-        (shapes, shape_textures, shape_clip_states, clip_state, mut lines): Self::SystemData,
+        (shapes, shape_textures, shape_clip_states, clip_state, config, mut lines): Self::SystemData,
     ) {
         lines.0 = calc_shapes_lines(
             &shapes,
             &shape_textures,
             &shape_clip_states,
-            &[FACE_SCALE],
+            &[config.draw.face_scale],
             &clip_state,
         );
     }

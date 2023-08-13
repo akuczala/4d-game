@@ -44,5 +44,3 @@ pub const FRAME_MS: u64 = 16;
 
 pub const CONFIG_FILE_PATH_STR: &str = "./4d_config.toml";
 pub const DEFAULT_SAVELOAD_PATH_STR: &str = "./";
-
-pub const FACE_SCALE: Field = 0.95;

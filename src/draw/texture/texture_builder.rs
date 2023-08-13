@@ -28,11 +28,13 @@ pub enum TextureBuilderStep {
 #[derive(Clone)]
 pub struct TextureBuilderConfig {
     n_fuzz_lines: usize,
+    face_scale: Field,
 }
 impl From<&Config> for TextureBuilderConfig {
     fn from(value: &Config) -> Self {
         Self {
-            n_fuzz_lines: value.fuzz_lines.face_num,
+            n_fuzz_lines: value.draw.fuzz_lines.face_num,
+            face_scale: value.draw.face_scale,
         }
     }
 }
@@ -93,7 +95,7 @@ impl TextureBuilder {
             TextureBuilderStep::WithColor(color) => texture.set_color(color),
             TextureBuilderStep::MergedWith(steps) => {
                 let new_texture = Self::new().with_steps(steps).build::<V>(config);
-                texture.merged_with(&new_texture)
+                texture.merged_with(&new_texture, config.face_scale)
             }
         }
     }

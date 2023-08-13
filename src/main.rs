@@ -28,6 +28,7 @@ mod coin;
 mod collide;
 mod components;
 mod config;
+mod debug;
 mod ecs_utils;
 mod engine;
 mod fps;

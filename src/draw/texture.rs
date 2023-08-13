@@ -7,7 +7,6 @@ use super::visual_aids::random_sphere_point;
 use super::DrawLine;
 
 use crate::components::Shape;
-use crate::constants::FACE_SCALE;
 use crate::geometry::shape::{Edge, VertIndex};
 use crate::geometry::{Face, Line};
 use crate::vector::{Field, VecIndex, VectorTrait};
@@ -46,8 +45,8 @@ impl<V> Texture<V> {
     }
 }
 impl<V: VectorTrait> Texture<V> {
-    pub fn make_single_tile_texture(color: Color) -> Self {
-        Texture::make_tile_texture(&[FACE_SCALE], &(0..V::DIM).map(|_| 1).collect_vec())
+    pub fn make_single_tile_texture(color: Color, face_scale: Field) -> Self {
+        Texture::make_tile_texture(&[face_scale], &(0..V::DIM).map(|_| 1).collect_vec())
             .set_color(color)
     }
     pub fn make_tile_texture(scales: &[Field], n_divisions: &Vec<i32>) -> Self {
@@ -126,15 +125,17 @@ impl<V: VectorTrait> Texture<V> {
             color: DEFAULT_COLOR,
         }
     }
-    pub fn merged_with(&self, texture: &Texture<V>) -> Texture<V> {
+    pub fn merged_with(&self, texture: &Texture<V>, face_scale: Field) -> Texture<V> {
         match (self, texture) {
             // first two cases only work for rectangles
             (Texture::DefaultLines { color: color_1 }, other) => {
-                Texture::make_single_tile_texture(*color_1).merged_with(other)
+                Texture::make_single_tile_texture(*color_1, face_scale)
+                    .merged_with(other, face_scale)
             }
-            (_, Texture::DefaultLines { color: color_2 }) => {
-                self.merged_with(&Texture::make_single_tile_texture(*color_2))
-            }
+            (_, Texture::DefaultLines { color: color_2 }) => self.merged_with(
+                &Texture::make_single_tile_texture(*color_2, face_scale),
+                face_scale,
+            ),
             (
                 Texture::Lines {
                     lines: lines_1,

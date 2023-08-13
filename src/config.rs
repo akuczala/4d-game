@@ -25,6 +25,19 @@ impl Default for ViewConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct DrawConfig {
+    pub fuzz_lines: FuzzLinesConfig,
+    pub face_scale: Field,
+}
+impl Default for DrawConfig {
+    fn default() -> Self {
+        Self {
+            fuzz_lines: Default::default(),
+            face_scale: 0.8,
+        }
+    }
+}
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct FuzzLinesConfig {
     pub face_num: usize,
     pub sky_num: usize,
@@ -108,7 +121,7 @@ pub enum GuiConfig {
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct Config {
-    pub fuzz_lines: FuzzLinesConfig,
+    pub draw: DrawConfig,
     pub view: ViewConfig,
     pub scene: SceneConfig,
     pub editor: EditorConfig,

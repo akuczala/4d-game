@@ -3,7 +3,8 @@ use specs::World;
 
 use crate::{
     components::{RefShapes, Shape, ShapeLabel, Transformable},
-    constants::{CARDINAL_COLORS, COIN_LABEL_STR, CUBE_LABEL_STR, FACE_SCALE},
+    config::DrawConfig,
+    constants::{CARDINAL_COLORS, COIN_LABEL_STR, CUBE_LABEL_STR},
     draw::{
         self,
         texture::{
@@ -25,10 +26,12 @@ fn build_corridor_cross<V: VectorTrait>(
     cube_builder: &ShapeEntityBuilderV<V>,
     wall_length: Field,
     open_center: bool,
+    draw_config: &DrawConfig,
 ) -> Vec<ShapeEntityBuilderV<V>> {
     pub fn build_texture<V: VectorTrait>(
         shape: &Shape<V>,
         scale: &Scaling<V>,
+        draw_config: &DrawConfig,
     ) -> ShapeTextureGeneric<TextureBuilder> {
         ShapeTextureGeneric {
             face_textures: shape
@@ -38,7 +41,7 @@ fn build_corridor_cross<V: VectorTrait>(
                 .map(|(face_index, face)| FaceTextureGeneric {
                     texture: TextureBuilder::new()
                         .with_step(TextureBuilderStep::WithTexture(TexturePrim::Tile {
-                            scales: vec![FACE_SCALE],
+                            scales: vec![draw_config.face_scale],
                             n_divisions: match V::DIM.into() {
                                 ValidDimension::Three => vec![3, 1],
                                 ValidDimension::Four => vec![3, 1, 1],
@@ -95,7 +98,7 @@ fn build_corridor_cross<V: VectorTrait>(
             .collect();
     for builder in &mut walls1 {
         builder.shape_texture_builder =
-            build_texture(&builder.shape, &builder.transformation.scale);
+            build_texture(&builder.shape, &builder.transformation.scale, draw_config);
     }
 
     shape_builders.append(&mut walls1);
@@ -133,11 +136,11 @@ fn build_corridor_cross<V: VectorTrait>(
 
     for builder in &mut floors_long {
         builder.shape_texture_builder =
-            build_texture(&builder.shape, &builder.transformation.scale);
+            build_texture(&builder.shape, &builder.transformation.scale, draw_config);
     }
     for builder in &mut ceilings_long {
         builder.shape_texture_builder =
-            build_texture(&builder.shape, &builder.transformation.scale);
+            build_texture(&builder.shape, &builder.transformation.scale, draw_config);
     }
 
     shape_builders.append(&mut floors_long);
@@ -161,8 +164,12 @@ fn build_corridor_cross<V: VectorTrait>(
     shape_builders
 }
 
-pub fn build_lvl_1<V>(world: &mut World, ref_shapes: &RefShapes<V>, open_center: bool)
-where
+pub fn build_lvl_1<V>(
+    world: &mut World,
+    ref_shapes: &RefShapes<V>,
+    open_center: bool,
+    draw_config: &DrawConfig,
+) where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
@@ -172,7 +179,7 @@ where
 
     let wall_length = 3.0;
     let walls: Vec<ShapeEntityBuilderV<V>> =
-        build_corridor_cross(&cube_builder, wall_length, open_center);
+        build_corridor_cross(&cube_builder, wall_length, open_center, draw_config);
 
     for wall in walls.into_iter() {
         insert_static_collider(world, wall)

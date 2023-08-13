@@ -67,6 +67,7 @@ where
             world,
             ref_shapes,
             config.scene.level_1.unwrap_or_default().open_center,
+            &config.draw,
         ),
         LevelConfig::Test1 => build_test_level(world, ref_shapes),
         LevelConfig::Test2 => {
@@ -100,9 +101,9 @@ pub fn build_scenery<V: VectorTrait + Componentable>(world: &mut World) {
             calc_grid_lines(V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 2),
             WHITE.set_alpha(0.2),
         ),
-        DrawLineCollection(draw_sky::<V>(config.fuzz_lines.sky_num)),
+        DrawLineCollection(draw_sky::<V>(config.draw.fuzz_lines.sky_num)),
         DrawLineCollection::from_lines(
-            draw_horizon::<V>(config.fuzz_lines.horizon_num),
+            draw_horizon::<V>(config.draw.fuzz_lines.horizon_num),
             ORANGE.set_alpha(0.5),
         ),
         DrawLineCollection(draw_stars::<V>()),

@@ -1,6 +1,9 @@
 gui = "Debug"
 
-[fuzz_lines]
+[draw]
+face_scale = 0.95
+
+[draw.fuzz_lines]
 face_num = 500
 sky_num = 1000
 horizon_num = 500
