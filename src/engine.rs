@@ -10,10 +10,9 @@ use crate::collide;
 use crate::config::Config;
 use crate::constants::FRAME_MS;
 use crate::ecs_utils::Componentable;
-use crate::graphics::DefaultGraphics;
-use crate::graphics::GraphicsTrait;
-use crate::input::custom_events::CustomEvent;
-use crate::input::ShapeManipulationState;
+use crate::graphics::{DefaultGraphics, GraphicsTrait};
+use crate::gui::{GuiInitArgs, GuiState, GuiSystem};
+use crate::input::{custom_events::CustomEvent, ShapeManipulationState};
 use crate::saveload::save_level_to_file;
 use crate::utils::ValidDimension;
 use crate::FPSTimer;
@@ -39,7 +38,7 @@ use crate::vector::{Vec3, Vec4, VectorTrait};
 pub struct EngineD<V, G> {
     pub world: World,
     graphics: G,
-    gui: Option<crate::gui::System>,
+    gui: Option<crate::gui::GuiSystem>,
     dispatcher: Dispatcher<'static, 'static>,
     dummy: PhantomData<V>, //Forces EngineD to take V as a parameter
 }
@@ -50,7 +49,7 @@ where
     V::M: Componentable + Serialize + DeserializeOwned,
     G: GraphicsTrait,
 {
-    pub fn new(config: &Config, graphics: G, maybe_gui: Option<crate::gui::System>) -> Self {
+    pub fn new(config: &Config, graphics: G, maybe_gui: Option<GuiSystem>) -> Self {
         let mut world = World::new();
 
         let mut dispatcher = get_engine_dispatcher_builder::<V>().build();
@@ -62,6 +61,7 @@ where
         world.insert(config.clone());
 
         build_scene::<V>(&mut world);
+        Self::init_gui(&mut world);
 
         collide::create_spatial_hash::<V>(&mut world);
 
@@ -76,6 +76,12 @@ where
             gui: maybe_gui,
             dummy: PhantomData,
         }
+    }
+
+    fn init_gui(world: &mut World) {
+        let init_args = GuiInitArgs::new(&world.fetch::<RefShapes<V>>().get_labels());
+        world.insert(init_args);
+        world.insert(GuiState::default());
     }
 
     //runs for each event
@@ -140,10 +146,10 @@ where
             _ => (),
         };
         // this catches e.g. all window resizing events
-        self.update_ui(display, event, fps_timer);
+        self.update_gui(display, event, fps_timer);
     }
 
-    fn update_ui<E>(&mut self, display: &Display, event: &Event<E>, fps_timer: &mut FPSTimer) {
+    fn update_gui<E>(&mut self, display: &Display, event: &Event<E>, fps_timer: &mut FPSTimer) {
         let gui_config = &self.world.fetch::<Config>().gui;
         let ui_args = match gui_config {
             crate::config::GuiConfig::None => UIArgs::None,
@@ -204,7 +210,12 @@ where
         target = self.graphics.draw_lines(draw_lines, target);
         //draw gui
         if let Some(ref mut gui) = &mut self.gui {
-            gui.draw(display, &mut target);
+            gui.draw(
+                display,
+                &mut target,
+                &mut self.world.fetch_mut(),
+                &self.world.fetch(),
+            );
         }
         target.finish().unwrap();
     }
@@ -217,7 +228,7 @@ where
     V::M: Componentable + Serialize + DeserializeOwned,
     G: GraphicsTrait,
 {
-    fn init(config: &Config, display: &Display, gui: Option<crate::gui::System>) -> Self {
+    fn init(config: &Config, display: &Display, gui: Option<crate::gui::GuiSystem>) -> Self {
         println!("Starting {}d engine", V::DIM);
         Self::new(config, G::init(display), gui)
     }
@@ -235,7 +246,7 @@ impl Engine {
         dim: ValidDimension,
         config: &Config,
         display: &Display,
-        gui: Option<crate::gui::System>,
+        gui: Option<crate::gui::GuiSystem>,
     ) -> Engine {
         match dim {
             ValidDimension::Three => Engine::Three(EngineD::<Vec3, _>::init(config, display, gui)),

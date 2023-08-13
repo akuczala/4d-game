@@ -16,20 +16,39 @@ use std::time::Instant;
 //mod clipboard;
 
 #[derive(Default)]
-struct State {
+pub struct GuiState {
     text: String,
     checked: bool,
+    item: i32,
 }
-pub struct System {
+impl GuiState {
+    pub fn get_selected_shape_name(&self, init_args: &GuiInitArgs) -> ShapeLabel {
+        ShapeLabel(init_args.shape_names[self.item as usize].clone())
+    }
+}
+
+#[derive(Default)]
+pub struct GuiInitArgs {
+    shape_names: Vec<String>,
+}
+
+impl GuiInitArgs {
+    pub fn new(shape_labels: &[ShapeLabel]) -> Self {
+        let mut shape_names: Vec<String> =
+            shape_labels.iter().map(|label| label.to_string()).collect();
+        shape_names.sort();
+        Self { shape_names }
+    }
+}
+pub struct GuiSystem {
     pub imgui: Context,
     pub platform: WinitPlatform,
     pub renderer: Renderer,
     pub font_size: f32,
     pub ui_args: UIArgs,
-    state: State,
 }
 
-pub fn init(title: &str, display: &Display) -> System {
+pub fn init(title: &str, display: &Display) -> GuiSystem {
     #[allow(unused)]
     let title = match title.rfind('/') {
         Some(idx) => title.split_at(idx + 1).1,
@@ -76,13 +95,12 @@ pub fn init(title: &str, display: &Display) -> System {
 
     let renderer = Renderer::init(&mut imgui, display).expect("Failed to initialize renderer");
 
-    System {
+    GuiSystem {
         imgui,
         platform,
         renderer,
         font_size,
         ui_args: UIArgs::None,
-        state: State::default(),
     }
 }
 pub enum UIArgs {
@@ -254,7 +272,13 @@ fn simple_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
             };
         });
 }
-fn debug_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs, state: &mut State) {
+fn debug_ui(
+    _: &mut bool,
+    ui: &mut Ui,
+    ui_args: &mut UIArgs,
+    state: &mut GuiState,
+    init_args: &GuiInitArgs,
+) {
     use imgui::Condition;
     ui.window("Press M to toggle mouse control")
         .position([0., 0.], Condition::Appearing)
@@ -278,10 +302,28 @@ fn debug_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs, state: &mut State) 
                 state.checked = !state.checked; // flip state on click
                 state.text = "*** Toggling radio button was clicked".to_string();
             }
+            let items = &init_args
+                .shape_names
+                .iter()
+                .enumerate()
+                // for some reason, this is what i need to do to get the imgui ids not to clash(?)
+                // see https://github.com/ocornut/imgui/blob/master/docs/FAQ.md
+                // but it shouldn't be this annoying
+                .map(|(i, s)| format!("{}##foo{}ffff", s, i))
+                .collect::<Vec<_>>();
+            // println!("Start");
+            // for item in items {
+            //     println!("{}", item)
+            // }
+            let items = &items.iter().collect::<Vec<_>>();
+            //let items = &vec!["ok","so##3"];
+            //let items = &["ok", "so##3"];
+            //let items: &Vec<&String> = &Vec::new();
+            ui.list_box("Shape", &mut state.item, items, 10);
         });
 }
 
-impl System {
+impl GuiSystem {
     pub fn update<E>(
         &mut self,
         display: &Display,
@@ -311,7 +353,13 @@ impl System {
             }
         }
     }
-    pub fn draw(&mut self, display: &Display, target: &mut Frame) {
+    pub fn draw(
+        &mut self,
+        display: &Display,
+        target: &mut Frame,
+        state: &mut GuiState,
+        init_args: &GuiInitArgs,
+    ) {
         let imgui = &mut self.imgui;
         let platform = &mut self.platform;
         let renderer = &mut self.renderer;
@@ -319,7 +367,7 @@ impl System {
         let ui = imgui.frame();
         let mut run = true;
         match self.ui_args {
-            UIArgs::Debug { .. } => debug_ui(&mut run, ui, &mut self.ui_args, &mut self.state),
+            UIArgs::Debug { .. } => debug_ui(&mut run, ui, &mut self.ui_args, state, init_args),
             UIArgs::Simple { .. } => simple_ui(&mut run, ui, &mut self.ui_args),
             UIArgs::None => (),
         };

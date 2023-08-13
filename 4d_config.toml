@@ -1,4 +1,4 @@
-gui = "None"
+gui = "Debug"
 
 [fuzz_lines]
 face_num = 100

@@ -3,6 +3,7 @@ use std::{
     fmt::{self, Display},
 };
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
 
@@ -15,7 +16,9 @@ use crate::{
 };
 
 use super::{
-    buildshapes::{convex_shape_to_face_shape, invert_normals, remove_face, ShapeBuilder},
+    buildshapes::{
+        convex_shape_to_face_shape, invert_normals, make_pipe, remove_face, ShapeBuilder,
+    },
     Shape,
 };
 
@@ -26,7 +29,7 @@ use super::{
 pub struct ShapeLabel(pub String);
 impl Display for ShapeLabel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ShapeLabel({})", self.0)
+        write!(f, "{}", self.0)
     }
 }
 impl ShapeLabel {
@@ -51,6 +54,9 @@ impl<V: VectorTrait> RefShapes<V> {
     pub fn insert(&mut self, key: ShapeLabel, value: Shape<V>) -> Option<Shape<V>> {
         self.0.insert(key, value)
     }
+    pub fn get_labels(&self) -> Vec<ShapeLabel> {
+        self.0.keys().cloned().collect_vec()
+    }
 }
 impl<V: VectorTrait> Default for RefShapes<V> {
     fn default() -> Self {
@@ -65,6 +71,7 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     let inverted_cube = invert_normals(&cube);
     let open_cube = remove_face(cube.clone(), cube.faces.len() - 1);
     let open_inverted_cube = remove_face(inverted_cube.clone(), inverted_cube.faces.len() - 1);
+    let inverted_pipe = make_pipe(V::one_hot(-1), inverted_cube.clone());
     //let open_cube = remove_face(open_cube.clone(), open_cube.faces.len() - 2);
     //let open_cube = remove_face(open_cube.clone(), open_cube.faces.len() - 1);
     //inverted_cube.faces[0].geometry.plane.normal = -inverted_cube.faces[0].geometry.plane.normal;
@@ -83,5 +90,6 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     ref_shapes.insert(ShapeLabel::from_str(INVERTED_CUBE_LABEL_STR), inverted_cube);
     ref_shapes.insert(ShapeLabel::from_str("OpenCube"), open_cube);
     ref_shapes.insert(ShapeLabel::from_str("OpenInvertedCube"), open_inverted_cube);
+    ref_shapes.insert(ShapeLabel::from_str("InvertedPipe"), inverted_pipe);
     ref_shapes
 }

@@ -9,7 +9,7 @@ use super::{Input, MovementMode, PlayerMovementMode, ShapeMovementMode};
 
 use crate::cleanup::DeletedEntities;
 use crate::config::Config;
-use crate::constants::{CUBE_LABEL_STR, SELECTION_COLOR};
+use crate::constants::SELECTION_COLOR;
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::shape_texture::fuzzy_color_cube_texture;
 
@@ -193,6 +193,7 @@ pub fn create_shape<V: VectorTrait>(
     input: &mut Input,
     ref_shapes: &RefShapes<V>,
     config: &Config,
+    shape_label: ShapeLabel,
     player_transform: &Transform<V, V::M>,
 ) -> Option<ShapeEntityBuilderV<V>> {
     config
@@ -205,14 +206,11 @@ pub fn create_shape<V: VectorTrait>(
                 let pos = player_transform.pos;
                 let dir = player_transform.frame[-1];
                 let shape_pos = pos + dir * 2.0;
-                ShapeEntityBuilder::new_from_ref_shape(
-                    ref_shapes,
-                    ShapeLabel::from_str(CUBE_LABEL_STR),
-                )
-                .with_transform(Transform::pos(shape_pos))
-                .with_scale(Scaling::Scalar(1.0))
-                .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape))
-                .with_collider(Some(StaticCollider))
+                ShapeEntityBuilder::new_from_ref_shape(ref_shapes, shape_label)
+                    .with_transform(Transform::pos(shape_pos))
+                    .with_scale(Scaling::Scalar(1.0))
+                    .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape))
+                    .with_collider(Some(StaticCollider))
                 // TODO: add to spatial hash set (use BBox hash system)
             })
         })

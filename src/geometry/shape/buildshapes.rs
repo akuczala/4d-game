@@ -7,6 +7,7 @@ use crate::constants::ZERO;
 
 use crate::geometry::{Plane, Transformable};
 
+use crate::utils::partial_argmax;
 use crate::vector::Field;
 use crate::vector::PI;
 use crate::vector::{barycenter, Vec2};
@@ -238,6 +239,21 @@ pub fn remove_face<V: VectorTrait>(shape: Shape<V>, face_index: FaceIndex) -> Sh
         faces,
         ShapeType::Generic(GenericShapeType::new(&subfaces)),
     )
+}
+
+/// gets index for face that is farthest in the direction dir
+pub fn get_extremal_face_index<V: VectorTrait>(dir: V, shape: &Shape<V>) -> Option<FaceIndex> {
+    partial_argmax(shape.faces.iter().map(|face| face.center().dot(dir)))
+}
+pub fn remove_extremal_face<V: VectorTrait>(dir: V, shape: Shape<V>) -> Shape<V> {
+    let face_index = get_extremal_face_index(dir, &shape).unwrap();
+    remove_face(shape, face_index)
+}
+
+/// remove faces on +/- axis vec to make a "pipe"
+pub fn make_pipe<V: VectorTrait>(axis: V, shape: Shape<V>) -> Shape<V> {
+    let shape = remove_extremal_face(axis, shape);
+    remove_extremal_face(-axis, shape)
 }
 
 /// prune verts and edges that are no longer part of a face

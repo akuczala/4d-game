@@ -7,6 +7,7 @@ use crate::config::Config;
 use crate::components::*;
 use crate::draw::texture::ShapeTextureBuilder;
 use crate::ecs_utils::ModSystem;
+use crate::gui::{GuiInitArgs, GuiState};
 use crate::{ecs_utils::Componentable, vector::VectorTrait};
 
 use super::{
@@ -143,6 +144,8 @@ where
         ReadExpect<'a, Player>,
         ReadExpect<'a, RefShapes<V>>,
         ReadExpect<'a, Config>,
+        ReadExpect<'a, GuiInitArgs>,
+        ReadExpect<'a, GuiState>,
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Transform<V, V::M>>,
         Entities<'a>,
@@ -150,12 +153,23 @@ where
 
     fn run(
         &mut self,
-        (mut input, player, ref_shapes, config, lazy, read_transform, entities): Self::SystemData,
+        (
+            mut input,
+            player,
+            ref_shapes,
+            config,
+            gui_init_args,
+            gui_state,
+            lazy,
+            read_transform,
+            entities,
+        ): Self::SystemData,
     ) {
         if let Some(builder) = create_shape(
             &mut input,
             &ref_shapes,
             &config,
+            gui_state.get_selected_shape_name(&gui_init_args),
             read_transform.get(player.0).unwrap(),
         ) {
             builder.insert(entities.create(), &lazy, &config);

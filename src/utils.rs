@@ -6,6 +6,25 @@ where
 {
     iter.reduce(|acc, x| if x > acc { x } else { acc })
 }
+
+pub fn partial_fmax<I, F, S: Copy, T: PartialOrd>(iter: I, f: F) -> Option<(S, T)>
+where
+    I: Iterator<Item = S>,
+    F: Fn(S) -> T,
+{
+    iter.map(|s| (s, f(s)))
+        .reduce(|(s1, t1), (s2, t2)| match t1 > t2 {
+            true => (s1, t1),
+            false => (s2, t2),
+        })
+}
+
+pub fn partial_argmax<I, T: PartialOrd + Copy>(iter: I) -> Option<usize>
+where
+    I: Iterator<Item = T>,
+{
+    partial_fmax(iter.enumerate(), |(_i, t)| t).map(|((imax, _), _)| imax)
+}
 pub enum BranchIterator<A, B, C> {
     Option1(A),
     Option2(B),
