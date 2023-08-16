@@ -121,12 +121,18 @@ pub enum GuiConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]
+pub struct PhysicsConfig {
+    pub gravity_acceleration: Field,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct Config {
     pub draw: DrawConfig,
     pub view: ViewConfig,
     pub scene: SceneConfig,
     pub editor: EditorConfig,
     pub gui: GuiConfig,
+    pub physics: PhysicsConfig,
 }
 
 pub fn load_config() -> Config {

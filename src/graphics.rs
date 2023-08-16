@@ -50,7 +50,6 @@ pub trait GraphicsTrait {
 pub type DefaultGraphics = Graphics<ProjLineVertex>;
 pub struct Graphics<X: Copy> {
     pub vertex_buffer: glium::VertexBuffer<X>,
-    pub index_buffer: glium::IndexBuffer<u16>, //can we change this to VertIndex=usize?
     pub program: glium::Program,
     cur_lines_len: usize, // we store buffer size here because apparently calling vertex_buffer.len() is expensive
 }
@@ -58,12 +57,6 @@ impl<X: VertexTrait> Graphics<X> {
     pub fn new(display: &glium::Display) -> Self {
         Self {
             vertex_buffer: glium::VertexBuffer::dynamic(display, &Vec::new()).unwrap(),
-            index_buffer: glium::IndexBuffer::dynamic(
-                display,
-                glium::index::PrimitiveType::LinesList,
-                &Vec::new(),
-            )
-            .unwrap(),
             program: glium::Program::from_source(
                 display,
                 X::VERTEX_SHADER_SRC,

@@ -1,4 +1,5 @@
 use crate::components::MoveNext;
+use crate::config::Config;
 use crate::ecs_utils::Componentable;
 use crate::input::Input;
 use crate::vector::VectorTrait;
@@ -11,12 +12,13 @@ pub struct PlayerGravitySystem<V>(pub PhantomData<V>);
 impl<'a, V: VectorTrait + Componentable> System<'a> for PlayerGravitySystem<V> {
     type SystemData = (
         Read<'a, Input>,
+        Read<'a, Config>,
         WriteStorage<'a, MoveNext<V>>, //gravity should apply even if the player isn't moving, but debug for now
     );
 
-    fn run(&mut self, (input, mut write_move_next): Self::SystemData) {
+    fn run(&mut self, (input, config, mut write_move_next): Self::SystemData) {
         for move_next in (&mut write_move_next).join() {
-            let gvec = -V::one_hot(1) * input.get_dt() * 0.0;
+            let gvec = -V::one_hot(1) * input.get_dt() * config.physics.gravity_acceleration;
             match move_next {
                 MoveNext {
                     next_dpos: Some(next_dpos),

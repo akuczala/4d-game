@@ -1,22 +1,22 @@
-gui = "Debug"
+gui = "Editor"
 
 [draw]
-face_scale = 0.95
+face_scale = 0.8
 
 [draw.fuzz_lines]
-face_num = 500
-sky_num = 1000
-horizon_num = 500
+face_num = 200
+sky_num = 200
+horizon_num = 1000
 
 [view]
 height = 0.5
 radius = 0.6
 viewport_shape = "Cylinder"
-focal = 1.0
+focal = 0.5
 spin_speed = 0.02
 
 [scene]
-grid = true
+grid = false
 sky = true
 horizon = true
 stars = true
@@ -27,3 +27,6 @@ path = "./test2.ron"
 
 [editor]
 enabled = true
+
+[physics]
+gravity_acceleration = 2.0
