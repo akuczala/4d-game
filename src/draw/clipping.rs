@@ -361,6 +361,7 @@ impl<V> Iterator for ReturnLines<V> {
     type Item = Line<V>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // TODO: this implementation is slow
         let out: Option<Self::Item>;
         // do the ol switcheroo
         (*self, out) = match std::mem::replace(self, Self::NoLines) {

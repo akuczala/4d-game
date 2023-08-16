@@ -6,13 +6,13 @@ use specs::{Join, ReadStorage};
 pub use texture::{FaceTexture, ShapeTexture, Texture, TextureMapping};
 
 use crate::components::*;
-use crate::config::ViewConfig;
-use crate::constants::{CURSOR_COLOR, SMALL_Z, Z0, ZERO, Z_NEAR};
+use crate::config::{DrawConfig, ViewConfig};
+use crate::constants::{CARDINAL_COLORS, CURSOR_COLOR, SMALL_Z, Z0, ZERO, Z_NEAR};
 use crate::ecs_utils::Componentable;
 use crate::geometry::Face;
 use crate::geometry::{Line, Shape};
 use crate::graphics::colors::*;
-use crate::vector::{Field, VectorTrait};
+use crate::vector::{weighted_sum, Field, Vec4, VectorTrait};
 
 use self::clipping::boundaries::calc_boundaries;
 use self::clipping::{clip_line_cylinder, clip_line_sphere, clip_line_tube};
@@ -209,12 +209,24 @@ pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>, camera_pos: V, two_si
     two_sided || (face.plane().point_signed_distance(camera_pos) > ZERO)
 }
 
+pub fn normal_to_color<V: VectorTrait>(normal: V) -> Color {
+    weighted_sum(normal.iter().enumerate().map(|(i, n_i)| {
+        let color = CARDINAL_COLORS[if *n_i > ZERO {
+            i
+        } else {
+            i + (V::DIM as usize)
+        }];
+        (Vec4::from(color), n_i.abs())
+    }))
+    .into()
+}
+
 pub fn calc_shapes_lines<V>(
     shapes: &ReadStorage<Shape<V>>,
     shape_textures: &ReadStorage<ShapeTexture<V::SubV>>,
     shape_clip_states: &ReadStorage<ShapeClipState<V>>,
-    face_scale: &[Field],
     clip_state: &ClipState<V>,
+    draw_config: &DrawConfig,
 ) -> Vec<DrawLine<V>>
 where
     V: VectorTrait + Componentable,
@@ -242,12 +254,15 @@ where
             shape_clip_state.face_visibility.iter(),
             shape_texture.face_textures.iter()
         ) {
-            shape_lines.append(&mut draw_face_texture::<V>(
+            shape_lines.extend(draw_face_texture::<V>(
                 face_texture,
                 face,
                 shape,
-                face_scale,
+                &[draw_config.face_scale],
                 visible,
+                draw_config
+                    .color_by_orientation
+                    .then(|| normal_to_color(face.normal())),
             ))
         }
 

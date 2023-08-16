@@ -1,3 +1,5 @@
+use std::iter;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -6,6 +8,7 @@ use crate::{
     draw::DrawLine,
     geometry::Face,
     graphics::colors::Color,
+    utils::BranchIterator,
     vector::{Field, VectorTrait},
 };
 
@@ -119,28 +122,29 @@ impl FaceTextureGeneric<TextureBuilder> {
     }
 }
 // this was originally a method of FaceTexture, but I didn't know how to tell rust that U = V::SubV
-pub fn draw_face_texture<V: VectorTrait>(
-    face_texture: &FaceTexture<V::SubV>,
-    face: &Face<V>,
-    shape: &Shape<V>,
-    face_scales: &[Field],
+pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
+    face_texture: &'a FaceTexture<V::SubV>,
+    face: &'a Face<V>,
+    shape: &'a Shape<V>,
+    face_scales: &'a [Field],
     visible: bool,
-) -> Vec<DrawLine<V>> {
+    override_color: Option<Color>,
+) -> impl Iterator<Item = DrawLine<V>> + 'a {
     if !visible {
-        return Vec::new();
+        return BranchIterator::Option3(iter::empty());
     }
     match &face_texture.texture {
-        Texture::DefaultLines { color } => draw_default_lines(face, shape, *color, face_scales),
-        Texture::Lines { lines, color } => face_texture
-            .texture_mapping
-            .as_ref()
-            .unwrap()
-            .draw_lines(shape, lines, *color),
-        Texture::DrawLines(draw_lines) => face_texture
-            .texture_mapping
-            .as_ref()
-            .unwrap()
-            .draw_drawlines(draw_lines),
+        Texture::DefaultLines { color } => {
+            BranchIterator::Option1(draw_default_lines(face, shape, *color, face_scales))
+        }
+        Texture::Lines { lines, color } => {
+            BranchIterator::Option2(face_texture.texture_mapping.as_ref().unwrap().draw_lines(
+                shape,
+                lines,
+                override_color.unwrap_or(*color),
+            ))
+        }
+        Texture::DrawLines(_) => unimplemented!(),
     }
 }
 

@@ -1,11 +1,12 @@
-gui = "Editor"
+gui = "Simple"
 
 [draw]
 face_scale = 0.8
+color_by_orientation = true
 
 [draw.fuzz_lines]
 face_num = 200
-sky_num = 200
+sky_num = 300
 horizon_num = 1000
 
 [view]
@@ -20,10 +21,13 @@ grid = false
 sky = true
 horizon = true
 stars = true
-level = "Empty" # Supported: Level1, Empty, Test1, Test2, Test3, Load
+level = "Load" # Supported: Level1, Empty, Test1, Test2, Test3, Load
 
-[scene.load]
-path = "./test2.ron"
+[scene.load_3d]
+path = "./justfun.3d.ron"
+
+[scene.load_4d]
+path = "./cute2.4d.ron"
 
 [editor]
 enabled = true

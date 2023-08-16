@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 
-use crate::vector::scalar_linterp;
+use crate::vector::{scalar_linterp, Field, Vec4, VectorTrait};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Color(pub [f32; 4]);
@@ -27,6 +27,28 @@ pub fn blend(color_1: Color, color_2: Color, t: f32) -> Color {
             .zip(color_2.0.iter())
             .map(|(c1, c2)| scalar_linterp(*c1, *c2, t)),
     )
+}
+
+pub fn blend_all<I>(color_weight_iter: I) -> Color
+where
+    I: Iterator<Item = (Color, Field)>,
+{
+    color_weight_iter
+        .map(|(color, w)| Vec4::from(color) * w)
+        .sum::<Vec4>()
+        .into()
+}
+
+impl From<Vec4> for Color {
+    fn from(value: Vec4) -> Self {
+        Color(*value.get_arr())
+    }
+}
+
+impl From<Color> for Vec4 {
+    fn from(value: Color) -> Self {
+        Vec4::from_arr(&value.0)
+    }
 }
 
 pub const BLACK: Color = Color([0.0, 0.0, 0.0, 1.0]);

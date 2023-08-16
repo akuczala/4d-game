@@ -162,12 +162,12 @@ pub struct TextureMapping {
 }
 
 impl TextureMapping {
-    pub fn draw_lines<V: VectorTrait>(
+    pub fn draw_lines<'a, V: VectorTrait>(
         &self,
-        shape: &Shape<V>,
-        lines: &[Line<V::SubV>],
+        shape: &'a Shape<V>,
+        lines: &'a [Line<V::SubV>],
         color: Color,
-    ) -> Vec<DrawLine<V>> {
+    ) -> impl Iterator<Item = DrawLine<V>> + 'a {
         let origin = shape.verts[self.origin_verti];
         let frame_verts: Vec<V> = self
             .frame_vertis
@@ -179,7 +179,7 @@ impl TextureMapping {
         //TODO: a lot of time is spent doing this calculation
         lines
             .iter()
-            .map(|line| {
+            .map(move |line| {
                 line.map(|v| {
                     (0..V::SubV::DIM)
                         .zip(frame_verts.iter())
@@ -188,16 +188,10 @@ impl TextureMapping {
                         + origin
                 })
             })
-            .map(|line| DrawLine { line, color })
-            .collect()
+            .map(move |line| DrawLine { line, color })
+        //.collect()
     }
-    pub fn draw_drawlines<V: VectorTrait>(
-        &self,
-        _draw_lines: &[DrawLine<V::SubV>],
-    ) -> Vec<DrawLine<V>> {
-        unimplemented!()
-        //draw_lines.iter().map(|draw_line| Some(draw_line.clone())).collect()
-    }
+
     //use face edges and reference vertices to determine vertex indices for texture mapping
     //order by side length, in decreasing order
     pub fn calc_cube_vertis<V: VectorTrait>(face: &Face<V>, verts: &[V], edges: &[Edge]) -> Self {
@@ -228,24 +222,23 @@ impl TextureMapping {
     }
 }
 
-pub fn draw_default_lines<V: VectorTrait>(
-    face: &Face<V>,
-    shape: &Shape<V>,
+pub fn draw_default_lines<'a, V: VectorTrait + 'a>(
+    face: &'a Face<V>,
+    shape: &'a Shape<V>,
     color: Color,
-    face_scales: &[Field],
-) -> Vec<DrawLine<V>> {
-    let mut lines: Vec<DrawLine<V>> = Vec::with_capacity(face.edgeis.len() * face_scales.len());
-    for &face_scale in face_scales {
-        let scale_point = |v| V::linterp(face.center(), v, face_scale);
-        for edgei in &face.edgeis {
+    face_scales: &'a [Field],
+) -> impl Iterator<Item = DrawLine<V>> + 'a {
+    //let mut lines: Vec<DrawLine<V>> = Vec::with_capacity(face.edgeis.len() * face_scales.len());
+    face_scales.iter().flat_map(move |face_scale| {
+        let scale_point = |v| V::linterp(face.center(), v, *face_scale);
+        face.edgeis.iter().map(move |edgei| {
             let edge = &shape.edges[*edgei];
-            lines.push(DrawLine {
+            DrawLine {
                 line: Line(shape.verts[edge.0], shape.verts[edge.1]).map(scale_point),
                 color,
-            });
-        }
-    }
-    lines
+            }
+        })
+    })
 }
 
 pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {

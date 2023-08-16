@@ -52,7 +52,8 @@ pub trait VectorTrait:
     + Mul<Field, Output = Self>
     + Div<Field, Output = Self>
     + Index<VecIndex, Output = Field>
-    + IndexMut<VecIndex> //+ std::iter::Sum
+    + IndexMut<VecIndex>
+    + std::iter::Sum
 {
     type M: MatrixTrait<Self>;
     type SubV: VectorTrait;
@@ -113,6 +114,10 @@ pub trait VectorTrait:
 //impl<T> Foo for T where T: Clone + Mul<i64> + Add<i64> + ... {}
 
 //fn foo<C>() where i64: From<C>, C: Foo {}
+
+pub fn weighted_sum<I: Iterator<Item = (V, Field)>, V: VectorTrait>(vec_weight_iter: I) -> V {
+    vec_weight_iter.map(|(v, w)| v * w).sum()
+}
 
 pub fn barycenter<V: VectorTrait>(vlist: &Vec<V>) -> V {
     vlist.iter().fold(V::zero(), |sum, val| sum + *val) / (vlist.len() as Field)

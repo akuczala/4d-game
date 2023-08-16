@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::iter::Sum;
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 use std::slice::Iter;
 
@@ -74,6 +75,13 @@ impl Div<Field> for Vec2 {
         self * (1.0 / rhs)
     }
 }
+
+impl Sum for Vec2 {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(|x, y| x + y).unwrap_or(Self::zero())
+    }
+}
+
 impl VectorTrait for Vec2 {
     type M = Mat2;
 

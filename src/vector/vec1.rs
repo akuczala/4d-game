@@ -1,5 +1,6 @@
 use std::{
     fmt,
+    iter::Sum,
     ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub},
     slice::Iter,
 };
@@ -70,6 +71,12 @@ impl Div<Field> for Vec1 {
 
     fn div(self, rhs: Field) -> Vec1 {
         self * (1.0 / rhs)
+    }
+}
+
+impl Sum for Vec1 {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(|x, y| x + y).unwrap_or(Self::zero())
     }
 }
 impl VectorTrait for Vec1 {

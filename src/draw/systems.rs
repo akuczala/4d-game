@@ -138,8 +138,8 @@ where
             &shapes,
             &shape_textures,
             &shape_clip_states,
-            &[config.draw.face_scale],
             &clip_state,
+            &config.draw,
         );
     }
 }
