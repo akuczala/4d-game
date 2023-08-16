@@ -117,6 +117,7 @@ pub enum GuiConfig {
     None,
     Simple,
     Debug,
+    Editor,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, Default)]

@@ -4,8 +4,7 @@ use crate::vector::{Field, VecIndex, VectorTrait};
 use std::f32::consts::PI;
 
 use crate::geometry::transform::Scaling;
-use glium::glutin;
-use glutin::event::VirtualKeyCode as VKC;
+use winit::event::VirtualKeyCode as VKC;
 
 use super::key_map::{
     AXIS_KEYMAP, MOVE_BACKWARDS, MOVE_FORWARDS, MOVE_KEYMAP, RESET_ORIENTATION, SNAPPING,

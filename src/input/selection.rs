@@ -20,9 +20,7 @@ use crate::geometry::transform::Scaling;
 
 use crate::shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV};
 
-use glium::glutin;
-
-use glutin::event::VirtualKeyCode as VKC;
+use winit::event::VirtualKeyCode as VKC;
 
 use specs::Entity;
 

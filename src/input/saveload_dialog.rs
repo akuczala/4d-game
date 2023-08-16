@@ -1,8 +1,8 @@
 use std::{future::Future, path::Path, thread};
 
 use futures_lite::future;
-use glium::glutin::event_loop::EventLoopProxy;
 use rfd::{AsyncFileDialog, FileHandle};
+use winit::event_loop::EventLoopProxy;
 
 use crate::{
     config::{Config, LevelConfig, LoadLevelConfig},

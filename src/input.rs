@@ -6,24 +6,23 @@ mod selection;
 pub mod systems;
 mod update_camera;
 
-use glium::glutin::event::{ElementState, KeyboardInput};
-use glium::glutin::event_loop::EventLoopProxy;
 pub use selection::*;
 pub use update_camera::*;
+use winit::event::{ElementState, KeyboardInput};
+use winit::event_loop::EventLoopProxy;
 
 use std::collections::HashSet;
 
-use glium::glutin;
-use glium::glutin::dpi::PhysicalPosition;
+use winit::dpi::PhysicalPosition;
 
-use glutin::event::VirtualKeyCode as VKC;
-use glutin::event::{MouseScrollDelta, TouchPhase};
+use winit::event::VirtualKeyCode as VKC;
+use winit::event::{MouseScrollDelta, TouchPhase};
 
 use winit_input_helper::WinitInputHelper;
 
 use crate::vector::{Field, VecIndex};
 
-use glutin::event::{Event, WindowEvent};
+use winit::event::{Event, WindowEvent};
 
 use self::custom_events::CustomEvent;
 use self::key_map::{
@@ -209,9 +208,9 @@ impl Input {
                     .send_event(CustomEvent::Quit)
                     .unwrap_or_default(),
                 WindowEvent::Resized(_) => *update = true,
-                WindowEvent::Touch(glutin::event::Touch { phase, .. }) => match phase {
-                    glutin::event::TouchPhase::Started => (),
-                    glutin::event::TouchPhase::Ended => (),
+                WindowEvent::Touch(winit::event::Touch { phase, .. }) => match phase {
+                    winit::event::TouchPhase::Started => (),
+                    winit::event::TouchPhase::Ended => (),
                     _ => (),
                 },
                 e => mouse_event(&mut self.mouse, e),

@@ -1,16 +1,18 @@
 mod dispatcher;
 pub use dispatcher::get_engine_dispatcher_builder;
 
-use glium::glutin::event_loop::EventLoopProxy;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use winit::event::{Event, WindowEvent};
+use winit::event_loop::EventLoopProxy;
 
 use crate::build_level::build_scene;
 use crate::collide;
-use crate::config::Config;
+use crate::config::{Config, GuiConfig};
 use crate::constants::FRAME_MS;
 use crate::ecs_utils::Componentable;
 use crate::graphics::{DefaultGraphics, GraphicsTrait};
+use crate::gui::editor::make_info_string;
 use crate::gui::{GuiInitArgs, GuiState, GuiSystem};
 use crate::input::{custom_events::CustomEvent, ShapeManipulationState};
 use crate::saveload::save_level_to_file;
@@ -23,8 +25,7 @@ use std::marker::PhantomData;
 use std::time::{Duration, Instant};
 
 use crate::draw;
-use crate::gui::UIArgs;
-use glium::glutin::event::{Event, WindowEvent};
+use crate::gui::GuiArgs;
 //NOTES:
 // include visual indicator of what direction a collision is in
 
@@ -152,15 +153,16 @@ where
     fn update_gui<E>(&mut self, display: &Display, event: &Event<E>, fps_timer: &mut FPSTimer) {
         let gui_config = &self.world.fetch::<Config>().gui;
         let ui_args = match gui_config {
-            crate::config::GuiConfig::None => UIArgs::None,
-            crate::config::GuiConfig::Simple => UIArgs::Simple {
+            GuiConfig::None => GuiArgs::None,
+            GuiConfig::Simple => GuiArgs::Simple {
                 frame_duration: fps_timer.get_frame_length(),
                 coins_collected: self.world.read_resource::<crate::coin::CoinsCollected>().0,
                 coins_left: self.world.read_storage::<crate::coin::Coin>().count() as u32,
             },
-            crate::config::GuiConfig::Debug => {
-                UIArgs::new_debug::<V>(&self.world, fps_timer.get_frame_length())
-            }
+            GuiConfig::Debug => GuiArgs::new_debug::<V>(&self.world, fps_timer.get_frame_length()),
+            GuiConfig::Editor => GuiArgs::Editor {
+                info_string: make_info_string::<V>(&self.world),
+            },
         };
 
         //gui update (all events)
@@ -188,8 +190,8 @@ where
             display
                 .gl_window()
                 .window()
-                .set_cursor_position(glium::glutin::dpi::Position::new(
-                    glium::glutin::dpi::PhysicalPosition::new(100, 100),
+                .set_cursor_position(winit::dpi::Position::new(
+                    winit::dpi::PhysicalPosition::new(100, 100),
                 ))
                 .unwrap();
             display.gl_window().window().set_cursor_visible(false);

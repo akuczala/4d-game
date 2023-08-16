@@ -1,3 +1,7 @@
+mod debug;
+pub mod editor;
+mod simple;
+
 use crate::components::*;
 use crate::constants::CUBE_LABEL_STR;
 use crate::debug::make_debug_string;
@@ -5,15 +9,19 @@ use crate::ecs_utils::Componentable;
 use crate::fps::FPSFloat;
 
 use crate::vector::VectorTrait;
-use glium::glutin::event::Event;
 
 use glium::Display;
 use glium::Frame;
-use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, ProgressBar, Ui};
+use imgui::{Context, FontConfig, FontGlyphRanges, FontSource};
 use imgui_glium_renderer::Renderer;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
 use specs::prelude::*;
 use std::time::Instant;
+use winit::event::Event;
+
+use self::debug::debug_gui;
+use self::editor::editor_gui;
+use self::simple::simple_gui;
 //mod clipboard;
 
 type ListBoxIndex = i32;
@@ -60,7 +68,7 @@ pub struct GuiSystem {
     pub platform: WinitPlatform,
     pub renderer: Renderer,
     pub font_size: f32,
-    pub ui_args: UIArgs,
+    pub ui_args: GuiArgs,
 }
 
 pub fn init(title: &str, display: &Display) -> GuiSystem {
@@ -115,10 +123,10 @@ pub fn init(title: &str, display: &Display) -> GuiSystem {
         platform,
         renderer,
         font_size,
-        ui_args: UIArgs::None,
+        ui_args: GuiArgs::None,
     }
 }
-pub enum UIArgs {
+pub enum GuiArgs {
     None,
     Simple {
         frame_duration: FPSFloat,
@@ -129,8 +137,11 @@ pub enum UIArgs {
         frame_duration: FPSFloat,
         debug_text: String,
     },
+    Editor {
+        info_string: String,
+    },
 }
-impl UIArgs {
+impl GuiArgs {
     pub fn new_debug<V>(world: &World, frame_duration: FPSFloat) -> Self
     where
         V: VectorTrait + Componentable,
@@ -143,87 +154,13 @@ impl UIArgs {
     }
 }
 
-fn simple_ui(_: &mut bool, ui: &mut Ui, ui_args: &mut UIArgs) {
-    use imgui::Condition;
-    ui.window("Press M to toggle mouse control")
-        .position([0., 0.], Condition::Appearing)
-        .size([190.0, 110.0], Condition::FirstUseEver)
-        .bg_alpha(0.75)
-        .title_bar(false)
-        .resizable(false)
-        .scroll_bar(false)
-        .menu_bar(false)
-        .build(|| {
-            if let UIArgs::Simple {
-                ref frame_duration,
-                ref coins_collected,
-                ref coins_left,
-            } = ui_args
-            {
-                let total_coins = coins_left + coins_collected;
-                let coin_text = format!("Coins: {}/{}", coins_collected, total_coins);
-                ui.text(format!("FPS: {:0.0}", 1. / frame_duration));
-                ui.text(coin_text);
-                ProgressBar::new((*coins_collected as f32) / (total_coins as f32))
-                    //.size([200.0, 20.0])
-                    .build(ui);
-                ui.text("Press M to toggle mouse");
-                ui.text("Backspace toggles 3D/4D");
-            };
-        });
-}
-fn debug_ui(
-    _: &mut bool,
-    ui: &mut Ui,
-    ui_args: &mut UIArgs,
-    state: &mut GuiState,
-    init_args: &GuiInitArgs,
-) {
-    use imgui::Condition;
-    ui.window("Press M to toggle mouse control")
-        .position([0., 0.], Condition::Appearing)
-        .size([190.0, 500.0], Condition::FirstUseEver)
-        .always_auto_resize(true)
-        .bg_alpha(0.75)
-        .title_bar(false)
-        .resizable(false)
-        .scroll_bar(false)
-        .menu_bar(false)
-        .build(|| {
-            if let UIArgs::Debug {
-                ref frame_duration,
-                ref debug_text,
-            } = ui_args
-            {
-                ui.text(format!("FPS: {:0.0}", 1. / frame_duration));
-                ui.text(debug_text);
-            };
-            if ui.radio_button_bool("I toggle my state on click", state.checked) {
-                state.checked = !state.checked; // flip state on click
-                state.text = "*** Toggling radio button was clicked".to_string();
-            }
-            let items = &init_args
-                .shape_names
-                .iter()
-                .enumerate()
-                // for some reason, this is what i need to do to get the imgui ids not to clash(?)
-                // see https://github.com/ocornut/imgui/blob/master/docs/FAQ.md
-                // but it shouldn't be this annoying
-                // as an example, if we set the list to ["ok", "so"], we get the error???
-                .map(|(i, s)| format!("{}##foo{}ffff", s, i))
-                .collect::<Vec<_>>();
-            let items = &items.iter().collect::<Vec<_>>();
-            ui.list_box("Shape", &mut state.item, items, 10);
-        });
-}
-
 impl GuiSystem {
     pub fn update<E>(
         &mut self,
         display: &Display,
         last_frame: &mut Instant,
         event: &Event<E>,
-        ui_args: UIArgs,
+        ui_args: GuiArgs,
     ) {
         let imgui = &mut self.imgui;
         let platform = &mut self.platform;
@@ -261,9 +198,12 @@ impl GuiSystem {
         let ui = imgui.frame();
         let mut run = true;
         match self.ui_args {
-            UIArgs::Debug { .. } => debug_ui(&mut run, ui, &mut self.ui_args, state, init_args),
-            UIArgs::Simple { .. } => simple_ui(&mut run, ui, &mut self.ui_args),
-            UIArgs::None => (),
+            GuiArgs::Debug { .. } => debug_gui(&mut run, ui, &mut self.ui_args, state, init_args),
+            GuiArgs::Simple { .. } => simple_gui(&mut run, ui, &mut self.ui_args),
+            GuiArgs::Editor { ref info_string } => {
+                editor_gui(&mut run, ui, state, init_args, info_string)
+            }
+            GuiArgs::None => (),
         };
         if !run {
             //*control_flow = ControlFlow::Exit;

@@ -1,4 +1,4 @@
-use glium::glutin::event::VirtualKeyCode as VKC;
+use winit::event::VirtualKeyCode as VKC;
 
 use crate::vector::VecIndex;
 
