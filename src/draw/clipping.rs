@@ -374,12 +374,15 @@ impl<V> Iterator for ReturnLines<V> {
     }
 }
 
-fn clip_line<V: VectorTrait>(
+fn clip_line<'a, I, V>(
     line: Line<V>,
-    boundaries: &[&ConvexBoundarySet<V>],
+    boundaries: I,
     write_lines: &mut Vec<Line<V>>,
     scratch: &mut Vec<Line<V>>,
-) {
+) where
+    V: VectorTrait + 'a,
+    I: Iterator<Item = &'a ConvexBoundarySet<V>>,
+{
     let init_len = write_lines.len();
     write_lines.push(line);
     for convex_boundary_set in boundaries {
@@ -460,25 +463,28 @@ fn clip_line_convex<V: VectorTrait>(
     ReturnLines::NoLines
 }
 
-pub fn clip_draw_lines<'a, V: VectorTrait + 'a, I>(
+// TODO: consider returning a reusable iterator (e.g. with a closure)
+pub fn make_boundaries<'a, V: 'a, I>(clip_states_in_front: I) -> Vec<&'a ConvexBoundarySet<V>>
+where
+    I: std::iter::Iterator<Item = &'a ShapeClipState<V>>,
+{
+    clip_states_in_front
+        .flat_map(|clip_state| (!clip_state.transparent).then_some(&clip_state.boundaries))
+        .flat_map(|v| v.iter())
+        .collect()
+}
+
+pub fn clip_draw_lines<V: VectorTrait>(
     start_lines: &[DrawLine<V>],
     write_lines: &mut Vec<DrawLine<V>>,
     scratch: &mut Scratch<Line<V>>,
-    clip_states_in_front: I,
-) where
-    I: std::iter::Iterator<Item = &'a ShapeClipState<V>>,
-{
-    // TODO: move out of function, take boundaries as input?
-    let boundaries: Vec<&ConvexBoundarySet<V>> = clip_states_in_front
-        .flat_map(|clip_state| (!clip_state.transparent).then_some(&clip_state.boundaries))
-        .flat_map(|v| v.iter())
-        .collect();
-
+    boundaries: Vec<&ConvexBoundarySet<V>>,
+) {
     for opt_draw_line in start_lines {
         scratch.0.clear();
         clip_line(
             opt_draw_line.line.clone(),
-            &boundaries,
+            boundaries.iter().cloned(),
             &mut scratch.0,
             &mut scratch.1,
         );

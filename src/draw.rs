@@ -15,7 +15,9 @@ use crate::graphics::colors::*;
 use crate::vector::{weighted_sum, Field, Vec4, VectorTrait};
 
 use self::clipping::boundaries::calc_boundaries;
-use self::clipping::{clip_draw_lines, clip_line_cylinder, clip_line_sphere, clip_line_tube};
+use self::clipping::{
+    clip_draw_lines, clip_line_cylinder, clip_line_sphere, clip_line_tube, make_boundaries,
+};
 use self::texture::shape_texture::draw_face_texture;
 use self::visual_aids::calc_wireframe_lines;
 
@@ -273,7 +275,12 @@ pub fn calc_shapes_lines<V>(
                         None => panic!("Invalid entity {} found in shape_clip_state", e.id()),
                     });
 
-            clip_draw_lines(&scratch.0, write_lines, line_scratch, clip_states_in_front);
+            clip_draw_lines(
+                &scratch.0,
+                write_lines,
+                line_scratch,
+                make_boundaries(clip_states_in_front),
+            );
         } else {
             write_lines.append(&mut scratch.0);
         }

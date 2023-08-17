@@ -2,7 +2,10 @@ use crate::{
     components::ShapeClipState, geometry::Line, graphics::colors::Color, vector::VectorTrait,
 };
 
-use super::{clipping::clip_draw_lines, DrawLine, Scratch};
+use super::{
+    clipping::{clip_draw_lines, make_boundaries},
+    DrawLine, Scratch,
+};
 
 pub struct DrawLineCollection<V>(pub Vec<DrawLine<V>>);
 impl<V> DrawLineCollection<V> {
@@ -33,7 +36,12 @@ pub fn draw_collection<'a, V: VectorTrait + 'a, I>(
     I: std::iter::Iterator<Item = &'a ShapeClipState<V>>,
 {
     match shape_clip_state_iter {
-        Some(iter) => clip_draw_lines(&lines_collection.0, write_lines, line_scratch, iter),
+        Some(iter) => clip_draw_lines(
+            &lines_collection.0,
+            write_lines,
+            line_scratch,
+            make_boundaries(iter),
+        ),
         None => write_lines.extend(lines_collection.0.iter().cloned()),
     }
 }
