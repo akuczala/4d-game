@@ -225,6 +225,8 @@ pub type Scratch<T> = (Vec<T>, Vec<T>, Vec<T>);
 
 pub fn calc_shapes_lines<V>(
     write_lines: &mut Vec<DrawLine<V>>,
+    scratch: &mut Scratch<DrawLine<V>>,
+    line_scratch: &mut Scratch<Line<V>>,
     shapes: &ReadStorage<Shape<V>>,
     shape_textures: &ReadStorage<ShapeTexture<V::SubV>>,
     shape_clip_states: &ReadStorage<ShapeClipState<V>>,
@@ -236,19 +238,17 @@ pub fn calc_shapes_lines<V>(
     V::M: Componentable,
 {
     //compute lines for each shape
-    let mut scratch: Vec<DrawLine<V>> = Vec::new();
-    let mut line_scratch: Scratch<Line<V>> = Default::default();
     for (shape, shape_texture, shape_clip_state) in
         (shapes, shape_textures, shape_clip_states).join()
     {
-        scratch.clear();
+        scratch.0.clear();
         //get lines from each face
         for (face, &visible, face_texture) in izip!(
             shape.faces.iter(),
             shape_clip_state.face_visibility.iter(),
             shape_texture.face_textures.iter()
         ) {
-            scratch.extend(draw_face_texture::<V>(
+            scratch.0.extend(draw_face_texture::<V>(
                 face_texture,
                 face,
                 shape,
@@ -271,14 +271,9 @@ pub fn calc_shapes_lines<V>(
                         None => panic!("Invalid entity {} found in shape_clip_state", e.id()),
                     });
 
-            clipping::clip_draw_lines(
-                &scratch,
-                write_lines,
-                &mut line_scratch,
-                clip_states_in_front,
-            );
+            clipping::clip_draw_lines(&scratch.0, write_lines, line_scratch, clip_states_in_front);
         } else {
-            write_lines.append(&mut scratch);
+            write_lines.append(&mut scratch.0);
         }
     }
 }

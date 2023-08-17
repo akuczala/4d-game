@@ -11,6 +11,7 @@ use crate::collide;
 use crate::config::{Config, GuiConfig};
 use crate::constants::FRAME_MS;
 use crate::ecs_utils::Componentable;
+use crate::geometry::Line;
 use crate::graphics::{DefaultGraphics, GraphicsTrait};
 use crate::gui::editor::make_info_string;
 use crate::gui::{GuiInitArgs, GuiState, GuiSystem};
@@ -24,7 +25,7 @@ use std::marker::PhantomData;
 
 use std::time::{Duration, Instant};
 
-use crate::draw;
+use crate::draw::{self, DrawLine, Scratch};
 use crate::gui::GuiArgs;
 //NOTES:
 // include visual indicator of what direction a collision is in
@@ -69,6 +70,8 @@ where
         world.insert(ClipState::<V>::new()); // decompose into single entity properties
         world.insert(draw::DrawLineList::<V>(vec![])); // unclear if this would be better as entities; might be able to thread
         world.insert(DrawLineList::<V::SubV>(vec![]));
+        world.insert(Scratch::<Line<V>>::default());
+        world.insert(Scratch::<DrawLine<V>>::default());
 
         EngineD {
             world,

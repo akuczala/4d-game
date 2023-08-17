@@ -6,6 +6,7 @@ use crate::{
     components::{BBall, Camera, ClipState, Cursor, Player, Shape, ShapeClipState, Transform},
     config::Config,
     ecs_utils::{Componentable, SystemName},
+    geometry::Line,
     vector::VectorTrait,
 };
 
@@ -14,7 +15,7 @@ use super::{
     clipping::calc_in_front,
     draw_cursor,
     draw_line_collection::{draw_collection, DrawLineCollection},
-    transform_draw_line, update_shape_visibility, DrawLineList, ShapeTexture,
+    transform_draw_line, update_shape_visibility, DrawLine, DrawLineList, Scratch, ShapeTexture,
 };
 
 //would be nicer to move lines out of read_in_lines rather than clone them
@@ -128,16 +129,29 @@ where
         ReadExpect<'a, ClipState<V>>,
         ReadExpect<'a, Config>,
         WriteExpect<'a, DrawLineList<V>>, // TODO: break up into components so that these can be processed more in parallel with par_iter?
+        WriteExpect<'a, Scratch<DrawLine<V>>>,
+        WriteExpect<'a, Scratch<Line<V>>>,
     );
 
     fn run(
         &mut self,
-        (shapes, shape_textures, shape_clip_states, clip_state, config, mut lines): Self::SystemData,
+        (
+            shapes,
+            shape_textures,
+            shape_clip_states,
+            clip_state,
+            config,
+            mut lines,
+            mut scratch,
+            mut line_scratch,
+        ): Self::SystemData,
     ) {
         lines.0.clear();
         //let mut scratch = Vec::new();
         calc_shapes_lines(
             &mut lines.0,
+            &mut scratch,
+            &mut line_scratch,
             &shapes,
             &shape_textures,
             &shape_clip_states,
@@ -193,16 +207,19 @@ where
         ReadStorage<'a, ShapeClipState<V>>,
         ReadExpect<'a, ClipState<V>>,
         WriteExpect<'a, DrawLineList<V>>, // TODO: break up into components so that these can be processed more in parallel with par_iter?
+        //WriteExpect<'a, Scratch<DrawLine<V>>>,
+        WriteExpect<'a, Scratch<Line<V>>>,
     );
 
     // TODO: this will clip using ALL shapes. is there a way to reduce the workload?
     fn run(
         &mut self,
-        (line_collection_storage, read_shape_clip_state, clip_state, mut lines): Self::SystemData,
+        (line_collection_storage, read_shape_clip_state, clip_state, mut lines, mut line_scratch): Self::SystemData,
     ) {
         for lines_coll in line_collection_storage.join() {
             draw_collection(
                 &mut lines.0,
+                &mut line_scratch,
                 lines_coll,
                 clip_state
                     .clipping_enabled
