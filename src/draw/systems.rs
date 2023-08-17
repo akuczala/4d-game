@@ -134,7 +134,10 @@ where
         &mut self,
         (shapes, shape_textures, shape_clip_states, clip_state, config, mut lines): Self::SystemData,
     ) {
-        lines.0 = calc_shapes_lines(
+        lines.0.clear();
+        //let mut scratch = Vec::new();
+        calc_shapes_lines(
+            &mut lines.0,
             &shapes,
             &shape_textures,
             &shape_clip_states,
@@ -198,12 +201,13 @@ where
         (line_collection_storage, read_shape_clip_state, clip_state, mut lines): Self::SystemData,
     ) {
         for lines_coll in line_collection_storage.join() {
-            lines.0.extend(draw_collection(
+            draw_collection(
+                &mut lines.0,
                 lines_coll,
                 clip_state
                     .clipping_enabled
                     .then_some((&read_shape_clip_state).join()),
-            ));
+            );
         }
     }
 }

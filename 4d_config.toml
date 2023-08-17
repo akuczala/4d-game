@@ -33,4 +33,4 @@ path = "./cute2.4d.ron"
 enabled = true
 
 [physics]
-gravity_acceleration = 2.0
+gravity_acceleration = 0.0

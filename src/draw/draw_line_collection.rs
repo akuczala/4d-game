@@ -25,17 +25,18 @@ impl<V> DrawLineCollection<V> {
 }
 
 pub fn draw_collection<'a, V: VectorTrait + 'a, I>(
+    write_lines: &mut Vec<DrawLine<V>>,
     lines_collection: &DrawLineCollection<V>,
     shape_clip_state_iter: Option<I>,
-) -> Vec<DrawLine<V>>
-where
+) where
     I: std::iter::Iterator<Item = &'a ShapeClipState<V>>,
 {
     // TODO: return iterator?
     // TODO: eliminate cloning here?
-    let lines = lines_collection.0.clone();
+    let mut lines = lines_collection.0.clone();
+    let mut line_scratch = Default::default();
     match shape_clip_state_iter {
-        Some(iter) => clip_draw_lines(lines, iter),
-        None => lines,
+        Some(iter) => clip_draw_lines(&lines, write_lines, &mut line_scratch, iter),
+        None => write_lines.append(&mut lines),
     }
 }

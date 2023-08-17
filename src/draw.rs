@@ -221,40 +221,34 @@ pub fn normal_to_color<V: VectorTrait>(normal: V) -> Color {
     .into()
 }
 
+pub type Scratch<T> = (Vec<T>, Vec<T>, Vec<T>);
+
 pub fn calc_shapes_lines<V>(
+    write_lines: &mut Vec<DrawLine<V>>,
     shapes: &ReadStorage<Shape<V>>,
     shape_textures: &ReadStorage<ShapeTexture<V::SubV>>,
     shape_clip_states: &ReadStorage<ShapeClipState<V>>,
     clip_state: &ClipState<V>,
     draw_config: &DrawConfig,
-) -> Vec<DrawLine<V>>
-where
+) where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    //DEBUG: list entities in front of each shape
-    // for (i,(sh,s)) in (shapes, shape_clip_states).join().enumerate() {
-    // 	println!("shape {}: {}",i,sh.get_pos());
-    // 	println!("{}",s.in_front_debug());
-    // }
-    // panic!();
-    //probably worth computing / storing number of lines
-    //and using Vec::with_capacity
-    let mut lines: Vec<DrawLine<V>> = Vec::new();
-
     //compute lines for each shape
+    let mut scratch: Vec<DrawLine<V>> = Vec::new();
+    let mut line_scratch: Scratch<Line<V>> = Default::default();
     for (shape, shape_texture, shape_clip_state) in
         (shapes, shape_textures, shape_clip_states).join()
     {
-        let mut shape_lines: Vec<DrawLine<V>> = Vec::new();
+        scratch.clear();
         //get lines from each face
         for (face, &visible, face_texture) in izip!(
             shape.faces.iter(),
             shape_clip_state.face_visibility.iter(),
             shape_texture.face_textures.iter()
         ) {
-            shape_lines.extend(draw_face_texture::<V>(
+            scratch.extend(draw_face_texture::<V>(
                 face_texture,
                 face,
                 shape,
@@ -276,15 +270,15 @@ where
                         Some(s) => s,
                         None => panic!("Invalid entity {} found in shape_clip_state", e.id()),
                     });
-            //do clipping between all shapes
-            // let clip_states_in_front = shape_clip_states
-            //     .join()
-            //     .filter(|&s| (s as *const _) != (shape_clip_state as *const _));
-            let mut clipped_lines = clipping::clip_draw_lines(shape_lines, clip_states_in_front);
-            lines.append(&mut clipped_lines);
+
+            clipping::clip_draw_lines(
+                &scratch,
+                write_lines,
+                &mut line_scratch,
+                clip_states_in_front,
+            );
         } else {
-            lines.append(&mut shape_lines);
+            write_lines.append(&mut scratch);
         }
     }
-    lines
 }

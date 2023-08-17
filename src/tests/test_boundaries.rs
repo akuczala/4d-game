@@ -3,10 +3,7 @@ use colored::Colorize;
 use crate::{
     components::ShapeType,
     constants::ZERO,
-    draw::clipping::{
-        boundaries::{calc_boundaries, ConvexBoundarySet},
-        clip_line,
-    },
+    draw::clipping::boundaries::{calc_boundaries, ConvexBoundarySet},
     geometry::{
         shape::buildshapes::{invert_normals, remove_face, ShapeBuilder},
         Line,
@@ -105,10 +102,10 @@ fn test_bounded_regions() {
         }
     }
     // clip line
-    let line = Line(V::new(-0.7, 1.4), V::new(0.7, 1.4));
+    let _line = Line(V::new(-0.7, 1.4), V::new(0.7, 1.4));
     // println!("{}", serde_json::to_string(&[line.clone()]).unwrap());
 
-    let clipped_lines = clip_line(line, &boundaries);
+    //let clipped_lines = clip_line(line, &boundaries);
 
     //let clipped_lines = clip_line_convex(line, &boundaries[1].0).into_iter().collect_vec();
     //println!("{}", serde_json::to_string(&clipped_lines).unwrap());
@@ -129,7 +126,7 @@ fn test_bounded_regions() {
     //     )
     //     .collect_vec();
 
-    println!("{}", serde_json::to_string(&clipped_lines).unwrap());
+    //println!("{}", serde_json::to_string(&clipped_lines).unwrap());
 
     // let line = Line(V::new(-0.7, 1.0), V::new(0.6, 1.0));
     // let clipped_lines = clip_line_convex(line, &boundaries[1].0).into_iter().collect_vec();

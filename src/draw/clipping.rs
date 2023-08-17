@@ -3,6 +3,7 @@ pub mod boundaries;
 
 use crate::ecs_utils::Componentable;
 
+use crate::graphics::colors::WHITE;
 use crate::vector::{Field, VecIndex, VectorTrait};
 use std::collections::{HashMap, HashSet};
 
@@ -10,11 +11,12 @@ use crate::components::Shape;
 use crate::draw::DrawLine;
 use crate::geometry::{sphere_t_intersect_infinite_normed, Line, Plane};
 
-use itertools::Itertools;
 use specs::{Entities, Entity, Join, ReadStorage, WriteStorage};
 
 use self::bball::BBall;
 use self::boundaries::ConvexBoundarySet;
+
+use super::Scratch;
 
 // TODO: split into smaller modules
 pub struct ClipState<V> {
@@ -372,18 +374,33 @@ impl<V> Iterator for ReturnLines<V> {
         out
     }
 }
+// TODO: to reduce allocation:
+// create drawline buffer object
+// give object a moving write index
+// on each iteration, move index back to where we started, and rewrite
+// see the vec truncate method
 pub fn clip_line<V: VectorTrait>(
     line: Line<V>,
-    boundaries: &[ConvexBoundarySet<V>],
-) -> Vec<Line<V>> {
-    let mut clipped_lines = vec![line];
+    boundaries: &[&ConvexBoundarySet<V>],
+    write_lines: &mut Vec<Line<V>>,
+    scratch: &mut Vec<Line<V>>,
+) {
+    let len = write_lines.len();
+    write_lines.push(line);
+    let mut new_len = write_lines.len();
     for convex_boundary_set in boundaries {
-        clipped_lines = clipped_lines
-            .into_iter()
-            .flat_map(|line| clip_line_convex(line, convex_boundary_set))
-            .collect_vec();
+        scratch.clear();
+        scratch.extend(write_lines[len..new_len].iter().cloned());
+        write_lines.truncate(len);
+        write_lines.extend(
+            scratch
+                .iter_mut()
+                .flat_map(|line| clip_line_convex(line.clone(), convex_boundary_set)),
+        );
+        new_len = write_lines.len();
+
+        //len = new_len;
     }
-    clipped_lines
 }
 
 // TODO: robustly cover edge cases
@@ -454,51 +471,38 @@ pub fn clip_line_convex<V: VectorTrait>(
 //consider using parallel joins here
 // TODO: reduce vec pushing + allocation (~10% of runtime)
 pub fn clip_draw_lines<'a, V: VectorTrait + 'a, I>(
-    lines: Vec<DrawLine<V>>,
+    start_lines: &[DrawLine<V>],
+    write_lines: &mut Vec<DrawLine<V>>,
+    scratch: &mut Scratch<Line<V>>,
     clip_states_in_front: I,
-) -> Vec<DrawLine<V>>
+)
 //where for<'a> &'a I : std::iter::Iterator<Item=&'a ShapeClipState<V>>
 where
     I: std::iter::Iterator<Item = &'a ShapeClipState<V>>,
 {
-    let mut clipped_lines = lines;
+    scratch.0.clear();
+    scratch
+        .0
+        .extend(start_lines.iter().map(|dl| dl.line.clone()));
 
-    // let clipping_shapes : Vec<&Shape<V>> = match shape_in_front {
-    //     Some(in_fronts) => shapes.join().zip(in_fronts)
-    //         .filter(|(_shape,&front)| front)
-    //         .map(|(shape,_front)| shape).collect(),
-    //     None => shapes.join().collect()
-    // };
-    for clipping_shape in clip_states_in_front {
-        //compare pointers
-        // let same_shape = match shape {
-        //     Some(shape) => clipping_shape as *const _ == shape as *const _,
-        //     None => false
-        // };
-        //let same_shape = clip_shape_index == shape_index;
-        if !clipping_shape.transparent {
-            //let mut additional_lines : Vec<Option<Line<V>>> = Vec::new();
-            let mut new_lines: Vec<DrawLine<V>> = Vec::new();
-            //would like to map in place here, with side effects
-            //(creating additonal lines)
-            //worst case, we could push back and forth between two Vecs
-            //with capacities slightly greater than initial # lines
-            //right now i just push on to a new Vec every time
-            for opt_draw_line in clipped_lines.into_iter() {
-                {
-                    let color: crate::graphics::colors::Color = opt_draw_line.color;
-                    new_lines.extend(
-                        clip_line(opt_draw_line.line, &clipping_shape.boundaries)
-                            .into_iter()
-                            .map(|line| DrawLine { line, color }),
-                    )
-                }
-            }
-            clipped_lines = new_lines;
-            //clipped_lines.append(&mut additional_lines);
-        }
+    let boundaries: Vec<&ConvexBoundarySet<V>> = clip_states_in_front
+        .flat_map(|clip_state| (!clip_state.transparent).then_some(&clip_state.boundaries))
+        .flat_map(|v| v.iter())
+        .collect();
+
+    scratch.2.clear();
+    for opt_draw_line in &scratch.0 {
+        clip_line(
+            opt_draw_line.clone(),
+            &boundaries,
+            &mut scratch.2,
+            &mut scratch.1,
+        );
     }
-    clipped_lines
+    write_lines.extend(scratch.2.iter().map(|line| DrawLine {
+        line: line.clone(),
+        color: WHITE,
+    }));
 }
 
 #[derive(Debug, Clone)]
