@@ -15,7 +15,7 @@ use crate::graphics::colors::*;
 use crate::vector::{weighted_sum, Field, Vec4, VectorTrait};
 
 use self::clipping::boundaries::calc_boundaries;
-use self::clipping::{clip_line_cylinder, clip_line_sphere, clip_line_tube};
+use self::clipping::{clip_draw_lines, clip_line_cylinder, clip_line_sphere, clip_line_tube};
 use self::texture::shape_texture::draw_face_texture;
 use self::visual_aids::calc_wireframe_lines;
 
@@ -221,15 +221,20 @@ pub fn normal_to_color<V: VectorTrait>(normal: V) -> Color {
     .into()
 }
 
-pub type Scratch<T> = (Vec<T>, Vec<T>, Vec<T>);
+pub type Scratch<T> = (Vec<T>, Vec<T>);
+
+// this exists to make clippy happy in the below fn
+type ShapeComponentStorage<'a, V, U> = (
+    &'a ReadStorage<'a, Shape<V>>,
+    &'a ReadStorage<'a, ShapeTexture<U>>,
+    &'a ReadStorage<'a, ShapeClipState<V>>,
+);
 
 pub fn calc_shapes_lines<V>(
     write_lines: &mut Vec<DrawLine<V>>,
     scratch: &mut Scratch<DrawLine<V>>,
     line_scratch: &mut Scratch<Line<V>>,
-    shapes: &ReadStorage<Shape<V>>,
-    shape_textures: &ReadStorage<ShapeTexture<V::SubV>>,
-    shape_clip_states: &ReadStorage<ShapeClipState<V>>,
+    shape_components: ShapeComponentStorage<V, V::SubV>,
     clip_state: &ClipState<V>,
     draw_config: &DrawConfig,
 ) where
@@ -238,9 +243,7 @@ pub fn calc_shapes_lines<V>(
     V::M: Componentable,
 {
     //compute lines for each shape
-    for (shape, shape_texture, shape_clip_state) in
-        (shapes, shape_textures, shape_clip_states).join()
-    {
+    for (shape, shape_texture, shape_clip_state) in shape_components.join() {
         scratch.0.clear();
         //get lines from each face
         for (face, &visible, face_texture) in izip!(
@@ -260,18 +263,17 @@ pub fn calc_shapes_lines<V>(
             ))
         }
 
-        //clip these lines and append to list
         if clip_state.clipping_enabled {
             let clip_states_in_front =
                 shape_clip_state
                     .in_front
                     .iter()
-                    .map(|&e| match shape_clip_states.get(e) {
+                    .map(|&e| match shape_components.2.get(e) {
                         Some(s) => s,
                         None => panic!("Invalid entity {} found in shape_clip_state", e.id()),
                     });
 
-            clipping::clip_draw_lines(&scratch.0, write_lines, line_scratch, clip_states_in_front);
+            clip_draw_lines(&scratch.0, write_lines, line_scratch, clip_states_in_front);
         } else {
             write_lines.append(&mut scratch.0);
         }

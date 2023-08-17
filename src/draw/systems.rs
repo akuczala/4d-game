@@ -152,9 +152,7 @@ where
             &mut lines.0,
             &mut scratch,
             &mut line_scratch,
-            &shapes,
-            &shape_textures,
-            &shape_clip_states,
+            (&shapes, &shape_textures, &shape_clip_states),
             &clip_state,
             &config.draw,
         );
