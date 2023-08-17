@@ -39,19 +39,15 @@ where
         &mut self,
         (read_in_lines, mut write_out_lines, camera, transform, player, config): Self::SystemData,
     ) {
+        let player_transform = transform.get(player.0).unwrap();
+        let player_camera = camera.get(player.0).unwrap();
         //write new vec of draw lines to DrawLineList
-        write_out_lines.0 = read_in_lines
+        write_out_lines.0.clear();
+        write_out_lines
             .0
-            .iter()
-            .flat_map(|line| {
-                transform_draw_line(
-                    line.clone(),
-                    transform.get(player.0).unwrap(),
-                    camera.get(player.0).unwrap(),
-                    &config.view,
-                )
-            })
-            .collect();
+            .extend(read_in_lines.0.iter().flat_map(|line| {
+                transform_draw_line(line.clone(), player_transform, player_camera, &config.view)
+            }));
     }
 }
 impl SystemName for TransformDrawLinesSystem<()> {
@@ -147,7 +143,6 @@ where
         ): Self::SystemData,
     ) {
         lines.0.clear();
-        //let mut scratch = Vec::new();
         calc_shapes_lines(
             &mut lines.0,
             &mut scratch,
@@ -205,7 +200,6 @@ where
         ReadStorage<'a, ShapeClipState<V>>,
         ReadExpect<'a, ClipState<V>>,
         WriteExpect<'a, DrawLineList<V>>, // TODO: break up into components so that these can be processed more in parallel with par_iter?
-        //WriteExpect<'a, Scratch<DrawLine<V>>>,
         WriteExpect<'a, Scratch<Line<V>>>,
     );
 

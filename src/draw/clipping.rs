@@ -37,7 +37,6 @@ impl<V> Default for ClipState<V> {
 
 impl<V> ClipState<V> {
     pub fn new() -> Self {
-        //let shapes : Vec<&Shape<V>> = (&read_shapes).join().collect();
         ClipState {
             //in_front : HashSet::new(),
             //separations_debug :vec![vec![Separation::Unknown ; shapes_len] ; shapes_len],
