@@ -32,11 +32,8 @@ pub fn draw_collection<'a, V: VectorTrait + 'a, I>(
 ) where
     I: std::iter::Iterator<Item = &'a ShapeClipState<V>>,
 {
-    // TODO: return iterator?
-    // TODO: eliminate cloning here?
-    //let mut lines = lines_collection.0.clone();
     match shape_clip_state_iter {
         Some(iter) => clip_draw_lines(&lines_collection.0, write_lines, line_scratch, iter),
-        None => write_lines.append(&mut lines_collection.0.clone()),
+        None => write_lines.extend(lines_collection.0.iter().cloned()),
     }
 }

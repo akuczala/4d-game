@@ -374,19 +374,18 @@ impl<V> Iterator for ReturnLines<V> {
     }
 }
 
-pub fn clip_line<V: VectorTrait>(
+fn clip_line<V: VectorTrait>(
     line: Line<V>,
     boundaries: &[&ConvexBoundarySet<V>],
     write_lines: &mut Vec<Line<V>>,
     scratch: &mut Vec<Line<V>>,
 ) {
-    let len = write_lines.len();
+    let init_len = write_lines.len();
     write_lines.push(line);
-    //let mut new_len = write_lines.len();
     for convex_boundary_set in boundaries {
         scratch.clear();
-        scratch.extend(write_lines[len..].iter().cloned());
-        write_lines.truncate(len);
+        scratch.extend(write_lines[init_len..].iter().cloned());
+        write_lines.truncate(init_len);
         write_lines.extend(
             scratch
                 .iter_mut()
@@ -396,7 +395,8 @@ pub fn clip_line<V: VectorTrait>(
 }
 
 // TODO: robustly cover edge cases
-pub fn clip_line_convex<V: VectorTrait>(
+// TODO: could replace ReturnLines with BranchIterator
+fn clip_line_convex<V: VectorTrait>(
     line: Line<V>,
     boundary_set: &ConvexBoundarySet<V>,
 ) -> ReturnLines<V> {
