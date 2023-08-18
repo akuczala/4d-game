@@ -48,6 +48,11 @@ pub fn build_player<V>(
 // I wanted to be able to impl a method that returns M[-1], but it doesn't work because MatrixTrait has a free generic parameter V
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Heading<M>(pub M);
+impl<M> Heading<M> {
+    pub fn fmap<F: Fn(M) -> N, N>(self, f: F) -> Heading<N> {
+        Heading(f(self.0))
+    }
+}
 
 pub struct ShapeTargetingSystem<V>(pub PhantomData<V>);
 

@@ -98,20 +98,18 @@ where
     }
 }
 
-fn serialize_level<V>(save_struct: &SaveStructureV<V>) -> Result<String, ron::Error>
+fn serialize_level<V, M>(save_struct: &SaveStructure<V, M>) -> Result<String, ron::Error>
 where
-    V: VectorTrait + Serialize,
-    V::M: Serialize,
-    V::SubV: Serialize,
+    V: Serialize,
+    M: Serialize,
 {
     to_string_pretty(save_struct, Default::default())
 }
 
-fn deserialize_level<V>(level_str: &str) -> SpannedResult<SaveStructureV<V>>
+fn deserialize_level<V, M>(level_str: &str) -> SpannedResult<SaveStructure<V, M>>
 where
-    V: VectorTrait + DeserializeOwned,
-    V::M: DeserializeOwned,
-    V::SubV: DeserializeOwned,
+    V: DeserializeOwned,
+    M: DeserializeOwned,
 {
     ron::from_str(level_str)
 }
@@ -142,12 +140,7 @@ where
     V::M: Componentable + Serialize,
     V::SubV: Componentable + Serialize,
 {
-    serialize_level(&build_save_structure::<V>(world))
-        .map_err(|e| println!("Could not serialize level: {}", e))
-        .and_then(|s| {
-            fs::write(path, s)
-                .map_err(|e| println!("Could not save to {}: {}", path.to_str().unwrap(), e))
-        })
+    save_save_struct_to_file(path, &build_save_structure::<V>(world))
 }
 
 pub fn load_level_from_file<V>(
@@ -160,11 +153,7 @@ where
     V::M: DeserializeOwned + Componentable,
     V::SubV: DeserializeOwned + Componentable,
 {
-    let save_struct = std::fs::read_to_string(path)
-        .map_err(|e| println!("Error loading level {}: {}", path, e))
-        .and_then(|s| {
-            deserialize_level(&s).map_err(|e| println!("Could not parse level file: {}", e))
-        })?;
+    let save_struct = load_save_struct_from_file(path)?;
     init_player(
         world,
         Some(save_struct.player_data.transform),
@@ -172,4 +161,79 @@ where
     );
     append_components(save_struct, ref_shapes, world);
     Ok(())
+}
+
+fn load_save_struct_from_file<V: DeserializeOwned, M: DeserializeOwned>(
+    path: &str,
+) -> Result<SaveStructure<V, M>, ()> {
+    std::fs::read_to_string(path)
+        .map_err(|e| println!("Error loading level {}: {}", path, e))
+        .and_then(|s| {
+            deserialize_level::<V, M>(&s).map_err(|e| println!("Could not parse level file: {}", e))
+        })
+}
+
+fn save_save_struct_to_file<V, M>(
+    path: &Path,
+    save_struct: &SaveStructure<V, M>,
+) -> std::result::Result<(), ()>
+where
+    V: Serialize,
+    M: Serialize,
+{
+    serialize_level::<V, M>(save_struct)
+        .map_err(|e| println!("Could not serialize level: {}", e))
+        .and_then(|s| {
+            fs::write(path, s)
+                .map_err(|e| println!("Could not save to {}: {}", path.to_str().unwrap(), e))
+        })
+}
+
+// I used the below code to update the rep of Vec4 from a record object to a singleton object
+// may or may not be useful in the future, but I anticipate making future changes to the data representation
+// this could be used in tandem with creating invariant structs for each datatype for saving, and converting
+// the runtime types (which may change over time) to the invariant types
+use crate::vector::{Field, Mat4, Vec4};
+
+#[derive(Deserialize, Clone, Copy)]
+struct OldVec4 {
+    arr: [Field; 4],
+}
+
+#[derive(Deserialize, Clone, Copy)]
+struct OldMat4(OldVec4, OldVec4, OldVec4, OldVec4);
+
+#[allow(dead_code)]
+fn upgrade_savefile() {
+    let old_save_struct = load_save_struct_from_file::<OldVec4, OldMat4>("./old.4d.ron").unwrap();
+    save_save_struct_to_file(Path::new("./new.4d.ron"), &map_save_struct(old_save_struct)).unwrap();
+}
+
+fn convert_vec(v: OldVec4) -> Vec4 {
+    Vec4::from_arr(&v.arr)
+}
+
+fn convert_mat(m: OldMat4) -> Mat4 {
+    Mat4::from_vecs(
+        convert_vec(m.0),
+        convert_vec(m.1),
+        convert_vec(m.2),
+        convert_vec(m.3),
+    )
+}
+
+fn map_save_struct(old: SaveStructure<OldVec4, OldMat4>) -> SaveStructure<Vec4, Mat4> {
+    SaveStructure {
+        components: old
+            .components
+            .into_iter()
+            .map(|(label, transform, x, y, z)| {
+                (label, transform.fmap(convert_vec, convert_mat), x, y, z)
+            })
+            .collect(),
+        player_data: PlayerData {
+            transform: old.player_data.transform.fmap(convert_vec, convert_mat),
+            heading: old.player_data.heading.fmap(convert_mat),
+        },
+    }
 }

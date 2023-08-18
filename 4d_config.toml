@@ -27,7 +27,7 @@ level = "Load" # Supported: Level1, Empty, Test1, Test2, Test3, Load
 path = "./justfun.3d.ron"
 
 [scene.load_4d]
-path = "./cute2.4d.ron"
+path = "./cute2-new.4d.ron"
 
 [editor]
 enabled = true
