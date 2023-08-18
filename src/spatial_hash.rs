@@ -20,8 +20,8 @@ impl<K: VectorTrait, V> SpatialHash<K, V> {
         let length = max - min;
         let n_cells: Vec<HashInt> = length
             .zip_map(desired_cell_size, |l, s| l / s)
-            .iter()
-            .map(|&f| f as HashInt)
+            .into_iter()
+            .map(|f| f as HashInt)
             .collect();
 
         let mut multiplier: Vec<HashInt> = vec![1];
@@ -55,7 +55,7 @@ impl<K: VectorTrait, V> SpatialHash<K, V> {
     fn hash(&self, &point: &K) -> HashInt {
         (point - self.min)
             .zip_map(self.length, |p, l| p / l)
-            .iter()
+            .into_iter()
             .zip(self.n_cells.iter())
             .zip(self.multiplier.iter())
             .map(|((f, &n), &m)| ((f * (n as Field)) as HashInt) * m)
@@ -65,7 +65,7 @@ impl<K: VectorTrait, V> SpatialHash<K, V> {
     fn get_cell_coords(&self, &point: &K) -> Vec<HashInt> {
         (point - self.min)
             .zip_map(self.length, |p, l| p / l)
-            .iter()
+            .into_iter()
             .zip(self.n_cells.iter())
             .map(|(f, &n)| (f * (n as Field)) as HashInt)
             .collect()

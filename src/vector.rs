@@ -54,6 +54,7 @@ pub trait VectorTrait:
     + IndexMut<VecIndex>
     + std::iter::Sum
     + FromIterator<Field>
+    + IntoIterator<Item = Field>
 {
     type M: MatrixTrait<Self>;
     type SubV: VectorTrait;
@@ -63,8 +64,6 @@ pub trait VectorTrait:
 
     fn from_arr(arr: &Self::Arr) -> Self;
     fn get_arr(&self) -> &Self::Arr;
-    //ideally, I'd be able to implement this here by constrainting Arr to be iterable
-    //could we use IntoIterator?
     fn iter(&self) -> std::slice::Iter<Field>;
     fn map<F: Fn(Field) -> Field>(self, f: F) -> Self;
     fn zip_map<F: Fn(Field, Field) -> Field>(self, rhs: Self, f: F) -> Self;

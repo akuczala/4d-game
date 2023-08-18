@@ -267,16 +267,15 @@ pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> 
 }
 
 // clip line in infinite cylinder
-// TODO: reduce # vec allocations
 pub fn clip_line_tube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>> {
     fn build_vec<V: VectorTrait>(u: V::SubV, a: Field, long_axis: VecIndex) -> V {
-        let mut u_iter = u.iter();
+        let mut u_iter = u.into_iter();
         (0..V::DIM)
             .map(|i| {
                 if i == long_axis {
                     a
                 } else {
-                    *u_iter.next().unwrap()
+                    u_iter.next().unwrap()
                 }
             })
             .collect::<V>()

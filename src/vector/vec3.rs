@@ -92,6 +92,16 @@ impl FromIterator<Field> for Vec3 {
     }
 }
 
+impl IntoIterator for Vec3 {
+    type Item = Field;
+
+    type IntoIter = std::array::IntoIter<Field, 3>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl VectorTrait for Vec3 {
     type M = Mat3;
     type SubV = Vec2;

@@ -7,14 +7,11 @@ use super::Mat4;
 use crate::vector::{Field, Vec3, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct Vec4 {
-    arr: [Field; 4],
-}
+pub struct Vec4([Field; 4]);
+
 impl Vec4 {
     pub fn new(v0: Field, v1: Field, v2: Field, v3: Field) -> Vec4 {
-        Vec4 {
-            arr: [v0, v1, v2, v3],
-        }
+        Vec4([v0, v1, v2, v3])
     }
 }
 impl Index<VecIndex> for Vec4 {
@@ -33,10 +30,10 @@ impl Index<VecIndex> for Vec4 {
 impl IndexMut<VecIndex> for Vec4 {
     fn index_mut(&mut self, index: VecIndex) -> &mut Self::Output {
         match index {
-            0 | -4 => &mut self.arr[0],
-            1 | -3 => &mut self.arr[1],
-            2 | -2 => &mut self.arr[2],
-            3 | -1 => &mut self.arr[3],
+            0 | -4 => &mut self.0[0],
+            1 | -3 => &mut self.0[1],
+            2 | -2 => &mut self.0[2],
+            3 | -1 => &mut self.0[3],
             _ => panic!("Invalid index {} for Vec3", index),
         }
     }
@@ -98,6 +95,16 @@ impl FromIterator<Field> for Vec4 {
     }
 }
 
+impl IntoIterator for Vec4 {
+    type Item = Field;
+
+    type IntoIter = std::array::IntoIter<Field, 4>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl VectorTrait for Vec4 {
     type M = Mat4;
     type SubV = Vec3;
@@ -106,11 +113,11 @@ impl VectorTrait for Vec4 {
     const DIM: VecIndex = 4;
 
     fn from_arr(arr: &Self::Arr) -> Self {
-        Self { arr: *arr }
+        Self(*arr)
     }
 
     fn get_arr(&self) -> &[Field; 4] {
-        &self.arr
+        &self.0
     }
     fn iter(&self) -> std::slice::Iter<Field> {
         self.get_arr().iter()

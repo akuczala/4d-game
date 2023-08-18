@@ -212,12 +212,8 @@ pub fn get_face_visibility<V: VectorTrait>(face: &Face<V>, camera_pos: V, two_si
 }
 
 pub fn normal_to_color<V: VectorTrait>(normal: V) -> Color {
-    weighted_sum(normal.iter().enumerate().map(|(i, n_i)| {
-        let color = CARDINAL_COLORS[if *n_i > ZERO {
-            i
-        } else {
-            i + (V::DIM as usize)
-        }];
+    weighted_sum(normal.into_iter().enumerate().map(|(i, n_i)| {
+        let color = CARDINAL_COLORS[if n_i > ZERO { i } else { i + (V::DIM as usize) }];
         (Vec4::from(color), n_i.abs())
     }))
     .into()
