@@ -49,7 +49,7 @@ impl<V: VectorTrait> AffineTransform<V, V::M> {
                     .collect::<Vec<V>>(),
             )
             .transpose(),
-            Scaling::Vector(V::from_iter(norms.iter())),
+            Scaling::Vector(norms.into_iter().collect()),
         )
     }
     pub fn unshear(&self) -> AffineTransform<V, V::M> {

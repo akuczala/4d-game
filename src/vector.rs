@@ -23,7 +23,6 @@ pub type Field = f32;
 
 const EPSILON: Field = 0.0001;
 pub use std::f32::consts::PI;
-use std::slice::Iter;
 
 pub fn is_close(a: Field, b: Field) -> bool {
     (a - b).abs() < EPSILON
@@ -54,6 +53,7 @@ pub trait VectorTrait:
     + Index<VecIndex, Output = Field>
     + IndexMut<VecIndex>
     + std::iter::Sum
+    + FromIterator<Field>
 {
     type M: MatrixTrait<Self>;
     type SubV: VectorTrait;
@@ -62,7 +62,6 @@ pub trait VectorTrait:
     const DIM: VecIndex;
 
     fn from_arr(arr: &Self::Arr) -> Self;
-    fn from_iter(iter: Iter<Field>) -> Self;
     fn get_arr(&self) -> &Self::Arr;
     //ideally, I'd be able to implement this here by constrainting Arr to be iterable
     //could we use IntoIterator?

@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
-use std::slice::Iter;
 
 use super::Mat3;
 use crate::vector::{Field, Vec2, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
@@ -82,6 +81,17 @@ impl Sum for Vec3 {
     }
 }
 
+impl FromIterator<Field> for Vec3 {
+    fn from_iter<T: IntoIterator<Item = Field>>(iter: T) -> Self {
+        let mut into_iter = iter.into_iter();
+        Self::new(
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+        )
+    }
+}
+
 impl VectorTrait for Vec3 {
     type M = Mat3;
     type SubV = Vec2;
@@ -92,13 +102,7 @@ impl VectorTrait for Vec3 {
     fn from_arr(arr: &Self::Arr) -> Self {
         Self(*arr)
     }
-    fn from_iter(mut iter: Iter<Field>) -> Self {
-        Vec3::new(
-            *iter.next().expect(FROM_ITER_ERROR_MESSAGE),
-            *iter.next().expect(FROM_ITER_ERROR_MESSAGE),
-            *iter.next().expect(FROM_ITER_ERROR_MESSAGE),
-        )
-    }
+
     fn get_arr(&self) -> &[Field; 3] {
         &self.0
     }

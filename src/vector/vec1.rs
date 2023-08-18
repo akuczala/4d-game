@@ -2,7 +2,6 @@ use std::{
     fmt,
     iter::Sum,
     ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub},
-    slice::Iter,
 };
 
 use serde::{Deserialize, Serialize};
@@ -79,6 +78,14 @@ impl Sum for Vec1 {
         iter.reduce(|x, y| x + y).unwrap_or(Self::zero())
     }
 }
+
+impl FromIterator<Field> for Vec1 {
+    fn from_iter<T: IntoIterator<Item = Field>>(iter: T) -> Self {
+        let mut into_iter = iter.into_iter();
+        Vec1::new(into_iter.next().expect(FROM_ITER_ERROR_MESSAGE))
+    }
+}
+
 impl VectorTrait for Vec1 {
     type M = Mat1;
 
@@ -93,9 +100,7 @@ impl VectorTrait for Vec1 {
     fn from_arr(arr: &Self::Arr) -> Self {
         Self(*arr)
     }
-    fn from_iter(mut iter: Iter<Field>) -> Self {
-        Vec1::new(*iter.next().expect(FROM_ITER_ERROR_MESSAGE))
-    }
+
     fn get_arr(&self) -> &[Field; 1] {
         &self.0
     }

@@ -137,7 +137,7 @@ pub fn draw_horizon<V: VectorTrait>(n_lines: usize) -> Vec<Line<V>> {
             .map(|_| {
                 pointlike_sky_line({
                     let u = random_sphere_point::<V::SubV>() * SKY_DISTANCE;
-                    V::from_iter(vec![u[0], ZERO, u[1], u[2]].iter())
+                    [u[0], ZERO, u[1], u[2]].into_iter().collect()
                 })
             })
             .collect(),

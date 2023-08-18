@@ -271,30 +271,24 @@ pub fn clip_line_cylinder<V: VectorTrait>(line: Line<V>, r: Field, h: Field) -> 
 pub fn clip_line_tube<V: VectorTrait>(line: Line<V>, r: Field) -> Option<Line<V>> {
     fn build_vec<V: VectorTrait>(u: V::SubV, a: Field, long_axis: VecIndex) -> V {
         let mut u_iter = u.iter();
-        V::from_iter(
-            (0..V::DIM)
-                .map(|i| {
-                    if i == long_axis {
-                        a
-                    } else {
-                        *u_iter.next().unwrap()
-                    }
-                })
-                .collect::<Vec<Field>>()
-                .iter(),
-        )
+        (0..V::DIM)
+            .map(|i| {
+                if i == long_axis {
+                    a
+                } else {
+                    *u_iter.next().unwrap()
+                }
+            })
+            .collect::<V>()
     }
     let long_axis = 1;
     // this kind of shit, where we're just dropping an index, should be a library fn
     // this is also probably not very fast
     let proj_line: Line<V::SubV> = line.map(|p| {
-        V::SubV::from_iter(
-            (0..V::DIM)
-                .filter(|&i| i != long_axis)
-                .map(|i| p[i])
-                .collect::<Vec<Field>>()
-                .iter(),
-        )
+        (0..V::DIM)
+            .filter(|&i| i != long_axis)
+            .map(|i| p[i])
+            .collect::<V::SubV>()
     });
     let perp = line.map(|p| p[long_axis]);
     let t_roots = sphere_t_intersect_infinite_normed(proj_line.clone(), r);

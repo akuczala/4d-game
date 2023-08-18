@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
-use std::slice::Iter;
 
 use super::vec1::Vec1;
 use super::Mat2;
@@ -82,6 +81,16 @@ impl Sum for Vec2 {
     }
 }
 
+impl FromIterator<Field> for Vec2 {
+    fn from_iter<T: IntoIterator<Item = Field>>(iter: T) -> Self {
+        let mut into_iter = iter.into_iter();
+        Vec2::new(
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+        )
+    }
+}
+
 impl VectorTrait for Vec2 {
     type M = Mat2;
 
@@ -94,12 +103,7 @@ impl VectorTrait for Vec2 {
     fn from_arr(arr: &Self::Arr) -> Self {
         Self(*arr)
     }
-    fn from_iter(mut iter: Iter<Field>) -> Self {
-        Vec2::new(
-            *iter.next().expect(FROM_ITER_ERROR_MESSAGE),
-            *iter.next().expect(FROM_ITER_ERROR_MESSAGE),
-        )
-    }
+
     fn get_arr(&self) -> &[Field; 2] {
         &self.0
     }

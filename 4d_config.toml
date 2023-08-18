@@ -5,8 +5,8 @@ face_scale = 0.8
 color_by_orientation = true
 
 [draw.fuzz_lines]
-face_num = 200
-sky_num = 300
+face_num = 1000
+sky_num = 1000
 horizon_num = 1000
 
 [view]
