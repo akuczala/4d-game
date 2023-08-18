@@ -5,7 +5,7 @@ face_scale = 0.8
 color_by_orientation = true
 
 [draw.fuzz_lines]
-face_num = 1000
+face_num = 500
 sky_num = 1000
 horizon_num = 1000
 
@@ -14,7 +14,7 @@ height = 0.5
 radius = 0.6
 viewport_shape = "Cylinder"
 focal = 0.5
-spin_speed = 0.02
+spin_speed = 0.1
 
 [scene]
 grid = false
@@ -24,7 +24,7 @@ stars = true
 level = "Load" # Supported: Level1, Empty, Test1, Test2, Test3, Load
 
 [scene.load_3d]
-path = "./justfun.3d.ron"
+path = "./level_2.3d.ron"
 
 [scene.load_4d]
 path = "./cute2-new.4d.ron"
@@ -33,4 +33,4 @@ path = "./cute2-new.4d.ron"
 enabled = true
 
 [physics]
-gravity_acceleration = 0.0
+gravity_acceleration = 1.0

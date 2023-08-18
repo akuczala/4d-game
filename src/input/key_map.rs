@@ -10,7 +10,7 @@ pub struct KeyCombo {
 
 pub const MOVEMENT_MODE: VKC = VKC::M;
 pub const CANCEL_MANIPULATION: VKC = VKC::Backslash;
-pub const SNAPPING: VKC = VKC::Grave;
+pub const SNAPPING: VKC = VKC::LShift;
 pub const TRANSLATE_MODE: VKC = VKC::T;
 pub const ROTATE_MODE: VKC = VKC::R;
 pub const SCALE_MODE: VKC = VKC::Y;

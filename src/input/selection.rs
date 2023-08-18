@@ -8,8 +8,9 @@ use super::key_map::{
 use super::{Input, MovementMode, PlayerMovementMode, ShapeMovementMode};
 
 use crate::cleanup::DeletedEntities;
+use crate::coin::Coin;
 use crate::config::Config;
-use crate::constants::SELECTION_COLOR;
+use crate::constants::{COIN_LABEL_STR, SELECTION_COLOR};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::shape_texture::fuzzy_color_cube_texture;
 
@@ -18,6 +19,7 @@ use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
 
 use crate::geometry::transform::Scaling;
 
+use crate::graphics::colors::YELLOW;
 use crate::shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV};
 
 use winit::event::VirtualKeyCode as VKC;
@@ -200,16 +202,22 @@ pub fn create_shape<V: VectorTrait>(
         .then(|| {
             input.toggle_keys.trigger_once(CREATE_SHAPE, || {
                 println!("shape created");
-                //let player_transform =
                 let pos = player_transform.pos;
                 let dir = player_transform.frame[-1];
                 let shape_pos = pos + dir * 2.0;
-                ShapeEntityBuilder::new_from_ref_shape(ref_shapes, shape_label)
+                let is_coin = shape_label == ShapeLabel::from_str(COIN_LABEL_STR);
+                ShapeEntityBuilder::new_from_ref_shape(ref_shapes, shape_label.clone())
                     .with_transform(Transform::pos(shape_pos))
                     .with_scale(Scaling::Scalar(1.0))
-                    .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape))
-                    .with_collider(Some(StaticCollider))
-                // TODO: add to spatial hash set (use BBox hash system)
+                    .with_texturing_fn(|shape| {
+                        if is_coin {
+                            ShapeTextureBuilder::new_default(shape.faces.len()).with_color(YELLOW)
+                        } else {
+                            fuzzy_color_cube_texture(shape)
+                        }
+                    })
+                    .with_collider((!is_coin).then_some(StaticCollider))
+                    .with_coin(is_coin.then_some(Coin))
             })
         })
         .flatten()
@@ -222,6 +230,7 @@ pub fn duplicate_shape<V: VectorTrait>(
     shape_transform: &Transform<V, V::M>,
     shape_texture: &ShapeTextureBuilder,
     shape_collider: Option<&StaticCollider>,
+    coin: Option<Coin>,
 ) -> Option<ShapeEntityBuilderV<V>> {
     input.toggle_keys.trigger_once(DUPLICATE_SHAPE, || {
         println!("shape duplicated");
@@ -229,6 +238,7 @@ pub fn duplicate_shape<V: VectorTrait>(
             .with_transform(*shape_transform)
             .with_texture(shape_texture.clone())
             .with_collider(shape_collider.cloned())
+            .with_coin(coin)
         // TODO: add to spatial hash set (use BBox hash system)
         // TODO: copy all shape components to new entity?
     })

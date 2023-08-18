@@ -2,6 +2,7 @@ use specs::prelude::*;
 use std::marker::PhantomData;
 
 use crate::cleanup::DeletedEntities;
+use crate::coin::Coin;
 use crate::config::Config;
 
 use crate::components::*;
@@ -195,6 +196,7 @@ where
         ReadStorage<'a, ShapeLabel>,
         ReadStorage<'a, ShapeTextureBuilder>,
         ReadStorage<'a, StaticCollider>,
+        ReadStorage<'a, Coin>,
         Entities<'a>,
     );
 
@@ -211,6 +213,7 @@ where
             shape_label_storage,
             shape_textures,
             static_colliders,
+            coins,
             entities,
         ): Self::SystemData,
     ) {
@@ -226,6 +229,7 @@ where
                 read_transform.get(selected_entity).unwrap(),
                 shape_textures.get(selected_entity).unwrap(),
                 static_colliders.get(selected_entity),
+                coins.get(selected_entity).cloned(),
             ) {
                 builder.insert(entities.create(), &lazy, &config);
             }

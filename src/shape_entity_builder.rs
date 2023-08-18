@@ -1,3 +1,4 @@
+use crate::coin::Coin;
 use crate::components::{
     BBall, HasBBox, Shape, ShapeClipState, ShapeLabel, StaticCollider, Transform, Transformable,
 };
@@ -20,6 +21,7 @@ pub struct ShapeEntityBuilder<V, M> {
     pub transformation: Transform<V, M>,
     pub shape_texture_builder: ShapeTextureBuilder,
     static_collider: Option<StaticCollider>,
+    coin: Option<Coin>,
 }
 
 //shorthand
@@ -34,6 +36,7 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
             transformation: Transform::identity(),
             shape_texture_builder: ShapeTextureBuilder::new_default(ref_shape.verts.len()),
             static_collider: None,
+            coin: None,
         }
     }
     pub fn with_texture(mut self, texture: ShapeTextureBuilder) -> Self {
@@ -59,6 +62,10 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
         self.static_collider = static_collider;
         self
     }
+    pub fn with_coin(mut self, coin: Option<Coin>) -> Self {
+        self.coin = coin;
+        self
+    }
     pub fn stretch(mut self, scales: &V) -> Self {
         self.transformation.scale(Scaling::Vector(*scales));
         self
@@ -78,6 +85,7 @@ where
             transformation,
             shape_texture_builder,
             static_collider,
+            coin,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
         let shape_texture =
@@ -93,6 +101,7 @@ where
             .with(shape_texture)
             .with(ShapeClipState::<V>::default())
             .maybe_with(static_collider)
+            .maybe_with(coin)
     }
     pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>, config: &Config) {
         let Self {
@@ -101,6 +110,7 @@ where
             transformation,
             shape_texture_builder,
             static_collider,
+            coin,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
         let shape_texture = make_shape_texture::<V::SubV>(config, shape_texture_builder.clone());
@@ -113,6 +123,9 @@ where
         lazy.insert(e, ShapeClipState::<V>::default());
         lazy.insert(e, shape_label);
         if let Some(c) = static_collider {
+            lazy.insert(e, c)
+        };
+        if let Some(c) = coin {
             lazy.insert(e, c)
         };
     }
