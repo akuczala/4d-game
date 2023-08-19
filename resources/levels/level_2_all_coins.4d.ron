@@ -1,0 +1,3498 @@
+(
+    components: [
+        (("InvertedPipe"), (
+            pos: ((-0.5, 1.0, 0.5, 0.5)),
+            frame: (((1.0, 0.0, 0.0, 0.0)), ((0.0, 0.0, 0.0, -1.0)), ((0.0, 0.0, 1.0, 0.0)), ((0.0, 1.0, 0.0, 0.0))),
+            scale: Vector(((4.0, 4.0, 4.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            1,
+                            4,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            5,
+                            8,
+                            7,
+                        ],
+                        origin_verti: 4,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            12,
+                            9,
+                            11,
+                        ],
+                        origin_verti: 8,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            13,
+                            15,
+                            0,
+                        ],
+                        origin_verti: 12,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            12,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            3,
+                            6,
+                            14,
+                        ],
+                        origin_verti: 2,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, -1.0, 0.5)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((-0.00000008742278, 1.0, 0.0, 0.0)), ((0.0, 0.0, -1.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-0.5, 0.5, 0.5, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-0.5, 0.5, -1.0, 0.5)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((-0.00000008742278, 1.0, 0.0, 0.0)), ((0.0, 0.0, -1.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, 0.5, 0.5)),
+            frame: (((0.00000008742278, -1.0, 0.0, -0.000000087422784)), ((0.000000087422784, -0.00000008742277, 0.0, 1.0)), ((-1.0, -0.00000008742278, 0.0, 0.00000008742278)), ((0.0, 0.0, -1.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, 0.5, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, 0.5, 0.5)),
+            frame: (((0.00000008742278, -1.0, 0.0, -0.000000087422784)), ((0.000000087422784, -0.00000008742277, 0.0, 1.0)), ((-1.0, -0.00000008742278, 0.0, 0.00000008742278)), ((0.0, 0.0, -1.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OpenInvertedCube"), (
+            pos: ((-0.5, 0.0, 0.5, 0.5)),
+            frame: (((1.0, 0.0, 0.0, 0.0)), ((0.0, 0.0, 0.0, -1.0)), ((0.0, 0.0, 1.0, 0.0)), ((0.0, 1.0, 0.0, 0.0))),
+            scale: Vector(((2.0, 2.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            1,
+                            4,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            5,
+                            8,
+                            7,
+                        ],
+                        origin_verti: 4,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            12,
+                            9,
+                            11,
+                        ],
+                        origin_verti: 8,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            13,
+                            15,
+                            0,
+                        ],
+                        origin_verti: 12,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            12,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            5,
+                            2,
+                            13,
+                        ],
+                        origin_verti: 1,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            3,
+                            6,
+                            14,
+                        ],
+                        origin_verti: 2,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-0.5, 0.5, 2.0, 0.5)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((-0.00000008742278, 1.0, 0.0, 0.0)), ((0.0, 0.0, -1.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, 2.0, 0.5)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((-0.00000008742278, 1.0, 0.0, 0.0)), ((0.0, 0.0, -1.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, 2.0, 0.5)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((-0.00000008742278, 1.0, 0.0, 0.0)), ((0.0, 0.0, -1.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, -1.0, 0.5)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((-0.00000008742278, 1.0, 0.0, 0.0)), ((0.0, 0.0, -1.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-0.5, 0.5, 2.0, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, 0.5, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, 2.0, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, 0.5, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-0.5, 0.5, 0.5, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-0.5, 0.5, 2.0, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-0.5, 0.5, -1.0, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-0.5, 0.5, -1.0, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((2.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, 0.5, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 2.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, -1.0, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, -1.0, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, 2.0, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, 2.0, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, -1.0, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((1.0, 0.5, 2.0, -1.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("OneSidedFace"), (
+            pos: ((-2.0, 0.5, -1.0, 2.0)),
+            frame: (((-1.0, -0.00000008742278, 0.0, 0.0)), ((0.0, 0.0, 0.0, 1.0)), ((0.0, 0.0, 1.0, 0.0)), ((-0.00000008742278, 1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 1.0, 1.0))),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 0.0, 0.5))),
+                            MergedWith([
+                                WithTexture(Fuzz),
+                            ]),
+                        ],
+                    ),
+                    texture_mapping: Some((
+                        frame_vertis: [
+                            4,
+                            1,
+                            3,
+                        ],
+                        origin_verti: 0,
+                    )),
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((0.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 0.5, 0.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 1.0, 0.5))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), Some(()), None),
+        (("Coin"), (
+            pos: ((-2.0, 0.75, -1.0, 2.0)),
+            frame: (((-0.0293983, 0.0, 0.7845511, -0.6197165)), ((0.0, 1.0, 0.0, 0.0)), ((-0.59548575, 0.0, 0.4842056, 0.64141816)), ((0.8031769, 0.0, 0.3877899, 0.45284492))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+        (("Coin"), (
+            pos: ((-2.0, 0.75, 2.0, 2.0)),
+            frame: (((0.47794005, 0.0, -0.34517175, -0.8080587)), ((0.0, 1.0, 0.0, 0.0)), ((-0.872835, 0.0, -0.2926407, -0.39127257)), ((-0.10133228, 0.0, 0.8919222, -0.44109452))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+        (("Coin"), (
+            pos: ((-2.0, 0.75, 2.0, -1.0)),
+            frame: (((-0.34172818, 0.0, -0.2738948, -0.8993186)), ((0.0, 1.0, 0.0, 0.0)), ((-0.11260162, 0.0, 0.96180445, -0.25017107)), ((0.9333293, 0.0, 0.015830845, -0.3594596))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+        (("Coin"), (
+            pos: ((1.0, 0.75, 2.0, -1.0)),
+            frame: (((-0.9025098, 0.0, 0.008246673, 0.4312026)), ((0.0, 1.0, 0.0, 0.0)), ((0.17930081, 0.0, -0.90221876, 0.39264783)), ((0.3922234, 0.0, 0.4315777, 0.81265736))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+        (("Coin"), (
+            pos: ((1.0, 0.75, 2.0, 2.0)),
+            frame: (((0.29485655, 0.0, -0.6652187, 0.6862796)), ((0.0, 1.0, 0.0, 0.0)), ((0.3109364, 0.0, 0.7458224, 0.5895228)), ((-0.90384835, 0.0, 0.039501935, 0.42668086))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+        (("Coin"), (
+            pos: ((1.0, 0.75, -1.0, 2.0)),
+            frame: (((-0.48351267, 0.0, 0.7557425, -0.44209203)), ((0.0, 1.0, 0.0, 0.0)), ((-0.2668401, 0.0, -0.6081248, -0.74797505)), ((-0.8340081, 0.0, -0.2436423, 0.49562624))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+        (("Coin"), (
+            pos: ((1.0, 0.75, -1.0, -1.0)),
+            frame: (((0.5588379, 0.0, 0.031250447, -0.82903516)), ((0.0, 1.0, 0.0, 0.0)), ((0.01688613, 0.0, 0.99883235, 0.04897763)), ((0.82945067, 0.0, -0.04129588, 0.55756414))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+        (("Coin"), (
+            pos: ((-2.0, 0.75, -1.0, -1.0)),
+            frame: (((-0.5680393, 0.0, 0.094853416, -0.8178558)), ((0.0, 1.0, 0.0, 0.0)), ((0.72833294, 0.0, 0.5212336, -0.4454153)), ((0.3839107, 0.0, -0.84834373, -0.3651231))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+        (("Coin"), (
+            pos: ((-0.5, -0.25, 0.5, 0.5)),
+            frame: (((0.8533939, 0.0, 0.29291058, 0.4315934)), ((0.0, 1.0, 0.0, 0.0)), ((-0.35369962, 0.0, 0.93319726, 0.0660138)), ((-0.383362, 0.0, -0.20895533, 0.8998543))),
+            scale: Scalar(1.0),
+        ), (
+            face_textures: [
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+                (
+                    texture: (
+                        steps: [
+                            WithColor(((1.0, 1.0, 0.0, 1.0))),
+                        ],
+                    ),
+                    texture_mapping: None,
+                ),
+            ],
+        ), None, Some(())),
+    ],
+    player_data: (
+        transform: (
+            pos: ((-0.75886554, 1.694003, 2.3289075, 1.6534334)),
+            frame: (((0.9765848, 0.00007464271, -0.023080703, 0.20830679)), ((0.000009186311, 0.999333, 0.020450119, 0.0021832623)), ((-0.20972544, -0.000047412235, -0.10493886, 0.97111857)), ((-0.0005551139, 0.020056874, -0.9927122, -0.107383095))),
+            scale: Scalar(1.0),
+        ),
+        heading: ((((0.97659695, 0.0, -0.023109406, 0.20829463)), ((0.0, 1.0, 0.0, 0.0)), ((-0.20972528, 0.0, -0.104847565, 0.9711341)), ((-0.0006894064, 0.0, -0.99273485, -0.10737961)))),
+    ),
+)
