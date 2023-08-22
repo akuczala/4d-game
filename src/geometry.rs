@@ -1,7 +1,10 @@
-mod affine_transform;
+pub mod affine_transform;
 pub mod shape;
 pub mod transform;
-use crate::vector::{barycenter, is_close, scalar_linterp, Field, VectorTrait};
+use crate::{
+    constants::ZERO,
+    vector::{barycenter, is_close, scalar_linterp, Field, VectorTrait},
+};
 use serde::{Deserialize, Serialize};
 pub use shape::{Face, Shape};
 use std::fmt;
@@ -47,7 +50,8 @@ impl Line<Field> {
 }
 
 /// Represents a hyperplane. Defined by normal vector and threshold (n . p)
-#[derive(Clone, Serialize, Deserialize)]
+/// Contains the points x with n . x - th = 0
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Plane<V> {
     pub normal: V,
     pub threshold: Field,
@@ -103,11 +107,35 @@ impl<V: VectorTrait> Plane<V> {
             threshold: -self.threshold,
         }
     }
+    pub fn contains_point(&self, point: V) -> bool {
+        is_close(self.point_signed_distance(point), ZERO)
+    }
+
+    /// returns the D - 1 dimensional plane defined by the intersection of the plane with the plane with normal V::one_hot(-1), th =0
+    pub fn intersect_proj_plane(&self) -> Plane<V::SubV> {
+        let (new_normal, nnorm) = self.normal.project().normalize_get_norm();
+        Plane {
+            normal: new_normal,
+            threshold: self.threshold / nnorm,
+        }
+    }
 }
+
 impl<V: fmt::Display> fmt::Display for Plane<V> {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "n={},th={}", self.normal, self.threshold)
+    }
+}
+impl<V: VectorTrait> Transformable<V> for Plane<V> {
+    fn transform(&mut self, transformation: Transform<V, <V as VectorTrait>::M>) {
+        //
+        let new_normal =
+            transformation.frame * transformation.scale.inverse().scale_vec(self.normal);
+        let (new_normal, nnorm) = new_normal.normalize_get_norm();
+        let new_threshold = self.threshold / nnorm + new_normal.dot(transformation.pos);
+        self.normal = new_normal;
+        self.threshold = new_threshold;
     }
 }
 
@@ -220,4 +248,22 @@ fn test_sphere_line_intersect() {
     let line = Line(Vec2::new(-0.2, -0.2), Vec2::new(0.2, 0.2));
     let v = sphere_line_intersect(line, 0.5);
     println!("{}", v.unwrap())
+}
+
+#[test]
+fn test_plane_transformation() {
+    use crate::tests::{random_rotation_matrix, random_transform, random_vec};
+    use crate::vector::{Mat4, Vec4};
+    let pos: Vec4 = random_vec();
+    let orientation: Mat4 = random_rotation_matrix::<Vec4>();
+    let plane = Plane::from_normal_and_point((orientation * Vec4::one_hot(-1)).normalize(), pos);
+    let point_in_plane: Vec4 =
+        orientation * random_vec::<Vec4>().elmt_mult(Vec4::ones() - Vec4::one_hot(-1)) + pos;
+    assert!(plane.contains_point(point_in_plane));
+
+    let transform = random_transform::<Vec4>();
+    let transformed_plane = plane.clone().with_transform(transform);
+    let transformed_point_in_plane = transform.transform_vec(&point_in_plane);
+
+    assert!(transformed_plane.contains_point(transformed_point_in_plane));
 }

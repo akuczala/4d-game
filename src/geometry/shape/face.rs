@@ -50,6 +50,15 @@ impl<V: VectorTrait> From<PointedPlane<V>> for FaceGeometry<V> {
     }
 }
 
+impl<V: VectorTrait> From<FaceGeometry<V>> for PointedPlane<V> {
+    fn from(value: FaceGeometry<V>) -> Self {
+        Self {
+            normal: value.plane.normal,
+            point: value.center,
+        }
+    }
+}
+
 impl<V: VectorTrait> Face<V> {
     pub fn new(
         shape_verts: &[V],
@@ -87,6 +96,10 @@ impl<V: VectorTrait> Face<V> {
     }
     pub fn center(&self) -> V {
         self.geometry.center
+    }
+
+    pub fn get_verts<'a>(&'a self, shape_verts: &'a [V]) -> impl Iterator<Item = &V> + 'a {
+        self.vertis.iter().map(|vi| &shape_verts[*vi])
     }
 }
 

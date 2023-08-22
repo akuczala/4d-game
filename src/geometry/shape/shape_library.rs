@@ -91,5 +91,9 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     ref_shapes.insert(ShapeLabel::from_str("OpenCube"), open_cube);
     ref_shapes.insert(ShapeLabel::from_str("OpenInvertedCube"), open_inverted_cube);
     ref_shapes.insert(ShapeLabel::from_str("InvertedPipe"), inverted_pipe);
+    ref_shapes.insert(
+        ShapeLabel::from_str("TestPrism"),
+        ShapeBuilder::build_prism(V::DIM, &[2.0, 1.0], &[3, 4]).build(),
+    );
     ref_shapes
 }

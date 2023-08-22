@@ -81,6 +81,12 @@ impl<V: VectorTrait> Scaling<V> {
     pub(crate) fn get_mat(&self) -> V::M {
         V::M::diag(self.get_vec())
     }
+    pub fn inverse(&self) -> Self {
+        match self {
+            Scaling::Scalar(s) => Scaling::Scalar(1.0 / *s),
+            Scaling::Vector(v) => Scaling::Vector(v.map(|vi| 1.0 / vi)),
+        }
+    }
 }
 impl<V> Scaling<V> {
     pub fn fmap<F, U>(self, f: F) -> Scaling<U>

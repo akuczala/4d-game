@@ -19,6 +19,15 @@ impl<V: VectorTrait> BBox<V> {
     pub fn center(&self) -> V {
         (self.max + self.min) / 2.0
     }
+    pub fn from_verts(verts: &[V]) -> Self {
+        //take smallest and largest components to get bounding box
+        let (mut min, mut max) = (verts[0], verts[0]);
+        for &v in verts.iter() {
+            min = min.zip_map(v, Field::min);
+            max = max.zip_map(v, Field::max);
+        }
+        BBox { min, max }
+    }
 }
 
 pub trait HasBBox<V> {

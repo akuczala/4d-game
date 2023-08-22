@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::{
     components::{Shape, Transform, Transformable},
     constants::{
-        AXES_COLORS, CARDINAL_COLORS, HALF, HALF_PI, SKY_DISTANCE, SKY_FUZZ_SIZE, STAR_SIZE, ZERO,
+        AXES_COLORS, CARDINAL_COLORS, HALF_PI, SKY_DISTANCE, SKY_FUZZ_SIZE, STAR_SIZE, ZERO,
     },
     geometry::{
         shape::{
@@ -14,7 +14,7 @@ use crate::{
     },
     graphics::colors::{blend, BLUE, CYAN},
     utils::ValidDimension,
-    vector::{linspace, Field, VecIndex, VectorTrait},
+    vector::{linspace, random_sphere_point, Field, VecIndex, VectorTrait},
 };
 
 use super::DrawLine;
@@ -156,10 +156,6 @@ pub fn draw_sky<V: VectorTrait>(n_lines: usize) -> Vec<DrawLine<V>> {
         .collect_vec()
 }
 
-pub fn random_sphere_point<V: VectorTrait>() -> V {
-    (V::random() - V::ones() * HALF).normalize()
-}
-
 fn random_hemisphere_point<V: VectorTrait>(normal: V) -> V {
     let v: V = random_sphere_point();
     if v.dot(normal) > ZERO {
@@ -167,11 +163,6 @@ fn random_hemisphere_point<V: VectorTrait>(normal: V) -> V {
     } else {
         -v
     }
-}
-
-#[allow(dead_code)]
-fn random_ball_point<V: VectorTrait>() -> V {
-    random_sphere_point::<V>() * rand::random::<Field>().sqrt()
 }
 
 fn pointlike_sky_line<V: VectorTrait>(pos: V) -> Line<V> {

@@ -210,7 +210,7 @@ pub fn create_shape<V: VectorTrait>(
                     .with_transform(Transform::pos(shape_pos))
                     .with_scale(Scaling::Scalar(1.0))
                     .with_texturing_fn(|shape| {
-                        if is_coin {
+                        if is_coin || shape_label == ShapeLabel::from_str("TestPrism") {
                             ShapeTextureBuilder::new_default(shape.faces.len()).with_color(YELLOW)
                         } else {
                             fuzzy_color_cube_texture(shape)

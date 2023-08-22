@@ -30,6 +30,24 @@ impl<T: Default> ShapeTextureGeneric<T> {
     }
 }
 
+pub enum ShapeTextureGenericNew<T> {
+    Uniform(FaceTexture<T>),
+    ByFace(Vec<FaceTextureGeneric<T>>),
+}
+
+// Examples
+// "CoinShapeTexture", "ColorCubeShapeTexture", "FuzzyColorCubeShapeTexture"
+// CoinShapeTexture = Uniform(Default >>> Yellow) = DefaultTexture >>> Yellow
+// ColorCubeShapeTexture = Map (\color Default >>> color) CardinalColors
+// FuzzyColorCubeShapeTexture = Map(\color Default >>> Merge Fuzz >>> color) CardinalColors = Map (\texture texture >>> Merge Fuzz) ColorCubeShapeTexture
+// Map: TextureBuilder -> TextureBuilder = TextureBuilder (TextureBuilder is a monoid, if we include identity op(???))
+// Additional complication with TextureMapping. We need this to vary with face as well, according to a function
+
+// we may also reduce # stored mappings by fixing an orientation for each face by default (derivable from normal??)
+// how to draw fuzz lines / arbitrary textures for an arbitrary convex face?
+
+// Consider using UV mapping?
+
 pub type ShapeTexture<U> = ShapeTextureGeneric<Texture<U>>;
 pub type ShapeTextureBuilder = ShapeTextureGeneric<TextureBuilder>;
 
@@ -135,7 +153,12 @@ pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
     }
     match &face_texture.texture {
         Texture::DefaultLines { color } => {
-            BranchIterator::Option1(draw_default_lines(face, shape, *color, face_scales))
+            BranchIterator::Option1(draw_default_lines(face, shape, face_scales).map(|line| {
+                DrawLine {
+                    line,
+                    color: *color,
+                }
+            }))
         }
         Texture::Lines { lines, color } => {
             BranchIterator::Option2(face_texture.texture_mapping.as_ref().unwrap().draw_lines(

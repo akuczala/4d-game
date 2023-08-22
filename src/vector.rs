@@ -8,6 +8,7 @@ pub mod vec3;
 pub mod vec4;
 //pub mod vec4;
 use fmt::Display;
+use itertools::Itertools;
 pub use mat2_tuple2::Mat2;
 pub use mat3_tuple2::Mat3;
 pub use mat4_tuple2::Mat4;
@@ -24,9 +25,22 @@ pub type Field = f32;
 const EPSILON: Field = 0.0001;
 pub use std::f32::consts::PI;
 
+use crate::constants::{HALF, ZERO};
+
 pub fn is_close(a: Field, b: Field) -> bool {
     (a - b).abs() < EPSILON
 }
+
+#[allow(dead_code)]
+pub fn is_less_than_or_close(a: Field, b: Field) -> bool {
+    a < b + EPSILON
+}
+
+#[allow(dead_code)]
+pub fn is_greater_than_or_close(a: Field, b: Field) -> bool {
+    a + EPSILON > b
+}
+
 pub fn scalar_linterp(a: Field, b: Field, t: Field) -> Field {
     a * (1.0 - t) + b * t
 }
@@ -128,6 +142,71 @@ where
 {
     let (sum, len) = viter.fold((V::zero(), 0), |(sum, len), &val| (sum + val, len + 1));
     sum / (len as Field)
+}
+
+pub fn random_sphere_point<V: VectorTrait>() -> V {
+    (V::random() - V::ones() * HALF).normalize()
+}
+
+#[allow(dead_code)]
+fn random_ball_point<V: VectorTrait>() -> V {
+    random_sphere_point::<V>() * rand::random::<Field>().sqrt()
+}
+
+#[allow(dead_code)]
+pub fn pair_linearly_independent<V: VectorTrait>(v: V, u: V) -> bool {
+    if V::is_close(v, V::zero()) || V::is_close(u, V::zero()) {
+        return false;
+    }
+    for (vi, ui) in v.into_iter().zip(u.into_iter()) {
+        match (is_close(vi, ZERO), is_close(ui, ZERO)) {
+            (true, true) => (),
+            (false, false) => {
+                let c = vi / ui;
+                if V::is_close(v, u * c) {
+                    return false;
+                }
+            }
+            _ => return true,
+        }
+    }
+    true
+}
+
+#[allow(dead_code)]
+pub fn are_linearly_independent<V: VectorTrait>(vecs: &[V]) -> bool {
+    if vecs.len() > V::DIM as usize {
+        return false;
+    }
+    if vecs.iter().filter(|v| V::is_close(**v, V::zero())).count() > 0 {
+        return false;
+    }
+    todo!()
+}
+
+#[allow(dead_code)]
+pub fn gram_schmidt<V: VectorTrait>(vecs: &[V]) -> Vec<V> {
+    // TODO: check linear independence
+    let mut basis = vec![vecs[0].normalize()];
+    for &v in &vecs[1..] {
+        basis.push(
+            (v - basis
+                .iter()
+                .cloned()
+                .fold(V::zero(), |s, e| s + e * v.dot(e)))
+            .normalize(),
+        );
+    }
+    basis
+}
+
+#[allow(dead_code)]
+pub fn is_orthonormal_basis<V: VectorTrait>(vecs: &[V]) -> bool {
+    vecs.iter().all(|&v| is_close(v.dot(v), 1.0))
+        && vecs
+            .iter()
+            .combinations(2)
+            .all(|combo| is_close(combo[0].dot(*combo[1]), ZERO))
 }
 
 // TODO: check if we really need all these bounds
@@ -345,4 +424,71 @@ fn test_barycenter() {
         center_from_iter,
         expected_center
     );
+}
+
+#[test]
+fn test_linear_independence() {
+    use crate::tests::{random_rotation_matrix, random_vec};
+    use rand::random;
+
+    let random_positive: fn() -> Field = || (random::<Field>() + 0.1);
+    assert!(!pair_linearly_independent(Vec4::zero(), random_vec()));
+    assert!(!pair_linearly_independent(
+        Vec4::one_hot(0),
+        Vec4::one_hot(0) * random()
+    ));
+    assert!(!pair_linearly_independent(
+        Vec4::one_hot(0) * random(),
+        Vec4::one_hot(0)
+    ));
+    assert!(pair_linearly_independent(
+        Vec4::one_hot(0) * random_positive(),
+        Vec4::one_hot(1)
+    ));
+    let random_rotation = random_rotation_matrix::<Vec4>();
+    assert!(pair_linearly_independent(
+        random_rotation * Vec4::one_hot(0) * random_positive(),
+        random_rotation * Vec4::one_hot(1)
+    ));
+    //let v1 = random_vec(); let v2 = random_vec();
+    // TODO:
+    // assert!(
+    //     !are_linearly_independent(&[v1, v2, v1 + v2])
+    // )
+}
+
+#[test]
+fn test_orthogonality() {
+    use crate::tests::{random_rotation_matrix, random_vec};
+
+    let random_rotation = random_rotation_matrix::<Vec4>();
+
+    // a rotation matrix is orthonormal
+    assert!(is_orthonormal_basis(&random_rotation.get_rows()));
+    // ortho, but not normal
+    assert!(!is_orthonormal_basis(
+        &random_rotation
+            .dot(Mat4::id().dot(Mat4::diag(random_vec::<Vec4>() * 0.001)))
+            .get_rows()
+    ));
+
+    // still orthonormal in subspace
+    let partial_id = [Vec4::one_hot(0), Vec4::one_hot(1)];
+    assert!(is_orthonormal_basis(
+        &partial_id.map(|v| random_rotation * v)
+    ));
+
+    // not quite ortho or normal
+    let almost_id = (0..4).map(|i| Vec4::one_hot(i) + random_vec::<Vec4>() * 0.001);
+    assert!(!is_orthonormal_basis(
+        &almost_id.map(|v| random_rotation * v).collect_vec()
+    ))
+}
+
+#[test]
+fn test_gram_schmidt() {
+    use rand::random;
+    let random_vec: fn() -> Vec4 = || random_sphere_point::<Vec4>() * (0.1 + random::<Field>());
+    let vecs = gram_schmidt(&(0..4).map(|_| random_vec()).collect_vec());
+    assert!(is_orthonormal_basis(&vecs))
 }

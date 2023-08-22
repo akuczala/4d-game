@@ -47,15 +47,7 @@ impl<V: VectorTrait> Transformable<V> for MoveNext<V> {
 
 impl<V: VectorTrait> HasBBox<V> for Shape<V> {
     fn calc_bbox(&self) -> BBox<V> {
-        let verts = &self.verts;
-
-        //take smallest and largest components to get bounding box
-        let (mut min, mut max) = (verts[0], verts[0]);
-        for &v in verts.iter() {
-            min = min.zip_map(v, Field::min);
-            max = max.zip_map(v, Field::max);
-        }
-        BBox { min, max }
+        BBox::from_verts(&self.verts)
     }
 }
 

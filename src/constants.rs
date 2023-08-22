@@ -1,9 +1,10 @@
 pub use std::f32::consts::{E, PI};
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_3};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_3, TAU};
 
 use crate::{graphics::colors::*, vector::Field};
 
 pub const HALF_PI: Field = FRAC_PI_2;
+pub const TWO_PI: Field = TAU;
 pub const ZERO: Field = 0.0;
 pub const HALF: Field = 0.5;
 

@@ -3,16 +3,18 @@ pub mod texture_builder;
 
 pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, ShapeTextureBuilder};
 
-use super::visual_aids::random_sphere_point;
+use super::clipping::boundaries::ConvexBoundarySet;
 use super::DrawLine;
 
-use crate::components::Shape;
-use crate::geometry::shape::{Edge, VertIndex};
+use crate::components::{BBox, Shape, Transform};
+use crate::geometry::shape::generic::subface_plane;
+use crate::geometry::shape::{Edge, FaceIndex, VertIndex};
 use crate::geometry::{Face, Line};
-use crate::vector::{Field, VecIndex, VectorTrait};
+use crate::vector::{random_sphere_point, rotation_matrix, Field, VecIndex, VectorTrait};
 
 use crate::graphics::colors::*;
 
+use crate::geometry::Transformable;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -155,6 +157,57 @@ impl<V: VectorTrait> Texture<V> {
     }
 }
 
+struct UVMap<V, M, U> {
+    map: Transform<V, M>,
+    bounds: ConvexBoundarySet<U>,
+    bbox: BBox<U>,
+}
+// We need to be able to generate, for an arbitrary face, a sensible mapping to a D - 1 UV space
+fn auto_uv_map_face<V: VectorTrait>(
+    shape: &Shape<V>,
+    face_index: FaceIndex,
+) -> UVMap<V, V::M, V::SubV> {
+    // project points of face onto face plane
+    // cook up a basis for the plane
+    let face = &shape.faces[face_index];
+    let basis = rotation_matrix(face.normal(), V::one_hot(-1), None);
+    let map = Transform::new(Some(-(basis * face.center())), Some(basis), None);
+    let boundaries = shape
+        .shape_type
+        .get_face_subfaces(face_index)
+        .map(|subface| {
+            subface_plane(&shape.faces, face_index, &subface)
+                .with_transform(map)
+                .intersect_proj_plane()
+        })
+        .collect_vec();
+    UVMap {
+        map,
+        bounds: ConvexBoundarySet(boundaries),
+        bbox: BBox::from_verts(
+            &face
+                .get_verts(&shape.verts)
+                .map(|v| map.transform_vec(v).project())
+                .collect_vec(),
+        ),
+    }
+}
+// TODO: methods to transform map, likely by taking a transform<V::SubV, V::SubV::M>
+// TODO: apply to rendering fuzzlines
+// TODO: apply to rendering default texture
+// TODO: apply to rendering tiles
+// TODO: is the texturemapping frame + origin a special case of UVMap?
+// TODO: automagically generate textures based on shape + directives, so we don't need to save them per shape
+
+// Generalize TextureMapping to arbitrary affine transformation?
+// Optional additional info to clip out lines that are outside face boundary
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct OldTextureMapping {
+    pub frame_vertis: Vec<VertIndex>,
+    pub origin_verti: VertIndex,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TextureMapping {
     pub frame_vertis: Vec<VertIndex>,
@@ -225,22 +278,62 @@ impl TextureMapping {
 pub fn draw_default_lines<'a, V: VectorTrait + 'a>(
     face: &'a Face<V>,
     shape: &'a Shape<V>,
-    color: Color,
     face_scales: &'a [Field],
-) -> impl Iterator<Item = DrawLine<V>> + 'a {
+) -> impl Iterator<Item = Line<V>> + 'a {
     //let mut lines: Vec<DrawLine<V>> = Vec::with_capacity(face.edgeis.len() * face_scales.len());
     face_scales.iter().flat_map(move |face_scale| {
         let scale_point = |v| V::linterp(face.center(), v, *face_scale);
         face.edgeis.iter().map(move |edgei| {
             let edge = &shape.edges[*edgei];
-            DrawLine {
-                line: Line(shape.verts[edge.0], shape.verts[edge.1]).map(scale_point),
-                color,
-            }
+            Line(shape.verts[edge.0], shape.verts[edge.1]).map(scale_point)
         })
     })
 }
 
 pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
     Line(pos, pos + random_sphere_point::<V>() * 0.005)
+}
+
+#[test]
+fn test_uv_map() {
+    use crate::constants::{TWO_PI, ZERO};
+    use crate::geometry::{shape::buildshapes::ShapeBuilder, Plane, PointedPlane};
+    use crate::tests::{random_rotation_matrix, random_vec};
+    use crate::vector::{is_close, is_less_than_or_close, MatrixTrait, Vec3, Vec4};
+    type V = Vec4;
+    let random_rotation = random_rotation_matrix::<V>();
+    let random_transform: Transform<V, <V as VectorTrait>::M> =
+        Transform::new(Some(random_vec()), Some(random_rotation), None);
+
+    let shape: Shape<V> = ShapeBuilder::build_prism(V::DIM, &[2.0, 1.0], &[5, 7])
+        .with_transform(random_transform)
+        .build();
+
+    let pplane: PointedPlane<V> = shape.faces[0].geometry.clone().into();
+    let basis = rotation_matrix(pplane.normal, V::one_hot(-1), None);
+    assert!(basis
+        .get_rows()
+        .iter()
+        .take(2)
+        .all(|v| is_close(v.dot(pplane.normal), ZERO)));
+    let test_point = pplane.point + basis[0] + basis[1];
+    assert!(is_close(
+        Plane::from(pplane.clone()).point_signed_distance(test_point),
+        ZERO
+    ));
+
+    for (face_index, face) in shape.faces.iter().enumerate() {
+        let uv_map = auto_uv_map_face(&shape, face_index);
+        // assert that the zero component of each transformed vec is zero
+        for p in face.get_verts(&shape.verts) {
+            assert!(is_close(uv_map.map.transform_vec(&p)[-1], ZERO));
+        }
+        // assert that all projected verts are within the boundaries
+        for b in uv_map.bounds.0 {
+            assert!(face.get_verts(&shape.verts).all(|v| is_less_than_or_close(
+                b.point_signed_distance(uv_map.map.transform_vec(v).project()),
+                ZERO
+            )));
+        }
+    }
 }
