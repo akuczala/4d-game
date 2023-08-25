@@ -28,6 +28,9 @@ impl<V: VectorTrait> BBox<V> {
         }
         BBox { min, max }
     }
+    pub fn random_point(&self) -> V {
+        (self.max - self.min).elmt_mult(V::random()) - self.min
+    }
 }
 
 pub trait HasBBox<V> {

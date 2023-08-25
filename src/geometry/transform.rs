@@ -2,6 +2,8 @@
 use crate::vector::{rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait};
 use serde::{Deserialize, Serialize};
 
+use super::affine_transform::AffineTransform;
+
 pub trait Transformable<V: VectorTrait> {
     fn with_transform(mut self, transformation: Transform<V, V::M>) -> Self
     where
@@ -229,5 +231,22 @@ impl<V: VectorTrait> Transform<V, V::M> {
     pub fn with_scale(mut self, scaling: Scaling<V>) -> Self {
         self.scale(scaling);
         self
+    }
+
+    pub fn inverse(self) -> AffineTransform<V, V::M> {
+        let frame = self.scale.inverse().get_mat().dot(self.frame.transpose());
+        AffineTransform {
+            pos: frame * self.pos * (-1.0),
+            frame,
+        }
+    }
+}
+
+impl<V: VectorTrait> From<Transform<V, V::M>> for AffineTransform<V, V::M> {
+    fn from(value: Transform<V, V::M>) -> Self {
+        AffineTransform {
+            pos: value.pos,
+            frame: value.frame.dot(value.scale.get_mat()),
+        }
     }
 }

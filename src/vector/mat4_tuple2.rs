@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::Vec4;
+use super::{Vec4, FROM_ITER_ERROR_MESSAGE};
 use crate::vector::{Field, MatrixTrait, VecIndex, VectorTrait};
 use std::fmt;
 use std::ops::{Add, Index, Mul, Sub};
@@ -72,6 +72,18 @@ impl Index<VecIndex> for Mat4 {
             3 | -1 => &self.3,
             _ => panic!("Invalid index {} for Mat4", i),
         }
+    }
+}
+
+impl FromIterator<Vec4> for Mat4 {
+    fn from_iter<T: IntoIterator<Item = Vec4>>(iter: T) -> Self {
+        let mut into_iter = iter.into_iter();
+        Self(
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+            into_iter.next().expect(FROM_ITER_ERROR_MESSAGE),
+        )
     }
 }
 

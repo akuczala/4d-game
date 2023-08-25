@@ -5,7 +5,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use super::{vec1::Vec1, Field, MatrixTrait, VecIndex, VectorTrait};
+use super::{vec1::Vec1, Field, MatrixTrait, VecIndex, VectorTrait, FROM_ITER_ERROR_MESSAGE};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Mat1(pub Vec1);
@@ -56,6 +56,13 @@ impl Index<VecIndex> for Mat1 {
             0 | -1 => &self.0,
             _ => panic!("Invalid index {} for Mat1", i),
         }
+    }
+}
+
+impl FromIterator<Vec1> for Mat1 {
+    fn from_iter<T: IntoIterator<Item = Vec1>>(iter: T) -> Self {
+        let mut into_iter = iter.into_iter();
+        Self(into_iter.next().expect(FROM_ITER_ERROR_MESSAGE))
     }
 }
 

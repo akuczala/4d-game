@@ -219,6 +219,7 @@ pub trait MatrixTrait<V: VectorTrait>:
     + Sub<Output = Self>
     + Mul<V, Output = V>
     + Index<VecIndex, Output = V>
+    + FromIterator<V>
 {
     type Arr;
 

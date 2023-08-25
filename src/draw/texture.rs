@@ -7,8 +7,10 @@ use super::clipping::boundaries::ConvexBoundarySet;
 use super::DrawLine;
 
 use crate::components::{BBox, Shape, Transform};
+use crate::constants::ZERO;
 use crate::geometry::shape::generic::subface_plane;
 use crate::geometry::shape::{Edge, FaceIndex, VertIndex};
+use crate::geometry::transform::Scaling;
 use crate::geometry::{Face, Line};
 use crate::vector::{random_sphere_point, rotation_matrix, Field, VecIndex, VectorTrait};
 
@@ -157,11 +159,20 @@ impl<V: VectorTrait> Texture<V> {
     }
 }
 
-struct UVMap<V, M, U> {
+pub struct UVMap<V, M, U> {
     map: Transform<V, M>,
     bounds: ConvexBoundarySet<U>,
     bbox: BBox<U>,
 }
+impl<V: VectorTrait> UVMapV<V> {
+    pub fn is_point_within_bounds(&self, point: V::SubV) -> bool {
+        self.bounds
+            .0
+            .iter()
+            .all(|p| p.point_signed_distance(point) < ZERO)
+    }
+}
+type UVMapV<V> = UVMap<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
 // We need to be able to generate, for an arbitrary face, a sensible mapping to a D - 1 UV space
 fn auto_uv_map_face<V: VectorTrait>(
     shape: &Shape<V>,
@@ -192,6 +203,66 @@ fn auto_uv_map_face<V: VectorTrait>(
         ),
     }
 }
+impl<V: VectorTrait> UVMapV<V> {
+    pub fn from_texture_mapping(ref_shape: &Shape<V>, shape_mapping: TextureMapping) -> Self {
+        let origin = shape_mapping.origin(&ref_shape.verts);
+        let frame = shape_mapping.frame_verts(&ref_shape.verts);
+        let (normed_frame, mut norms): (Vec<V>, Vec<Field>) =
+            frame.map(|v| v.normalize_get_norm()).unzip();
+        let transform_frame: V::M = normed_frame
+            .into_iter()
+            .map(|f| (0..V::DIM).map(|i| f.dot(V::one_hot(i))).collect())
+            .collect();
+        norms.push(1.0);
+        let transform_scale = Scaling::Vector(norms.into_iter().collect());
+        let map = Transform {
+            pos: origin,
+            frame: transform_frame,
+            scale: transform_scale,
+        };
+        UVMap {
+            map,
+            bounds: todo!(),
+            bbox: todo!(),
+        }
+    }
+}
+
+
+pub fn draw_default_on_uv<V: VectorTrait>(
+    ref_shape: &Shape<V>,
+    face: &Face<V>,
+    face_scale: Field,
+    uv_map: &UVMapV<V>,
+) -> Vec<Line<V::SubV>> {
+    let mapped_center = uv_map.map.transform_vec(&face.center()).project();
+    let scale_point = |v| V::SubV::linterp(mapped_center, v, face_scale);
+    let mapped_verts: Vec<_> = ref_shape
+        .verts
+        .iter()
+        .map(|v| uv_map.map.transform_vec(v).project())
+        .collect();
+    face.edgeis
+        .iter()
+        .map(move |edgei| {
+            let edge = &ref_shape.edges[*edgei];
+            Line(mapped_verts[edge.0], mapped_verts[edge.1]).map(scale_point)
+        })
+        .collect()
+}
+
+pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<V::SubV> {
+    Texture::Lines {
+        lines: (0..n * 2)
+            .map(|_| uv_map.bbox.random_point())
+            .filter(|v| uv_map.is_point_within_bounds(*v))
+            .take(n)
+            .map(pointlike_line)
+            .collect(),
+        color: WHITE,
+    }
+}
+
 // TODO: methods to transform map, likely by taking a transform<V::SubV, V::SubV::M>
 // TODO: apply to rendering fuzzlines
 // TODO: apply to rendering default texture
@@ -215,18 +286,26 @@ pub struct TextureMapping {
 }
 
 impl TextureMapping {
+    pub fn origin<V: VectorTrait>(&self, shape_verts: &[V]) -> V {
+        shape_verts[self.origin_verti]
+    }
+    // could be represented as a V::SubV::DIM x V::DIM matrix
+    pub fn frame_verts<'a, V: VectorTrait>(
+        &'a self,
+        shape_verts: &'a [V],
+    ) -> impl Iterator<Item = V> + 'a {
+        self.frame_vertis
+            .iter()
+            .map(|&vi| shape_verts[vi] - self.origin(shape_verts))
+    }
     pub fn draw_lines<'a, V: VectorTrait>(
         &self,
         shape: &'a Shape<V>,
         lines: &'a [Line<V::SubV>],
         color: Color,
     ) -> impl Iterator<Item = DrawLine<V>> + 'a {
-        let origin = shape.verts[self.origin_verti];
-        let frame_verts: Vec<V> = self
-            .frame_vertis
-            .iter()
-            .map(|&vi| shape.verts[vi] - origin)
-            .collect();
+        let origin = self.origin(&shape.verts);
+        let frame_verts: Vec<V> = self.frame_verts(&shape.verts).collect_vec();
         //this is pretty ridiculous. it just matrix multiplies a matrix of frame_verts (as columns) by each vertex
         //in every line, then adds the origin.
         //TODO: a lot of time is spent doing this calculation
