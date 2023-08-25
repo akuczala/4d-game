@@ -1,6 +1,6 @@
 [package]
 name = "dim4"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Alex Kuczala"]
 edition = "2021"
 
@@ -17,7 +17,7 @@ cgmath = "0.18.0"
 colored = "2.0.0"
 take_mut = "0.2.2"
 map_in_place = "0.1.0"
-specs = { version = "0.18.0", features = ["specs-derive", "shred-derive", "serde"] }
+specs = { version = "0.19.0", features = ["specs-derive", "shred-derive", "serde"] }
 imgui = "0.11.0"
 imgui-glium-renderer = "0.11.0"
 imgui-winit-support = "0.11.0"
