@@ -16,7 +16,7 @@ use crate::{
 use super::{
     draw_default_lines,
     texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep, TexturePrim},
-    Texture, TextureMapping, TextureMappingV,
+    Texture, TextureMapping, TextureMappingV, FrameTextureMapping,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -77,12 +77,13 @@ impl ShapeTextureBuilder {
         }
         self
     }
-    pub fn build<U: VectorTrait>(self, config: &TextureBuilderConfig) -> ShapeTexture<U> {
+    pub fn build<V: VectorTrait>(self, config: &TextureBuilderConfig, shape: &Shape<V>) -> ShapeTexture<V> {
         ShapeTexture {
             face_textures: self
                 .face_textures
                 .into_iter()
-                .map(|ft| ft.build(config))
+                .zip(shape.faces.iter())
+                .map(|(face_texture, face)| face_texture.build(config, face, shape))
                 .collect(),
         }
     }
@@ -141,10 +142,10 @@ impl FaceTextureBuilder {
     pub fn set_color(&mut self, color: Color) {
         take_mut::take(&mut self.texture, |tex| tex.with_color(color));
     }
-    pub fn build<U: VectorTrait>(self, config: &TextureBuilderConfig) -> FaceTexture<U> {
+    pub fn build<V: VectorTrait>(self, config: &TextureBuilderConfig, face: &Face<V>, shape: &Shape<V>) -> FaceTexture<V> {
         FaceTexture {
             texture: self.texture.build(config),
-            texture_mapping: self.mapping_directive.build(),
+            texture_mapping: self.mapping_directive.build(face, shape),
         }
     }
 }
@@ -157,8 +158,12 @@ pub enum TextureMappingDirective {
     UVDefault,
 }
 impl TextureMappingDirective {
-    fn build<V: VectorTrait>(&self) -> TextureMappingV<V> {
-        todo!()
+    fn build<V: VectorTrait>(&self, face: &Face<V>, shape: &Shape<V>) -> TextureMappingV<V> {
+        match self {
+            TextureMappingDirective::None => TextureMapping::None,
+            TextureMappingDirective::Orthogonal => TextureMapping::Frame(FrameTextureMapping::calc_cube_vertis(face, &shape.verts, &shape.edges)),
+            TextureMappingDirective::UVDefault => todo!(),
+        }
     }
 }
 
