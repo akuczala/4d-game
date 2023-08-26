@@ -1,5 +1,6 @@
 use std::fmt;
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,7 +8,7 @@ use crate::{
     vector::{barycenter_iter, VectorTrait},
 };
 
-use super::{FaceIndex, VertIndex};
+use super::{Edge, EdgeIndex, Face, FaceIndex, VertIndex};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum SubFace<V> {
@@ -19,6 +20,20 @@ impl<V> SubFace<V> {
         match self {
             SubFace::Interior(isf) => isf.is_face_subface(face_index),
             SubFace::Boundary(bsf) => bsf.is_face_subface(face_index),
+        }
+    }
+
+    pub fn get_vertis(&self, shape_faces: &[Face<V>]) -> Vec<VertIndex> {
+        match self {
+            SubFace::Interior(isf) => isf.get_vertis(shape_faces).collect(),
+            SubFace::Boundary(bsf) => bsf.vertis.clone(),
+        }
+    }
+
+    pub fn get_edgeis(&self, shape_edges: &[Edge], shape_faces: &[Face<V>]) -> Vec<EdgeIndex> {
+        match self {
+            SubFace::Interior(isf) => isf.get_edgeis(shape_faces).collect(),
+            SubFace::Boundary(bsf) => bsf.get_edgeis(shape_edges, &shape_faces[bsf.facei].edgeis),
         }
     }
 }
@@ -41,7 +56,40 @@ impl InteriorSubFace {
             _ => None,
         }
     }
+
+    pub fn get_faces<'a, V>(&'a self, shape_faces: &'a [Face<V>]) -> (&Face<V>, &Face<V>) {
+        (&shape_faces[self.faceis.0], &shape_faces[self.faceis.1])
+    }
+
+    /// Vertis contained in subface. Finds vertis shared by faceis
+    pub fn get_vertis<'a, V>(
+        &'a self,
+        shape_faces: &'a [Face<V>],
+    ) -> impl Iterator<Item = VertIndex> + 'a {
+        let faces = self.get_faces(shape_faces);
+        faces
+            .0
+            .vertis
+            .iter()
+            .filter(|vi| faces.1.vertis.contains(vi))
+            .copied()
+    }
+
+    /// Edgeis contained in subface. Finds edgeis shared by faceis
+    pub fn get_edgeis<'a, V>(
+        &'a self,
+        shape_faces: &'a [Face<V>],
+    ) -> impl Iterator<Item = EdgeIndex> + 'a {
+        let faces = self.get_faces(shape_faces);
+        faces
+            .0
+            .edgeis
+            .iter()
+            .filter(|vi| faces.1.edgeis.contains(vi))
+            .copied()
+    }
 }
+
 impl fmt::Display for InteriorSubFace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SubFace({},{})", self.faceis.0, self.faceis.1)
@@ -57,6 +105,14 @@ pub struct BoundarySubFace<V> {
 impl<V> BoundarySubFace<V> {
     pub fn is_face_subface(&self, face_index: FaceIndex) -> bool {
         self.facei == face_index
+    }
+    pub fn get_edgeis(&self, shape_edges: &[Edge], face_edgeis: &[EdgeIndex]) -> Vec<EdgeIndex> {
+        face_edgeis
+            .iter()
+            .map(|ei| (ei, &shape_edges[*ei]))
+            .filter(|(_ei, edge)| self.vertis.iter().any(|vi| edge.contains(*vi)))
+            .map(|(ei, _edge)| *ei)
+            .collect()
     }
 }
 impl<V: VectorTrait> BoundarySubFace<V> {

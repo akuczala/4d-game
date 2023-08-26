@@ -1,17 +1,20 @@
 pub mod shape_texture;
 pub mod texture_builder;
 
+use std::collections::HashMap;
+
 pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, ShapeTextureBuilder};
 
 use super::clipping::boundaries::ConvexBoundarySet;
 use super::DrawLine;
 
-use crate::components::{BBox, Shape, Transform};
+use crate::components::{BBox, Convex, HasBBox, Shape, ShapeType, Transform};
 use crate::constants::ZERO;
+use crate::geometry::shape::face::{FaceBuilder, FaceGeometry};
 use crate::geometry::shape::generic::subface_plane;
-use crate::geometry::shape::{Edge, FaceIndex, VertIndex};
+use crate::geometry::shape::{Edge, EdgeIndex, FaceIndex, VertIndex};
 use crate::geometry::transform::Scaling;
-use crate::geometry::{Face, Line};
+use crate::geometry::{Face, Line, Plane};
 use crate::vector::{random_sphere_point, rotation_matrix, Field, VecIndex, VectorTrait};
 
 use crate::graphics::colors::*;
@@ -161,15 +164,18 @@ impl<V: VectorTrait> Texture<V> {
 
 pub struct UVMap<V, M, U> {
     map: Transform<V, M>,
-    bounds: ConvexBoundarySet<U>,
+    bounding_shape: Shape<U>,
     bbox: BBox<U>,
 }
 impl<V: VectorTrait> UVMapV<V> {
     pub fn is_point_within_bounds(&self, point: V::SubV) -> bool {
-        self.bounds
-            .0
-            .iter()
-            .all(|p| p.point_signed_distance(point) < ZERO)
+        match self.bounding_shape.shape_type {
+            ShapeType::Convex(_) => Convex::point_within(point, ZERO, &self.bounding_shape.faces),
+            _ => panic!("Expected convex bounding shape"),
+        }
+    }
+    pub fn bounds(&self) -> impl Iterator<Item = &Plane<V::SubV>> {
+        self.bounding_shape.faces.iter().map(|face| face.plane())
     }
 }
 type UVMapV<V> = UVMap<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
@@ -183,24 +189,50 @@ fn auto_uv_map_face<V: VectorTrait>(
     let face = &shape.faces[face_index];
     let basis = rotation_matrix(face.normal(), V::one_hot(-1), None);
     let map = Transform::new(Some(-(basis * face.center())), Some(basis), None);
-    let boundaries = shape
+
+    let verti_map: HashMap<VertIndex, VertIndex> = face
+        .vertis
+        .iter()
+        .enumerate()
+        .map(|(new, old)| (*old, new))
+        .collect();
+    let edgei_map: HashMap<EdgeIndex, EdgeIndex> = face
+        .edgeis
+        .iter()
+        .enumerate()
+        .map(|(new, old)| (*old, new))
+        .collect();
+    let edges: Vec<Edge> = face
+        .edgeis
+        .iter()
+        .map(|ei| shape.edges[*ei].map(|vi| *verti_map.get(&vi).unwrap()))
+        .collect();
+    let verts: Vec<V::SubV> = face
+        .get_verts(&shape.verts)
+        .map(|v| map.transform_vec(v).project())
+        .collect();
+    let face_builder = FaceBuilder::new(&verts, &edges);
+    let faces = shape
         .shape_type
         .get_face_subfaces(face_index)
         .map(|subface| {
-            subface_plane(&shape.faces, face_index, &subface)
+            let unmapped_edgeis = subface.get_edgeis(&shape.edges, &shape.faces);
+            let face_plane = subface_plane(&shape.faces, face_index, &subface)
                 .with_transform(map)
-                .intersect_proj_plane()
+                .intersect_proj_plane();
+            let edgeis = unmapped_edgeis
+                .iter()
+                .map(|ei| *edgei_map.get(ei).unwrap())
+                .collect();
+            face_builder.build(edgeis, face_plane.normal, false)
         })
-        .collect_vec();
+        .collect();
+    let bounding_shape = Shape::new_convex(verts, edges, faces);
+    let bbox = bounding_shape.calc_bbox();
     UVMap {
         map,
-        bounds: ConvexBoundarySet(boundaries),
-        bbox: BBox::from_verts(
-            &face
-                .get_verts(&shape.verts)
-                .map(|v| map.transform_vec(v).project())
-                .collect_vec(),
-        ),
+        bounding_shape,
+        bbox,
     }
 }
 impl<V: VectorTrait> UVMapV<V> {
@@ -222,13 +254,13 @@ impl<V: VectorTrait> UVMapV<V> {
         };
         UVMap {
             map,
-            bounds: todo!(),
+            bounding_shape: todo!(),
             bbox: todo!(),
         }
     }
 }
 
-
+// TODO: this will be more natural with uv_map.bounding_shape
 pub fn draw_default_on_uv<V: VectorTrait>(
     ref_shape: &Shape<V>,
     face: &Face<V>,
@@ -264,14 +296,36 @@ pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<
 }
 
 // TODO: methods to transform map, likely by taking a transform<V::SubV, V::SubV::M>
-// TODO: apply to rendering fuzzlines
-// TODO: apply to rendering default texture
 // TODO: apply to rendering tiles
 // TODO: is the texturemapping frame + origin a special case of UVMap?
 // TODO: automagically generate textures based on shape + directives, so we don't need to save them per shape
 
 // Generalize TextureMapping to arbitrary affine transformation?
 // Optional additional info to clip out lines that are outside face boundary
+
+// steps for using a UV mapped texture for e.g. fuzz
+// have a texture building directive that says
+// Default -> MergedWith Fuzz
+// this translates to
+// 1. Create default texture
+// 2. Convert default texture to lines texture
+// 2a. Create auto uv map from face
+// 2b. draw default texture in UV space
+// 3. Create fuzz texture
+// 3a. a UV map already exists for this face, so use it
+// 3b. draw fuzz lines in UV space
+// 4. Merge lines to create new lines texture
+
+// have a shape texture directive that says
+// For each face, do (Default -> MergedWith Fuzz -> Color color) for colors in cardinal colors
+
+// Steps for drawing via UV map
+// Shape data not needed?
+// Compose uv map with shape transform, then apply map to all lines
+
+// TODO: replace texturemapping from serialization with a mapping directive
+// e.g. AutoUV, SortLengths
+// TODO: above will require separate shape + face builder + drawer structs
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct OldTextureMapping {
@@ -374,8 +428,8 @@ pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
 }
 
 #[test]
-fn test_uv_map() {
-    use crate::constants::{TWO_PI, ZERO};
+fn test_uv_map_bounds() {
+    use crate::constants::ZERO;
     use crate::geometry::{shape::buildshapes::ShapeBuilder, Plane, PointedPlane};
     use crate::tests::{random_rotation_matrix, random_vec};
     use crate::vector::{is_close, is_less_than_or_close, MatrixTrait, Vec3, Vec4};
@@ -403,16 +457,48 @@ fn test_uv_map() {
 
     for (face_index, face) in shape.faces.iter().enumerate() {
         let uv_map = auto_uv_map_face(&shape, face_index);
-        // assert that the zero component of each transformed vec is zero
-        for p in face.get_verts(&shape.verts) {
-            assert!(is_close(uv_map.map.transform_vec(&p)[-1], ZERO));
-        }
         // assert that all projected verts are within the boundaries
-        for b in uv_map.bounds.0 {
+        for b in uv_map.bounds() {
             assert!(face.get_verts(&shape.verts).all(|v| is_less_than_or_close(
                 b.point_signed_distance(uv_map.map.transform_vec(v).project()),
                 ZERO
             )));
+        }
+    }
+}
+
+#[test]
+fn test_uv_map_shape() {
+    use crate::constants::ZERO;
+    use crate::geometry::shape::buildshapes::ShapeBuilder;
+    use crate::tests::{random_rotation_matrix, random_vec};
+    use crate::vector::{is_close, Vec3, Vec4};
+    type V = Vec4;
+    let random_rotation = random_rotation_matrix::<V>();
+    let random_transform: Transform<V, <V as VectorTrait>::M> =
+        Transform::new(Some(random_vec()), Some(random_rotation), None);
+
+    let shape: Shape<V> = ShapeBuilder::build_prism(V::DIM, &[2.0, 1.0], &[5, 7])
+        .with_transform(random_transform)
+        .build();
+    for (face_index, face) in shape.faces.iter().enumerate() {
+        let uv_map = auto_uv_map_face(&shape, face_index);
+
+        for (p_original, bounding_p) in face
+            .get_verts(&shape.verts)
+            .zip(uv_map.bounding_shape.verts.iter())
+        {
+            let p_mapped = uv_map.map.transform_vec(&p_original);
+            // assert that the last component of each transformed vec is zero
+            assert!(is_close(p_mapped[-1], ZERO));
+            // assert that the bounding verts match the projected shape verts
+            assert!(Vec3::is_close(p_mapped.project(), *bounding_p));
+        }
+        for bounding_face in &uv_map.bounding_shape.faces {
+            // assert that the vertices of each bounding face lie within the face's plane
+            assert!(bounding_face
+                .get_verts(&uv_map.bounding_shape.verts)
+                .all(|vert| is_close(bounding_face.plane().point_signed_distance(*vert), ZERO)))
         }
     }
 }

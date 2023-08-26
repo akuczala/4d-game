@@ -71,7 +71,7 @@ pub fn convex_shape_to_face_shape<V: VectorTrait>(
     convex_shape: Shape<V::SubV>,
     two_sided: bool,
 ) -> Shape<V> {
-    let subface_vertis: Vec<Vec<usize>> = convex_shape
+    let subface_vertis: Vec<Vec<VertIndex>> = convex_shape
         .faces
         .iter()
         .map(|face| face.vertis.clone())

@@ -11,6 +11,7 @@ use self::subface::SubFace;
 
 use super::{Line, Transform};
 
+use crate::graphics::VertexTrait;
 use crate::utils::BranchIterator;
 
 use crate::vector::{Field, VectorTrait};
@@ -113,6 +114,14 @@ pub struct Edge(pub VertIndex, pub VertIndex);
 impl fmt::Display for Edge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Edge({},{})", self.0, self.1)
+    }
+}
+impl Edge {
+    pub fn map<F: Fn(VertIndex) -> VertIndex>(&self, f: F) -> Self {
+        Self(f(self.0), f(self.1))
+    }
+    pub fn contains(&self, vi: VertIndex) -> bool {
+        self.0 == vi || self.1 == vi
     }
 }
 
