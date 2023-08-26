@@ -4,12 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::{Shape, Transform},
+    config::DrawConfig,
     constants::CARDINAL_COLORS,
     draw::DrawLine,
-    geometry::{Face, transform::Scaling},
+    geometry::{transform::Scaling, Face},
     graphics::colors::Color,
     utils::{BranchIterator, ValidDimension},
-    vector::{Field, VectorTrait}, config::DrawConfig,
+    vector::{Field, VectorTrait},
 };
 
 use super::{
@@ -52,7 +53,7 @@ pub type ShapeTexture<V> = ShapeTextureGeneric<V, <V as VectorTrait>::M, <V as V
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ShapeTextureBuilder {
-    pub face_textures: Vec<FaceTextureBuilder>
+    pub face_textures: Vec<FaceTextureBuilder>,
 }
 
 impl<V, M, U> ShapeTextureGeneric<V, M, U> {
@@ -153,7 +154,7 @@ pub enum TextureMappingDirective {
     #[default]
     None,
     Orthogonal,
-    UVDefault
+    UVDefault,
 }
 impl TextureMappingDirective {
     fn build<V: VectorTrait>(&self) -> TextureMappingV<V> {
@@ -201,15 +202,13 @@ pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilder {
             .zip(&CARDINAL_COLORS)
             .map(|(_face, &color)| FaceTextureBuilder {
                 texture: TextureBuilder::new().with_color(color.set_alpha(0.5)),
-                mapping_directive: TextureMappingDirective::None
+                mapping_directive: TextureMappingDirective::None,
             })
             .collect(),
     }
 }
 
-pub fn fuzzy_color_cube_texture<V: VectorTrait>(
-    shape: &Shape<V>,
-) -> ShapeTextureBuilder {
+pub fn fuzzy_color_cube_texture<V: VectorTrait>(shape: &Shape<V>) -> ShapeTextureBuilder {
     let texture_builder = TextureBuilder::new();
     color_cube_shape_texture::<V>().zip_textures_with(shape.faces.iter(), |face_tex, face| {
         FaceTextureBuilder {
@@ -222,11 +221,7 @@ pub fn fuzzy_color_cube_texture<V: VectorTrait>(
 }
 
 #[allow(dead_code)]
-pub fn color_duocylinder<V: VectorTrait>(
-    shape_texture: &mut ShapeTexture<V>,
-    m: usize,
-    n: usize,
-) {
+pub fn color_duocylinder<V: VectorTrait>(shape_texture: &mut ShapeTexture<V>, m: usize, n: usize) {
     for (i, face) in itertools::enumerate(shape_texture.face_textures.iter_mut()) {
         let iint = i as i32;
         let color = Color([

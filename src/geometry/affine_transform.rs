@@ -83,7 +83,7 @@ impl<V: VectorTrait> AffineTransform<V, V::M> {
         new.apply_self_on_left(transformation);
         new
     }
-    pub fn with_transform(mut self, transformation: AffineTransform<V, V::M>) -> Self {
+    pub fn with_transform(self, transformation: AffineTransform<V, V::M>) -> Self {
         self.compose(transformation);
         self
     }

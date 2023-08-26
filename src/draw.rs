@@ -229,7 +229,6 @@ type ShapeComponentStorage<'a, V, M> = (
     &'a ReadStorage<'a, ShapeClipState<V>>,
 );
 
-
 type OldShapeComponentStorage<'a, V> = (
     &'a ReadStorage<'a, Shape<V>>,
     &'a ReadStorage<'a, ShapeTexture<V>>,

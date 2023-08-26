@@ -8,7 +8,10 @@ use crate::{
     draw::{
         self,
         texture::{
-            shape_texture::{fuzzy_color_cube_texture, FaceTextureGeneric, ShapeTextureGeneric, build_fuzzy_tile_texture},
+            shape_texture::{
+                build_fuzzy_tile_texture, fuzzy_color_cube_texture, FaceTextureGeneric,
+                ShapeTextureGeneric,
+            },
             texture_builder::{TextureBuilder, TextureBuilderStep, TexturePrim},
         },
     },
@@ -28,7 +31,6 @@ fn build_corridor_cross<V: VectorTrait>(
     open_center: bool,
     draw_config: &DrawConfig,
 ) -> Vec<ShapeEntityBuilderV<V>> {
-    
     let corr_width = 1.0;
     let wall_height = 1.0;
     //let origin = V::zero();

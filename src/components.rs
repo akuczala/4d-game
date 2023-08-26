@@ -3,9 +3,9 @@ use specs::{Component, FlaggedStorage, HashMapStorage, VecStorage};
 use crate::coin::Coin;
 pub use crate::draw::draw_line_collection::DrawLineCollection;
 
+use crate::draw::texture::shape_texture::ShapeTextureGeneric;
 use crate::draw::texture::ShapeTextureBuilder;
 pub use crate::draw::ShapeTexture;
-use crate::draw::texture::shape_texture::ShapeTextureGeneric;
 use crate::ecs_utils::Componentable;
 //resources
 pub use crate::player::Player;
@@ -40,7 +40,9 @@ impl<V: Componentable> Component for ShapeClipState<V> {
 impl Component for ShapeTextureBuilder {
     type Storage = DefaultStorage<Self>;
 }
-impl<V: Componentable, M: Componentable, U: Componentable> Component for ShapeTextureGeneric<V, M, U> {
+impl<V: Componentable, M: Componentable, U: Componentable> Component
+    for ShapeTextureGeneric<V, M, U>
+{
     type Storage = DefaultStorage<Self>;
 }
 impl<V: Componentable, M: Componentable> Component for Transform<V, M> {
