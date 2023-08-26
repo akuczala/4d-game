@@ -15,7 +15,9 @@ use crate::geometry::shape::generic::subface_plane;
 use crate::geometry::shape::{Edge, EdgeIndex, FaceIndex, VertIndex};
 use crate::geometry::transform::Scaling;
 use crate::geometry::{Face, Line, Plane};
-use crate::vector::{random_sphere_point, rotation_matrix, Field, VecIndex, VectorTrait};
+use crate::vector::{
+    barycenter, random_sphere_point, rotation_matrix, Field, VecIndex, VectorTrait,
+};
 
 use crate::graphics::colors::*;
 
@@ -189,7 +191,7 @@ fn auto_uv_map_face<V: VectorTrait>(
     let face = &shape.faces[face_index];
     let basis = rotation_matrix(face.normal(), V::one_hot(-1), None);
     let map = Transform::new(Some(-(basis * face.center())), Some(basis), None);
-
+    // TODO: much of this could be moved to a shapebuilder fn that separates /creates a boundary shape from a face of a given shape
     let verti_map: HashMap<VertIndex, VertIndex> = face
         .vertis
         .iter()
@@ -260,25 +262,19 @@ impl<V: VectorTrait> UVMapV<V> {
     }
 }
 
-// TODO: this will be more natural with uv_map.bounding_shape
 pub fn draw_default_on_uv<V: VectorTrait>(
-    ref_shape: &Shape<V>,
-    face: &Face<V>,
     face_scale: Field,
     uv_map: &UVMapV<V>,
 ) -> Vec<Line<V::SubV>> {
-    let mapped_center = uv_map.map.transform_vec(&face.center()).project();
-    let scale_point = |v| V::SubV::linterp(mapped_center, v, face_scale);
-    let mapped_verts: Vec<_> = ref_shape
-        .verts
+    let bounds_center = barycenter(&uv_map.bounding_shape.verts);
+    let scale_point = |v| V::SubV::linterp(bounds_center, v, face_scale);
+    uv_map
+        .bounding_shape
+        .faces
         .iter()
-        .map(|v| uv_map.map.transform_vec(v).project())
-        .collect();
-    face.edgeis
-        .iter()
-        .map(move |edgei| {
-            let edge = &ref_shape.edges[*edgei];
-            Line(mapped_verts[edge.0], mapped_verts[edge.1]).map(scale_point)
+        .flat_map(|face| {
+            face.get_edges(&uv_map.bounding_shape.edges)
+                .map(|edge| edge.get_line(&uv_map.bounding_shape.verts).map(scale_point))
         })
         .collect()
 }

@@ -123,6 +123,9 @@ impl Edge {
     pub fn contains(&self, vi: VertIndex) -> bool {
         self.0 == vi || self.1 == vi
     }
+    pub fn get_line<V: Copy>(&self, shape_verts: &[V]) -> Line<V> {
+        Line(shape_verts[self.0], shape_verts[self.1])
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

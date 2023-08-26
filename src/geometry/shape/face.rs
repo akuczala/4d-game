@@ -101,6 +101,10 @@ impl<V: VectorTrait> Face<V> {
     pub fn get_verts<'a>(&'a self, shape_verts: &'a [V]) -> impl Iterator<Item = &V> + 'a {
         self.vertis.iter().map(|vi| &shape_verts[*vi])
     }
+
+    pub fn get_edges<'a>(&'a self, shape_edges: &'a [Edge]) -> impl Iterator<Item = &Edge> + 'a {
+        self.edgeis.iter().map(|ei| &shape_edges[*ei])
+    }
 }
 
 use crate::geometry::{Plane, PointedPlane};
