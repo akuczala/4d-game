@@ -3,6 +3,7 @@ use crate::vector::{Field, MatrixTrait, VectorTrait};
 
 use super::transform::Scaling;
 
+#[derive(Clone)]
 pub struct AffineTransform<V, M> {
     pub pos: V,
     pub frame: M,
@@ -77,8 +78,10 @@ impl<V: VectorTrait> AffineTransform<V, V::M> {
         self.pos = other.pos + other.frame * self.pos;
         self.frame = other.frame.dot(self.frame);
     }
-    pub fn compose(&mut self, transformation: AffineTransform<V, V::M>) {
-        self.apply_self_on_left(transformation) //scale composition commutes
+    pub fn compose(&self, transformation: AffineTransform<V, V::M>) -> Self {
+        let mut new = self.clone(); //scale composition commutes
+        new.apply_self_on_left(transformation);
+        new
     }
     pub fn with_transform(mut self, transformation: AffineTransform<V, V::M>) -> Self {
         self.compose(transformation);

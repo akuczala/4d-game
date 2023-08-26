@@ -3,26 +3,26 @@ use std::iter;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::Shape,
+    components::{Shape, Transform},
     constants::CARDINAL_COLORS,
     draw::DrawLine,
-    geometry::Face,
+    geometry::{Face, transform::Scaling},
     graphics::colors::Color,
-    utils::BranchIterator,
-    vector::{Field, VectorTrait},
+    utils::{BranchIterator, ValidDimension},
+    vector::{Field, VectorTrait}, config::DrawConfig,
 };
 
 use super::{
     draw_default_lines,
-    texture_builder::{TextureBuilder, TextureBuilderConfig},
-    Texture, TextureMapping,
+    texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep, TexturePrim},
+    Texture, TextureMapping, TextureMappingV,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ShapeTextureGeneric<T> {
-    pub face_textures: Vec<FaceTextureGeneric<T>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
+pub struct ShapeTextureGeneric<V, M, U> {
+    pub face_textures: Vec<FaceTextureGeneric<V, M, U>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
-impl<T: Default> ShapeTextureGeneric<T> {
+impl<V: Default, M: Default, U: Default> ShapeTextureGeneric<V, M, U> {
     pub fn new_default(n_faces: usize) -> Self {
         Self {
             face_textures: (0..n_faces).map(|_| Default::default()).collect(),
@@ -30,10 +30,10 @@ impl<T: Default> ShapeTextureGeneric<T> {
     }
 }
 
-pub enum ShapeTextureGenericNew<T> {
-    Uniform(FaceTexture<T>),
-    ByFace(Vec<FaceTextureGeneric<T>>),
-}
+// pub enum ShapeTextureGenericNew<T> {
+//     Uniform(FaceTexture<T>),
+//     ByFace(Vec<FaceTextureGeneric<T>>),
+// }
 
 // Examples
 // "CoinShapeTexture", "ColorCubeShapeTexture", "FuzzyColorCubeShapeTexture"
@@ -48,10 +48,14 @@ pub enum ShapeTextureGenericNew<T> {
 
 // Consider using UV mapping?
 
-pub type ShapeTexture<U> = ShapeTextureGeneric<Texture<U>>;
-pub type ShapeTextureBuilder = ShapeTextureGeneric<TextureBuilder>;
+pub type ShapeTexture<V> = ShapeTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
 
-impl<U> ShapeTexture<U> {
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ShapeTextureBuilder {
+    pub face_textures: Vec<FaceTextureBuilder>
+}
+
+impl<V, M, U> ShapeTextureGeneric<V, M, U> {
     #[allow(dead_code)]
     pub fn with_color(mut self, color: Color) -> Self {
         for face in &mut self.face_textures {
@@ -60,7 +64,12 @@ impl<U> ShapeTexture<U> {
         self
     }
 }
-impl ShapeTextureGeneric<TextureBuilder> {
+impl ShapeTextureBuilder {
+    pub fn new_default(n_faces: usize) -> Self {
+        Self {
+            face_textures: (0..n_faces).map(|_| Default::default()).collect(),
+        }
+    }
     pub fn with_color(mut self, color: Color) -> Self {
         for face in &mut self.face_textures {
             face.set_color(color);
@@ -77,8 +86,8 @@ impl ShapeTextureGeneric<TextureBuilder> {
         }
     }
 }
-impl<T: Clone> ShapeTextureGeneric<T> {
-    pub fn with_texture(mut self, face_texture: FaceTextureGeneric<T>) -> Self {
+impl ShapeTextureBuilder {
+    pub fn with_texture(mut self, face_texture: FaceTextureBuilder) -> Self {
         for face in self.face_textures.iter_mut() {
             *face = face_texture.clone();
         }
@@ -88,7 +97,7 @@ impl<T: Clone> ShapeTextureGeneric<T> {
     #[allow(dead_code)]
     pub fn map_textures<F>(mut self, f: F) -> Self
     where
-        F: Fn(FaceTextureGeneric<T>) -> FaceTextureGeneric<T>,
+        F: Fn(FaceTextureBuilder) -> FaceTextureBuilder,
     {
         for face in self.face_textures.iter_mut() {
             take_mut::take(face, &f);
@@ -97,7 +106,7 @@ impl<T: Clone> ShapeTextureGeneric<T> {
     }
     pub fn zip_textures_with<I, S, F>(mut self, iter: I, f: F) -> Self
     where
-        F: Fn(FaceTextureGeneric<T>, S) -> FaceTextureGeneric<T>,
+        F: Fn(FaceTextureBuilder, S) -> FaceTextureBuilder,
         I: Iterator<Item = S>,
     {
         for (face, item) in self.face_textures.iter_mut().zip(iter) {
@@ -107,43 +116,57 @@ impl<T: Clone> ShapeTextureGeneric<T> {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct FaceTextureGeneric<T> {
-    pub texture: T,
-    pub texture_mapping: Option<TextureMapping>,
+#[derive(Clone, Serialize, Deserialize, Default)]
+pub struct FaceTextureGeneric<V, M, U> {
+    pub texture: Texture<U>,
+    pub texture_mapping: TextureMapping<V, M, U>,
 }
-pub type FaceTexture<U> = FaceTextureGeneric<Texture<U>>;
-pub type FaceTextureBuilder = FaceTextureGeneric<TextureBuilder>;
 
-impl<T: Default> Default for FaceTextureGeneric<T> {
-    fn default() -> Self {
-        Self {
-            texture: Default::default(),
-            texture_mapping: Default::default(),
-        }
-    }
+// TODO: consider parameterizing this on V instead
+pub type FaceTexture<V> = FaceTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct FaceTextureBuilder {
+    pub texture: TextureBuilder,
+    pub mapping_directive: TextureMappingDirective,
 }
-impl<U> FaceTexture<U> {
+
+impl<V, M, U> FaceTextureGeneric<V, M, U> {
     pub fn set_color(&mut self, color: Color) {
         take_mut::take(&mut self.texture, |tex| tex.set_color(color));
     }
 }
-impl FaceTextureGeneric<TextureBuilder> {
+impl FaceTextureBuilder {
     pub fn set_color(&mut self, color: Color) {
         take_mut::take(&mut self.texture, |tex| tex.with_color(color));
     }
     pub fn build<U: VectorTrait>(self, config: &TextureBuilderConfig) -> FaceTexture<U> {
         FaceTexture {
             texture: self.texture.build(config),
-            texture_mapping: self.texture_mapping,
+            texture_mapping: self.mapping_directive.build(),
         }
     }
 }
+
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+pub enum TextureMappingDirective {
+    #[default]
+    None,
+    Orthogonal,
+    UVDefault
+}
+impl TextureMappingDirective {
+    fn build<V: VectorTrait>(&self) -> TextureMappingV<V> {
+        todo!()
+    }
+}
+
 // this was originally a method of FaceTexture, but I didn't know how to tell rust that U = V::SubV
 pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
-    face_texture: &'a FaceTexture<V::SubV>,
+    face_texture: &'a FaceTexture<V>,
     face: &'a Face<V>,
     shape: &'a Shape<V>,
+    shape_transform: &'a Transform<V, V::M>,
     face_scales: &'a [Field],
     visible: bool,
     override_color: Option<Color>,
@@ -161,8 +184,9 @@ pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
             }))
         }
         Texture::Lines { lines, color } => {
-            BranchIterator::Option2(face_texture.texture_mapping.as_ref().unwrap().draw_lines(
+            BranchIterator::Option2(face_texture.texture_mapping.draw_lines(
                 shape,
+                shape_transform,
                 lines,
                 override_color.unwrap_or(*color),
             ))
@@ -171,13 +195,13 @@ pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
     }
 }
 
-pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureGeneric<TextureBuilder> {
-    ShapeTextureGeneric {
+pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilder {
+    ShapeTextureBuilder {
         face_textures: (0..V::DIM * 2)
             .zip(&CARDINAL_COLORS)
-            .map(|(_face, &color)| FaceTextureGeneric {
+            .map(|(_face, &color)| FaceTextureBuilder {
                 texture: TextureBuilder::new().with_color(color.set_alpha(0.5)),
-                texture_mapping: None,
+                mapping_directive: TextureMappingDirective::None
             })
             .collect(),
     }
@@ -185,25 +209,21 @@ pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureGeneric<Texture
 
 pub fn fuzzy_color_cube_texture<V: VectorTrait>(
     shape: &Shape<V>,
-) -> ShapeTextureGeneric<TextureBuilder> {
+) -> ShapeTextureBuilder {
     let texture_builder = TextureBuilder::new();
     color_cube_shape_texture::<V>().zip_textures_with(shape.faces.iter(), |face_tex, face| {
-        FaceTextureGeneric {
+        FaceTextureBuilder {
             texture: face_tex
                 .texture
                 .merged_with(texture_builder.clone().make_fuzz_texture()),
-            texture_mapping: Some(TextureMapping::calc_cube_vertis(
-                face,
-                &shape.verts,
-                &shape.edges,
-            )),
+            mapping_directive: TextureMappingDirective::Orthogonal,
         }
     })
 }
 
 #[allow(dead_code)]
 pub fn color_duocylinder<V: VectorTrait>(
-    shape_texture: &mut ShapeTexture<V::SubV>,
+    shape_texture: &mut ShapeTexture<V>,
     m: usize,
     n: usize,
 ) {
@@ -216,5 +236,38 @@ pub fn color_duocylinder<V: VectorTrait>(
             1.0,
         ]);
         face.texture = Texture::DefaultLines { color };
+    }
+}
+
+pub fn build_fuzzy_tile_texture<V: VectorTrait>(
+    shape: &Shape<V>,
+    scale: &Scaling<V>,
+    draw_config: &DrawConfig,
+) -> ShapeTextureBuilder {
+    ShapeTextureBuilder {
+        face_textures: shape
+            .faces
+            .iter()
+            .enumerate()
+            .map(|(face_index, face)| FaceTextureBuilder {
+                texture: TextureBuilder::new()
+                    .with_step(TextureBuilderStep::WithTexture(TexturePrim::Tile {
+                        scales: vec![draw_config.face_scale],
+                        n_divisions: match V::DIM.into() {
+                            ValidDimension::Three => vec![3, 1],
+                            ValidDimension::Four => vec![3, 1, 1],
+                        },
+                    }))
+                    .with_step(TextureBuilderStep::MergedWith(vec![
+                        TextureBuilderStep::WithTexture(TexturePrim::Fuzz),
+                    ]))
+                    .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index])),
+                mapping_directive: {
+                    let scaled_verts: Vec<V> =
+                        shape.verts.iter().map(|v| scale.scale_vec(*v)).collect();
+                    TextureMappingDirective::Orthogonal
+                },
+            })
+            .collect(),
     }
 }

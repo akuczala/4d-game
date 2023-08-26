@@ -8,7 +8,7 @@ use crate::{
     draw::{
         self,
         texture::{
-            shape_texture::{fuzzy_color_cube_texture, FaceTextureGeneric, ShapeTextureGeneric},
+            shape_texture::{fuzzy_color_cube_texture, FaceTextureGeneric, ShapeTextureGeneric, build_fuzzy_tile_texture},
             texture_builder::{TextureBuilder, TextureBuilderStep, TexturePrim},
         },
     },
@@ -28,42 +28,7 @@ fn build_corridor_cross<V: VectorTrait>(
     open_center: bool,
     draw_config: &DrawConfig,
 ) -> Vec<ShapeEntityBuilderV<V>> {
-    pub fn build_texture<V: VectorTrait>(
-        shape: &Shape<V>,
-        scale: &Scaling<V>,
-        draw_config: &DrawConfig,
-    ) -> ShapeTextureGeneric<TextureBuilder> {
-        ShapeTextureGeneric {
-            face_textures: shape
-                .faces
-                .iter()
-                .enumerate()
-                .map(|(face_index, face)| FaceTextureGeneric {
-                    texture: TextureBuilder::new()
-                        .with_step(TextureBuilderStep::WithTexture(TexturePrim::Tile {
-                            scales: vec![draw_config.face_scale],
-                            n_divisions: match V::DIM.into() {
-                                ValidDimension::Three => vec![3, 1],
-                                ValidDimension::Four => vec![3, 1, 1],
-                            },
-                        }))
-                        .with_step(TextureBuilderStep::MergedWith(vec![
-                            TextureBuilderStep::WithTexture(TexturePrim::Fuzz),
-                        ]))
-                        .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index])),
-                    texture_mapping: {
-                        let scaled_verts: Vec<V> =
-                            shape.verts.iter().map(|v| scale.scale_vec(*v)).collect();
-                        Some(draw::TextureMapping::calc_cube_vertis(
-                            face,
-                            &scaled_verts,
-                            &shape.edges,
-                        ))
-                    },
-                })
-                .collect_vec(),
-        }
-    }
+    
     let corr_width = 1.0;
     let wall_height = 1.0;
     //let origin = V::zero();
@@ -98,7 +63,7 @@ fn build_corridor_cross<V: VectorTrait>(
             .collect();
     for builder in &mut walls1 {
         builder.shape_texture_builder =
-            build_texture(&builder.shape, &builder.transformation.scale, draw_config);
+            build_fuzzy_tile_texture(&builder.shape, &builder.transformation.scale, draw_config);
     }
 
     shape_builders.append(&mut walls1);
@@ -136,11 +101,11 @@ fn build_corridor_cross<V: VectorTrait>(
 
     for builder in &mut floors_long {
         builder.shape_texture_builder =
-            build_texture(&builder.shape, &builder.transformation.scale, draw_config);
+            build_fuzzy_tile_texture(&builder.shape, &builder.transformation.scale, draw_config);
     }
     for builder in &mut ceilings_long {
         builder.shape_texture_builder =
-            build_texture(&builder.shape, &builder.transformation.scale, draw_config);
+            build_fuzzy_tile_texture(&builder.shape, &builder.transformation.scale, draw_config);
     }
 
     shape_builders.append(&mut floors_long);

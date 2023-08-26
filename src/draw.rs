@@ -222,9 +222,17 @@ pub fn normal_to_color<V: VectorTrait>(normal: V) -> Color {
 pub type Scratch<T> = (Vec<T>, Vec<T>);
 
 // this exists to make clippy happy in the below fn
-type ShapeComponentStorage<'a, V, U> = (
+type ShapeComponentStorage<'a, V, M> = (
     &'a ReadStorage<'a, Shape<V>>,
-    &'a ReadStorage<'a, ShapeTexture<U>>,
+    &'a ReadStorage<'a, Transform<V, M>>,
+    &'a ReadStorage<'a, ShapeTexture<V>>,
+    &'a ReadStorage<'a, ShapeClipState<V>>,
+);
+
+
+type OldShapeComponentStorage<'a, V> = (
+    &'a ReadStorage<'a, Shape<V>>,
+    &'a ReadStorage<'a, ShapeTexture<V>>,
     &'a ReadStorage<'a, ShapeClipState<V>>,
 );
 
@@ -232,7 +240,7 @@ pub fn calc_shapes_lines<V>(
     write_lines: &mut Vec<DrawLine<V>>,
     scratch: &mut Scratch<DrawLine<V>>,
     line_scratch: &mut Scratch<Line<V>>,
-    shape_components: ShapeComponentStorage<V, V::SubV>,
+    shape_components: ShapeComponentStorage<V, V::M>,
     clip_state: &ClipState<V>,
     draw_config: &DrawConfig,
 ) where
@@ -241,7 +249,7 @@ pub fn calc_shapes_lines<V>(
     V::M: Componentable,
 {
     //compute lines for each shape
-    for (shape, shape_texture, shape_clip_state) in shape_components.join() {
+    for (shape, shape_transform, shape_texture, shape_clip_state) in shape_components.join() {
         scratch.0.clear();
         //get lines from each face
         for (face, &visible, face_texture) in izip!(
@@ -253,6 +261,7 @@ pub fn calc_shapes_lines<V>(
                 face_texture,
                 face,
                 shape,
+                shape_transform,
                 &[draw_config.face_scale],
                 visible,
                 draw_config
@@ -266,7 +275,7 @@ pub fn calc_shapes_lines<V>(
                 shape_clip_state
                     .in_front
                     .iter()
-                    .map(|&e| match shape_components.2.get(e) {
+                    .map(|&e| match shape_components.3.get(e) {
                         Some(s) => s,
                         None => panic!("Invalid entity {} found in shape_clip_state", e.id()),
                     });

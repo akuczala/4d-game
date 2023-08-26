@@ -1,4 +1,5 @@
 use crate::constants::TWO_SIDED_FACE_LABEL_STR;
+use crate::draw::texture::shape_texture::TextureMappingDirective;
 use crate::draw::texture::texture_builder::TextureBuilder;
 use crate::draw::texture::FaceTextureBuilder;
 
@@ -104,10 +105,7 @@ where
     .with_scale(Scaling::Scalar(2.0))
     .with_face_texture(FaceTextureBuilder {
         texture: TextureBuilder::new().make_tile_texture(vec![0.8], n_divisions),
-        texture_mapping: Some(draw::TextureMapping {
-            origin_verti: 0,
-            frame_vertis,
-        }),
+        mapping_directive: TextureMappingDirective::Orthogonal,
     });
     build_test_walls(&build_shape).into_iter().for_each(|b| {
         b.build(world).build();

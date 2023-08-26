@@ -120,7 +120,8 @@ where
 {
     type SystemData = (
         ReadStorage<'a, Shape<V>>,
-        ReadStorage<'a, ShapeTexture<V::SubV>>,
+        ReadStorage<'a, Transform<V, V::M>>,
+        ReadStorage<'a, ShapeTexture<V>>,
         ReadStorage<'a, ShapeClipState<V>>,
         ReadExpect<'a, ClipState<V>>,
         ReadExpect<'a, Config>,
@@ -133,6 +134,7 @@ where
         &mut self,
         (
             shapes,
+            transforms,
             shape_textures,
             shape_clip_states,
             clip_state,
@@ -147,7 +149,7 @@ where
             &mut lines.0,
             &mut scratch,
             &mut line_scratch,
-            (&shapes, &shape_textures, &shape_clip_states),
+            (&shapes, &transforms, &shape_textures, &shape_clip_states),
             &clip_state,
             &config.draw,
         );

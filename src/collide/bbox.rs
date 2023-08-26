@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::vector::{Field, VectorTrait};
 
 //axis-aligned bounding box
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BBox<V> {
     pub min: V,
     pub max: V,

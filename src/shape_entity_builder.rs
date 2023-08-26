@@ -89,7 +89,7 @@ where
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
         let shape_texture =
-            make_shape_texture::<V::SubV>(&world.fetch::<Config>(), shape_texture_builder.clone());
+            make_shape_texture::<V>(&world.fetch::<Config>(), shape_texture_builder.clone());
         world
             .create_entity()
             .with(shape.calc_bbox())
@@ -113,7 +113,7 @@ where
             coin,
         } = self;
         shape.update_from_ref(&shape.clone(), &transformation);
-        let shape_texture = make_shape_texture::<V::SubV>(config, shape_texture_builder.clone());
+        let shape_texture = make_shape_texture::<V>(config, shape_texture_builder.clone());
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, transformation);

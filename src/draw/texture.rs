@@ -2,6 +2,7 @@ pub mod shape_texture;
 pub mod texture_builder;
 
 use std::collections::HashMap;
+use std::iter;
 
 pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, ShapeTextureBuilder};
 
@@ -10,11 +11,13 @@ use super::DrawLine;
 
 use crate::components::{BBox, Convex, HasBBox, Shape, ShapeType, Transform};
 use crate::constants::ZERO;
+use crate::geometry::affine_transform::AffineTransform;
 use crate::geometry::shape::face::{FaceBuilder, FaceGeometry};
 use crate::geometry::shape::generic::subface_plane;
 use crate::geometry::shape::{Edge, EdgeIndex, FaceIndex, VertIndex};
 use crate::geometry::transform::Scaling;
 use crate::geometry::{Face, Line, Plane};
+use crate::utils::BranchIterator;
 use crate::vector::{
     barycenter, random_sphere_point, rotation_matrix, Field, VecIndex, VectorTrait,
 };
@@ -164,12 +167,22 @@ impl<V: VectorTrait> Texture<V> {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct UVMap<V, M, U> {
-    map: Transform<V, M>,
+    map: Transform<V, M>, // Used to map from ref space (V) to UV space (U)
     bounding_shape: Shape<U>,
     bbox: BBox<U>,
 }
 impl<V: VectorTrait> UVMapV<V> {
+    pub fn transform_ref_vec_to_uv_vec(&self, point: &V) -> V::SubV {
+        self.map.transform_vec(point).project()
+    }
+    pub fn uv_to_world_transform(&self, shape_transform: &Transform<V, V::M>) -> AffineTransform<V, V::M> {
+        // TODO: consider caching some of this in the struct
+        // We could save calc time by assuming map is ortho affine (no scaling)
+        let map_inverse = AffineTransform::from(self.map.inverse());
+        AffineTransform::from(*shape_transform).compose(map_inverse)
+    }
     pub fn is_point_within_bounds(&self, point: V::SubV) -> bool {
         match self.bounding_shape.shape_type {
             ShapeType::Convex(_) => Convex::point_within(point, ZERO, &self.bounding_shape.faces),
@@ -178,6 +191,12 @@ impl<V: VectorTrait> UVMapV<V> {
     }
     pub fn bounds(&self) -> impl Iterator<Item = &Plane<V::SubV>> {
         self.bounding_shape.faces.iter().map(|face| face.plane())
+    }
+
+    fn draw_lines<'a>(&'a self, shape_transform: &Transform<V, V::M>, lines: &'a [Line<V::SubV>]) -> impl Iterator<Item = Line<V>> + 'a
+    {
+        let uv_to_space = self.uv_to_world_transform(&shape_transform);
+        lines.iter().map(move |line| line.map(|p| uv_to_space.transform_vec(&V::unproject(p))))
     }
 }
 type UVMapV<V> = UVMap<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
@@ -238,7 +257,7 @@ fn auto_uv_map_face<V: VectorTrait>(
     }
 }
 impl<V: VectorTrait> UVMapV<V> {
-    pub fn from_texture_mapping(ref_shape: &Shape<V>, shape_mapping: TextureMapping) -> Self {
+    pub fn from_frame_texture_mapping(ref_shape: &Shape<V>, shape_mapping: FrameTextureMapping) -> Self {
         let origin = shape_mapping.origin(&ref_shape.verts);
         let frame = shape_mapping.frame_verts(&ref_shape.verts);
         let (normed_frame, mut norms): (Vec<V>, Vec<Field>) =
@@ -329,13 +348,34 @@ pub struct OldTextureMapping {
     pub origin_verti: VertIndex,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct TextureMapping {
-    pub frame_vertis: Vec<VertIndex>,
-    pub origin_verti: VertIndex,
+#[derive(Clone, Serialize, Deserialize, Default)]
+pub enum TextureMapping<V, M, U> {
+    #[default]
+    None,
+    Frame(FrameTextureMapping),
+    UV(UVMap<V, M, U>)
+}
+pub type TextureMappingV<V> = TextureMapping<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
+
+impl<V: VectorTrait> TextureMappingV<V> {
+    fn draw_lines<'a>(&'a self, shape: &'a Shape<V>, shape_transform: &Transform<V, V::M>, lines: &'a [Line<V::SubV>], color: Color) -> impl Iterator<Item = DrawLine<V>> + 'a {
+        match self {
+            Self::None => {panic!("Can't draw lines"); BranchIterator::Option1(std::iter::empty::<DrawLine<V>>())},
+            Self::Frame(ftm) => BranchIterator::Option2(ftm.draw_lines(shape, lines, color)),
+            Self::UV(uv_map) => BranchIterator::Option3(uv_map.draw_lines(shape_transform, lines).map(move |line| DrawLine{line, color})),
+        }
+    }
+
+    
 }
 
-impl TextureMapping {
+// TODO: to replace OldTextureMapping
+type FrameTextureMapping = OldTextureMapping;
+
+
+
+
+impl FrameTextureMapping {
     pub fn origin<V: VectorTrait>(&self, shape_verts: &[V]) -> V {
         shape_verts[self.origin_verti]
     }
@@ -397,7 +437,7 @@ impl TextureMapping {
         // for &vi in &sorted_frame_vertis {
         // 	println!("{}",(verts[vi]-verts[origin_verti]).norm() );
         // }
-        TextureMapping {
+        Self {
             origin_verti,
             frame_vertis: sorted_frame_vertis,
         }
