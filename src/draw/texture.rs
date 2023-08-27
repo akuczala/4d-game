@@ -8,7 +8,7 @@ pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, Sha
 use super::DrawLine;
 
 use crate::components::{BBox, Convex, HasBBox, Shape, ShapeType, Transform};
-use crate::constants::ZERO;
+use crate::constants::{HALF, ZERO};
 use crate::geometry::affine_transform::AffineTransform;
 use crate::geometry::shape::face::FaceBuilder;
 use crate::geometry::shape::generic::subface_plane;
@@ -59,7 +59,7 @@ impl<V: VectorTrait> Texture<V> {
         Texture::make_tile_texture(&[face_scale], &(0..V::DIM).map(|_| 1).collect_vec())
             .set_color(color)
     }
-    pub fn make_tile_texture(scales: &[Field], n_divisions: &Vec<i32>) -> Self {
+    pub fn make_tile_texture(scales: &[Field], n_divisions: &[i32]) -> Self {
         if V::DIM != n_divisions.len() as VecIndex {
             panic!(
                 "make_tile_texture: Expected n_divisions.len()={} but got {}",
@@ -75,23 +75,15 @@ impl<V: VectorTrait> Texture<V> {
             .map(|ivec| {
                 ivec.iter()
                     .enumerate()
-                    .map(|(axis, &i)| {
-                        V::one_hot(axis as VecIndex) * ((i as Field) + 0.5)
-                            / ((n_divisions[axis]) as Field)
-                    })
-                    .fold(V::zero(), |v, u| v + u)
+                    .map(|(axis, &i)| ((i as Field) + HALF) / ((n_divisions[axis]) as Field))
+                    .collect::<V>()
             });
 
-        //all this does is convert n_divisions to a vector and divide by 2
-        //but since i haven't bothered putting a Vec<Field> -> V function in the vector library
-        //i have to do this ridiculous fold
-        //see also the computation of the centers
-        let corner = n_divisions
+        let corner: V = n_divisions
             .iter()
-            .enumerate()
-            .map(|(ax, &n)| V::one_hot(ax as VecIndex) / (n as Field))
-            .fold(V::zero(), |v, u| v + u)
-            / 2.0;
+            .map(|n| 1.0 / (*n as Field))
+            .collect::<V>()
+            * HALF;
 
         //grow edges starting from a line
         let mut tile_lines: Vec<Line<V>> = Vec::new();
