@@ -50,7 +50,7 @@ fn test_decompose() {
         "{}",
         match s_recon {
             Scaling::Vector(v) => v,
-            Scaling::Scalar(f) => Vec4::zero(),
+            Scaling::Scalar(_f) => Vec4::zero(),
         }
     );
     println!("{}", rot_mat_recon)

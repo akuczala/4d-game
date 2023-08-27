@@ -11,7 +11,6 @@ use self::subface::SubFace;
 
 use super::{Line, Transform};
 
-use crate::graphics::VertexTrait;
 use crate::utils::BranchIterator;
 
 use crate::vector::{Field, VectorTrait};

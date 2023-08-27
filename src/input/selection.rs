@@ -213,7 +213,7 @@ pub fn create_shape<V: VectorTrait>(
                         if is_coin || shape_label == ShapeLabel::from_str("TestPrism") {
                             ShapeTextureBuilder::new_default(shape.faces.len()).with_color(YELLOW)
                         } else {
-                            fuzzy_color_cube_texture(shape)
+                            fuzzy_color_cube_texture::<V>()
                         }
                     })
                     .with_collider((!is_coin).then_some(StaticCollider))

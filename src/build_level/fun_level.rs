@@ -6,16 +6,15 @@ use crate::draw::texture::FaceTextureBuilder;
 use crate::utils::ValidDimension;
 use crate::{
     components::{RefShapes, ShapeLabel, Transformable},
-    draw::{self},
     geometry::transform::Scaling,
     shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV},
     vector::{Field, VectorTrait},
 };
 
 pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEntityBuilderV<V>> {
-    let (n_divisions, frame_vertis) = match V::DIM.into() {
-        ValidDimension::Three => (vec![2, 2], vec![1, 3]),
-        ValidDimension::Four => (vec![2, 2, 2], vec![1, 3, 4]),
+    let n_divisions = match V::DIM.into() {
+        ValidDimension::Three => vec![2, 2],
+        ValidDimension::Four => vec![2, 2, 2],
     };
     let len = 4.0;
     let wall_label = ShapeLabel::from_str(ONE_SIDED_FACE_LABEL_STR);

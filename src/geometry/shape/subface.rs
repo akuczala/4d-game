@@ -1,6 +1,5 @@
 use std::fmt;
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{

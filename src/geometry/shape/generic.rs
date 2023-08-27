@@ -12,7 +12,7 @@ use crate::{
 
 use super::{
     subface::{InteriorSubFace, SubFace},
-    Face, FaceIndex, VertIndex,
+    Face, FaceIndex,
 };
 
 fn add_pair(

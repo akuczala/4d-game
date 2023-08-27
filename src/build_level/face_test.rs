@@ -12,7 +12,6 @@ use specs::{Builder, World};
 
 use crate::{
     components::{RefShapes, ShapeLabel, Transformable},
-    draw::{self},
     ecs_utils::Componentable,
     geometry::transform::Scaling,
     graphics::colors::YELLOW,
@@ -94,9 +93,9 @@ where
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    let (n_divisions, frame_vertis) = match V::DIM.into() {
-        ValidDimension::Three => (vec![4, 4], vec![1, 3]),
-        ValidDimension::Four => (vec![4, 4, 4], vec![1, 3, 4]),
+    let n_divisions = match V::DIM.into() {
+        ValidDimension::Three => vec![4, 4],
+        ValidDimension::Four => vec![4, 4, 4],
     };
     let build_shape: ShapeEntityBuilderV<V> = ShapeEntityBuilder::new_from_ref_shape(
         ref_shapes,

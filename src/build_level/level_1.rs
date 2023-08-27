@@ -1,22 +1,11 @@
-use itertools::Itertools;
 use specs::World;
 
 use crate::{
-    components::{RefShapes, Shape, ShapeLabel, Transformable},
+    components::{RefShapes, ShapeLabel, Transformable},
     config::DrawConfig,
-    constants::{CARDINAL_COLORS, COIN_LABEL_STR, CUBE_LABEL_STR},
-    draw::{
-        self,
-        texture::{
-            shape_texture::{
-                build_fuzzy_tile_texture, fuzzy_color_cube_texture, FaceTextureGeneric,
-                ShapeTextureGeneric,
-            },
-            texture_builder::{TextureBuilder, TextureBuilderStep, TexturePrim},
-        },
-    },
+    constants::{COIN_LABEL_STR, CUBE_LABEL_STR},
+    draw::texture::shape_texture::{build_fuzzy_tile_texture, fuzzy_color_cube_texture},
     ecs_utils::Componentable,
-    geometry::transform::Scaling,
     graphics::colors::YELLOW,
     shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV},
     utils::ValidDimension,
@@ -65,7 +54,7 @@ fn build_corridor_cross<V: VectorTrait>(
             .collect();
     for builder in &mut walls1 {
         builder.shape_texture_builder =
-            build_fuzzy_tile_texture(&builder.shape, &builder.transformation.scale, draw_config);
+            build_fuzzy_tile_texture::<V>(draw_config, builder.shape.faces.len());
     }
 
     shape_builders.append(&mut walls1);
@@ -77,7 +66,7 @@ fn build_corridor_cross<V: VectorTrait>(
             .clone()
             .with_translation(V::one_hot(i) * (wall_length + corr_width) * (*sign))
             .stretch(&(V::one_hot(1) * (wall_height - corr_width) + V::ones() * corr_width))
-            .with_texturing_fn(|s| fuzzy_color_cube_texture(s))
+            .with_texture(fuzzy_color_cube_texture::<V>())
     });
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
@@ -103,11 +92,11 @@ fn build_corridor_cross<V: VectorTrait>(
 
     for builder in &mut floors_long {
         builder.shape_texture_builder =
-            build_fuzzy_tile_texture(&builder.shape, &builder.transformation.scale, draw_config);
+            build_fuzzy_tile_texture::<V>(draw_config, builder.shape.faces.len());
     }
     for builder in &mut ceilings_long {
         builder.shape_texture_builder =
-            build_fuzzy_tile_texture(&builder.shape, &builder.transformation.scale, draw_config);
+            build_fuzzy_tile_texture::<V>(draw_config, builder.shape.faces.len());
     }
 
     shape_builders.append(&mut floors_long);
@@ -117,7 +106,7 @@ fn build_corridor_cross<V: VectorTrait>(
         cube_builder
             .clone()
             .with_translation(-V::one_hot(1) * (wall_height + corr_width) / 2.0)
-            .with_texturing_fn(|shape| fuzzy_color_cube_texture(shape)),
+            .with_texture(fuzzy_color_cube_texture::<V>()),
     );
     //center ceiling
     if !open_center {

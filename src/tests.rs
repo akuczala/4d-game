@@ -9,7 +9,7 @@ use crate::{
     ecs_utils::Componentable,
     engine::get_engine_dispatcher_builder,
     geometry::transform::Scaling,
-    vector::{random_sphere_point, rotation_matrix, Field, MatrixTrait, VectorTrait},
+    vector::{random_sphere_point, rotation_matrix, Field, VectorTrait},
 };
 
 mod test_boundaries;

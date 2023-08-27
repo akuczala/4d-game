@@ -2,17 +2,15 @@ pub mod shape_texture;
 pub mod texture_builder;
 
 use std::collections::HashMap;
-use std::iter;
 
 pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, ShapeTextureBuilder};
 
-use super::clipping::boundaries::ConvexBoundarySet;
 use super::DrawLine;
 
 use crate::components::{BBox, Convex, HasBBox, Shape, ShapeType, Transform};
 use crate::constants::ZERO;
 use crate::geometry::affine_transform::AffineTransform;
-use crate::geometry::shape::face::{FaceBuilder, FaceGeometry};
+use crate::geometry::shape::face::FaceBuilder;
 use crate::geometry::shape::generic::subface_plane;
 use crate::geometry::shape::{Edge, EdgeIndex, FaceIndex, VertIndex};
 use crate::geometry::transform::Scaling;
@@ -487,7 +485,7 @@ fn test_uv_map_bounds() {
     use crate::constants::ZERO;
     use crate::geometry::{shape::buildshapes::ShapeBuilder, Plane, PointedPlane};
     use crate::tests::{random_rotation_matrix, random_vec};
-    use crate::vector::{is_close, is_less_than_or_close, MatrixTrait, Vec3, Vec4};
+    use crate::vector::{is_close, is_less_than_or_close, MatrixTrait, Vec4};
     type V = Vec4;
     let random_rotation = random_rotation_matrix::<V>();
     let random_transform: Transform<V, <V as VectorTrait>::M> =
