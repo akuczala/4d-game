@@ -2,6 +2,7 @@ pub mod shape_texture;
 pub mod texture_builder;
 
 use std::collections::HashMap;
+use std::iter;
 
 pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, ShapeTextureBuilder};
 
@@ -12,12 +13,13 @@ use crate::constants::{HALF, ZERO};
 use crate::geometry::affine_transform::AffineTransform;
 use crate::geometry::shape::face::FaceBuilder;
 use crate::geometry::shape::generic::subface_plane;
-use crate::geometry::shape::{Edge, EdgeIndex, FaceIndex, VertIndex};
+use crate::geometry::shape::{self, Edge, EdgeIndex, FaceIndex, VertIndex};
 use crate::geometry::transform::Scaling;
 use crate::geometry::{Face, Line, Plane};
 use crate::utils::BranchIterator;
 use crate::vector::{
-    barycenter, random_sphere_point, rotation_matrix, Field, VecIndex, VectorTrait,
+    barycenter, is_orthonormal_basis, random_sphere_point, rotation_matrix, Field, MatrixTrait,
+    VecIndex, VectorTrait,
 };
 
 use crate::graphics::colors::*;
@@ -120,43 +122,44 @@ impl<V: VectorTrait> Texture<V> {
             color: DEFAULT_COLOR,
         }
     }
-    // this works only for rectangular faces, as is
-    pub fn make_fuzz_texture(n: usize) -> Self {
-        Texture::Lines {
-            lines: (0..n).map(|_| pointlike_line(V::random())).collect(),
-            color: DEFAULT_COLOR,
-        }
-    }
-    pub fn merged_with(&self, texture: &Texture<V>, face_scale: Field) -> Texture<V> {
-        match (self, texture) {
-            // first two cases only work for rectangles
-            (Texture::DefaultLines { color: color_1 }, other) => {
-                Texture::make_single_tile_texture(*color_1, face_scale)
-                    .merged_with(other, face_scale)
-            }
-            (_, Texture::DefaultLines { color: color_2 }) => self.merged_with(
-                &Texture::make_single_tile_texture(*color_2, face_scale),
-                face_scale,
-            ),
-            (
-                Texture::Lines {
-                    lines: lines_1,
-                    color,
-                },
-                Texture::Lines { lines: lines_2, .. },
-            ) => Texture::Lines {
-                lines: {
-                    let mut lines = lines_1.clone();
-                    lines.extend(lines_2.clone());
-                    lines
-                },
-                color: *color,
+}
+pub fn merge_textures<V: VectorTrait>(
+    texture_1: &Texture<V::SubV>,
+    texture: &Texture<V::SubV>,
+    face_scale: Field,
+    uv_map: &UVMapV<V>,
+) -> Texture<V::SubV> {
+    match (texture_1, texture) {
+        // first two cases only work for rectangles
+        (Texture::DefaultLines { color: color_1 }, other) => merge_textures(
+            &make_default_lines_texture(face_scale, uv_map, *color_1),
+            other,
+            face_scale,
+            uv_map,
+        ),
+        (_, Texture::DefaultLines { color: color_2 }) => merge_textures(
+            texture_1,
+            &make_default_lines_texture(face_scale, uv_map, *color_2),
+            face_scale,
+            uv_map,
+        ),
+        (
+            Texture::Lines {
+                lines: lines_1,
+                color,
             },
-            _ => panic!("Unsupported texture merge operation"),
-        }
+            Texture::Lines { lines: lines_2, .. },
+        ) => Texture::Lines {
+            lines: {
+                let mut lines = lines_1.clone();
+                lines.extend(lines_2.clone());
+                lines
+            },
+            color: *color,
+        },
+        _ => panic!("Unsupported texture merge operation"),
     }
 }
-
 #[derive(Clone, Serialize, Deserialize)]
 pub struct UVMap<V, M, U> {
     map: Transform<V, M>, // Used to map from ref space (V) to UV space (U)
@@ -196,18 +199,19 @@ impl<V: VectorTrait> UVMapV<V> {
             .iter()
             .map(move |line| line.map(|p| uv_to_space.transform_vec(&V::unproject(p))))
     }
+
+    fn clip_point(&self, point: V::SubV) -> Option<V::SubV> {
+        self.is_point_within_bounds(point).then_some(point)
+    }
 }
 type UVMapV<V> = UVMap<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
-// We need to be able to generate, for an arbitrary face, a sensible mapping to a D - 1 UV space
-fn auto_uv_map_face<V: VectorTrait>(
+
+fn shape_into_uv_bounding_shape<V: VectorTrait>(
     shape: &Shape<V>,
     face_index: FaceIndex,
-) -> UVMap<V, V::M, V::SubV> {
-    // project points of face onto face plane
-    // cook up a basis for the plane
+    map: &Transform<V, V::M>,
+) -> Shape<V::SubV> {
     let face = &shape.faces[face_index];
-    let basis = rotation_matrix(face.normal(), V::one_hot(-1), None);
-    let map = Transform::new(Some(-(basis * face.center())), Some(basis), None);
     // TODO: much of this could be moved to a shapebuilder fn that separates /creates a boundary shape from a face of a given shape
     let verti_map: HashMap<VertIndex, VertIndex> = face
         .vertis
@@ -237,7 +241,7 @@ fn auto_uv_map_face<V: VectorTrait>(
         .map(|subface| {
             let unmapped_edgeis = subface.get_edgeis(&shape.edges, &shape.faces);
             let face_plane = subface_plane(&shape.faces, face_index, &subface)
-                .with_transform(map)
+                .with_transform(*map)
                 .intersect_proj_plane();
             let edgeis = unmapped_edgeis
                 .iter()
@@ -246,7 +250,20 @@ fn auto_uv_map_face<V: VectorTrait>(
             face_builder.build(edgeis, face_plane.normal, false)
         })
         .collect();
-    let bounding_shape = Shape::new_convex(verts, edges, faces);
+    Shape::new_convex(verts, edges, faces)
+}
+
+// We need to be able to generate, for an arbitrary face, a sensible mapping to a D - 1 UV space
+fn auto_uv_map_face<V: VectorTrait>(
+    ref_shape: &Shape<V>,
+    face_index: FaceIndex,
+) -> UVMap<V, V::M, V::SubV> {
+    // project points of face onto face plane
+    // cook up a basis for the plane
+    let face = &ref_shape.faces[face_index];
+    let basis = rotation_matrix(face.normal(), V::one_hot(-1), None);
+    let map = Transform::new(Some(-(basis * face.center())), Some(basis), None);
+    let bounding_shape = shape_into_uv_bounding_shape(ref_shape, face_index, &map);
     let bbox = bounding_shape.calc_bbox();
     UVMap {
         map,
@@ -254,30 +271,39 @@ fn auto_uv_map_face<V: VectorTrait>(
         bbox,
     }
 }
+
 impl<V: VectorTrait> UVMapV<V> {
     pub fn from_frame_texture_mapping(
         ref_shape: &Shape<V>,
-        shape_mapping: FrameTextureMapping,
+        face_index: FaceIndex,
+        frame_mapping: FrameTextureMapping,
     ) -> Self {
-        let origin = shape_mapping.origin(&ref_shape.verts);
-        let frame = shape_mapping.frame_verts(&ref_shape.verts);
-        let (normed_frame, mut norms): (Vec<V>, Vec<Field>) =
+        let origin = frame_mapping.origin(&ref_shape.verts);
+        let frame = frame_mapping.frame_verts(&ref_shape.verts);
+        let (mut normed_frame, mut norms): (Vec<V>, Vec<Field>) =
             frame.map(|v| v.normalize_get_norm()).unzip();
+        normed_frame.push(ref_shape.faces[face_index].normal()); // Normal should be perp to frame
+        norms.push(1.0); // Doesn't matter
+        assert!(is_orthonormal_basis(&normed_frame));
+        assert_eq!(normed_frame.len(), V::DIM as usize);
         let transform_frame: V::M = normed_frame
             .into_iter()
             .map(|f| (0..V::DIM).map(|i| f.dot(V::one_hot(i))).collect())
             .collect();
-        norms.push(1.0);
+
         let transform_scale = Scaling::Vector(norms.into_iter().collect());
         let map = Transform {
-            pos: origin,
+            pos: -(transform_frame.transpose() * origin),
+            //pos: origin,
             frame: transform_frame,
             scale: transform_scale,
         };
+        let bounding_shape = shape_into_uv_bounding_shape(ref_shape, face_index, &map);
+        let bbox = bounding_shape.calc_bbox();
         UVMap {
             map,
-            bounding_shape: todo!(),
-            bbox: todo!(),
+            bounding_shape,
+            bbox,
         }
     }
 }
@@ -299,11 +325,22 @@ pub fn draw_default_on_uv<V: VectorTrait>(
         .collect()
 }
 
+pub fn make_default_lines_texture<V: VectorTrait>(
+    face_scale: Field,
+    uv_map: &UVMapV<V>,
+    color: Color,
+) -> Texture<V::SubV> {
+    Texture::Lines {
+        lines: draw_default_on_uv(face_scale, uv_map),
+        color,
+    }
+}
+
 pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<V::SubV> {
     Texture::Lines {
-        lines: (0..n * 2)
+        lines: (0..n * 100)
             .map(|_| uv_map.bbox.random_point())
-            .filter(|v| uv_map.is_point_within_bounds(*v))
+            .filter_map(|p| uv_map.clip_point(p))
             .take(n)
             .map(pointlike_line)
             .collect(),
@@ -343,8 +380,8 @@ pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<
 // e.g. AutoUV, SortLengths
 // TODO: above will require separate shape + face builder + drawer structs
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct OldTextureMapping {
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct FrameTextureMapping {
     pub frame_vertis: Vec<VertIndex>,
     pub origin_verti: VertIndex,
 }
@@ -381,8 +418,8 @@ impl<V: VectorTrait> TextureMappingV<V> {
     }
 }
 
-// TODO: to replace OldTextureMapping
-type FrameTextureMapping = OldTextureMapping;
+// TODO: to rm OldTextureMapping
+type OldTextureMapping = FrameTextureMapping;
 
 impl FrameTextureMapping {
     pub fn origin<V: VectorTrait>(&self, shape_verts: &[V]) -> V {
@@ -544,6 +581,72 @@ fn test_uv_map_shape() {
             assert!(bounding_face
                 .get_verts(&uv_map.bounding_shape.verts)
                 .all(|vert| is_close(bounding_face.plane().point_signed_distance(*vert), ZERO)))
+        }
+    }
+}
+
+#[test]
+fn test_frame_to_uv() {
+    use crate::constants::ZERO;
+    use crate::geometry::shape::buildshapes::ShapeBuilder;
+    use crate::tests::{random_rotation_matrix, random_vec};
+    use crate::vector::{is_close, Vec3, Vec4};
+    type V = Vec3;
+    let random_rotation = random_rotation_matrix::<V>();
+    let random_transform: Transform<V, <V as VectorTrait>::M> =
+        Transform::new(Some(random_vec()), Some(random_rotation), None);
+
+    let shape: Shape<V> = ShapeBuilder::build_cube(2.0)
+        .with_transform(random_transform)
+        .build();
+
+    for (face_index, face) in shape.faces.iter().enumerate() {
+        let frame_map = FrameTextureMapping::calc_cube_vertis(face, &shape.verts, &shape.edges);
+    }
+
+    //TODO: finish
+}
+
+#[test]
+fn test_fuzz_on_uv() {
+    use crate::constants::ZERO;
+    use crate::geometry::shape::buildshapes::ShapeBuilder;
+    use crate::tests::{random_rotation_matrix, random_vec};
+    use crate::vector::{is_close, Vec3, Vec4};
+    type V = Vec3;
+    let random_rotation = random_rotation_matrix::<V>();
+    let random_transform: Transform<V, <V as VectorTrait>::M> =
+        Transform::new(Some(random_vec()), Some(random_rotation), None);
+
+    let ref_shape: Shape<V> = ShapeBuilder::build_cube(2.0)
+        .with_transform(random_transform)
+        .build();
+
+    for (face_index, face) in ref_shape.faces.iter().enumerate() {
+        let uv_map = auto_uv_map_face(&ref_shape, face_index);
+        let n = 100;
+        let texture = draw_fuzz_on_uv(&uv_map, n);
+        match texture {
+            Texture::Lines { lines, color } => {
+                assert_eq!(lines.len(), n)
+            }
+            _ => panic!("Expected lines texture"),
+        }
+    }
+
+    let ref_shape: Shape<V> = ShapeBuilder::build_prism(V::DIM, &[2.0, 3.0], &[3, 5])
+        .with_transform(random_transform)
+        .build();
+
+    for (face_index, face) in ref_shape.faces.iter().enumerate() {
+        let uv_map = auto_uv_map_face(&ref_shape, face_index);
+        let n = 100;
+        let texture = draw_fuzz_on_uv(&uv_map, n);
+        match texture {
+            Texture::Lines { lines, .. } => {
+                assert_eq!(lines.len(), n)
+            }
+            _ => panic!("Expected lines texture"),
         }
     }
 }

@@ -12,9 +12,10 @@ use crate::coin::Coin;
 use crate::config::Config;
 use crate::constants::{COIN_LABEL_STR, SELECTION_COLOR};
 use crate::draw::draw_line_collection::DrawLineCollection;
-use crate::draw::texture::shape_texture::fuzzy_color_cube_texture;
+use crate::draw::texture::shape_texture::{fuzzy_color_cube_texture, TextureMappingDirective};
+use crate::draw::texture::texture_builder::{TextureBuilder, TextureBuilderStep, TexturePrim};
 
-use crate::draw::texture::ShapeTextureBuilder;
+use crate::draw::texture::{FaceTextureBuilder, ShapeTextureBuilder};
 use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
 
 use crate::geometry::transform::Scaling;
@@ -213,7 +214,15 @@ pub fn create_shape<V: VectorTrait>(
                         if is_coin || shape_label == ShapeLabel::from_str("TestPrism") {
                             ShapeTextureBuilder::new_default(shape.faces.len()).with_color(YELLOW)
                         } else {
-                            fuzzy_color_cube_texture::<V>()
+                            //fuzzy_color_cube_texture::<V>() // TODO: debug; revert
+                            ShapeTextureBuilder::new_default(shape.faces.len()).with_texture(
+                                FaceTextureBuilder {
+                                    texture: TextureBuilder::new().with_step(
+                                        TextureBuilderStep::WithTexture(TexturePrim::Fuzz),
+                                    ),
+                                    mapping_directive: TextureMappingDirective::UVDefault,
+                                },
+                            )
                         }
                     })
                     .with_collider((!is_coin).then_some(StaticCollider))

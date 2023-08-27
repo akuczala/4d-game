@@ -1,12 +1,18 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    components::Shape,
     config::Config,
-    graphics::colors::Color,
+    geometry::shape::FaceIndex,
+    graphics::colors::{Color, WHITE},
     vector::{Field, VectorTrait},
 };
 
-use super::Texture;
+use super::{
+    auto_uv_map_face, draw_default_lines, draw_fuzz_on_uv, make_default_lines_texture,
+    merge_textures, shape_texture::TextureMappingDirective, FrameTextureMapping, Texture,
+    TextureMapping, TextureMappingV, UVMapV,
+};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum TexturePrim {
@@ -16,6 +22,15 @@ pub enum TexturePrim {
         n_divisions: Vec<i32>,
     },
     Fuzz,
+}
+impl TexturePrim {
+    fn required_mapping(&self) -> TextureMappingDirective {
+        match self {
+            Self::Default => TextureMappingDirective::None,
+            Self::Tile { .. } => TextureMappingDirective::Orthogonal,
+            Self::Fuzz => TextureMappingDirective::UVDefault,
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -71,32 +86,96 @@ impl TextureBuilder {
     pub fn with_color(self, color: Color) -> Self {
         self.with_step(TextureBuilderStep::WithColor(color))
     }
-    pub fn build<U: VectorTrait>(self, config: &TextureBuilderConfig) -> Texture<U> {
+    pub fn build<V: VectorTrait>(
+        self,
+        config: &TextureBuilderConfig,
+        ref_shape: &Shape<V>,
+        face_index: FaceIndex,
+        mapping: TextureMappingV<V>,
+    ) -> (Texture<V::SubV>, TextureMappingV<V>) {
         self.steps
             .into_iter()
-            .fold(Default::default(), |texture, step| {
-                Self::apply_step(config, texture, step)
+            .fold((Default::default(), mapping), |(texture, mapping), step| {
+                Self::apply_step(config, ref_shape, face_index, texture, mapping, step)
             })
     }
-    pub fn apply_step<V: VectorTrait>(
+    fn apply_step<V: VectorTrait>(
         config: &TextureBuilderConfig,
-        texture: Texture<V>,
+        ref_shape: &Shape<V>,
+        face_index: FaceIndex,
+        texture: Texture<V::SubV>,
+        mapping: TextureMappingV<V>,
         step: TextureBuilderStep,
-    ) -> Texture<V> {
+    ) -> (Texture<V::SubV>, TextureMappingV<V>) {
+        // TODO: probably much more natural to make this a face texture builder directly
         match step {
-            TextureBuilderStep::WithTexture(new_texture) => match new_texture {
-                TexturePrim::Default => Default::default(),
-                TexturePrim::Tile {
-                    scales,
-                    n_divisions,
-                } => Texture::make_tile_texture(&scales, &n_divisions),
-                TexturePrim::Fuzz => Texture::make_fuzz_texture(config.n_fuzz_lines),
-            },
-            TextureBuilderStep::WithColor(color) => texture.set_color(color),
+            TextureBuilderStep::WithTexture(new_texture) => {
+                let required_mapping_type = new_texture.required_mapping();
+                match new_texture {
+                    TexturePrim::Default => (
+                        Default::default(),
+                        transform_mapping(required_mapping_type, ref_shape, face_index, mapping),
+                    ),
+                    TexturePrim::Tile {
+                        scales,
+                        n_divisions,
+                    } => (
+                        Texture::make_tile_texture(&scales, &n_divisions),
+                        transform_mapping(required_mapping_type, ref_shape, face_index, mapping),
+                    ),
+                    TexturePrim::Fuzz => {
+                        let new_mapping = transform_mapping(
+                            required_mapping_type,
+                            ref_shape,
+                            face_index,
+                            mapping,
+                        );
+                        let uv_map = match &new_mapping {
+                            TextureMapping::UV(uv) => uv,
+                            _ => unreachable!(),
+                        };
+                        let texture = draw_fuzz_on_uv(uv_map, config.n_fuzz_lines);
+                        (texture, new_mapping)
+                    }
+                }
+            }
+            TextureBuilderStep::WithColor(color) => (texture.set_color(color), mapping),
             TextureBuilderStep::MergedWith(steps) => {
-                let new_texture = Self::new().with_steps(steps).build::<V>(config);
-                texture.merged_with(&new_texture, config.face_scale)
+                let (new_texture, new_mapping) = Self::new()
+                    .with_steps(steps)
+                    .build::<V>(config, ref_shape, face_index, mapping);
+                (
+                    merge_textures::<V>(&texture, &new_texture, config.face_scale, todo!()),
+                    new_mapping,
+                )
             }
         }
+    }
+}
+
+/// transforms the texture mapping to the appropriate format, if possible, otherwise overwrites the mapping
+fn transform_mapping<V: VectorTrait>(
+    required_mapping_type: TextureMappingDirective,
+    ref_shape: &Shape<V>,
+    face_index: FaceIndex,
+    mapping: TextureMappingV<V>,
+) -> TextureMappingV<V> {
+    match required_mapping_type {
+        TextureMappingDirective::None => TextureMapping::None,
+        TextureMappingDirective::Orthogonal => TextureMapping::Frame(match mapping {
+            TextureMapping::None | TextureMapping::UV(_) => FrameTextureMapping::calc_cube_vertis(
+                &ref_shape.faces[face_index],
+                &ref_shape.verts,
+                &ref_shape.edges,
+            ),
+            TextureMapping::Frame(frame) => frame,
+        }),
+        TextureMappingDirective::UVDefault => TextureMapping::UV(match mapping {
+            TextureMapping::None => auto_uv_map_face(ref_shape, face_index),
+            TextureMapping::Frame(frame_map) => {
+                UVMapV::from_frame_texture_mapping(ref_shape, face_index, frame_map)
+            }
+            TextureMapping::UV(uv) => uv,
+        }),
     }
 }

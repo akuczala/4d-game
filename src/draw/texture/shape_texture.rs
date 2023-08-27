@@ -7,14 +7,17 @@ use crate::{
     config::DrawConfig,
     constants::CARDINAL_COLORS,
     draw::DrawLine,
-    geometry::Face,
+    geometry::{
+        shape::{face, FaceIndex},
+        Face,
+    },
     graphics::colors::Color,
     utils::{BranchIterator, ValidDimension},
     vector::{Field, VectorTrait},
 };
 
 use super::{
-    draw_default_lines,
+    auto_uv_map_face, draw_default_lines,
     texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep, TexturePrim},
     FrameTextureMapping, Texture, TextureMapping, TextureMappingV,
 };
@@ -31,11 +34,6 @@ impl<V: Default, M: Default, U: Default> ShapeTextureGeneric<V, M, U> {
     }
 }
 
-// pub enum ShapeTextureGenericNew<T> {
-//     Uniform(FaceTexture<T>),
-//     ByFace(Vec<FaceTextureGeneric<T>>),
-// }
-
 // Examples
 // "CoinShapeTexture", "ColorCubeShapeTexture", "FuzzyColorCubeShapeTexture"
 // CoinShapeTexture = Uniform(Default >>> Yellow) = DefaultTexture >>> Yellow
@@ -51,6 +49,10 @@ impl<V: Default, M: Default, U: Default> ShapeTextureGeneric<V, M, U> {
 
 pub type ShapeTexture<V> = ShapeTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
 
+// TODO: change to enum, add simplified variants, e.g.
+// Uniform(FaceTextureBuilder)
+// Mapped(FaceTextureBuilder, Vec<Directives>)
+// Inhomogeneous(Vec<FaceTextureBuilder)
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ShapeTextureBuilder {
     pub face_textures: Vec<FaceTextureBuilder>,
@@ -86,8 +88,8 @@ impl ShapeTextureBuilder {
             face_textures: self
                 .face_textures
                 .into_iter()
-                .zip(shape.faces.iter())
-                .map(|(face_texture, face)| face_texture.build(config, face, shape))
+                .enumerate()
+                .map(|(face_index, face_texture)| face_texture.build(config, face_index, shape))
                 .collect(),
         }
     }
@@ -149,12 +151,16 @@ impl FaceTextureBuilder {
     pub fn build<V: VectorTrait>(
         self,
         config: &TextureBuilderConfig,
-        face: &Face<V>,
-        shape: &Shape<V>,
+        face_index: FaceIndex,
+        ref_shape: &Shape<V>,
     ) -> FaceTexture<V> {
+        let texture_mapping = self.mapping_directive.build(face_index, ref_shape);
+        let (texture, texture_mapping) =
+            self.texture
+                .build(config, ref_shape, face_index, texture_mapping);
         FaceTexture {
-            texture: self.texture.build(config),
-            texture_mapping: self.mapping_directive.build(face, shape),
+            texture,
+            texture_mapping,
         }
     }
 }
@@ -167,13 +173,23 @@ pub enum TextureMappingDirective {
     UVDefault,
 }
 impl TextureMappingDirective {
-    fn build<V: VectorTrait>(&self, face: &Face<V>, shape: &Shape<V>) -> TextureMappingV<V> {
+    fn build<V: VectorTrait>(
+        &self,
+        face_index: FaceIndex,
+        ref_shape: &Shape<V>,
+    ) -> TextureMappingV<V> {
         match self {
             TextureMappingDirective::None => TextureMapping::None,
-            TextureMappingDirective::Orthogonal => TextureMapping::Frame(
-                FrameTextureMapping::calc_cube_vertis(face, &shape.verts, &shape.edges),
-            ),
-            TextureMappingDirective::UVDefault => todo!(),
+            TextureMappingDirective::Orthogonal => {
+                TextureMapping::Frame(FrameTextureMapping::calc_cube_vertis(
+                    &ref_shape.faces[face_index],
+                    &ref_shape.verts,
+                    &ref_shape.edges,
+                ))
+            }
+            TextureMappingDirective::UVDefault => {
+                TextureMapping::UV(auto_uv_map_face(ref_shape, face_index))
+            }
         }
     }
 }

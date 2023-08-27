@@ -54,7 +54,7 @@ fn build_corridor_cross<V: VectorTrait>(
             .collect();
     for builder in &mut walls1 {
         builder.shape_texture_builder =
-            build_fuzzy_tile_texture::<V>(draw_config, builder.shape.faces.len());
+            build_fuzzy_tile_texture::<V>(draw_config, builder.n_faces());
     }
 
     shape_builders.append(&mut walls1);
@@ -92,11 +92,11 @@ fn build_corridor_cross<V: VectorTrait>(
 
     for builder in &mut floors_long {
         builder.shape_texture_builder =
-            build_fuzzy_tile_texture::<V>(draw_config, builder.shape.faces.len());
+            build_fuzzy_tile_texture::<V>(draw_config, builder.n_faces());
     }
     for builder in &mut ceilings_long {
         builder.shape_texture_builder =
-            build_fuzzy_tile_texture::<V>(draw_config, builder.shape.faces.len());
+            build_fuzzy_tile_texture::<V>(draw_config, builder.n_faces());
     }
 
     shape_builders.append(&mut floors_long);
