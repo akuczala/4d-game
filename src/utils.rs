@@ -40,9 +40,28 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            BranchIterator::Option1(a) => a.next(),
-            BranchIterator::Option2(b) => b.next(),
-            BranchIterator::Option3(c) => c.next(),
+            Self::Option1(a) => a.next(),
+            Self::Option2(b) => b.next(),
+            Self::Option3(c) => c.next(),
+        }
+    }
+}
+
+pub enum BranchIterator2<A, B> {
+    Option1(A),
+    Option2(B),
+}
+impl<A, B, T> Iterator for BranchIterator2<A, B>
+where
+    A: Iterator<Item = T>,
+    B: Iterator<Item = T>,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Self::Option1(a) => a.next(),
+            Self::Option2(b) => b.next(),
         }
     }
 }

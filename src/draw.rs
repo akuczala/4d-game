@@ -52,11 +52,9 @@ pub struct DrawLine<V> {
     pub line: Line<V>,
     pub color: Color,
 }
-impl<V: VectorTrait> DrawLine<V> {
-    #[allow(dead_code)]
+impl<V> DrawLine<V> {
     pub fn map_line<F, U>(self, f: F) -> DrawLine<U>
     where
-        U: VectorTrait,
         F: Fn(Line<V>) -> Line<U>,
     {
         DrawLine {
@@ -64,6 +62,8 @@ impl<V: VectorTrait> DrawLine<V> {
             color: self.color,
         }
     }
+}
+impl<V: VectorTrait> DrawLine<V> {
     pub fn get_draw_verts(&self) -> [DrawVertex<V>; 2] {
         [
             DrawVertex {
@@ -251,22 +251,24 @@ pub fn calc_shapes_lines<V>(
     for (shape, shape_transform, shape_texture, shape_clip_state) in shape_components.join() {
         scratch.0.clear();
         //get lines from each face
-        for (face, &visible, face_texture) in izip!(
+        for (face, &visible, maybe_face_texture) in izip!(
             shape.faces.iter(),
             shape_clip_state.face_visibility.iter(),
             shape_texture.face_textures.iter()
         ) {
-            scratch.0.extend(draw_face_texture::<V>(
-                face_texture,
-                face,
-                shape,
-                shape_transform,
-                &[draw_config.face_scale],
-                visible,
-                draw_config
-                    .color_by_orientation
-                    .then(|| normal_to_color(face.normal())),
-            ))
+            if let Some(face_texture) = maybe_face_texture {
+                scratch.0.extend(draw_face_texture::<V>(
+                    face_texture,
+                    face,
+                    shape,
+                    shape_transform,
+                    &[draw_config.face_scale],
+                    visible,
+                    draw_config
+                        .color_by_orientation
+                        .then(|| normal_to_color(face.normal())),
+                ))
+            }
         }
 
         if clip_state.clipping_enabled {

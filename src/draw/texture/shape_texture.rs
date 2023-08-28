@@ -9,7 +9,7 @@ use crate::{
     draw::DrawLine,
     geometry::{shape::FaceIndex, Face},
     graphics::colors::Color,
-    utils::{BranchIterator, ValidDimension},
+    utils::{BranchIterator, BranchIterator2, ValidDimension},
     vector::{Field, VectorTrait},
 };
 
@@ -21,7 +21,7 @@ use super::{
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ShapeTextureGeneric<V, M, U> {
-    pub face_textures: Vec<FaceTextureGeneric<V, M, U>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
+    pub face_textures: Vec<Option<FaceTextureGeneric<V, M, U>>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
 impl<V: Default, M: Default, U: Default> ShapeTextureGeneric<V, M, U> {
     pub fn new_default(n_faces: usize) -> Self {
@@ -58,9 +58,12 @@ pub struct ShapeTextureBuilder {
 impl<V, M, U> ShapeTextureGeneric<V, M, U> {
     #[allow(dead_code)]
     pub fn with_color(mut self, color: Color) -> Self {
-        for face in &mut self.face_textures {
-            face.set_color(color);
-        }
+        self.face_textures
+            .iter_mut()
+            .flat_map(|maybe_face| maybe_face.as_mut())
+            .for_each(|face| {
+                face.set_color(color);
+            });
         self
     }
 }
@@ -88,7 +91,7 @@ impl ShapeTextureBuilder {
                 .into_iter()
                 .enumerate()
                 .map(|(face_index, face_texture)| {
-                    face_texture.build(config, face_index, ref_shape, shape)
+                    Some(face_texture.build(config, face_index, ref_shape, shape))
                 })
                 .collect(),
         }
@@ -124,7 +127,7 @@ impl ShapeTextureBuilder {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct FaceTextureGeneric<V, M, U> {
     pub texture: Texture<U>,
     pub texture_mapping: TextureMapping<V, M, U>,
@@ -155,10 +158,7 @@ impl FaceTextureBuilder {
         ref_shape: &Shape<V>,
         shape: &Shape<V>,
     ) -> FaceTexture<V> {
-        let texture_mapping = self.mapping_directive.build(face_index, ref_shape, shape);
-        let (texture, texture_mapping) =
-            self.texture
-                .build(config, ref_shape, shape, face_index, texture_mapping);
+        let (texture, texture_mapping) = self.texture.build(config, ref_shape, shape, face_index);
         FaceTexture {
             texture,
             texture_mapping,
@@ -168,9 +168,9 @@ impl FaceTextureBuilder {
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub enum TextureMappingDirective {
-    #[default]
     None,
     Orthogonal,
+    #[default]
     UVDefault,
 }
 impl TextureMappingDirective {
@@ -181,9 +181,8 @@ impl TextureMappingDirective {
         shape: &Shape<V>,
     ) -> TextureMappingV<V> {
         match self {
-            TextureMappingDirective::None => TextureMapping::None,
             TextureMappingDirective::Orthogonal => {
-                TextureMapping::UV(UVMapV::from_frame_texture_mapping(
+                TextureMapping::new(UVMapV::from_frame_texture_mapping(
                     ref_shape,
                     face_index,
                     FrameTextureMapping::calc_cube_vertis(
@@ -193,8 +192,8 @@ impl TextureMappingDirective {
                     ),
                 ))
             }
-            TextureMappingDirective::UVDefault => {
-                TextureMapping::UV(auto_uv_map_face(ref_shape, face_index))
+            TextureMappingDirective::UVDefault | Self::None => {
+                TextureMapping::new(auto_uv_map_face(ref_shape, face_index))
             }
         }
     }
@@ -211,19 +210,11 @@ pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
     override_color: Option<Color>,
 ) -> impl Iterator<Item = DrawLine<V>> + 'a {
     if !visible {
-        return BranchIterator::Option3(iter::empty());
+        return BranchIterator2::Option1(iter::empty());
     }
     match &face_texture.texture {
-        Texture::DefaultLines { color } => {
-            BranchIterator::Option1(draw_default_lines(face, shape, face_scales).map(|line| {
-                DrawLine {
-                    line,
-                    color: *color,
-                }
-            }))
-        }
         Texture::Lines { lines, color } => {
-            BranchIterator::Option2(face_texture.texture_mapping.draw_lines(
+            BranchIterator2::Option2(face_texture.texture_mapping.draw_lines(
                 shape_transform,
                 lines,
                 override_color.unwrap_or(*color),
@@ -239,24 +230,27 @@ pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilder {
             .zip(&CARDINAL_COLORS)
             .map(|(_face, &color)| FaceTextureBuilder {
                 texture: TextureBuilder::new().with_color(color.set_alpha(0.5)),
-                mapping_directive: TextureMappingDirective::None,
+                mapping_directive: Default::default(),
             })
             .collect(),
     }
 }
 
 pub fn fuzzy_color_cube_texture<V: VectorTrait>() -> ShapeTextureBuilder {
-    let texture_builder = TextureBuilder::new();
     color_cube_shape_texture::<V>().map_textures(|face_tex| FaceTextureBuilder {
         texture: face_tex
             .texture
-            .merged_with(texture_builder.clone().make_fuzz_texture()),
+            .merged_with(TextureBuilder::new().make_fuzz_texture()),
         mapping_directive: TextureMappingDirective::Orthogonal,
     })
 }
 
 #[allow(dead_code)]
-pub fn color_duocylinder<V: VectorTrait>(shape_texture: &mut ShapeTexture<V>, m: usize, n: usize) {
+pub fn color_duocylinder<V: VectorTrait>(
+    shape_texture: &mut ShapeTextureBuilder,
+    m: usize,
+    n: usize,
+) {
     for (i, face) in itertools::enumerate(shape_texture.face_textures.iter_mut()) {
         let iint = i as i32;
         let color = Color([
@@ -265,7 +259,7 @@ pub fn color_duocylinder<V: VectorTrait>(shape_texture: &mut ShapeTexture<V>, m:
             1.0,
             1.0,
         ]);
-        face.texture = Texture::DefaultLines { color };
+        face.texture = TextureBuilder::new().with_color(color)
     }
 }
 
@@ -277,17 +271,15 @@ pub fn build_fuzzy_tile_texture<V: VectorTrait>(
         face_textures: (0..n_faces)
             .map(|face_index| FaceTextureBuilder {
                 texture: TextureBuilder::new()
-                    .with_step(TextureBuilderStep::WithTexture(TexturePrim::Tile {
-                        scales: vec![draw_config.face_scale],
-                        n_divisions: match V::DIM.into() {
+                    .make_tile_texture(
+                        vec![draw_config.face_scale],
+                        match V::DIM.into() {
                             ValidDimension::Three => vec![3, 1],
                             ValidDimension::Four => vec![3, 1, 1],
                         },
-                    }))
-                    // TODO: debug; rv
-                    // .with_step(TextureBuilderStep::MergedWith(vec![
-                    //     TextureBuilderStep::WithTexture(TexturePrim::Fuzz),
-                    // ]))
+                    )
+                    //TODO: debug; rv
+                    .merged_with(TextureBuilder::new().make_fuzz_texture())
                     .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index])),
                 mapping_directive: TextureMappingDirective::Orthogonal,
             })

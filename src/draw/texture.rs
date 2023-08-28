@@ -29,19 +29,20 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum Texture<V> {
-    DefaultLines { color: Color },
     Lines { lines: Vec<Line<V>>, color: Color },
     DrawLines(Vec<DrawLine<V>>), // I don't remember what this one is for
 }
 impl<V> Default for Texture<V> {
     fn default() -> Self {
-        Self::DefaultLines { color: WHITE }
+        Self::Lines {
+            lines: Vec::new(),
+            color: WHITE,
+        }
     }
 }
 impl<V> Texture<V> {
     pub fn set_color(self, color: Color) -> Self {
         match self {
-            Texture::DefaultLines { .. } => Texture::DefaultLines { color },
             Texture::Lines { lines, .. } => Texture::Lines { lines, color },
             Texture::DrawLines(draw_lines) => Texture::DrawLines(
                 draw_lines
@@ -54,7 +55,39 @@ impl<V> Texture<V> {
             ),
         }
     }
+    // TODO: create in-place version of this if allocation is a problem
+    pub fn map_lines<W, F: Fn(Line<V>) -> Line<W>>(self, f: F) -> Texture<W> {
+        match self {
+            Texture::Lines { lines, color } => Texture::Lines {
+                lines: lines.into_iter().map(f).collect(),
+                color,
+            },
+            Texture::DrawLines(draw_lines) => Texture::DrawLines(
+                draw_lines
+                    .into_iter()
+                    .map(move |dl| dl.map_line(&f))
+                    .collect(),
+            ),
+        }
+    }
 }
+impl<V: Copy> Texture<V> {
+    pub fn map_lines_in_place<F: Fn(Line<V>) -> Line<V>>(&mut self, f: F) {
+        match self {
+            Texture::Lines { lines, .. } => {
+                for line in lines {
+                    *line = f((*line).clone())
+                }
+            }
+            Texture::DrawLines(draw_lines) => {
+                for draw_line in draw_lines {
+                    *draw_line = (draw_line.clone()).map_line(&f)
+                }
+            }
+        }
+    }
+}
+
 impl<V: VectorTrait> Texture<V> {
     pub fn make_single_tile_texture(color: Color, face_scale: Field) -> Self {
         Texture::make_tile_texture(&[face_scale], &(0..V::DIM).map(|_| 1).collect_vec())
@@ -125,22 +158,8 @@ impl<V: VectorTrait> Texture<V> {
 pub fn merge_textures<V: VectorTrait>(
     texture_1: &Texture<V::SubV>,
     texture: &Texture<V::SubV>,
-    face_scale: Field,
-    uv_map: &UVMapV<V>,
 ) -> Texture<V::SubV> {
     match (texture_1, texture) {
-        (Texture::DefaultLines { color: color_1 }, other) => merge_textures(
-            &make_default_lines_texture(face_scale, uv_map, *color_1),
-            other,
-            face_scale,
-            uv_map,
-        ),
-        (_, Texture::DefaultLines { color: color_2 }) => merge_textures(
-            texture_1,
-            &make_default_lines_texture(face_scale, uv_map, *color_2),
-            face_scale,
-            uv_map,
-        ),
         (
             Texture::Lines {
                 lines: lines_1,
@@ -154,7 +173,7 @@ pub fn merge_textures<V: VectorTrait>(
                 lines
             },
             color: *color,
-        },
+        }, // TODO: check if the colors are the same; if not, create a drawlines texture with both
         _ => panic!("Unsupported texture merge operation"),
     }
 }
@@ -385,13 +404,16 @@ pub struct FrameTextureMapping {
     pub origin_verti: VertIndex,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
-pub enum TextureMapping<V, M, U> {
-    #[default]
-    None,
-    //Frame(FrameTextureMapping), convert to UV map
-    UV(UVMap<V, M, U>),
+#[derive(Clone, Serialize, Deserialize)]
+pub struct TextureMapping<V, M, U> {
+    uv_map: UVMap<V, M, U>,
 }
+impl<V, M, U> TextureMapping<V, M, U> {
+    pub fn new(uv_map: UVMap<V, M, U>) -> Self {
+        Self { uv_map }
+    }
+}
+
 pub type TextureMappingV<V> = TextureMapping<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
 
 impl<V: VectorTrait> TextureMappingV<V> {
@@ -401,15 +423,9 @@ impl<V: VectorTrait> TextureMappingV<V> {
         lines: &'a [Line<V::SubV>],
         color: Color,
     ) -> impl Iterator<Item = DrawLine<V>> + 'a {
-        match self {
-            Self::None => {
-                panic!("Can't draw lines");
-                //BranchIterator::Option1(std::iter::empty::<DrawLine<V>>())
-            }
-            Self::UV(uv_map) => uv_map
-                .draw_lines(shape_transform, lines)
-                .map(move |line| DrawLine { line, color }),
-        }
+        self.uv_map
+            .draw_lines(shape_transform, lines)
+            .map(move |line| DrawLine { line, color })
     }
 }
 
