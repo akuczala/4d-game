@@ -4,14 +4,13 @@ use crate::{
     components::Shape,
     config::Config,
     geometry::shape::FaceIndex,
-    graphics::colors::{Color, WHITE},
+    graphics::colors::Color,
     vector::{Field, VectorTrait},
 };
 
 use super::{
-    auto_uv_map_face, draw_default_lines, draw_fuzz_on_uv, make_default_lines_texture,
-    merge_textures, shape_texture::TextureMappingDirective, FrameTextureMapping, Texture,
-    TextureMapping, TextureMappingV, UVMapV,
+    auto_uv_map_face, draw_fuzz_on_uv, merge_textures, shape_texture::TextureMappingDirective,
+    FrameTextureMapping, Texture, TextureMapping, TextureMappingV, UVMapV,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -90,18 +89,20 @@ impl TextureBuilder {
         self,
         config: &TextureBuilderConfig,
         ref_shape: &Shape<V>,
+        shape: &Shape<V>,
         face_index: FaceIndex,
         mapping: TextureMappingV<V>,
     ) -> (Texture<V::SubV>, TextureMappingV<V>) {
         self.steps
             .into_iter()
             .fold((Default::default(), mapping), |(texture, mapping), step| {
-                Self::apply_step(config, ref_shape, face_index, texture, mapping, step)
+                Self::apply_step(config, ref_shape, shape, face_index, texture, mapping, step)
             })
     }
     fn apply_step<V: VectorTrait>(
         config: &TextureBuilderConfig,
         ref_shape: &Shape<V>,
+        shape: &Shape<V>,
         face_index: FaceIndex,
         texture: Texture<V::SubV>,
         mapping: TextureMappingV<V>,
@@ -114,19 +115,32 @@ impl TextureBuilder {
                 match new_texture {
                     TexturePrim::Default => (
                         Default::default(),
-                        transform_mapping(required_mapping_type, ref_shape, face_index, mapping),
+                        transform_mapping(
+                            required_mapping_type,
+                            ref_shape,
+                            shape,
+                            face_index,
+                            mapping,
+                        ),
                     ),
                     TexturePrim::Tile {
                         scales,
                         n_divisions,
                     } => (
                         Texture::make_tile_texture(&scales, &n_divisions),
-                        transform_mapping(required_mapping_type, ref_shape, face_index, mapping),
+                        transform_mapping(
+                            required_mapping_type,
+                            ref_shape,
+                            shape,
+                            face_index,
+                            mapping,
+                        ),
                     ),
                     TexturePrim::Fuzz => {
                         let new_mapping = transform_mapping(
                             required_mapping_type,
                             ref_shape,
+                            shape,
                             face_index,
                             mapping,
                         );
@@ -141,12 +155,22 @@ impl TextureBuilder {
             }
             TextureBuilderStep::WithColor(color) => (texture.set_color(color), mapping),
             TextureBuilderStep::MergedWith(steps) => {
-                let (new_texture, new_mapping) = Self::new()
-                    .with_steps(steps)
-                    .build::<V>(config, ref_shape, face_index, mapping);
+                let (new_texture, new_mapping) = Self::new().with_steps(steps).build::<V>(
+                    config,
+                    ref_shape,
+                    shape,
+                    face_index,
+                    Default::default(),
+                );
+                let new_uv_map = match (mapping, new_mapping) {
+                    (TextureMapping::None, TextureMapping::UV(uv))
+                    | (TextureMapping::UV(uv), TextureMapping::None)
+                    | (TextureMapping::UV(uv), TextureMapping::UV(_)) => uv,
+                    _ => panic!("Unsupported merge"),
+                };
                 (
-                    merge_textures::<V>(&texture, &new_texture, config.face_scale, todo!()),
-                    new_mapping,
+                    merge_textures::<V>(&texture, &new_texture, config.face_scale, &new_uv_map),
+                    TextureMapping::UV(new_uv_map),
                 )
             }
         }
@@ -157,24 +181,25 @@ impl TextureBuilder {
 fn transform_mapping<V: VectorTrait>(
     required_mapping_type: TextureMappingDirective,
     ref_shape: &Shape<V>,
+    shape: &Shape<V>,
     face_index: FaceIndex,
     mapping: TextureMappingV<V>,
 ) -> TextureMappingV<V> {
     match required_mapping_type {
         TextureMappingDirective::None => TextureMapping::None,
-        TextureMappingDirective::Orthogonal => TextureMapping::Frame(match mapping {
-            TextureMapping::None | TextureMapping::UV(_) => FrameTextureMapping::calc_cube_vertis(
-                &ref_shape.faces[face_index],
-                &ref_shape.verts,
-                &ref_shape.edges,
+        TextureMappingDirective::Orthogonal => TextureMapping::UV(match mapping {
+            TextureMapping::None | TextureMapping::UV(_) => UVMapV::from_frame_texture_mapping(
+                ref_shape,
+                face_index,
+                FrameTextureMapping::calc_cube_vertis(
+                    &shape.faces[face_index],
+                    &shape.verts,
+                    &shape.edges,
+                ),
             ),
-            TextureMapping::Frame(frame) => frame,
         }),
         TextureMappingDirective::UVDefault => TextureMapping::UV(match mapping {
             TextureMapping::None => auto_uv_map_face(ref_shape, face_index),
-            TextureMapping::Frame(frame_map) => {
-                UVMapV::from_frame_texture_mapping(ref_shape, face_index, frame_map)
-            }
             TextureMapping::UV(uv) => uv,
         }),
     }

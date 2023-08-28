@@ -97,6 +97,7 @@ where
             &world.fetch::<Config>(),
             shape_texture_builder.clone(),
             &ref_shape,
+            &shape,
         );
         world
             .create_entity()
@@ -123,7 +124,7 @@ where
         let mut shape = ref_shape.clone();
         shape.update_from_ref(&ref_shape, &transformation);
         let shape_texture =
-            make_shape_texture::<V>(config, shape_texture_builder.clone(), &ref_shape);
+            make_shape_texture::<V>(config, shape_texture_builder.clone(), &ref_shape, &shape);
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, transformation);
@@ -149,7 +150,8 @@ impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilderV<V> {
 fn make_shape_texture<V: VectorTrait>(
     config: &Config,
     builder: ShapeTextureBuilder,
+    ref_shape: &Shape<V>,
     shape: &Shape<V>,
 ) -> ShapeTexture<V> {
-    builder.build::<V>(&config.into(), shape)
+    builder.build::<V>(&config.into(), ref_shape, shape)
 }

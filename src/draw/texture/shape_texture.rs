@@ -7,10 +7,7 @@ use crate::{
     config::DrawConfig,
     constants::CARDINAL_COLORS,
     draw::DrawLine,
-    geometry::{
-        shape::{face, FaceIndex},
-        Face,
-    },
+    geometry::{shape::FaceIndex, Face},
     graphics::colors::Color,
     utils::{BranchIterator, ValidDimension},
     vector::{Field, VectorTrait},
@@ -19,7 +16,7 @@ use crate::{
 use super::{
     auto_uv_map_face, draw_default_lines,
     texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep, TexturePrim},
-    FrameTextureMapping, Texture, TextureMapping, TextureMappingV,
+    FrameTextureMapping, Texture, TextureMapping, TextureMappingV, UVMapV,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -82,6 +79,7 @@ impl ShapeTextureBuilder {
     pub fn build<V: VectorTrait>(
         self,
         config: &TextureBuilderConfig,
+        ref_shape: &Shape<V>,
         shape: &Shape<V>,
     ) -> ShapeTexture<V> {
         ShapeTexture {
@@ -89,7 +87,9 @@ impl ShapeTextureBuilder {
                 .face_textures
                 .into_iter()
                 .enumerate()
-                .map(|(face_index, face_texture)| face_texture.build(config, face_index, shape))
+                .map(|(face_index, face_texture)| {
+                    face_texture.build(config, face_index, ref_shape, shape)
+                })
                 .collect(),
         }
     }
@@ -153,11 +153,12 @@ impl FaceTextureBuilder {
         config: &TextureBuilderConfig,
         face_index: FaceIndex,
         ref_shape: &Shape<V>,
+        shape: &Shape<V>,
     ) -> FaceTexture<V> {
-        let texture_mapping = self.mapping_directive.build(face_index, ref_shape);
+        let texture_mapping = self.mapping_directive.build(face_index, ref_shape, shape);
         let (texture, texture_mapping) =
             self.texture
-                .build(config, ref_shape, face_index, texture_mapping);
+                .build(config, ref_shape, shape, face_index, texture_mapping);
         FaceTexture {
             texture,
             texture_mapping,
@@ -177,14 +178,19 @@ impl TextureMappingDirective {
         &self,
         face_index: FaceIndex,
         ref_shape: &Shape<V>,
+        shape: &Shape<V>,
     ) -> TextureMappingV<V> {
         match self {
             TextureMappingDirective::None => TextureMapping::None,
             TextureMappingDirective::Orthogonal => {
-                TextureMapping::Frame(FrameTextureMapping::calc_cube_vertis(
-                    &ref_shape.faces[face_index],
-                    &ref_shape.verts,
-                    &ref_shape.edges,
+                TextureMapping::UV(UVMapV::from_frame_texture_mapping(
+                    ref_shape,
+                    face_index,
+                    FrameTextureMapping::calc_cube_vertis(
+                        &shape.faces[face_index],
+                        &shape.verts,
+                        &shape.edges,
+                    ),
                 ))
             }
             TextureMappingDirective::UVDefault => {
@@ -279,9 +285,10 @@ pub fn build_fuzzy_tile_texture<V: VectorTrait>(
                             ValidDimension::Four => vec![3, 1, 1],
                         },
                     }))
-                    .with_step(TextureBuilderStep::MergedWith(vec![
-                        TextureBuilderStep::WithTexture(TexturePrim::Fuzz),
-                    ]))
+                    // TODO: debug; rv
+                    // .with_step(TextureBuilderStep::MergedWith(vec![
+                    //     TextureBuilderStep::WithTexture(TexturePrim::Fuzz),
+                    // ]))
                     .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index])),
                 mapping_directive: TextureMappingDirective::Orthogonal,
             })

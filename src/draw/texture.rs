@@ -2,7 +2,6 @@ pub mod shape_texture;
 pub mod texture_builder;
 
 use std::collections::HashMap;
-use std::iter;
 
 pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, ShapeTextureBuilder};
 
@@ -13,10 +12,10 @@ use crate::constants::{HALF, ZERO};
 use crate::geometry::affine_transform::AffineTransform;
 use crate::geometry::shape::face::FaceBuilder;
 use crate::geometry::shape::generic::subface_plane;
-use crate::geometry::shape::{self, Edge, EdgeIndex, FaceIndex, VertIndex};
+use crate::geometry::shape::{Edge, EdgeIndex, FaceIndex, VertIndex};
 use crate::geometry::transform::Scaling;
 use crate::geometry::{Face, Line, Plane};
-use crate::utils::BranchIterator;
+
 use crate::vector::{
     barycenter, is_orthonormal_basis, random_sphere_point, rotation_matrix, Field, MatrixTrait,
     VecIndex, VectorTrait,
@@ -130,7 +129,6 @@ pub fn merge_textures<V: VectorTrait>(
     uv_map: &UVMapV<V>,
 ) -> Texture<V::SubV> {
     match (texture_1, texture) {
-        // first two cases only work for rectangles
         (Texture::DefaultLines { color: color_1 }, other) => merge_textures(
             &make_default_lines_texture(face_scale, uv_map, *color_1),
             other,
@@ -273,13 +271,14 @@ fn auto_uv_map_face<V: VectorTrait>(
 }
 
 impl<V: VectorTrait> UVMapV<V> {
+    // TODO: fix. think about how the 2d basis of frame basis differs from uv basis
     pub fn from_frame_texture_mapping(
         ref_shape: &Shape<V>,
         face_index: FaceIndex,
         frame_mapping: FrameTextureMapping,
     ) -> Self {
         let origin = frame_mapping.origin(&ref_shape.verts);
-        let frame = frame_mapping.frame_verts(&ref_shape.verts);
+        let frame = frame_mapping.frame_vecs(&ref_shape.verts);
         let (mut normed_frame, mut norms): (Vec<V>, Vec<Field>) =
             frame.map(|v| v.normalize_get_norm()).unzip();
         normed_frame.push(ref_shape.faces[face_index].normal()); // Normal should be perp to frame
@@ -293,7 +292,7 @@ impl<V: VectorTrait> UVMapV<V> {
 
         let transform_scale = Scaling::Vector(norms.into_iter().collect());
         let map = Transform {
-            pos: -(transform_frame.transpose() * origin),
+            pos: -(transform_frame * transform_scale.scale_vec(origin)),
             //pos: origin,
             frame: transform_frame,
             scale: transform_scale,
@@ -390,7 +389,7 @@ pub struct FrameTextureMapping {
 pub enum TextureMapping<V, M, U> {
     #[default]
     None,
-    Frame(FrameTextureMapping),
+    //Frame(FrameTextureMapping), convert to UV map
     UV(UVMap<V, M, U>),
 }
 pub type TextureMappingV<V> = TextureMapping<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
@@ -406,14 +405,11 @@ impl<V: VectorTrait> TextureMappingV<V> {
         match self {
             Self::None => {
                 panic!("Can't draw lines");
-                BranchIterator::Option1(std::iter::empty::<DrawLine<V>>())
+                //BranchIterator::Option1(std::iter::empty::<DrawLine<V>>())
             }
-            Self::Frame(ftm) => BranchIterator::Option2(ftm.draw_lines(shape, lines, color)),
-            Self::UV(uv_map) => BranchIterator::Option3(
-                uv_map
-                    .draw_lines(shape_transform, lines)
-                    .map(move |line| DrawLine { line, color }),
-            ),
+            Self::UV(uv_map) => uv_map
+                .draw_lines(shape_transform, lines)
+                .map(move |line| DrawLine { line, color }),
         }
     }
 }
@@ -426,7 +422,7 @@ impl FrameTextureMapping {
         shape_verts[self.origin_verti]
     }
     // could be represented as a V::SubV::DIM x V::DIM matrix
-    pub fn frame_verts<'a, V: VectorTrait>(
+    pub fn frame_vecs<'a, V: VectorTrait>(
         &'a self,
         shape_verts: &'a [V],
     ) -> impl Iterator<Item = V> + 'a {
@@ -441,7 +437,7 @@ impl FrameTextureMapping {
         color: Color,
     ) -> impl Iterator<Item = DrawLine<V>> + 'a {
         let origin = self.origin(&shape.verts);
-        let frame_verts: Vec<V> = self.frame_verts(&shape.verts).collect_vec();
+        let frame_verts: Vec<V> = self.frame_vecs(&shape.verts).collect_vec();
         //this is pretty ridiculous. it just matrix multiplies a matrix of frame_verts (as columns) by each vertex
         //in every line, then adds the origin.
         //TODO: a lot of time is spent doing this calculation
@@ -566,6 +562,12 @@ fn test_uv_map_shape() {
     for (face_index, face) in shape.faces.iter().enumerate() {
         let uv_map = auto_uv_map_face(&shape, face_index);
 
+        // assert that the face center is mapped to the origin
+        assert!(Vec3::is_close(
+            uv_map.transform_ref_vec_to_uv_vec(&face.center()),
+            Vec3::zero()
+        ));
+
         for (p_original, bounding_p) in face
             .get_verts(&shape.verts)
             .zip(uv_map.bounding_shape.verts.iter())
@@ -587,21 +589,48 @@ fn test_uv_map_shape() {
 
 #[test]
 fn test_frame_to_uv() {
-    use crate::constants::ZERO;
     use crate::geometry::shape::buildshapes::ShapeBuilder;
-    use crate::tests::{random_rotation_matrix, random_vec};
-    use crate::vector::{is_close, Vec3, Vec4};
-    type V = Vec3;
-    let random_rotation = random_rotation_matrix::<V>();
-    let random_transform: Transform<V, <V as VectorTrait>::M> =
-        Transform::new(Some(random_vec()), Some(random_rotation), None);
+    use crate::tests::random_transform;
+    use crate::vector::{is_close, Vec4};
+    type V = Vec4;
+    type SubV = <V as VectorTrait>::SubV;
+    let random_transform: Transform<V, <V as VectorTrait>::M> = random_transform();
 
-    let shape: Shape<V> = ShapeBuilder::build_cube(2.0)
+    let ref_shape: Shape<V> = ShapeBuilder::build_cube(2.0)
         .with_transform(random_transform)
         .build();
 
+    let mut shape = ref_shape.clone();
+    shape.modify(&Transform::identity().with_scale(Scaling::Vector(V::new(4.0, 3.0, 2.0, 1.0))));
+
     for (face_index, face) in shape.faces.iter().enumerate() {
         let frame_map = FrameTextureMapping::calc_cube_vertis(face, &shape.verts, &shape.edges);
+        let uv_map = UVMapV::from_frame_texture_mapping(&ref_shape, face_index, frame_map.clone());
+
+        // TODO: add is_close trait for float comparisons
+        // assert that the frame origin is mapped to zero
+        let origin_pt = frame_map.origin(&ref_shape.verts);
+        assert!(SubV::is_close(
+            uv_map.transform_ref_vec_to_uv_vec(&origin_pt),
+            SubV::zero()
+        ));
+
+        let frame_vecs = frame_map.frame_vecs(&ref_shape.verts).collect_vec();
+        let mapped_frame_vecs: Vec<_> = frame_vecs
+            .iter()
+            .map(|p| (uv_map.map.frame * (*p)).project())
+            .collect();
+        //let frame_verts: Vec<_> = frame_vecs.iter().map(|v| origin_pt + *v).collect();
+        //let mapped_frame_verts: Vec<_> = frame_verts.iter().map(|p| uv_map.transform_ref_vec_to_uv_vec(p)).collect();
+
+        // check that the mapped frame vecs are parallel to the expected axis
+        // would have liked to used the mapped verts but i am confused about composition
+        assert!(mapped_frame_vecs
+            .iter()
+            .enumerate()
+            .all(|(i, fvec)| is_close(SubV::one_hot(i as VecIndex).dot(*fvec), fvec.norm())));
+
+        // confused about the scaling aspect, but works well enough for now
     }
 
     //TODO: finish
@@ -609,10 +638,9 @@ fn test_frame_to_uv() {
 
 #[test]
 fn test_fuzz_on_uv() {
-    use crate::constants::ZERO;
     use crate::geometry::shape::buildshapes::ShapeBuilder;
     use crate::tests::{random_rotation_matrix, random_vec};
-    use crate::vector::{is_close, Vec3, Vec4};
+    use crate::vector::Vec3;
     type V = Vec3;
     let random_rotation = random_rotation_matrix::<V>();
     let random_transform: Transform<V, <V as VectorTrait>::M> =
@@ -622,12 +650,12 @@ fn test_fuzz_on_uv() {
         .with_transform(random_transform)
         .build();
 
-    for (face_index, face) in ref_shape.faces.iter().enumerate() {
+    for (face_index, _face) in ref_shape.faces.iter().enumerate() {
         let uv_map = auto_uv_map_face(&ref_shape, face_index);
         let n = 100;
         let texture = draw_fuzz_on_uv(&uv_map, n);
         match texture {
-            Texture::Lines { lines, color } => {
+            Texture::Lines { lines, color: _ } => {
                 assert_eq!(lines.len(), n)
             }
             _ => panic!("Expected lines texture"),
@@ -638,7 +666,7 @@ fn test_fuzz_on_uv() {
         .with_transform(random_transform)
         .build();
 
-    for (face_index, face) in ref_shape.faces.iter().enumerate() {
+    for (face_index, _face) in ref_shape.faces.iter().enumerate() {
         let uv_map = auto_uv_map_face(&ref_shape, face_index);
         let n = 100;
         let texture = draw_fuzz_on_uv(&uv_map, n);

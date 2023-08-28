@@ -178,6 +178,16 @@ impl<V: VectorTrait> Shape<V> {
             })
     }
 
+    pub fn point_signed_distance_inverted(&self, point: V) -> Field {
+        self.faces
+            .iter()
+            .map(|f| f.plane().point_signed_distance(point))
+            .fold(Field::INFINITY, |a, b| match a < b {
+                true => a,
+                false => b,
+            })
+    }
+
     pub fn modify(&mut self, transform: &Transform<V, V::M>) {
         for v in self.verts.iter_mut() {
             *v = transform.transform_vec(v);
