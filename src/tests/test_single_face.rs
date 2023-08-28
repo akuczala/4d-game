@@ -1,10 +1,11 @@
 use crate::{
     components::{Shape, SingleFace},
+    constants::ONE,
     geometry::{
         shape::{face::FaceBuilder, Edge},
         Plane,
     },
-    vector::{Field, Vec2, Vec3, VectorTrait},
+    vector::{Field, IsClose, Vec2, Vec3, VectorTrait},
 };
 pub fn make_line_shape() -> Shape<Vec2> {
     // TODO: add shape builder functionality for this
@@ -45,7 +46,7 @@ pub fn make_3d_square() -> Shape<Vec3> {
 #[test]
 fn test_subface_planes() {
     use crate::components::ShapeType;
-    use crate::vector::is_close;
+    use crate::vector::IsClose;
     let shape = make_3d_square();
     let single_face = match shape.shape_type {
         ShapeType::SingleFace(f) => f,
@@ -55,12 +56,12 @@ fn test_subface_planes() {
     let expected_normals = vec![-V::one_hot(0), -V::one_hot(1), V::one_hot(1), V::one_hot(0)];
     for (subface, &expected_normal) in single_face.subfaces.iter().zip(expected_normals.iter()) {
         assert!(
-            is_close(subface.plane.threshold, 1.0),
+            subface.plane.threshold.is_close(1.0),
             "th={}",
             subface.plane.threshold
         );
         assert!(
-            Vec3::is_close(subface.plane.normal, expected_normal),
+            IsClose::is_close(subface.plane.normal, expected_normal),
             "normal={}",
             subface.plane.normal
         );
@@ -78,7 +79,7 @@ fn test_subface_planes() {
     ];
     for (subface, expected_plane) in single_face.subfaces.iter().zip(expected_planes.iter()) {
         assert!(
-            is_close(subface.plane.threshold, expected_plane.threshold),
+            IsClose::is_close(subface.plane.threshold, expected_plane.threshold),
             "th={}",
             expected_plane.threshold
         );
@@ -92,7 +93,7 @@ fn test_subface_planes() {
 #[test]
 fn test_subface_dist() {
     use crate::components::ShapeType;
-    use crate::vector::is_close;
+    use crate::vector::IsClose;
     let shape = make_3d_square();
     let single_face = match shape.shape_type {
         ShapeType::SingleFace(f) => f,
@@ -100,10 +101,10 @@ fn test_subface_dist() {
     };
     let (n, d) = SingleFace::subface_normal_distance(&single_face, Vec3::new(0.5, 0.0, 0.0));
     assert!(Vec3::is_close(n, Vec3::one_hot(0)), "n={}", n);
-    assert!(is_close(d, -0.5), "d={}", d);
+    assert!(d.is_close(-0.5), "d={}", d);
     let (n, d) = SingleFace::subface_normal_distance(&single_face, Vec3::new(0.5, 2.0, 0.0));
     assert!(Vec3::is_close(n, Vec3::one_hot(1)), "n={}", n);
-    assert!(is_close(d, 1.0), "d={}", d);
+    assert!(d.is_close(ONE), "d={}", d);
 }
 
 #[test]

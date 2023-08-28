@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::geometry::shape::{Face, Shape};
 use crate::geometry::{line_plane_intersect, Line};
 
-use crate::vector::{Field, VectorTrait};
+use crate::vector::{Field, IsClose, VectorTrait};
 
 use super::subface::InteriorSubFace;
 
@@ -64,7 +64,7 @@ impl Convex {
             .zip(face_visibility.iter())
             .filter(move |(_, &visible)| !visible_only || visible)
             .flat_map(|(face, _)| line_plane_intersect(line, face.plane()))
-            .filter(|p| crate::vector::is_close(shape.point_signed_distance(*p), 0.))
+            .filter(|p| IsClose::is_close(shape.point_signed_distance(*p), 0.))
     }
 }
 

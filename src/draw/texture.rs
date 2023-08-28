@@ -17,8 +17,8 @@ use crate::geometry::transform::Scaling;
 use crate::geometry::{Face, Line, Plane};
 
 use crate::vector::{
-    barycenter, is_orthonormal_basis, random_sphere_point, rotation_matrix, Field, MatrixTrait,
-    VecIndex, VectorTrait,
+    barycenter, is_orthonormal_basis, random_sphere_point, rotation_matrix, Field, VecIndex,
+    VectorTrait,
 };
 
 use crate::graphics::colors::*;
@@ -397,7 +397,6 @@ pub type TextureMappingV<V> = TextureMapping<V, <V as VectorTrait>::M, <V as Vec
 impl<V: VectorTrait> TextureMappingV<V> {
     fn draw_lines<'a>(
         &'a self,
-        shape: &'a Shape<V>,
         shape_transform: &Transform<V, V::M>,
         lines: &'a [Line<V::SubV>],
         color: Color,
@@ -510,7 +509,7 @@ fn test_uv_map_bounds() {
     use crate::constants::ZERO;
     use crate::geometry::{shape::buildshapes::ShapeBuilder, Plane, PointedPlane};
     use crate::tests::{random_rotation_matrix, random_vec};
-    use crate::vector::{is_close, is_less_than_or_close, MatrixTrait, Vec4};
+    use crate::vector::{is_less_than_or_close, IsClose, MatrixTrait, Vec4};
     type V = Vec4;
     let random_rotation = random_rotation_matrix::<V>();
     let random_transform: Transform<V, <V as VectorTrait>::M> =
@@ -526,9 +525,9 @@ fn test_uv_map_bounds() {
         .get_rows()
         .iter()
         .take(2)
-        .all(|v| is_close(v.dot(pplane.normal), ZERO)));
+        .all(|v| IsClose::is_close(v.dot(pplane.normal), ZERO)));
     let test_point = pplane.point + basis[0] + basis[1];
-    assert!(is_close(
+    assert!(IsClose::is_close(
         Plane::from(pplane.clone()).point_signed_distance(test_point),
         ZERO
     ));
@@ -550,7 +549,7 @@ fn test_uv_map_shape() {
     use crate::constants::ZERO;
     use crate::geometry::shape::buildshapes::ShapeBuilder;
     use crate::tests::{random_rotation_matrix, random_vec};
-    use crate::vector::{is_close, Vec3, Vec4};
+    use crate::vector::{IsClose, Vec3, Vec4};
     type V = Vec4;
     let random_rotation = random_rotation_matrix::<V>();
     let random_transform: Transform<V, <V as VectorTrait>::M> =
@@ -563,7 +562,7 @@ fn test_uv_map_shape() {
         let uv_map = auto_uv_map_face(&shape, face_index);
 
         // assert that the face center is mapped to the origin
-        assert!(Vec3::is_close(
+        assert!(IsClose::is_close(
             uv_map.transform_ref_vec_to_uv_vec(&face.center()),
             Vec3::zero()
         ));
@@ -574,7 +573,7 @@ fn test_uv_map_shape() {
         {
             let p_mapped = uv_map.map.transform_vec(&p_original);
             // assert that the last component of each transformed vec is zero
-            assert!(is_close(p_mapped[-1], ZERO));
+            assert!(IsClose::is_close(p_mapped[-1], ZERO));
             // assert that the bounding verts match the projected shape verts
             assert!(Vec3::is_close(p_mapped.project(), *bounding_p));
         }
@@ -582,7 +581,10 @@ fn test_uv_map_shape() {
             // assert that the vertices of each bounding face lie within the face's plane
             assert!(bounding_face
                 .get_verts(&uv_map.bounding_shape.verts)
-                .all(|vert| is_close(bounding_face.plane().point_signed_distance(*vert), ZERO)))
+                .all(|vert| IsClose::is_close(
+                    bounding_face.plane().point_signed_distance(*vert),
+                    ZERO
+                )))
         }
     }
 }
@@ -591,7 +593,7 @@ fn test_uv_map_shape() {
 fn test_frame_to_uv() {
     use crate::geometry::shape::buildshapes::ShapeBuilder;
     use crate::tests::random_transform;
-    use crate::vector::{is_close, Vec4};
+    use crate::vector::{IsClose, Vec4};
     type V = Vec4;
     type SubV = <V as VectorTrait>::SubV;
     let random_transform: Transform<V, <V as VectorTrait>::M> = random_transform();
@@ -610,7 +612,7 @@ fn test_frame_to_uv() {
         // TODO: add is_close trait for float comparisons
         // assert that the frame origin is mapped to zero
         let origin_pt = frame_map.origin(&ref_shape.verts);
-        assert!(SubV::is_close(
+        assert!(IsClose::is_close(
             uv_map.transform_ref_vec_to_uv_vec(&origin_pt),
             SubV::zero()
         ));
@@ -628,7 +630,10 @@ fn test_frame_to_uv() {
         assert!(mapped_frame_vecs
             .iter()
             .enumerate()
-            .all(|(i, fvec)| is_close(SubV::one_hot(i as VecIndex).dot(*fvec), fvec.norm())));
+            .all(|(i, fvec)| IsClose::is_close(
+                SubV::one_hot(i as VecIndex).dot(*fvec),
+                fvec.norm()
+            )));
 
         // confused about the scaling aspect, but works well enough for now
     }

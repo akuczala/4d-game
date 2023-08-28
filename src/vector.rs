@@ -25,10 +25,17 @@ pub type Field = f32;
 const EPSILON: Field = 0.0001;
 pub use std::f32::consts::PI;
 
-use crate::constants::{HALF, ZERO};
+use crate::constants::{HALF, ONE, ZERO};
 
-pub fn is_close(a: Field, b: Field) -> bool {
-    (a - b).abs() < EPSILON
+pub trait IsClose {
+    // TODO: take a ref for self
+    #[allow(clippy::wrong_self_convention)]
+    fn is_close(self, other: Self) -> bool;
+}
+impl IsClose for Field {
+    fn is_close(self, other: Self) -> bool {
+        (self - other).abs() < EPSILON
+    }
 }
 
 #[allow(dead_code)]
@@ -69,6 +76,7 @@ pub trait VectorTrait:
     + std::iter::Sum
     + FromIterator<Field>
     + IntoIterator<Item = Field>
+    + IsClose
 {
     type M: MatrixTrait<Self>;
     type SubV: VectorTrait;
@@ -97,9 +105,6 @@ pub trait VectorTrait:
     fn normalize(self) -> Self {
         self / self.norm()
     }
-    fn is_close(v1: Self, v2: Self) -> bool {
-        (v1 - v2).norm_sq() < EPSILON * EPSILON
-    }
     fn zero() -> Self {
         Self::constant(0.0)
     }
@@ -126,6 +131,12 @@ pub trait VectorTrait:
 //impl<T> Foo for T where T: Clone + Mul<i64> + Add<i64> + ... {}
 
 //fn foo<C>() where i64: From<C>, C: Foo {}
+
+impl<V: VectorTrait> IsClose for V {
+    fn is_close(self, other: Self) -> bool {
+        (self - other).norm_sq() < EPSILON * EPSILON
+    }
+}
 
 pub fn weighted_sum<I: Iterator<Item = (V, Field)>, V: VectorTrait>(vec_weight_iter: I) -> V {
     vec_weight_iter.map(|(v, w)| v * w).sum()
@@ -159,7 +170,7 @@ pub fn pair_linearly_independent<V: VectorTrait>(v: V, u: V) -> bool {
         return false;
     }
     for (vi, ui) in v.into_iter().zip(u.into_iter()) {
-        match (is_close(vi, ZERO), is_close(ui, ZERO)) {
+        match (vi.is_close(ZERO), ui.is_close(ZERO)) {
             (true, true) => (),
             (false, false) => {
                 let c = vi / ui;
@@ -202,11 +213,11 @@ pub fn gram_schmidt<V: VectorTrait>(vecs: &[V]) -> Vec<V> {
 
 #[allow(dead_code)]
 pub fn is_orthonormal_basis<V: VectorTrait>(vecs: &[V]) -> bool {
-    vecs.iter().all(|&v| is_close(v.dot(v), 1.0))
+    vecs.iter().all(|&v| v.dot(v).is_close(ONE))
         && vecs
             .iter()
             .combinations(2)
-            .all(|combo| is_close(combo[0].dot(*combo[1]), ZERO))
+            .all(|combo| combo[0].dot(*combo[1]).is_close(ZERO))
 }
 
 // TODO: check if we really need all these bounds
@@ -353,11 +364,11 @@ pub fn test_vectors() {
 
 #[test]
 pub fn test_cross_product() {
-    assert!(VectorTrait::is_close(
+    assert!(IsClose::is_close(
         VectorTrait::cross_product(vec![Vec2::new(2., 3.)].into_iter()),
         Vec2::new(-3., 2.)
     ));
-    assert!(VectorTrait::is_close(
+    assert!(IsClose::is_close(
         VectorTrait::cross_product(
             vec![Vec3::new(2., 3., 5.), Vec3::new(7., 11., 13.)].into_iter()
         ),
@@ -372,12 +383,9 @@ pub fn test_cross_product() {
         .into_iter(),
     );
     println!("{}", cross4);
-    assert!(VectorTrait::is_close(
-        cross4,
-        Vec4::new(160., -120., -90., 70.)
-    ));
+    assert!(IsClose::is_close(cross4, Vec4::new(160., -120., -90., 70.)));
     // a cross product of 3 vectors in a plane yields 0 in four dimensions
-    assert!(VectorTrait::is_close(
+    assert!(IsClose::is_close(
         VectorTrait::cross_product(
             vec![
                 Vec4::new(1., 1., 0., 0.),
@@ -396,7 +404,7 @@ fn test_linspace() {
         .zip(vec![
             -2.5, -1.875, -1.25, -0.625, 0., 0.625, 1.25, 1.875, 2.5
         ])
-        .all(|(a, b)| is_close(a, b)))
+        .all(|(a, b)| a.is_close(b)))
 }
 #[test]
 fn test_barycenter() {

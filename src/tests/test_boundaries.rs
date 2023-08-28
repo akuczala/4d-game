@@ -12,7 +12,7 @@ use crate::{
         test_single_face::{make_3d_square, make_3d_triangle, make_line_shape},
         utils::{color_number, print_grid},
     },
-    vector::{is_close, Vec2, Vec3, VectorTrait},
+    vector::{IsClose, Vec2, Vec3, VectorTrait},
 };
 
 #[test]
@@ -23,7 +23,7 @@ fn test_single_face_boundaries() {
         let mut hits = 0;
         for boundary in boundaries {
             if !V::is_close(boundary.normal, face_normal) {
-                assert!(is_close(boundary.threshold, 0.0));
+                assert!(boundary.threshold.is_close(ZERO));
             } else {
                 hits += 1;
             }

@@ -168,6 +168,7 @@ impl<V: VectorTrait> Shape<V> {
 
     /// returns the max signed distance to any face plane
     /// for a convex shape, only
+    /// TODO: mv to convex module
     pub fn point_signed_distance(&self, point: V) -> Field {
         self.faces
             .iter()
@@ -178,6 +179,7 @@ impl<V: VectorTrait> Shape<V> {
             })
     }
 
+    #[allow(dead_code)]
     pub fn point_signed_distance_inverted(&self, point: V) -> Field {
         self.faces
             .iter()

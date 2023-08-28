@@ -1,7 +1,7 @@
 use crate::{
     geometry::{affine_transform::AffineTransform, transform::Scaling},
     tests::random_vec,
-    vector::{MatrixTrait, Vec4, VectorTrait},
+    vector::{IsClose, MatrixTrait, Vec4, VectorTrait},
 };
 
 use super::random_transform;
@@ -12,11 +12,11 @@ fn test_inverse() {
     let transform = random_transform::<V>();
     let v = random_vec::<V>();
     let inverse_transform = transform.inverse();
-    assert!(V::is_close(
+    assert!(IsClose::is_close(
         transform.transform_vec(&inverse_transform.transform_vec(&v)),
         v
     ));
-    assert!(V::is_close(
+    assert!(IsClose::is_close(
         inverse_transform.transform_vec(&transform.transform_vec(&v)),
         v
     ));
@@ -27,7 +27,7 @@ fn test_transform_to_affine() {
     type V = Vec4;
     let transform = random_transform::<V>();
     let v = random_vec::<V>();
-    assert!(V::is_close(
+    assert!(IsClose::is_close(
         transform.transform_vec(&v),
         AffineTransform::from(transform).transform_vec(&v)
     ));

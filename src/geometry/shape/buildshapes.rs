@@ -3,13 +3,12 @@ use super::generic::GenericShapeType;
 use super::subface::{BoundarySubFace, InteriorSubFace, SubFace};
 use super::{Edge, EdgeIndex, Face, FaceIndex, Shape, ShapeType, VertIndex};
 use crate::components::Transform;
-use crate::constants::ZERO;
+use crate::constants::{TWO_PI, ZERO};
 
 use crate::geometry::{Plane, Transformable};
 
 use crate::utils::partial_argmax;
 use crate::vector::Field;
-use crate::vector::PI;
 use crate::vector::{barycenter, Vec2};
 use crate::vector::{VecIndex, VectorTrait};
 use itertools::{multizip, Itertools};
@@ -96,10 +95,10 @@ fn circle_vec<V: VectorTrait>(angle: Field) -> V {
 pub fn build_prism_2d<V: VectorTrait>(r: Field, n: VertIndex) -> Shape<V> {
     //starting angle causes first edge to be parallel to y axis
     //lets us define a cube as a cylinder
-    let angles = (0..n).map(|i| 2.0 * PI * ((i as Field) - 0.5) / (n as Field));
+    let angles = (0..n).map(|i| TWO_PI * ((i as Field) - 0.5) / (n as Field));
     let verts: Vec<V> = angles.map(|angle| circle_vec::<V>(angle) * r).collect();
 
-    let n_angles = (0..n).map(|i| 2.0 * PI * (i as Field) / (n as Field));
+    let n_angles = (0..n).map(|i| TWO_PI * (i as Field) / (n as Field));
     let normals = n_angles.map(|angle| circle_vec(angle));
 
     //build edges
@@ -120,10 +119,10 @@ pub fn build_prism_3d<V: VectorTrait>(r: Field, h: Field, n: VertIndex) -> Shape
     }
     //starting angle causes first edge to be parallel to y axis
     //lets us define a cube as a cylinder
-    let angles = (0..n).map(|i| 2.0 * PI * ((i as Field) - 0.5) / (n as Field));
+    let angles = (0..n).map(|i| TWO_PI * ((i as Field) - 0.5) / (n as Field));
     let cap_coords: Vec<V> = angles.map(|angle| circle_vec::<V>(angle) * r).collect();
 
-    let n_angles = (0..n).map(|i| 2.0 * PI * (i as Field) / (n as Field));
+    let n_angles = (0..n).map(|i| TWO_PI * (i as Field) / (n as Field));
     let normals = n_angles.map(|angle| circle_vec::<V>(angle));
 
     //build verts
@@ -284,7 +283,7 @@ pub fn build_duoprism_4d<V: VectorTrait>(
     let ns_copy = ns;
     let angles = ns_copy
         .iter()
-        .map(move |n| (0..*n).map(move |i| 2.0 * PI * ((i as Field) - 0.5) / (*n as Field)));
+        .map(move |n| (0..*n).map(move |i| TWO_PI * ((i as Field) - 0.5) / (*n as Field)));
     let circle_coords: Vec<Vec<Vec2>> = multizip((radii.iter(), angles))
         .map(|(&r, angles)| angles.map(|angle| circle_vec::<Vec2>(angle) * r).collect())
         .collect();

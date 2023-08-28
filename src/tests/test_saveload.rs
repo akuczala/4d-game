@@ -9,7 +9,7 @@ use crate::{
     geometry::shape::build_shape_library,
     saveload::{load_level_from_file, save_level_to_file},
     tests::new_world,
-    vector::{Vec3, VectorTrait},
+    vector::{IsClose, Vec3, VectorTrait},
 };
 
 type V = Vec3;
@@ -55,5 +55,8 @@ fn test_saveload() {
         .read_component::<StaticCollider>()
         .count();
     assert_eq!(initial_count, final_count);
-    assert!(V::is_close(get_player_transform(&world).pos, player_pos));
+    assert!(IsClose::is_close(
+        get_player_transform(&world).pos,
+        player_pos
+    ));
 }

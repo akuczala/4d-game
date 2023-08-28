@@ -3,7 +3,7 @@ pub mod shape;
 pub mod transform;
 use crate::{
     constants::ZERO,
-    vector::{barycenter, is_close, scalar_linterp, Field, VectorTrait},
+    vector::{barycenter, scalar_linterp, Field, IsClose, VectorTrait},
 };
 use serde::{Deserialize, Serialize};
 pub use shape::{Face, Shape};
@@ -108,7 +108,7 @@ impl<V: VectorTrait> Plane<V> {
         }
     }
     pub fn contains_point(&self, point: V) -> bool {
-        is_close(self.point_signed_distance(point), ZERO)
+        self.point_signed_distance(point).is_close(ZERO)
     }
 
     /// returns the D - 1 dimensional plane defined by the intersection of the plane with the plane with normal V::one_hot(-1), th =0
@@ -173,7 +173,7 @@ where
     let p0n = p0.dot(n);
     let p1n = p1.dot(n);
     //line is contained in plane
-    if is_close(p0n, 0.) && is_close(p1n, 0.) {
+    if p0n.is_close(ZERO) && p1n.is_close(ZERO) {
         return None;
     }
     let t = (p0n - th) / (p0n - p1n);
@@ -209,7 +209,7 @@ pub fn sphere_t_intersect_infinite_normed<V: VectorTrait>(
     let dv_norm = dv.norm();
 
     // handle degenerate case
-    if is_close(dv_norm, 0.0) {
+    if dv_norm.is_close(ZERO) {
         return if is_point_in_sphere(r, v0) {
             Some(Line(0.0, 1.0)) // not really any good value to put here
         } else {

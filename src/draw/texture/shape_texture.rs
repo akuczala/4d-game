@@ -224,7 +224,6 @@ pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
         }
         Texture::Lines { lines, color } => {
             BranchIterator::Option2(face_texture.texture_mapping.draw_lines(
-                shape,
                 shape_transform,
                 lines,
                 override_color.unwrap_or(*color),

@@ -7,6 +7,7 @@ pub const HALF_PI: Field = FRAC_PI_2;
 pub const TWO_PI: Field = TAU;
 pub const ZERO: Field = 0.0;
 pub const HALF: Field = 0.5;
+pub const ONE: Field = 1.0;
 
 pub const DARK_TINT: f32 = 0.01;
 pub const DARK_BACKGROUND_COLOR: [f32; 4] = [DARK_TINT, DARK_TINT, DARK_TINT, 1.0];
