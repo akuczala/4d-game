@@ -5,7 +5,7 @@ use crate::{
         shape::{face::FaceBuilder, Edge},
         Plane,
     },
-    vector::{Field, IsClose, Vec2, Vec3, VectorTrait},
+    vector::{Field, Vec2, Vec3, VectorTrait},
 };
 pub fn make_line_shape() -> Shape<Vec2> {
     // TODO: add shape builder functionality for this

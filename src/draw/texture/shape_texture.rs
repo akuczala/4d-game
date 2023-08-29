@@ -7,15 +7,15 @@ use crate::{
     config::DrawConfig,
     constants::CARDINAL_COLORS,
     draw::{normal_to_color, DrawLine},
-    geometry::{shape::FaceIndex, Face},
+    geometry::{shape::FaceIndex},
     graphics::colors::Color,
-    utils::{BranchIterator, BranchIterator2, ValidDimension},
-    vector::{Field, VectorTrait},
+    utils::{BranchIterator2, ValidDimension},
+    vector::{VectorTrait},
 };
 
 use super::{
     auto_uv_map_face,
-    texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep, TexturePrim},
+    texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep},
     FrameTextureMapping, Texture, TextureMapping, TextureMappingV, UVMapV,
 };
 
@@ -127,15 +127,9 @@ impl ShapeTextureBuilder {
     }
 
     pub fn with_fuzz(self) -> Self {
-        self.map_textures(
-            |FaceTextureBuilder {
-                 texture,
-                 mapping_directive,
-             }| FaceTextureBuilder {
-                texture: texture.merged_with(TextureBuilder::new().make_fuzz_texture()),
-                mapping_directive,
-            },
-        )
+        self.map_textures(|FaceTextureBuilder { texture }| FaceTextureBuilder {
+            texture: texture.merged_with(TextureBuilder::new().make_fuzz_texture()),
+        })
     }
 }
 
@@ -151,7 +145,6 @@ pub type FaceTexture<V> = FaceTextureGeneric<V, <V as VectorTrait>::M, <V as Vec
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct FaceTextureBuilder {
     pub texture: TextureBuilder,
-    pub mapping_directive: TextureMappingDirective,
 }
 
 impl<V, M, U> FaceTextureGeneric<V, M, U> {
@@ -190,7 +183,7 @@ pub enum TextureMappingDirective {
     UVDefault,
 }
 impl TextureMappingDirective {
-    fn build<V: VectorTrait>(
+    pub fn build<V: VectorTrait>(
         &self,
         face_index: FaceIndex,
         ref_shape: &Shape<V>,
@@ -243,7 +236,6 @@ pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilder {
             .zip(&CARDINAL_COLORS)
             .map(|(_face, &color)| FaceTextureBuilder {
                 texture: TextureBuilder::new().with_color(color.set_alpha(0.5)),
-                mapping_directive: Default::default(),
             })
             .collect(),
     }
@@ -254,7 +246,6 @@ pub fn fuzzy_color_cube_texture<V: VectorTrait>() -> ShapeTextureBuilder {
         texture: face_tex
             .texture
             .merged_with(TextureBuilder::new().make_fuzz_texture()),
-        mapping_directive: TextureMappingDirective::Orthogonal,
     })
 }
 
@@ -303,7 +294,6 @@ pub fn build_fuzzy_tile_texture<V: VectorTrait>(
                     //TODO: debug; rv
                     .merged_with(TextureBuilder::new().make_fuzz_texture())
                     .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index])),
-                mapping_directive: TextureMappingDirective::Orthogonal,
             })
             .collect(),
     }

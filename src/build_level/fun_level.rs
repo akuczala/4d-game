@@ -1,5 +1,5 @@
 use crate::constants::{CARDINAL_COLORS, ONE_SIDED_FACE_LABEL_STR, PI, TWO_SIDED_FACE_LABEL_STR};
-use crate::draw::texture::shape_texture::TextureMappingDirective;
+
 use crate::draw::texture::texture_builder::TextureBuilder;
 use crate::draw::texture::FaceTextureBuilder;
 
@@ -26,7 +26,6 @@ pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEn
                 .clone()
                 .make_tile_texture(vec![0.8], n_divisions)
                 .merged_with(texture_builder.make_fuzz_texture()),
-            mapping_directive: TextureMappingDirective::Orthogonal,
         });
     let floor_label = ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR);
     let upper_floor_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, floor_label)

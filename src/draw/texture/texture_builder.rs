@@ -9,8 +9,8 @@ use crate::{
 };
 
 use super::{
-    auto_uv_map_face, draw_fuzz_on_uv, make_default_lines_texture, merge_textures,
-    shape_texture::TextureMappingDirective, FrameTextureMapping, Texture, TextureMapping,
+    draw_fuzz_on_uv, make_default_lines_texture, merge_textures,
+    shape_texture::TextureMappingDirective, Texture,
     TextureMappingV, UVMapV,
 };
 
@@ -104,31 +104,19 @@ impl TextureBuilder {
     pub fn make_texture_and_map<V: VectorTrait>(
         config: &TextureBuilderConfig,
         start: TexturePrim,
-        shape_data: ShapeData<V>,
-    ) -> (Texture<V::SubV>, TextureMappingV<V>) {
+        uv_map: &UVMapV<V>,
+    ) -> Texture<V::SubV> {
         {
-            let required_mapping_type = start.required_mapping();
             match start {
                 TexturePrim::Empty => todo!(),
                 TexturePrim::Default => {
-                    let mapping = transform_mapping(required_mapping_type, shape_data);
-                    (
-                        make_default_lines_texture(config.face_scale, &mapping.uv_map, WHITE),
-                        mapping,
-                    )
+                    make_default_lines_texture(config.face_scale, uv_map, WHITE)
                 }
                 TexturePrim::Tile {
                     scales,
                     n_divisions,
-                } => (
-                    Texture::make_tile_texture(&scales, &n_divisions),
-                    transform_mapping(required_mapping_type, shape_data),
-                ),
-                TexturePrim::Fuzz => {
-                    let new_mapping = transform_mapping(required_mapping_type, shape_data);
-                    let texture = draw_fuzz_on_uv(&new_mapping.uv_map, config.n_fuzz_lines);
-                    (texture, new_mapping)
-                }
+                } => Texture::make_tile_texture(&scales, &n_divisions),
+                TexturePrim::Fuzz => draw_fuzz_on_uv(uv_map, config.n_fuzz_lines),
             }
         }
     }
@@ -140,8 +128,15 @@ impl TextureBuilder {
         face_index: FaceIndex,
     ) -> (Texture<V::SubV>, TextureMappingV<V>) {
         let shape_data = (ref_shape, shape, face_index);
+        let starting_map = self
+            .start
+            .required_mapping()
+            .build(face_index, ref_shape, shape);
         self.steps.into_iter().fold(
-            Self::make_texture_and_map(config, self.start, shape_data),
+            (
+                Self::make_texture_and_map(config, self.start, &starting_map.uv_map),
+                starting_map,
+            ),
             |(texture, mapping), step| Self::apply_step(config, shape_data, texture, mapping, step),
         )
     }
@@ -173,29 +168,6 @@ impl TextureBuilder {
                 });
                 (merge_textures::<V>(&texture, &other_texture), mapping)
             }
-        }
-    }
-}
-
-// creates texture mapping
-fn transform_mapping<V: VectorTrait>(
-    required_mapping_type: TextureMappingDirective,
-    (ref_shape, shape, face_index): ShapeData<V>,
-) -> TextureMappingV<V> {
-    match required_mapping_type {
-        TextureMappingDirective::Orthogonal => {
-            TextureMapping::new(UVMapV::from_frame_texture_mapping(
-                ref_shape,
-                face_index,
-                FrameTextureMapping::calc_cube_vertis(
-                    &shape.faces[face_index],
-                    &shape.verts,
-                    &shape.edges,
-                ),
-            ))
-        }
-        TextureMappingDirective::UVDefault | TextureMappingDirective::None => {
-            TextureMapping::new(auto_uv_map_face(ref_shape, face_index))
         }
     }
 }
