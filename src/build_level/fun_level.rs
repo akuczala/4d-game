@@ -1,7 +1,6 @@
 use crate::constants::{CARDINAL_COLORS, ONE_SIDED_FACE_LABEL_STR, PI, TWO_SIDED_FACE_LABEL_STR};
 
 use crate::draw::texture::texture_builder::TextureBuilder;
-use crate::draw::texture::FaceTextureBuilder;
 
 use crate::utils::ValidDimension;
 use crate::{
@@ -21,12 +20,12 @@ pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEn
     let texture_builder = TextureBuilder::new();
     let wall_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, wall_label)
         .with_scale(Scaling::Scalar(len))
-        .with_face_texture(FaceTextureBuilder {
-            texture: texture_builder
+        .with_face_texture(
+            texture_builder
                 .clone()
                 .make_tile_texture(vec![0.8], n_divisions)
                 .merged_with(texture_builder.make_fuzz_texture()),
-        });
+        );
     let floor_label = ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR);
     let upper_floor_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, floor_label)
         .with_scale(Scaling::Scalar(len))

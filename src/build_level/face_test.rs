@@ -1,7 +1,6 @@
 use crate::constants::TWO_SIDED_FACE_LABEL_STR;
 
 use crate::draw::texture::texture_builder::TextureBuilder;
-use crate::draw::texture::FaceTextureBuilder;
 
 use crate::graphics::colors::*;
 use crate::utils::ValidDimension;
@@ -102,9 +101,7 @@ where
         ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR),
     )
     .with_scale(Scaling::Scalar(2.0))
-    .with_face_texture(FaceTextureBuilder {
-        texture: TextureBuilder::new().make_tile_texture(vec![0.8], n_divisions),
-    });
+    .with_face_texture(TextureBuilder::new().make_tile_texture(vec![0.8], n_divisions));
     build_test_walls(&build_shape).into_iter().for_each(|b| {
         b.build(world).build();
     });

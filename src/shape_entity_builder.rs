@@ -4,7 +4,8 @@ use crate::components::{
 };
 use crate::config::Config;
 
-use crate::draw::texture::{FaceTextureBuilder, ShapeTextureBuilder};
+use crate::draw::texture::texture_builder::TextureBuilder;
+use crate::draw::texture::ShapeTextureBuilder;
 use crate::draw::ShapeTexture;
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::RefShapes;
@@ -47,8 +48,8 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
         self.shape_texture_builder = texture;
         self
     }
-    pub fn with_face_texture(mut self, face_texture: FaceTextureBuilder) -> Self {
-        self.shape_texture_builder = self.shape_texture_builder.with_texture(face_texture);
+    pub fn with_face_texture(mut self, texture: TextureBuilder) -> Self {
+        self.shape_texture_builder = self.shape_texture_builder.with_texture(texture);
         self
     }
     pub fn with_texturing_fn<F>(mut self, f: F) -> Self

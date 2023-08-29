@@ -10,7 +10,7 @@ use crate::{
 
 use super::{
     draw_fuzz_on_uv, make_default_lines_texture, merge_textures,
-    shape_texture::TextureMappingDirective, Texture, TextureMappingV, UVMapV,
+    shape_texture::TextureMappingDirective, FaceTexture, Texture, UVMapV,
 };
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -125,47 +125,53 @@ impl TextureBuilder {
         ref_shape: &Shape<V>,
         shape: &Shape<V>,
         face_index: FaceIndex,
-    ) -> (Texture<V::SubV>, TextureMappingV<V>) {
+    ) -> FaceTexture<V> {
         let shape_data = (ref_shape, shape, face_index);
         let starting_map = self
             .start
             .required_mapping()
             .build(face_index, ref_shape, shape);
         self.steps.into_iter().fold(
-            (
-                Self::make_texture_and_map(config, self.start, &starting_map.uv_map),
-                starting_map,
-            ),
-            |(texture, mapping), step| Self::apply_step(config, shape_data, texture, mapping, step),
+            FaceTexture {
+                texture: Self::make_texture_and_map(config, self.start, &starting_map.uv_map),
+                texture_mapping: starting_map,
+            },
+            |face_texture, step| Self::apply_step(config, shape_data, face_texture, step),
         )
     }
     fn apply_step<V: VectorTrait>(
         config: &TextureBuilderConfig,
         (ref_shape, shape, face_index): ShapeData<V>,
-        texture: Texture<V::SubV>,
-        mapping: TextureMappingV<V>,
+        face_texture: FaceTexture<V>,
         step: TextureBuilderStep,
-    ) -> (Texture<V::SubV>, TextureMappingV<V>) {
-        // TODO: probably much more natural to make this a face texture builder directly
+    ) -> FaceTexture<V> {
+        let texture = face_texture.texture;
+        let mapping = face_texture.texture_mapping;
         match step {
-            TextureBuilderStep::WithColor(color) => (texture.set_color(color), mapping),
+            TextureBuilderStep::WithColor(color) => FaceTexture {
+                texture: texture.set_color(color),
+                texture_mapping: mapping,
+            },
             TextureBuilderStep::MergedWith(start, steps) => {
-                let (mut other_texture, other_mapping) = Self::new()
+                let mut other_face_texture = Self::new()
                     .with_start_texture(start)
                     .with_steps(steps)
                     .build::<V>(config, ref_shape, shape, face_index);
                 // use UV space from our mapping, rather than other
                 //transform lines from other into our map
                 let old_to_new_transform = AffineTransform::from(mapping.uv_map.map)
-                    .compose(other_mapping.uv_map.map.inverse());
-                other_texture.map_lines_in_place(|line| {
+                    .compose(other_face_texture.texture_mapping.uv_map.map.inverse());
+                other_face_texture.texture.map_lines_in_place(|line| {
                     line.map(|p| {
                         old_to_new_transform
                             .transform_vec(&VectorTrait::unproject(p))
                             .project()
                     })
                 });
-                (merge_textures::<V>(&texture, &other_texture), mapping)
+                FaceTexture {
+                    texture: merge_textures::<V>(&texture, &other_face_texture.texture),
+                    texture_mapping: mapping,
+                }
             }
         }
     }

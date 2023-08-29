@@ -23,13 +23,6 @@ use super::{
 pub struct ShapeTextureGeneric<V, M, U> {
     pub face_textures: Vec<Option<FaceTextureGeneric<V, M, U>>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
-impl<V: Default, M: Default, U: Default> ShapeTextureGeneric<V, M, U> {
-    pub fn new_default(n_faces: usize) -> Self {
-        Self {
-            face_textures: (0..n_faces).map(|_| Default::default()).collect(),
-        }
-    }
-}
 
 // Examples
 // "CoinShapeTexture", "ColorCubeShapeTexture", "FuzzyColorCubeShapeTexture"
@@ -40,9 +33,6 @@ impl<V: Default, M: Default, U: Default> ShapeTextureGeneric<V, M, U> {
 // Additional complication with TextureMapping. We need this to vary with face as well, according to a function
 
 // we may also reduce # stored mappings by fixing an orientation for each face by default (derivable from normal??)
-// how to draw fuzz lines / arbitrary textures for an arbitrary convex face?
-
-// Consider using UV mapping?
 
 pub type ShapeTexture<V> = ShapeTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
 
@@ -52,30 +42,29 @@ pub type ShapeTexture<V> = ShapeTextureGeneric<V, <V as VectorTrait>::M, <V as V
 // Inhomogeneous(Vec<FaceTextureBuilder)
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ShapeTextureBuilder {
-    pub face_textures: Vec<FaceTextureBuilder>,
+    face_textures: Vec<TextureBuilder>,
 }
+// pub enum ShapeTextureBuilder {
+//     Uniform{face_texture: FaceTextureBuilder, n_faces: usize},
+//     NonUniform(Vec<FaceTextureBuilder>),
+// }
 
-impl<V, M, U> ShapeTextureGeneric<V, M, U> {
-    #[allow(dead_code)]
-    pub fn with_color(mut self, color: Color) -> Self {
-        self.face_textures
-            .iter_mut()
-            .flat_map(|maybe_face| maybe_face.as_mut())
-            .for_each(|face| {
-                face.set_color(color);
-            });
-        self
-    }
-}
+// pub struct NonUniformShapeTextureBuilder {
+//     face_textures: Vec<FaceTextureBuilder>
+// }
 impl ShapeTextureBuilder {
+    // pub fn new_default(n_faces: usize) -> Self {
+    //     Self::Uniform { face_texture: Default::default(), n_faces }
+    // }
     pub fn new_default(n_faces: usize) -> Self {
         Self {
             face_textures: (0..n_faces).map(|_| Default::default()).collect(),
         }
     }
+
     pub fn with_color(mut self, color: Color) -> Self {
         for face in &mut self.face_textures {
-            face.set_color(color);
+            take_mut::take(face, |texture| texture.with_color(color));
         }
         self
     }
@@ -91,23 +80,23 @@ impl ShapeTextureBuilder {
                 .into_iter()
                 .enumerate()
                 .map(|(face_index, face_texture)| {
-                    Some(face_texture.build(config, face_index, ref_shape, shape))
+                    Some(face_texture.build(config, ref_shape, shape, face_index))
                 })
                 .collect(),
         }
     }
 }
 impl ShapeTextureBuilder {
-    pub fn with_texture(mut self, face_texture: FaceTextureBuilder) -> Self {
+    pub fn with_texture(mut self, texture: TextureBuilder) -> Self {
         for face in self.face_textures.iter_mut() {
-            *face = face_texture.clone();
+            *face = texture.clone();
         }
         self
     }
 
     pub fn map_textures<F>(mut self, f: F) -> Self
     where
-        F: Fn(FaceTextureBuilder) -> FaceTextureBuilder,
+        F: Fn(TextureBuilder) -> TextureBuilder,
     {
         for face in self.face_textures.iter_mut() {
             take_mut::take(face, &f);
@@ -117,7 +106,7 @@ impl ShapeTextureBuilder {
 
     pub fn zip_textures_with<I, S, F>(mut self, iter: I, f: F) -> Self
     where
-        F: Fn(FaceTextureBuilder, S) -> FaceTextureBuilder,
+        F: Fn(TextureBuilder, S) -> TextureBuilder,
         I: Iterator<Item = S>,
     {
         for (face, item) in self.face_textures.iter_mut().zip(iter) {
@@ -127,9 +116,7 @@ impl ShapeTextureBuilder {
     }
 
     pub fn with_fuzz(self) -> Self {
-        self.map_textures(|FaceTextureBuilder { texture }| FaceTextureBuilder {
-            texture: texture.merged_with(TextureBuilder::new().make_fuzz_texture()),
-        })
+        self.map_textures(|texture| texture.merged_with(TextureBuilder::new().make_fuzz_texture()))
     }
 }
 
@@ -142,36 +129,9 @@ pub struct FaceTextureGeneric<V, M, U> {
 // TODO: consider parameterizing this on V instead
 pub type FaceTexture<V> = FaceTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
 
-#[derive(Clone, Default, Serialize, Deserialize)]
-pub struct FaceTextureBuilder {
-    pub texture: TextureBuilder,
-}
-
 impl<V, M, U> FaceTextureGeneric<V, M, U> {
     pub fn set_color(&mut self, color: Color) {
         take_mut::take(&mut self.texture, |tex| tex.set_color(color));
-    }
-}
-impl FaceTextureBuilder {
-    pub fn set_color(&mut self, color: Color) {
-        take_mut::take(&mut self.texture, |tex| tex.with_color(color));
-    }
-    pub fn with_color(mut self, color: Color) -> Self {
-        self.set_color(color);
-        self
-    }
-    pub fn build<V: VectorTrait>(
-        self,
-        config: &TextureBuilderConfig,
-        face_index: FaceIndex,
-        ref_shape: &Shape<V>,
-        shape: &Shape<V>,
-    ) -> FaceTexture<V> {
-        let (texture, texture_mapping) = self.texture.build(config, ref_shape, shape, face_index);
-        FaceTexture {
-            texture,
-            texture_mapping,
-        }
     }
 }
 
@@ -234,19 +194,14 @@ pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilder {
     ShapeTextureBuilder {
         face_textures: (0..V::DIM * 2)
             .zip(&CARDINAL_COLORS)
-            .map(|(_face, &color)| FaceTextureBuilder {
-                texture: TextureBuilder::new().with_color(color.set_alpha(0.5)),
-            })
+            .map(|(_face, &color)| TextureBuilder::new().with_color(color.set_alpha(0.5)))
             .collect(),
     }
 }
 
 pub fn fuzzy_color_cube_texture<V: VectorTrait>() -> ShapeTextureBuilder {
-    color_cube_shape_texture::<V>().map_textures(|face_tex| FaceTextureBuilder {
-        texture: face_tex
-            .texture
-            .merged_with(TextureBuilder::new().make_fuzz_texture()),
-    })
+    color_cube_shape_texture::<V>()
+        .map_textures(|texture| texture.merged_with(TextureBuilder::new().make_fuzz_texture()))
 }
 
 pub fn shape_default_orientation_color_texture<V: VectorTrait>(
@@ -272,7 +227,7 @@ pub fn color_duocylinder<V: VectorTrait>(
             1.0,
             1.0,
         ]);
-        face.texture = TextureBuilder::new().with_color(color)
+        *face = TextureBuilder::new().with_color(color)
     }
 }
 
@@ -282,8 +237,8 @@ pub fn build_fuzzy_tile_texture<V: VectorTrait>(
 ) -> ShapeTextureBuilder {
     ShapeTextureBuilder {
         face_textures: (0..n_faces)
-            .map(|face_index| FaceTextureBuilder {
-                texture: TextureBuilder::new()
+            .map(|face_index| {
+                TextureBuilder::new()
                     .make_tile_texture(
                         vec![draw_config.face_scale],
                         match V::DIM.into() {
@@ -291,9 +246,8 @@ pub fn build_fuzzy_tile_texture<V: VectorTrait>(
                             ValidDimension::Four => vec![3, 1, 1],
                         },
                     )
-                    //TODO: debug; rv
                     .merged_with(TextureBuilder::new().make_fuzz_texture())
-                    .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index])),
+                    .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index]))
             })
             .collect(),
     }

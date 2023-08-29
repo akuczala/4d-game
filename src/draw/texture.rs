@@ -3,7 +3,7 @@ pub mod texture_builder;
 
 use std::collections::HashMap;
 
-pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, ShapeTextureBuilder};
+pub use self::shape_texture::{FaceTexture, ShapeTexture, ShapeTextureBuilder};
 
 use super::DrawLine;
 
