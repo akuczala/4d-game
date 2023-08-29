@@ -4,13 +4,14 @@ use crate::{
     components::Shape,
     config::Config,
     geometry::{affine_transform::AffineTransform, shape::FaceIndex},
-    graphics::colors::Color,
+    graphics::colors::{Color, WHITE},
     vector::{Field, VectorTrait},
 };
 
 use super::{
-    auto_uv_map_face, draw_fuzz_on_uv, merge_textures, shape_texture::TextureMappingDirective,
-    FrameTextureMapping, Texture, TextureMapping, TextureMappingV, UVMapV,
+    auto_uv_map_face, draw_fuzz_on_uv, make_default_lines_texture, merge_textures,
+    shape_texture::TextureMappingDirective, FrameTextureMapping, Texture, TextureMapping,
+    TextureMappingV, UVMapV,
 };
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -103,17 +104,19 @@ impl TextureBuilder {
     pub fn make_texture_and_map<V: VectorTrait>(
         config: &TextureBuilderConfig,
         start: TexturePrim,
-        shape_data @ (ref_shape, shape, face_index): ShapeData<V>,
+        shape_data: ShapeData<V>,
     ) -> (Texture<V::SubV>, TextureMappingV<V>) {
         {
             let required_mapping_type = start.required_mapping();
             match start {
                 TexturePrim::Empty => todo!(),
-                TexturePrim::Default => (
-                    // TODO make UV texture here
-                    Default::default(),
-                    transform_mapping(required_mapping_type, shape_data),
-                ),
+                TexturePrim::Default => {
+                    let mapping = transform_mapping(required_mapping_type, shape_data);
+                    (
+                        make_default_lines_texture(config.face_scale, &mapping.uv_map, WHITE),
+                        mapping,
+                    )
+                }
                 TexturePrim::Tile {
                     scales,
                     n_divisions,
@@ -144,7 +147,7 @@ impl TextureBuilder {
     }
     fn apply_step<V: VectorTrait>(
         config: &TextureBuilderConfig,
-        shape_data @ (ref_shape, shape, face_index): ShapeData<V>,
+        (ref_shape, shape, face_index): ShapeData<V>,
         texture: Texture<V::SubV>,
         mapping: TextureMappingV<V>,
         step: TextureBuilderStep,

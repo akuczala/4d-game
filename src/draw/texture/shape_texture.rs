@@ -6,7 +6,7 @@ use crate::{
     components::{Shape, Transform},
     config::DrawConfig,
     constants::CARDINAL_COLORS,
-    draw::DrawLine,
+    draw::{normal_to_color, DrawLine},
     geometry::{shape::FaceIndex, Face},
     graphics::colors::Color,
     utils::{BranchIterator, BranchIterator2, ValidDimension},
@@ -14,7 +14,7 @@ use crate::{
 };
 
 use super::{
-    auto_uv_map_face, draw_default_lines,
+    auto_uv_map_face,
     texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep, TexturePrim},
     FrameTextureMapping, Texture, TextureMapping, TextureMappingV, UVMapV,
 };
@@ -105,7 +105,6 @@ impl ShapeTextureBuilder {
         self
     }
 
-    #[allow(dead_code)]
     pub fn map_textures<F>(mut self, f: F) -> Self
     where
         F: Fn(FaceTextureBuilder) -> FaceTextureBuilder,
@@ -115,6 +114,7 @@ impl ShapeTextureBuilder {
         }
         self
     }
+
     pub fn zip_textures_with<I, S, F>(mut self, iter: I, f: F) -> Self
     where
         F: Fn(FaceTextureBuilder, S) -> FaceTextureBuilder,
@@ -124,6 +124,18 @@ impl ShapeTextureBuilder {
             take_mut::take(face, |face| f(face, item));
         }
         self
+    }
+
+    pub fn with_fuzz(self) -> Self {
+        self.map_textures(
+            |FaceTextureBuilder {
+                 texture,
+                 mapping_directive,
+             }| FaceTextureBuilder {
+                texture: texture.merged_with(TextureBuilder::new().make_fuzz_texture()),
+                mapping_directive,
+            },
+        )
     }
 }
 
@@ -150,6 +162,10 @@ impl<V, M, U> FaceTextureGeneric<V, M, U> {
 impl FaceTextureBuilder {
     pub fn set_color(&mut self, color: Color) {
         take_mut::take(&mut self.texture, |tex| tex.with_color(color));
+    }
+    pub fn with_color(mut self, color: Color) -> Self {
+        self.set_color(color);
+        self
     }
     pub fn build<V: VectorTrait>(
         self,
@@ -202,10 +218,7 @@ impl TextureMappingDirective {
 // this was originally a method of FaceTexture, but I didn't know how to tell rust that U = V::SubV
 pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
     face_texture: &'a FaceTexture<V>,
-    face: &'a Face<V>,
-    shape: &'a Shape<V>,
     shape_transform: &'a Transform<V, V::M>,
-    face_scales: &'a [Field],
     visible: bool,
     override_color: Option<Color>,
 ) -> impl Iterator<Item = DrawLine<V>> + 'a {
@@ -243,6 +256,15 @@ pub fn fuzzy_color_cube_texture<V: VectorTrait>() -> ShapeTextureBuilder {
             .merged_with(TextureBuilder::new().make_fuzz_texture()),
         mapping_directive: TextureMappingDirective::Orthogonal,
     })
+}
+
+pub fn shape_default_orientation_color_texture<V: VectorTrait>(
+    ref_shape: &Shape<V>,
+) -> ShapeTextureBuilder {
+    ShapeTextureBuilder::new_default(ref_shape.faces.len())
+        .zip_textures_with(ref_shape.faces.iter(), |ftb, face| {
+            ftb.with_color(normal_to_color(face.normal()))
+        })
 }
 
 #[allow(dead_code)]

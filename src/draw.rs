@@ -248,6 +248,7 @@ pub fn calc_shapes_lines<V>(
     V::M: Componentable,
 {
     //compute lines for each shape
+    // shape only needed for coloring by normal
     for (shape, shape_transform, shape_texture, shape_clip_state) in shape_components.join() {
         scratch.0.clear();
         //get lines from each face
@@ -259,10 +260,7 @@ pub fn calc_shapes_lines<V>(
             if let Some(face_texture) = maybe_face_texture {
                 scratch.0.extend(draw_face_texture::<V>(
                     face_texture,
-                    face,
-                    shape,
                     shape_transform,
-                    &[draw_config.face_scale],
                     visible,
                     draw_config
                         .color_by_orientation

@@ -89,10 +89,6 @@ impl<V: Copy> Texture<V> {
 }
 
 impl<V: VectorTrait> Texture<V> {
-    pub fn make_single_tile_texture(color: Color, face_scale: Field) -> Self {
-        Texture::make_tile_texture(&[face_scale], &(0..V::DIM).map(|_| 1).collect_vec())
-            .set_color(color)
-    }
     pub fn make_tile_texture(scales: &[Field], n_divisions: &[i32]) -> Self {
         if V::DIM != n_divisions.len() as VecIndex {
             panic!(
@@ -358,7 +354,6 @@ pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<
     Texture::Lines {
         lines: (0..n * 100)
             .map(|_| uv_map.bbox.random_point())
-            .filter_map(|p| uv_map.clip_point(p))
             .take(n)
             .map(pointlike_line)
             .collect(),
@@ -499,21 +494,6 @@ impl FrameTextureMapping {
             frame_vertis: sorted_frame_vertis,
         }
     }
-}
-
-pub fn draw_default_lines<'a, V: VectorTrait + 'a>(
-    face: &'a Face<V>,
-    shape: &'a Shape<V>,
-    face_scales: &'a [Field],
-) -> impl Iterator<Item = Line<V>> + 'a {
-    //let mut lines: Vec<DrawLine<V>> = Vec::with_capacity(face.edgeis.len() * face_scales.len());
-    face_scales.iter().flat_map(move |face_scale| {
-        let scale_point = |v| V::linterp(face.center(), v, *face_scale);
-        face.edgeis.iter().map(move |edgei| {
-            let edge = &shape.edges[*edgei];
-            Line(shape.verts[edge.0], shape.verts[edge.1]).map(scale_point)
-        })
-    })
 }
 
 pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
