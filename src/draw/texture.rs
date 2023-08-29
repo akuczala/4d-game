@@ -7,12 +7,14 @@ pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, Sha
 
 use super::DrawLine;
 
-use crate::components::{BBox, Convex, HasBBox, Shape, ShapeType, Transform};
-use crate::constants::{HALF, ZERO};
+use crate::components::{BBox, Convex, HasBBox, Shape, ShapeLabel, ShapeType, Transform};
+use crate::constants::{
+    HALF, INVERTED_CUBE_LABEL_STR, ONE_SIDED_FACE_LABEL_STR, OPEN_CUBE_LABEL_STR, ZERO,
+};
 use crate::geometry::affine_transform::AffineTransform;
 use crate::geometry::shape::face::FaceBuilder;
 use crate::geometry::shape::generic::subface_plane;
-use crate::geometry::shape::{Edge, EdgeIndex, FaceIndex, VertIndex};
+use crate::geometry::shape::{build_shape_library, Edge, EdgeIndex, FaceIndex, VertIndex};
 use crate::geometry::transform::Scaling;
 use crate::geometry::{Face, Line, Plane};
 
@@ -30,7 +32,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize)]
 pub enum Texture<V> {
     Lines { lines: Vec<Line<V>>, color: Color },
-    DrawLines(Vec<DrawLine<V>>), // I don't remember what this one is for
+    DrawLines(Vec<DrawLine<V>>),
 }
 impl<V> Default for Texture<V> {
     fn default() -> Self {
@@ -71,6 +73,7 @@ impl<V> Texture<V> {
         }
     }
 }
+// TODO: look into using mem::take here
 impl<V: Copy> Texture<V> {
     pub fn map_lines_in_place<F: Fn(Line<V>) -> Line<V>>(&mut self, f: F) {
         match self {
@@ -266,7 +269,7 @@ fn shape_into_uv_bounding_shape<V: VectorTrait>(
     Shape::new_convex(verts, edges, faces)
 }
 
-// We need to be able to generate, for an arbitrary face, a sensible mapping to a D - 1 UV space
+/// Generates, for an arbitrary face, a mapping into a D - 1 UV space
 fn auto_uv_map_face<V: VectorTrait>(
     ref_shape: &Shape<V>,
     face_index: FaceIndex,
@@ -354,6 +357,7 @@ pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<
     Texture::Lines {
         lines: (0..n * 100)
             .map(|_| uv_map.bbox.random_point())
+            .filter_map(|p| uv_map.clip_point(p))
             .take(n)
             .map(pointlike_line)
             .collect(),
@@ -440,31 +444,6 @@ impl FrameTextureMapping {
             .iter()
             .map(|&vi| shape_verts[vi] - self.origin(shape_verts))
     }
-    pub fn draw_lines<'a, V: VectorTrait>(
-        &self,
-        shape: &'a Shape<V>,
-        lines: &'a [Line<V::SubV>],
-        color: Color,
-    ) -> impl Iterator<Item = DrawLine<V>> + 'a {
-        let origin = self.origin(&shape.verts);
-        let frame_verts: Vec<V> = self.frame_vecs(&shape.verts).collect_vec();
-        //this is pretty ridiculous. it just matrix multiplies a matrix of frame_verts (as columns) by each vertex
-        //in every line, then adds the origin.
-        //TODO: a lot of time is spent doing this calculation
-        lines
-            .iter()
-            .map(move |line| {
-                line.map(|v| {
-                    (0..V::SubV::DIM)
-                        .zip(frame_verts.iter())
-                        .map(|(i, &f)| f * v[i])
-                        .fold(V::zero(), |a, b| a + b)
-                        + origin
-                })
-            })
-            .map(move |line| DrawLine { line, color })
-        //.collect()
-    }
 
     //use face edges and reference vertices to determine vertex indices for texture mapping
     //order by side length, in decreasing order
@@ -503,40 +482,61 @@ pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
 #[test]
 fn test_uv_map_bounds() {
     use crate::constants::ZERO;
+    use crate::constants::{
+        INVERTED_CUBE_LABEL_STR, ONE_SIDED_FACE_LABEL_STR, OPEN_CUBE_LABEL_STR,
+    };
     use crate::geometry::{shape::buildshapes::ShapeBuilder, Plane, PointedPlane};
     use crate::tests::{random_rotation_matrix, random_vec};
     use crate::vector::{is_less_than_or_close, IsClose, MatrixTrait, Vec4};
     type V = Vec4;
+
+    fn assert_on_bounds<V: VectorTrait>(shape: &Shape<V>) {
+        let pplane: PointedPlane<V> = shape.faces[0].geometry.clone().into();
+        let basis = rotation_matrix(pplane.normal, V::one_hot(-1), None);
+        assert!(basis
+            .get_rows()
+            .iter()
+            .take(2)
+            .all(|v| IsClose::is_close(v.dot(pplane.normal), ZERO)));
+        let test_point = pplane.point + basis[0] + basis[1];
+        assert!(IsClose::is_close(
+            Plane::from(pplane.clone()).point_signed_distance(test_point),
+            ZERO
+        ));
+
+        for (face_index, face) in shape.faces.iter().enumerate() {
+            let uv_map = auto_uv_map_face(&shape, face_index);
+            //println!("face verts {:?}", face.get_verts(&shape.verts).collect_vec());
+            //println!("subface planes {:?}", shape.shape_type.get_face_subfaces(face_index).map(|sf| subface_plane(&shape.faces, face_index, &sf)).collect_vec());
+            // assert that all projected verts are within the boundaries
+            for b in uv_map.bounds() {
+                //println!("plane: {:?}", b);
+                assert!(face.get_verts(&shape.verts).all(|v| is_less_than_or_close(
+                    b.point_signed_distance(uv_map.map.transform_vec(v).project()),
+                    ZERO
+                )));
+            }
+        }
+    }
     let random_rotation = random_rotation_matrix::<V>();
     let random_transform: Transform<V, <V as VectorTrait>::M> =
         Transform::new(Some(random_vec()), Some(random_rotation), None);
+    //let random_transform = Transform::identity();
 
     let shape: Shape<V> = ShapeBuilder::build_prism(V::DIM, &[2.0, 1.0], &[5, 7])
         .with_transform(random_transform)
         .build();
+    assert_on_bounds(&shape);
 
-    let pplane: PointedPlane<V> = shape.faces[0].geometry.clone().into();
-    let basis = rotation_matrix(pplane.normal, V::one_hot(-1), None);
-    assert!(basis
-        .get_rows()
-        .iter()
-        .take(2)
-        .all(|v| IsClose::is_close(v.dot(pplane.normal), ZERO)));
-    let test_point = pplane.point + basis[0] + basis[1];
-    assert!(IsClose::is_close(
-        Plane::from(pplane.clone()).point_signed_distance(test_point),
-        ZERO
-    ));
-
-    for (face_index, face) in shape.faces.iter().enumerate() {
-        let uv_map = auto_uv_map_face(&shape, face_index);
-        // assert that all projected verts are within the boundaries
-        for b in uv_map.bounds() {
-            assert!(face.get_verts(&shape.verts).all(|v| is_less_than_or_close(
-                b.point_signed_distance(uv_map.map.transform_vec(v).project()),
-                ZERO
-            )));
-        }
+    let ref_shapes = build_shape_library::<V>();
+    for label in [
+        ONE_SIDED_FACE_LABEL_STR,
+        INVERTED_CUBE_LABEL_STR,
+        OPEN_CUBE_LABEL_STR,
+    ] {
+        let mut shape = ref_shapes.get_unwrap(&ShapeLabel::from_str(label)).clone();
+        shape.modify(&random_transform);
+        assert_on_bounds(&shape);
     }
 }
 
@@ -554,6 +554,8 @@ fn test_uv_map_shape() {
     let shape: Shape<V> = ShapeBuilder::build_prism(V::DIM, &[2.0, 1.0], &[5, 7])
         .with_transform(random_transform)
         .build();
+
+    // TODO: test on other shapes
     for (face_index, face) in shape.faces.iter().enumerate() {
         let uv_map = auto_uv_map_face(&shape, face_index);
 

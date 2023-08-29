@@ -216,14 +216,7 @@ pub fn create_shape<V: VectorTrait>(
                         if is_coin {
                             ShapeTextureBuilder::new_default(shape.faces.len()).with_color(YELLOW)
                         } else {
-                            //TODO: rv; dedeubbing
-                            //shape_default_orientation_color_texture(shape).with_fuzz()
-                            ShapeTextureBuilder::new_default(shape.faces.len()).with_texture(
-                                FaceTextureBuilder {
-                                    texture: TextureBuilder::new().make_fuzz_texture(),
-                                    mapping_directive: Default::default(),
-                                },
-                            )
+                            shape_default_orientation_color_texture(shape).with_fuzz()
                         }
                     })
                     .with_collider((!is_coin).then_some(StaticCollider))

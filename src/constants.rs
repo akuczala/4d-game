@@ -28,6 +28,9 @@ pub const COIN_LABEL_STR: &str = "Coin";
 pub const ONE_SIDED_FACE_LABEL_STR: &str = "OneSidedFace";
 pub const TWO_SIDED_FACE_LABEL_STR: &str = "TwoSidedFace";
 pub const INVERTED_CUBE_LABEL_STR: &str = "InvertedCube";
+pub const OPEN_CUBE_LABEL_STR: &str = "OpenCube";
+pub const OPEN_INVERTED_CUBE_LABEL_STR: &str = "OpenInvertedCube";
+pub const INVERTED_PIPE_LABEL_STR: &str = "InvertedPipe";
 
 pub const Z0: Field = ZERO;
 

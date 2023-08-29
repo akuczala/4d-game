@@ -16,7 +16,7 @@ impl<V: VectorTrait> SingleFace<V> {
         shape_verts: &[V],
         face_normal: V,
         subface_vertis: &[Vec<VertIndex>],
-        face_index: FaceIndex,
+        face_index: FaceIndex, // TODO: is this arg always = 0?
     ) -> Self {
         Self {
             subfaces: subface_vertis

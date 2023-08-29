@@ -109,7 +109,7 @@ impl<V> BoundarySubFace<V> {
         face_edgeis
             .iter()
             .map(|ei| (ei, &shape_edges[*ei]))
-            .filter(|(_ei, edge)| self.vertis.iter().any(|vi| edge.contains(*vi)))
+            .filter(|&(_ei, edge)| self.vertis.contains(&edge.0) && self.vertis.contains(&edge.1))
             .map(|(ei, _edge)| *ei)
             .collect()
     }
