@@ -85,7 +85,10 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
         ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR),
         convex_shape_to_face_shape(sub_cube, true),
     );
-    ref_shapes.insert(ShapeLabel::from_str(INVERTED_CUBE_LABEL_STR), inverted_cube);
+    ref_shapes.insert(
+        ShapeLabel::from_str(INVERTED_CUBE_LABEL_STR),
+        inverted_cube.to_generic(),
+    );
     ref_shapes.insert(ShapeLabel::from_str(OPEN_CUBE_LABEL_STR), open_cube);
     ref_shapes.insert(
         ShapeLabel::from_str(OPEN_INVERTED_CUBE_LABEL_STR),

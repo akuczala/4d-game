@@ -10,8 +10,7 @@ use crate::{
 
 use super::{
     draw_fuzz_on_uv, make_default_lines_texture, merge_textures,
-    shape_texture::TextureMappingDirective, Texture,
-    TextureMappingV, UVMapV,
+    shape_texture::TextureMappingDirective, Texture, TextureMappingV, UVMapV,
 };
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -157,8 +156,8 @@ impl TextureBuilder {
                     .build::<V>(config, ref_shape, shape, face_index);
                 // use UV space from our mapping, rather than other
                 //transform lines from other into our map
-                let old_to_new_transform = AffineTransform::from(other_mapping.uv_map.map)
-                    .compose(mapping.uv_map.map.inverse());
+                let old_to_new_transform = AffineTransform::from(mapping.uv_map.map)
+                    .compose(other_mapping.uv_map.map.inverse());
                 other_texture.map_lines_in_place(|line| {
                     line.map(|p| {
                         old_to_new_transform

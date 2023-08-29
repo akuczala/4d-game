@@ -12,12 +12,9 @@ use crate::coin::Coin;
 use crate::config::Config;
 use crate::constants::{COIN_LABEL_STR, SELECTION_COLOR};
 use crate::draw::draw_line_collection::DrawLineCollection;
-use crate::draw::texture::shape_texture::{
-    shape_default_orientation_color_texture,
-};
+use crate::draw::texture::shape_texture::shape_default_orientation_color_texture;
 
-
-use crate::draw::texture::{ShapeTextureBuilder};
+use crate::draw::texture::ShapeTextureBuilder;
 use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
 
 use crate::geometry::transform::Scaling;

@@ -7,10 +7,10 @@ use crate::{
     config::DrawConfig,
     constants::CARDINAL_COLORS,
     draw::{normal_to_color, DrawLine},
-    geometry::{shape::FaceIndex},
+    geometry::shape::FaceIndex,
     graphics::colors::Color,
     utils::{BranchIterator2, ValidDimension},
-    vector::{VectorTrait},
+    vector::VectorTrait,
 };
 
 use super::{

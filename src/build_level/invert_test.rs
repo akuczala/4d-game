@@ -3,9 +3,7 @@ use specs::{Builder, World};
 use crate::{
     components::{RefShapes, ShapeLabel, StaticCollider, Transformable},
     constants::{CUBE_LABEL_STR, HALF_PI},
-    draw::{
-        texture::{shape_texture::fuzzy_color_cube_texture, ShapeTextureBuilder},
-    },
+    draw::texture::{shape_texture::fuzzy_color_cube_texture, ShapeTextureBuilder},
     ecs_utils::Componentable,
     graphics::colors::WHITE,
     shape_entity_builder::ShapeEntityBuilderV,
@@ -52,15 +50,6 @@ where
         .with_texture(fuzzy_color_cube_texture::<V>())
         .with_color(WHITE)
         .with_translation(V::one_hot(0) * 1.0)
-        .with_collider(Some(StaticCollider))
-        .build(world)
-        .build();
-
-    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
-        .with_texturing_fn(
-            |shape| ShapeTextureBuilder::new_default(shape.faces.len()), // TODO: test tile
-        )
-        .with_translation(V::one_hot(2) * 3.0)
         .with_collider(Some(StaticCollider))
         .build(world)
         .build();

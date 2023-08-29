@@ -8,9 +8,7 @@ pub use self::shape_texture::{FaceTexture, FaceTextureBuilder, ShapeTexture, Sha
 use super::DrawLine;
 
 use crate::components::{BBox, Convex, HasBBox, Shape, ShapeType, Transform};
-use crate::constants::{
-    HALF, ZERO,
-};
+use crate::constants::{HALF, ZERO};
 use crate::geometry::affine_transform::AffineTransform;
 use crate::geometry::shape::face::FaceBuilder;
 use crate::geometry::shape::generic::subface_plane;
@@ -483,10 +481,10 @@ pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
 fn test_uv_map_bounds() {
     use crate::components::ShapeLabel;
     use crate::constants::{
-        ZERO, INVERTED_CUBE_LABEL_STR, ONE_SIDED_FACE_LABEL_STR, OPEN_CUBE_LABEL_STR,
+        INVERTED_CUBE_LABEL_STR, ONE_SIDED_FACE_LABEL_STR, OPEN_CUBE_LABEL_STR, ZERO,
     };
-    use crate::geometry::{shape::buildshapes::ShapeBuilder, Plane, PointedPlane};
     use crate::geometry::shape::build_shape_library;
+    use crate::geometry::{shape::buildshapes::ShapeBuilder, Plane, PointedPlane};
     use crate::tests::{random_rotation_matrix, random_vec};
     use crate::vector::{is_less_than_or_close, IsClose, MatrixTrait, Vec4};
     type V = Vec4;
