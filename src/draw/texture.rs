@@ -181,9 +181,6 @@ pub struct UVMap<V, M, U> {
     bbox: BBox<U>,
 }
 impl<V: VectorTrait> UVMapV<V> {
-    pub fn transform_ref_vec_to_uv_vec(&self, point: &V) -> V::SubV {
-        self.map.transform_vec(point).project()
-    }
     pub fn uv_to_world_transform(
         &self,
         shape_transform: &Transform<V, V::M>,
@@ -287,7 +284,6 @@ fn auto_uv_map_face<V: VectorTrait>(
 }
 
 impl<V: VectorTrait> UVMapV<V> {
-    // TODO: fix. think about how the 2d basis of frame basis differs from uv basis
     pub fn from_frame_texture_mapping(
         ref_shape: &Shape<V>,
         face_index: FaceIndex,
@@ -363,37 +359,13 @@ pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<
     }
 }
 
-// TODO: methods to transform map, likely by taking a transform<V::SubV, V::SubV::M>
-// TODO: apply to rendering tiles
-// TODO: is the texturemapping frame + origin a special case of UVMap?
 // TODO: automagically generate textures based on shape + directives, so we don't need to save them per shape
 
 // Generalize TextureMapping to arbitrary affine transformation?
 // Optional additional info to clip out lines that are outside face boundary
 
-// steps for using a UV mapped texture for e.g. fuzz
-// have a texture building directive that says
-// Default -> MergedWith Fuzz
-// this translates to
-// 1. Create default texture
-// 2. Convert default texture to lines texture
-// 2a. Create auto uv map from face
-// 2b. draw default texture in UV space
-// 3. Create fuzz texture
-// 3a. a UV map already exists for this face, so use it
-// 3b. draw fuzz lines in UV space
-// 4. Merge lines to create new lines texture
-
 // have a shape texture directive that says
 // For each face, do (Default -> MergedWith Fuzz -> Color color) for colors in cardinal colors
-
-// Steps for drawing via UV map
-// Shape data not needed?
-// Compose uv map with shape transform, then apply map to all lines
-
-// TODO: replace texturemapping from serialization with a mapping directive
-// e.g. AutoUV, SortLengths
-// TODO: above will require separate shape + face builder + drawer structs
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct FrameTextureMapping {
@@ -479,7 +451,6 @@ pub fn pointlike_line<V: VectorTrait>(pos: V) -> Line<V> {
 
 #[test]
 fn test_uv_map_bounds() {
-    use crate::components::ShapeLabel;
     use crate::constants::{
         INVERTED_CUBE_LABEL_STR, ONE_SIDED_FACE_LABEL_STR, OPEN_CUBE_LABEL_STR, ZERO,
     };
@@ -533,7 +504,7 @@ fn test_uv_map_bounds() {
         INVERTED_CUBE_LABEL_STR,
         OPEN_CUBE_LABEL_STR,
     ] {
-        let mut shape = ref_shapes.get_unwrap(&ShapeLabel::from_str(label)).clone();
+        let mut shape = ref_shapes.get_unwrap(&label.into()).clone();
         shape.modify(&random_transform);
         assert_on_bounds(&shape);
     }
@@ -560,7 +531,7 @@ fn test_uv_map_shape() {
 
         // assert that the face center is mapped to the origin
         assert!(IsClose::is_close(
-            uv_map.transform_ref_vec_to_uv_vec(&face.center()),
+            uv_map.map.transform_vec(&face.center()).project(),
             Vec3::zero()
         ));
 
@@ -610,7 +581,7 @@ fn test_frame_to_uv() {
         // assert that the frame origin is mapped to zero
         let origin_pt = frame_map.origin(&ref_shape.verts);
         assert!(IsClose::is_close(
-            uv_map.transform_ref_vec_to_uv_vec(&origin_pt),
+            uv_map.map.transform_vec(&origin_pt).project(),
             SubV::zero()
         ));
 

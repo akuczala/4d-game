@@ -16,7 +16,7 @@ pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEn
         ValidDimension::Four => vec![2, 2, 2],
     };
     let len = 4.0;
-    let wall_label = ShapeLabel::from_str(ONE_SIDED_FACE_LABEL_STR);
+    let wall_label = ShapeLabel::from(ONE_SIDED_FACE_LABEL_STR);
     let texture_builder = TextureBuilder::new();
     let wall_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, wall_label)
         .with_scale(Scaling::Scalar(len))
@@ -26,7 +26,7 @@ pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEn
                 .make_tile_texture(vec![0.8], n_divisions)
                 .merged_with(texture_builder.make_fuzz_texture()),
         );
-    let floor_label = ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR);
+    let floor_label = ShapeLabel::from(TWO_SIDED_FACE_LABEL_STR);
     let upper_floor_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, floor_label)
         .with_scale(Scaling::Scalar(len))
         .stretch(&(V::ones() * 0.5 - V::one_hot(1) * 0.25))

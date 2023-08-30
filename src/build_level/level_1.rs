@@ -1,7 +1,7 @@
 use specs::World;
 
 use crate::{
-    components::{RefShapes, ShapeLabel, Transformable},
+    components::{RefShapes, Transformable},
     config::DrawConfig,
     constants::{COIN_LABEL_STR, CUBE_LABEL_STR},
     draw::texture::shape_texture::{build_fuzzy_tile_texture, fuzzy_color_cube_texture},
@@ -130,8 +130,7 @@ pub fn build_lvl_1<V>(
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    let cube_builder =
-        ShapeEntityBuilder::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR));
+    let cube_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, CUBE_LABEL_STR.into());
 
     let wall_length = 3.0;
     let walls: Vec<ShapeEntityBuilderV<V>> =
@@ -151,12 +150,9 @@ pub fn build_lvl_1<V>(
     ) {
         insert_coin(
             world,
-            ShapeEntityBuilder::new_from_ref_shape(
-                ref_shapes,
-                ShapeLabel::from_str(COIN_LABEL_STR),
-            )
-            .with_translation(V::one_hot(axis) * dir * (wall_length - 0.5))
-            .with_color(YELLOW),
+            ShapeEntityBuilder::new_from_ref_shape(ref_shapes, COIN_LABEL_STR.into())
+                .with_translation(V::one_hot(axis) * dir * (wall_length - 0.5))
+                .with_color(YELLOW),
         );
     }
 }

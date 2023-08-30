@@ -16,7 +16,7 @@ where
     V::M: Componentable,
     V::SubV: Componentable,
 {
-    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str("OpenCube"))
+    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from("OpenCube"))
         .with_scale(crate::geometry::transform::Scaling::Scalar(2.0))
         .with_texture(fuzzy_color_cube_texture::<V>())
         .with_collider(Some(StaticCollider))
@@ -27,7 +27,7 @@ where
         .build(world)
         .build();
 
-    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str("OpenInvertedCube"))
+    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from("OpenInvertedCube"))
         .with_scale(crate::geometry::transform::Scaling::Scalar(2.0))
         .with_texture(fuzzy_color_cube_texture::<V>())
         .with_collider(Some(StaticCollider))
@@ -38,7 +38,7 @@ where
         .build(world)
         .build();
 
-    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
+    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from(CUBE_LABEL_STR))
         .with_translation(V::one_hot(0) * 8.0)
         .with_texture(fuzzy_color_cube_texture::<V>())
         .with_color(WHITE)
@@ -46,7 +46,7 @@ where
         .build(world)
         .build();
 
-    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from_str(CUBE_LABEL_STR))
+    ShapeEntityBuilderV::new_from_ref_shape(ref_shapes, ShapeLabel::from(CUBE_LABEL_STR))
         .with_texture(fuzzy_color_cube_texture::<V>())
         .with_color(WHITE)
         .with_translation(V::one_hot(0) * 1.0)

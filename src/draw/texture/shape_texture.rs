@@ -126,14 +126,7 @@ pub struct FaceTextureGeneric<V, M, U> {
     pub texture_mapping: TextureMapping<V, M, U>,
 }
 
-// TODO: consider parameterizing this on V instead
 pub type FaceTexture<V> = FaceTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
-
-impl<V, M, U> FaceTextureGeneric<V, M, U> {
-    pub fn set_color(&mut self, color: Color) {
-        take_mut::take(&mut self.texture, |tex| tex.set_color(color));
-    }
-}
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub enum TextureMappingDirective {

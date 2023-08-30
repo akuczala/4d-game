@@ -10,7 +10,7 @@ use crate::{components::StaticCollider, constants::PI};
 use specs::{Builder, World};
 
 use crate::{
-    components::{RefShapes, ShapeLabel, Transformable},
+    components::{RefShapes, Transformable},
     ecs_utils::Componentable,
     geometry::transform::Scaling,
     graphics::colors::YELLOW,
@@ -96,12 +96,10 @@ where
         ValidDimension::Three => vec![4, 4],
         ValidDimension::Four => vec![4, 4, 4],
     };
-    let build_shape: ShapeEntityBuilderV<V> = ShapeEntityBuilder::new_from_ref_shape(
-        ref_shapes,
-        ShapeLabel::from_str(TWO_SIDED_FACE_LABEL_STR),
-    )
-    .with_scale(Scaling::Scalar(2.0))
-    .with_face_texture(TextureBuilder::new().make_tile_texture(vec![0.8], n_divisions));
+    let build_shape: ShapeEntityBuilderV<V> =
+        ShapeEntityBuilder::new_from_ref_shape(ref_shapes, TWO_SIDED_FACE_LABEL_STR.into())
+            .with_scale(Scaling::Scalar(2.0))
+            .with_face_texture(TextureBuilder::new().make_tile_texture(vec![0.8], n_divisions));
     build_test_walls(&build_shape).into_iter().for_each(|b| {
         b.build(world).build();
     });

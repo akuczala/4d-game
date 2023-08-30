@@ -1,3 +1,7 @@
+use std::{collections::HashMap, fmt::Display, hash::Hash};
+
+use serde::{Deserialize, Serialize};
+
 use crate::vector::VecIndex;
 
 pub fn partial_max<I, T: PartialOrd>(iter: I) -> Option<T>
@@ -89,5 +93,34 @@ impl ValidDimension {
             Self::Three => 3,
             Self::Four => 4,
         }
+    }
+}
+#[derive(Serialize, Deserialize)]
+pub struct ResourceLibrary<K: Eq + Hash, V>(HashMap<K, V>);
+impl<K: Eq + Hash, V> ResourceLibrary<K, V> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.0.get(key)
+    }
+    pub fn get_labels(&self) -> impl Iterator<Item = &K> {
+        self.0.keys()
+    }
+    pub fn build(entries: Vec<(K, V)>) -> Self {
+        let mut new = Self::new();
+        new.0.extend(entries.into_iter());
+        new
+    }
+}
+impl<K: Eq + Hash + Display, V> ResourceLibrary<K, V> {
+    pub fn get_unwrap(&self, key: &K) -> &V {
+        self.get(key)
+            .unwrap_or_else(|| panic!("Resource {} not found", key))
+    }
+}
+impl<K: Eq + Hash, V> Default for ResourceLibrary<K, V> {
+    fn default() -> Self {
+        Self(HashMap::new())
     }
 }

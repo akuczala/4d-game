@@ -205,7 +205,7 @@ pub fn create_shape<V: VectorTrait>(
                 let pos = player_transform.pos;
                 let dir = player_transform.frame[-1];
                 let shape_pos = pos + dir * 2.0;
-                let is_coin = shape_label == ShapeLabel::from_str(COIN_LABEL_STR);
+                let is_coin = shape_label == ShapeLabel::from(COIN_LABEL_STR);
                 ShapeEntityBuilder::new_from_ref_shape(ref_shapes, shape_label.clone())
                     .with_transform(Transform::pos(shape_pos))
                     .with_scale(Scaling::Scalar(1.0))

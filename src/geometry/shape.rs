@@ -119,9 +119,6 @@ impl Edge {
     pub fn map<F: Fn(VertIndex) -> VertIndex>(&self, f: F) -> Self {
         Self(f(self.0), f(self.1))
     }
-    pub fn contains(&self, vi: VertIndex) -> bool {
-        self.0 == vi || self.1 == vi
-    }
     pub fn get_line<V: Copy>(&self, shape_verts: &[V]) -> Line<V> {
         Line(shape_verts[self.0], shape_verts[self.1])
     }
