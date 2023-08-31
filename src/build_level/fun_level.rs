@@ -17,14 +17,11 @@ pub fn build_fun_level<V: VectorTrait>() -> Vec<ShapeEntityBuilderV<V>> {
     };
     let len = 4.0;
     let wall_label = ShapeLabel::from(ONE_SIDED_FACE_LABEL_STR);
-    let texture_builder = TextureBuilder::new();
     let wall_builder = ShapeEntityBuilder::new(wall_label)
         .with_scale(Scaling::Scalar(len))
         .with_face_texture(
-            texture_builder
-                .clone()
-                .make_tile_texture(vec![0.8], n_divisions)
-                .merged_with(texture_builder.make_fuzz_texture()),
+            TextureBuilder::new_tile_texture(vec![0.8], n_divisions)
+            .merged_with(TextureBuilder::new_fuzz_texture())
         );
     let floor_label = ShapeLabel::from(TWO_SIDED_FACE_LABEL_STR);
     let upper_floor_builder = ShapeEntityBuilder::new(floor_label)

@@ -18,7 +18,7 @@ use specs::prelude::*;
 #[derive(Clone)]
 pub struct ShapeEntityBuilder<V, M> {
     shape_label: ShapeLabel,
-    pub transformation: Transform<V, M>,
+    transformation: Transform<V, M>,
     shape_texture_builder: ShapeTextureBuilder,
     static_collider: Option<StaticCollider>,
     coin: Option<Coin>,

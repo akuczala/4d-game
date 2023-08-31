@@ -38,7 +38,8 @@ impl TexturePrim {
 #[derive(Clone, Serialize, Deserialize)]
 pub enum TextureBuilderStep {
     WithColor(Color),
-    MergedWith(TexturePrim, Vec<TextureBuilderStep>),
+    //WithTexture(TexturePrim),
+    MergedWith(Box<TextureBuilder>),
 }
 
 #[derive(Clone)]
@@ -59,32 +60,30 @@ type ShapeData<'a, V> = (&'a Shape<V>, &'a Shape<V>, FaceIndex);
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct TextureBuilder {
-    start: TexturePrim, // TODO: remove this?
+    start: TexturePrim,
     steps: Vec<TextureBuilderStep>,
 }
 
 impl TextureBuilder {
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(texture_prim: TexturePrim) -> Self {
+       Self {
+        start: texture_prim,
+        steps: vec![]
+       }
     }
-    pub fn with_start_texture(mut self, texture_prim: TexturePrim) -> Self {
-        self.start = texture_prim;
-        self
-    }
-    pub fn make_tile_texture(self, scales: Vec<Field>, n_divisions: Vec<i32>) -> Self {
-        self.with_start_texture(TexturePrim::Tile {
+    pub fn new_tile_texture(scales: Vec<Field>, n_divisions: Vec<i32>) -> Self {
+        Self::new(TexturePrim::Tile {
             scales,
             n_divisions,
         })
     }
-    pub fn make_fuzz_texture(self) -> Self {
-        self.with_start_texture(TexturePrim::Fuzz)
+    pub fn new_fuzz_texture() -> Self {
+        Self::new(TexturePrim::Fuzz)
     }
 
     pub fn merged_with(self, texture_builder: TextureBuilder) -> Self {
         self.with_step(TextureBuilderStep::MergedWith(
-            texture_builder.start,
-            texture_builder.steps,
+            Box::new(texture_builder),
         ))
     }
 
@@ -100,7 +99,7 @@ impl TextureBuilder {
         self.with_step(TextureBuilderStep::WithColor(color))
     }
 
-    pub fn make_texture_and_map<V: VectorTrait>(
+    pub fn make_texture<V: VectorTrait>(
         config: &TextureBuilderConfig,
         start: TexturePrim,
         uv_map: &UVMapV<V>,
@@ -133,7 +132,7 @@ impl TextureBuilder {
             .build(face_index, ref_shape, shape);
         self.steps.into_iter().fold(
             FaceTexture {
-                texture: Self::make_texture_and_map(config, self.start, &starting_map.uv_map),
+                texture: Self::make_texture(config, self.start, &starting_map.uv_map),
                 texture_mapping: starting_map,
             },
             |face_texture, step| Self::apply_step(config, shape_data, face_texture, step),
@@ -152,10 +151,8 @@ impl TextureBuilder {
                 texture: texture.set_color(color),
                 texture_mapping: mapping,
             },
-            TextureBuilderStep::MergedWith(start, steps) => {
-                let mut other_face_texture = Self::new()
-                    .with_start_texture(start)
-                    .with_steps(steps)
+            TextureBuilderStep::MergedWith(boxed_builder) => {
+                let mut other_face_texture = (*boxed_builder)
                     .build::<V>(config, ref_shape, shape, face_index);
                 // use UV space from our mapping, rather than other
                 //transform lines from other into our map

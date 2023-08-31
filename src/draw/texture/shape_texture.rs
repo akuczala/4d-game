@@ -15,7 +15,7 @@ use crate::{
 
 use super::{
     auto_uv_map_face,
-    texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep, TexturePrim},
+    texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep},
     FrameTextureMapping, Texture, TextureMapping, TextureMappingV, UVMapV,
 };
 
@@ -87,8 +87,7 @@ impl ShapeTextureBuilder {
     }
     pub fn with_fuzz(self) -> Self {
         self.map(ShapeTextureMap::single(TextureBuilderStep::MergedWith(
-            TexturePrim::Fuzz,
-            Vec::new(),
+            TextureBuilder::new_fuzz_texture().into()
         )))
     }
     pub fn with_texture(self, texture: TextureBuilder) -> Self {
@@ -262,14 +261,14 @@ pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilderVec {
     ShapeTextureBuilderVec {
         face_textures: (0..V::DIM * 2)
             .zip(&CARDINAL_COLORS)
-            .map(|(_face, &color)| TextureBuilder::new().with_color(color.set_alpha(0.5)))
+            .map(|(_face, &color)| TextureBuilder::default().with_color(color.set_alpha(0.5)))
             .collect(),
     }
 }
 
 pub fn fuzzy_color_cube_texture<V: VectorTrait>() -> ShapeTextureBuilderVec {
     color_cube_shape_texture::<V>()
-        .map_textures(|texture| texture.merged_with(TextureBuilder::new().make_fuzz_texture()))
+        .map_textures(|texture| texture.merged_with(TextureBuilder::new_fuzz_texture()))
 }
 
 pub fn shape_default_orientation_color_texture<V: VectorTrait>(
@@ -295,7 +294,7 @@ pub fn color_duocylinder<V: VectorTrait>(
             1.0,
             1.0,
         ]);
-        *face = TextureBuilder::new().with_color(color)
+        *face = TextureBuilder::default().with_color(color)
     }
 }
 
@@ -306,15 +305,14 @@ pub fn build_fuzzy_tile_texture<V: VectorTrait>(
     ShapeTextureBuilderVec {
         face_textures: (0..n_faces)
             .map(|face_index| {
-                TextureBuilder::new()
-                    .make_tile_texture(
+                TextureBuilder::new_tile_texture(
                         vec![draw_config.face_scale],
                         match V::DIM.into() {
                             ValidDimension::Three => vec![3, 1],
                             ValidDimension::Four => vec![3, 1, 1],
                         },
                     )
-                    .merged_with(TextureBuilder::new().make_fuzz_texture())
+                    .merged_with(TextureBuilder::new_fuzz_texture())
                     .with_step(TextureBuilderStep::WithColor(CARDINAL_COLORS[face_index]))
             })
             .collect(),

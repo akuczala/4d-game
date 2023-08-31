@@ -99,7 +99,7 @@ where
     let build_shape: ShapeEntityBuilderV<V> =
         ShapeEntityBuilder::new(TWO_SIDED_FACE_LABEL_STR.into())
             .with_scale(Scaling::Scalar(2.0))
-            .with_face_texture(TextureBuilder::new().make_tile_texture(vec![0.8], n_divisions));
+            .with_face_texture(TextureBuilder::new_tile_texture(vec![0.8], n_divisions));
     build_test_walls(&build_shape).into_iter().for_each(|b| {
         b.build(ref_shapes, world).build();
     });
