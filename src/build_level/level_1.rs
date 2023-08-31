@@ -52,7 +52,7 @@ fn build_corridor_cross<V: VectorTrait>(
             })
             .collect();
     for builder in &mut walls1 {
-        builder.shape_texture_builder = fuzzy_tile_tex.clone();
+        take_mut::take(builder, |b| b.with_texture(fuzzy_tile_tex.clone()));
     }
 
     shape_builders.append(&mut walls1);
@@ -90,10 +90,10 @@ fn build_corridor_cross<V: VectorTrait>(
         .collect();
 
     for builder in &mut floors_long {
-        builder.shape_texture_builder = fuzzy_tile_tex.clone()
+        take_mut::take(builder, |b| b.with_texture(fuzzy_tile_tex.clone()));
     }
     for builder in &mut ceilings_long {
-        builder.shape_texture_builder = fuzzy_tile_tex.clone()
+        take_mut::take(builder, |b| b.with_texture(fuzzy_tile_tex.clone()));
     }
 
     shape_builders.append(&mut floors_long);
@@ -123,14 +123,14 @@ where
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    let cube_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, CUBE_LABEL_STR.into());
+    let cube_builder = ShapeEntityBuilder::new(CUBE_LABEL_STR.into());
 
     let wall_length = 3.0;
     let walls: Vec<ShapeEntityBuilderV<V>> =
         build_corridor_cross(&cube_builder, wall_length, open_center);
 
     for wall in walls.into_iter() {
-        insert_static_collider(world, wall)
+        insert_static_collider(world, ref_shapes, wall)
     }
     //let (m,n) = (4,4);
     //let mut duocylinder = buildshapes::build_duoprism_4d([1.0,1.0],[[0,1],[2,3]],[m,n])
@@ -143,7 +143,8 @@ where
     ) {
         insert_coin(
             world,
-            ShapeEntityBuilder::new_from_ref_shape(ref_shapes, COIN_LABEL_STR.into())
+            ref_shapes,
+            ShapeEntityBuilder::new(COIN_LABEL_STR.into())
                 .with_translation(V::one_hot(axis) * dir * (wall_length - 0.5))
                 .with_color(YELLOW),
         );

@@ -22,6 +22,7 @@ impl<V> SubFace<V> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_vertis(&self, shape_faces: &[Face<V>]) -> Vec<VertIndex> {
         match self {
             SubFace::Interior(isf) => isf.get_vertis(shape_faces).collect(),

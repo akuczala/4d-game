@@ -97,10 +97,10 @@ where
         ValidDimension::Four => vec![4, 4, 4],
     };
     let build_shape: ShapeEntityBuilderV<V> =
-        ShapeEntityBuilder::new_from_ref_shape(ref_shapes, TWO_SIDED_FACE_LABEL_STR.into())
+        ShapeEntityBuilder::new(TWO_SIDED_FACE_LABEL_STR.into())
             .with_scale(Scaling::Scalar(2.0))
             .with_face_texture(TextureBuilder::new().make_tile_texture(vec![0.8], n_divisions));
     build_test_walls(&build_shape).into_iter().for_each(|b| {
-        b.build(world).build();
+        b.build(ref_shapes, world).build();
     });
 }

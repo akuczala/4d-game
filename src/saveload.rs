@@ -124,11 +124,11 @@ fn append_components<V>(
     V::SubV: Componentable,
 {
     for (label, transform, texture, maybe_collider, maybe_coin) in save_struct.components {
-        ShapeEntityBuilderV::<V>::new_from_ref_shape(ref_shapes, label)
+        ShapeEntityBuilderV::<V>::new(label)
             .with_transform(transform)
             .with_texture(texture)
             .with_collider(maybe_collider)
-            .build(world)
+            .build(ref_shapes, world)
             .maybe_with(maybe_coin)
             .build();
     }

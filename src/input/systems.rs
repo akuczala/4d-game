@@ -168,12 +168,11 @@ where
     ) {
         if let Some(builder) = create_shape(
             &mut input,
-            &ref_shapes,
             &config,
             gui_state.get_selected_shape_name(&gui_init_args),
             read_transform.get(player.0).unwrap(),
         ) {
-            builder.insert(entities.create(), &lazy, &config);
+            builder.insert(entities.create(), &lazy, &config, &ref_shapes);
         }
     }
 }
@@ -224,14 +223,13 @@ where
         {
             if let Some(builder) = duplicate_shape(
                 &mut input,
-                &ref_shapes,
                 shape_label_storage.get(selected_entity).unwrap(),
                 read_transform.get(selected_entity).unwrap(),
                 shape_textures.get(selected_entity).unwrap(),
                 static_colliders.get(selected_entity),
                 coins.get(selected_entity).cloned(),
             ) {
-                builder.insert(entities.create(), &lazy, &config);
+                builder.insert(entities.create(), &lazy, &config, &ref_shapes);
             }
         }
     }

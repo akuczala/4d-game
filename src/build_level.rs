@@ -24,24 +24,30 @@ use self::fun_level::build_fun_level;
 use self::invert_test::build_inverted_test_level;
 use self::level_1::build_lvl_1;
 
-pub fn insert_static_collider<V>(world: &mut World, shape_builder: ShapeEntityBuilderV<V>)
-where
+pub fn insert_static_collider<V>(
+    world: &mut World,
+    ref_shapes: &RefShapes<V>,
+    shape_builder: ShapeEntityBuilderV<V>,
+) where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
 {
     shape_builder
         .with_collider(Some(StaticCollider))
-        .build(world)
+        .build(ref_shapes, world)
         .build();
 }
-pub fn insert_coin<V>(world: &mut World, shape_builder: ShapeEntityBuilderV<V>)
-where
+pub fn insert_coin<V>(
+    world: &mut World,
+    ref_shapes: &RefShapes<V>,
+    shape_builder: ShapeEntityBuilderV<V>,
+) where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    shape_builder.build(world).with(Coin).build();
+    shape_builder.build(ref_shapes, world).with(Coin).build();
 }
 
 pub fn build_scene<V>(world: &mut World)
@@ -70,9 +76,9 @@ where
         ),
         LevelConfig::Test1 => build_test_level(world, ref_shapes),
         LevelConfig::Test2 => {
-            build_fun_level(ref_shapes)
+            build_fun_level()
                 .into_iter()
-                .for_each(|b| insert_static_collider(world, b));
+                .for_each(|b| insert_static_collider(world, ref_shapes, b));
         }
         LevelConfig::Test3 => build_inverted_test_level(ref_shapes, world),
         LevelConfig::Load => config

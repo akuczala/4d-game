@@ -17,10 +17,9 @@ use specs::prelude::*;
 
 #[derive(Clone)]
 pub struct ShapeEntityBuilder<V, M> {
-    ref_shape: Shape<V>, // TODO: deprecate
     shape_label: ShapeLabel,
     pub transformation: Transform<V, M>,
-    pub shape_texture_builder: ShapeTextureBuilder,
+    shape_texture_builder: ShapeTextureBuilder,
     static_collider: Option<StaticCollider>,
     coin: Option<Coin>,
 }
@@ -29,10 +28,8 @@ pub struct ShapeEntityBuilder<V, M> {
 pub type ShapeEntityBuilderV<V> = ShapeEntityBuilder<V, <V as VectorTrait>::M>;
 
 impl<V: VectorTrait> ShapeEntityBuilderV<V> {
-    pub fn new_from_ref_shape(ref_shapes: &RefShapes<V>, label: ShapeLabel) -> Self {
-        let ref_shape = ref_shapes.get_unwrap(&label);
+    pub fn new(label: ShapeLabel) -> Self {
         Self {
-            ref_shape: ref_shape.clone(),
             shape_label: label,
             transformation: Transform::identity(),
             shape_texture_builder: ShapeTextureBuilder::default(),
@@ -72,21 +69,21 @@ where
     V::M: Componentable,
 {
     // TODO: use macro to specify components in both methods?
-    pub fn build(self, world: &mut World) -> EntityBuilder {
+    pub fn build<'a>(self, ref_shapes: &RefShapes<V>, world: &'a mut World) -> EntityBuilder<'a> {
         let Self {
-            ref_shape,
             shape_label,
             transformation,
             shape_texture_builder,
             static_collider,
             coin,
         } = self;
+        let ref_shape = ref_shapes.get_unwrap(&shape_label);
         let mut shape = ref_shape.clone();
-        shape.update_from_ref(&ref_shape, &transformation);
+        shape.update_from_ref(ref_shape, &transformation);
         let shape_texture = make_shape_texture::<V>(
             &world.fetch::<Config>(),
             shape_texture_builder.clone(),
-            &ref_shape,
+            ref_shape,
             &shape,
         );
         world
@@ -102,19 +99,25 @@ where
             .maybe_with(static_collider)
             .maybe_with(coin)
     }
-    pub fn insert(self, e: Entity, lazy: &Read<LazyUpdate>, config: &Config) {
+    pub fn insert(
+        self,
+        e: Entity,
+        lazy: &Read<LazyUpdate>,
+        config: &Config,
+        ref_shapes: &RefShapes<V>,
+    ) {
         let Self {
-            ref_shape,
             shape_label,
             transformation,
             shape_texture_builder,
             static_collider,
             coin,
         } = self;
+        let ref_shape = ref_shapes.get_unwrap(&shape_label);
         let mut shape = ref_shape.clone();
-        shape.update_from_ref(&ref_shape, &transformation);
+        shape.update_from_ref(ref_shape, &transformation);
         let shape_texture =
-            make_shape_texture::<V>(config, shape_texture_builder.clone(), &ref_shape, &shape);
+            make_shape_texture::<V>(config, shape_texture_builder.clone(), ref_shape, &shape);
         lazy.insert(e, shape.calc_bbox());
         lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
         lazy.insert(e, transformation);

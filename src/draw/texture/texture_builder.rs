@@ -59,7 +59,7 @@ type ShapeData<'a, V> = (&'a Shape<V>, &'a Shape<V>, FaceIndex);
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct TextureBuilder {
-    start: TexturePrim,
+    start: TexturePrim, // TODO: remove this?
     steps: Vec<TextureBuilderStep>,
 }
 

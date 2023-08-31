@@ -4,13 +4,13 @@ use crate::draw::texture::texture_builder::TextureBuilder;
 
 use crate::utils::ValidDimension;
 use crate::{
-    components::{RefShapes, ShapeLabel, Transformable},
+    components::{ShapeLabel, Transformable},
     geometry::transform::Scaling,
     shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV},
     vector::{Field, VectorTrait},
 };
 
-pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEntityBuilderV<V>> {
+pub fn build_fun_level<V: VectorTrait>() -> Vec<ShapeEntityBuilderV<V>> {
     let n_divisions = match V::DIM.into() {
         ValidDimension::Three => vec![2, 2],
         ValidDimension::Four => vec![2, 2, 2],
@@ -18,7 +18,7 @@ pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEn
     let len = 4.0;
     let wall_label = ShapeLabel::from(ONE_SIDED_FACE_LABEL_STR);
     let texture_builder = TextureBuilder::new();
-    let wall_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, wall_label)
+    let wall_builder = ShapeEntityBuilder::new(wall_label)
         .with_scale(Scaling::Scalar(len))
         .with_face_texture(
             texture_builder
@@ -27,7 +27,7 @@ pub fn build_fun_level<V: VectorTrait>(ref_shapes: &RefShapes<V>) -> Vec<ShapeEn
                 .merged_with(texture_builder.make_fuzz_texture()),
         );
     let floor_label = ShapeLabel::from(TWO_SIDED_FACE_LABEL_STR);
-    let upper_floor_builder = ShapeEntityBuilder::new_from_ref_shape(ref_shapes, floor_label)
+    let upper_floor_builder = ShapeEntityBuilder::new(floor_label)
         .with_scale(Scaling::Scalar(len))
         .stretch(&(V::ones() * 0.5 - V::one_hot(1) * 0.25))
         .with_rotation(-1, 1, -PI / 2.0)

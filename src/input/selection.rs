@@ -28,7 +28,6 @@ use specs::Entity;
 use crate::components::*;
 use crate::vector::{barycenter, Field, VecIndex, VectorTrait};
 
-use crate::geometry::shape::RefShapes;
 use crate::input::input_to_transform::{
     scrolling_axis_scaling, scrolling_axis_translation, update_transform,
 };
@@ -190,7 +189,6 @@ pub fn selection_box<V: VectorTrait>(shape: &Shape<V>) -> DrawLineCollection<V> 
 
 pub fn create_shape<V: VectorTrait>(
     input: &mut Input,
-    ref_shapes: &RefShapes<V>,
     config: &Config,
     shape_label: ShapeLabel,
     player_transform: &Transform<V, V::M>,
@@ -205,7 +203,7 @@ pub fn create_shape<V: VectorTrait>(
                 let dir = player_transform.frame[-1];
                 let shape_pos = pos + dir * 2.0;
                 let is_coin = shape_label == ShapeLabel::from(COIN_LABEL_STR);
-                ShapeEntityBuilder::new_from_ref_shape(ref_shapes, shape_label.clone())
+                ShapeEntityBuilder::new(shape_label.clone())
                     .with_transform(Transform::pos(shape_pos))
                     .with_scale(Scaling::Scalar(1.0))
                     .with_texture(if is_coin {
@@ -223,7 +221,6 @@ pub fn create_shape<V: VectorTrait>(
 
 pub fn duplicate_shape<V: VectorTrait>(
     input: &mut Input,
-    ref_shapes: &RefShapes<V>,
     shape_label: &ShapeLabel,
     shape_transform: &Transform<V, V::M>,
     shape_texture: &ShapeTextureBuilder,
@@ -232,7 +229,7 @@ pub fn duplicate_shape<V: VectorTrait>(
 ) -> Option<ShapeEntityBuilderV<V>> {
     input.toggle_keys.trigger_once(DUPLICATE_SHAPE, || {
         println!("shape duplicated");
-        ShapeEntityBuilder::new_from_ref_shape(ref_shapes, shape_label.clone())
+        ShapeEntityBuilder::new(shape_label.clone())
             .with_transform(*shape_transform)
             .with_texture(shape_texture.clone())
             .with_collider(shape_collider.cloned())
