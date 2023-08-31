@@ -41,7 +41,7 @@ impl GuiState {
         }
     }
     pub fn get_selected_shape_name(&self, init_args: &GuiInitArgs) -> ShapeLabel {
-        ShapeLabel(init_args.shape_names[self.item as usize].clone())
+        ShapeLabel::from(init_args.shape_names[self.item as usize].clone())
     }
 }
 

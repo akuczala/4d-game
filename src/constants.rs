@@ -49,3 +49,6 @@ pub const FRAME_MS: u64 = 16;
 
 pub const CONFIG_FILE_PATH_STR: &str = "./4d_config.toml";
 pub const DEFAULT_SAVELOAD_PATH_STR: &str = "./";
+
+pub const FUZZY_TILE_LABEL_STR: &str = "FuzzyTile";
+pub const FUZZY_COLOR_CUBE_LABEL_STR: &str = "FuzzyColorCube";

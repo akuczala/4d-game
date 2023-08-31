@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fmt::Display, hash::Hash};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -122,5 +127,41 @@ impl<K: Eq + Hash + Display, V> ResourceLibrary<K, V> {
 impl<K: Eq + Hash, V> Default for ResourceLibrary<K, V> {
     fn default() -> Self {
         Self(HashMap::new())
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ResourceLabel<R> {
+    name: String,
+    resource: PhantomData<R>,
+}
+impl<R> PartialEq for ResourceLabel<R> {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+impl<R> Eq for ResourceLabel<R> {}
+impl<R> Hash for ResourceLabel<R> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
+
+impl<R> Display for ResourceLabel<R> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+impl<R> From<&str> for ResourceLabel<R> {
+    fn from(value: &str) -> Self {
+        Self::from(value.to_string())
+    }
+}
+impl<R> From<String> for ResourceLabel<R> {
+    fn from(value: String) -> Self {
+        Self {
+            name: value,
+            resource: Default::default(),
+        }
     }
 }

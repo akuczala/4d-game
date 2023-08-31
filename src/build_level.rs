@@ -67,7 +67,6 @@ where
             world,
             ref_shapes,
             config.scene.level_1.unwrap_or_default().open_center,
-            &config.draw,
         ),
         LevelConfig::Test1 => build_test_level(world, ref_shapes),
         LevelConfig::Test2 => {

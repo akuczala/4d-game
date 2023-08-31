@@ -5,17 +5,17 @@ use serde::{Deserialize, Serialize};
 use crate::{
     components::{Shape, Transform},
     config::DrawConfig,
-    constants::CARDINAL_COLORS,
+    constants::{CARDINAL_COLORS, FUZZY_COLOR_CUBE_LABEL_STR, FUZZY_TILE_LABEL_STR},
     draw::{normal_to_color, DrawLine},
     geometry::shape::FaceIndex,
     graphics::colors::Color,
-    utils::{BranchIterator2, ValidDimension},
+    utils::{BranchIterator2, ResourceLabel, ValidDimension},
     vector::VectorTrait,
 };
 
 use super::{
     auto_uv_map_face,
-    texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep},
+    texture_builder::{TextureBuilder, TextureBuilderConfig, TextureBuilderStep, TexturePrim},
     FrameTextureMapping, Texture, TextureMapping, TextureMappingV, UVMapV,
 };
 
@@ -36,12 +36,97 @@ pub struct ShapeTextureGeneric<V, M, U> {
 
 pub type ShapeTexture<V> = ShapeTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
 
-// TODO: change to enum, add simplified variants, e.g.
-// Uniform(FaceTextureBuilder)
-// Mapped(FaceTextureBuilder, Vec<Directives>)
-// Inhomogeneous(Vec<FaceTextureBuilder)
+// TODO: support face-dependent fns
+#[derive(Clone, Serialize, Deserialize, Default)]
+pub struct ShapeTextureMap(Vec<TextureBuilderStep>);
+impl ShapeTextureMap {
+    fn single(step: TextureBuilderStep) -> Self {
+        Self(vec![step])
+    }
+    fn apply(&self, tex: TextureBuilder) -> TextureBuilder {
+        tex.with_steps(self.0.clone())
+    }
+    fn with_step(mut self, step: TextureBuilderStep) -> Self {
+        self.0.push(step);
+        self
+    }
+    fn with_steps(mut self, steps: Self) -> Self {
+        for step in steps.0 {
+            self.0.push(step);
+        }
+        self
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ShapeTextureBuilder {
+pub enum ShapeTextureBuilder {
+    Uniform(TextureBuilder),
+    Vec(ShapeTextureBuilderVec),
+    FromResource(ShapeTextureLabel, ShapeTextureMap),
+}
+impl Default for ShapeTextureBuilder {
+    fn default() -> Self {
+        Self::Uniform(Default::default())
+    }
+}
+impl ShapeTextureBuilder {
+    pub fn map(self, f: ShapeTextureMap) -> Self {
+        match self {
+            Self::Uniform(t) => Self::Uniform(f.apply(t)),
+            Self::Vec(t) => Self::Vec(t.map_textures(|t| f.apply(t))),
+            Self::FromResource(label, map) => Self::FromResource(label, map.with_steps(f)),
+        }
+    }
+    pub fn from_resource(label: ShapeTextureLabel) -> Self {
+        Self::FromResource(label, Default::default())
+    }
+    pub fn with_color(self, color: Color) -> Self {
+        self.map(ShapeTextureMap::single(TextureBuilderStep::WithColor(
+            color,
+        )))
+    }
+    pub fn with_fuzz(self) -> Self {
+        self.map(ShapeTextureMap::single(TextureBuilderStep::MergedWith(
+            TexturePrim::Fuzz,
+            Vec::new(),
+        )))
+    }
+    pub fn with_texture(self, texture: TextureBuilder) -> Self {
+        Self::Uniform(texture)
+    }
+    pub fn build<V: VectorTrait>(
+        self,
+        config: &TextureBuilderConfig,
+        draw_config: &DrawConfig, // TODO: do we really need to pass 2 configs
+        ref_shape: &Shape<V>,
+        shape: &Shape<V>,
+    ) -> ShapeTexture<V> {
+        match self {
+            ShapeTextureBuilder::Uniform(t) => {
+                ShapeTextureBuilderVec::new_default(ref_shape.faces.len())
+                    .with_texture(t)
+                    .build(config, ref_shape, shape)
+            }
+            ShapeTextureBuilder::Vec(ts) => ts.build(config, ref_shape, shape),
+            ShapeTextureBuilder::FromResource(label, map) => (match label {
+                label if label == "DefaultOrientationColor".into() => {
+                    shape_default_orientation_color_texture(ref_shape)
+                }
+                label if label == FUZZY_COLOR_CUBE_LABEL_STR.into() => {
+                    fuzzy_color_cube_texture::<V>()
+                }
+                label if label == FUZZY_TILE_LABEL_STR.into() => {
+                    build_fuzzy_tile_texture::<V>(draw_config, ref_shape.faces.len())
+                }
+                _ => panic!("Invalid shape texture label {}", label),
+            })
+            .map_textures(|tex| map.apply(tex))
+            .build(config, ref_shape, shape),
+        }
+    }
+}
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ShapeTextureBuilderVec {
     face_textures: Vec<TextureBuilder>,
 }
 // pub enum ShapeTextureBuilder {
@@ -52,7 +137,7 @@ pub struct ShapeTextureBuilder {
 // pub struct NonUniformShapeTextureBuilder {
 //     face_textures: Vec<FaceTextureBuilder>
 // }
-impl ShapeTextureBuilder {
+impl ShapeTextureBuilderVec {
     // pub fn new_default(n_faces: usize) -> Self {
     //     Self::Uniform { face_texture: Default::default(), n_faces }
     // }
@@ -62,12 +147,6 @@ impl ShapeTextureBuilder {
         }
     }
 
-    pub fn with_color(mut self, color: Color) -> Self {
-        for face in &mut self.face_textures {
-            take_mut::take(face, |texture| texture.with_color(color));
-        }
-        self
-    }
     pub fn build<V: VectorTrait>(
         self,
         config: &TextureBuilderConfig,
@@ -86,7 +165,7 @@ impl ShapeTextureBuilder {
         }
     }
 }
-impl ShapeTextureBuilder {
+impl ShapeTextureBuilderVec {
     pub fn with_texture(mut self, texture: TextureBuilder) -> Self {
         for face in self.face_textures.iter_mut() {
             *face = texture.clone();
@@ -113,10 +192,6 @@ impl ShapeTextureBuilder {
             take_mut::take(face, |face| f(face, item));
         }
         self
-    }
-
-    pub fn with_fuzz(self) -> Self {
-        self.map_textures(|texture| texture.merged_with(TextureBuilder::new().make_fuzz_texture()))
     }
 }
 
@@ -183,8 +258,8 @@ pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
     }
 }
 
-pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilder {
-    ShapeTextureBuilder {
+pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilderVec {
+    ShapeTextureBuilderVec {
         face_textures: (0..V::DIM * 2)
             .zip(&CARDINAL_COLORS)
             .map(|(_face, &color)| TextureBuilder::new().with_color(color.set_alpha(0.5)))
@@ -192,15 +267,15 @@ pub fn color_cube_shape_texture<V: VectorTrait>() -> ShapeTextureBuilder {
     }
 }
 
-pub fn fuzzy_color_cube_texture<V: VectorTrait>() -> ShapeTextureBuilder {
+pub fn fuzzy_color_cube_texture<V: VectorTrait>() -> ShapeTextureBuilderVec {
     color_cube_shape_texture::<V>()
         .map_textures(|texture| texture.merged_with(TextureBuilder::new().make_fuzz_texture()))
 }
 
 pub fn shape_default_orientation_color_texture<V: VectorTrait>(
     ref_shape: &Shape<V>,
-) -> ShapeTextureBuilder {
-    ShapeTextureBuilder::new_default(ref_shape.faces.len())
+) -> ShapeTextureBuilderVec {
+    ShapeTextureBuilderVec::new_default(ref_shape.faces.len())
         .zip_textures_with(ref_shape.faces.iter(), |ftb, face| {
             ftb.with_color(normal_to_color(face.normal()))
         })
@@ -208,7 +283,7 @@ pub fn shape_default_orientation_color_texture<V: VectorTrait>(
 
 #[allow(dead_code)]
 pub fn color_duocylinder<V: VectorTrait>(
-    shape_texture: &mut ShapeTextureBuilder,
+    shape_texture: &mut ShapeTextureBuilderVec,
     m: usize,
     n: usize,
 ) {
@@ -227,8 +302,8 @@ pub fn color_duocylinder<V: VectorTrait>(
 pub fn build_fuzzy_tile_texture<V: VectorTrait>(
     draw_config: &DrawConfig,
     n_faces: usize,
-) -> ShapeTextureBuilder {
-    ShapeTextureBuilder {
+) -> ShapeTextureBuilderVec {
+    ShapeTextureBuilderVec {
         face_textures: (0..n_faces)
             .map(|face_index| {
                 TextureBuilder::new()
@@ -245,3 +320,5 @@ pub fn build_fuzzy_tile_texture<V: VectorTrait>(
             .collect(),
     }
 }
+
+pub type ShapeTextureLabel = ResourceLabel<ShapeTextureBuilder>;

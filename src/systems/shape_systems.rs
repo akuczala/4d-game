@@ -150,7 +150,7 @@ where
             shape.update_from_ref(
                 ref_shape
                     .get(shape_label)
-                    .unwrap_or_else(|| panic!("No ref shape with label {}", &shape_label.0)),
+                    .unwrap_or_else(|| panic!("No ref shape with label {}", shape_label)),
                 transform,
             );
         }

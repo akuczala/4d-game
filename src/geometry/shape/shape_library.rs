@@ -1,15 +1,10 @@
-use std::fmt::{self, Display};
-
-use serde::{Deserialize, Serialize};
-use specs::{Component, VecStorage};
-
 use crate::{
     constants::{
         COIN_LABEL_STR, CUBE_LABEL_STR, INVERTED_CUBE_LABEL_STR, INVERTED_PIPE_LABEL_STR,
         ONE_SIDED_FACE_LABEL_STR, OPEN_CUBE_LABEL_STR, OPEN_INVERTED_CUBE_LABEL_STR,
         TWO_SIDED_FACE_LABEL_STR,
     },
-    utils::ResourceLibrary,
+    utils::{ResourceLabel, ResourceLibrary},
     vector::VectorTrait,
 };
 
@@ -20,26 +15,7 @@ use super::{
     Shape,
 };
 
-// TODO: consider merging with Shape
-// might be a bad idea - could contain in larger struct?
-#[derive(Component, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-#[storage(VecStorage)]
-pub struct ShapeLabel(pub String);
-impl Display for ShapeLabel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-impl From<&str> for ShapeLabel {
-    fn from(value: &str) -> Self {
-        ShapeLabel(value.to_string())
-    }
-}
-impl From<String> for ShapeLabel {
-    fn from(value: String) -> Self {
-        ShapeLabel(value)
-    }
-}
+pub type ShapeLabel = ResourceLabel<Shape<()>>;
 
 pub type RefShapes<V> = ResourceLibrary<ShapeLabel, Shape<V>>;
 
@@ -74,7 +50,7 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
         ),
         (
             INVERTED_PIPE_LABEL_STR.into(),
-            make_pipe(V::one_hot(-1), inverted_cube.clone()),
+            make_pipe(V::one_hot(-1), inverted_cube),
         ),
         (
             "TestPrism".into(),

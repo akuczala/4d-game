@@ -38,7 +38,7 @@ fn test_saveload() {
     let ref_shapes = build_shape_library::<V>();
 
     let mut config = world.fetch_mut::<Config>();
-    config.scene.level = LevelConfig::Test1;
+    config.scene.level = LevelConfig::Level1;
     drop(config);
 
     build_level(&ref_shapes, &mut world);

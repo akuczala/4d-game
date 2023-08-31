@@ -2,9 +2,8 @@ use specs::World;
 
 use crate::{
     components::{RefShapes, Transformable},
-    config::DrawConfig,
-    constants::{COIN_LABEL_STR, CUBE_LABEL_STR},
-    draw::texture::shape_texture::{build_fuzzy_tile_texture, fuzzy_color_cube_texture},
+    constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FUZZY_COLOR_CUBE_LABEL_STR, FUZZY_TILE_LABEL_STR},
+    draw::texture::ShapeTextureBuilder,
     ecs_utils::Componentable,
     graphics::colors::YELLOW,
     shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV},
@@ -18,7 +17,6 @@ fn build_corridor_cross<V: VectorTrait>(
     cube_builder: &ShapeEntityBuilderV<V>,
     wall_length: Field,
     open_center: bool,
-    draw_config: &DrawConfig,
 ) -> Vec<ShapeEntityBuilderV<V>> {
     let corr_width = 1.0;
     let wall_height = 1.0;
@@ -34,6 +32,7 @@ fn build_corridor_cross<V: VectorTrait>(
     };
 
     let mut shape_builders: Vec<ShapeEntityBuilderV<V>> = Vec::new();
+    let fuzzy_tile_tex = ShapeTextureBuilder::from_resource(FUZZY_TILE_LABEL_STR.into());
     //corridor walls
     let mut walls1: Vec<ShapeEntityBuilderV<V>> =
         iproduct!(signs.iter(), signs.iter(), axis_pairs.iter())
@@ -53,20 +52,20 @@ fn build_corridor_cross<V: VectorTrait>(
             })
             .collect();
     for builder in &mut walls1 {
-        builder.shape_texture_builder =
-            build_fuzzy_tile_texture::<V>(draw_config, builder.n_faces());
+        builder.shape_texture_builder = fuzzy_tile_tex.clone();
     }
 
     shape_builders.append(&mut walls1);
 
     //end walls
+    let cube_tex = ShapeTextureBuilder::from_resource(FUZZY_COLOR_CUBE_LABEL_STR.into());
 
     let end_walls = iproduct!(axes.clone(), signs.iter()).map(|(i, sign)| {
         cube_builder
             .clone()
             .with_translation(V::one_hot(i) * (wall_length + corr_width) * (*sign))
             .stretch(&(V::one_hot(1) * (wall_height - corr_width) + V::ones() * corr_width))
-            .with_texture(fuzzy_color_cube_texture::<V>())
+            .with_texture(cube_tex.clone())
     });
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
@@ -91,12 +90,10 @@ fn build_corridor_cross<V: VectorTrait>(
         .collect();
 
     for builder in &mut floors_long {
-        builder.shape_texture_builder =
-            build_fuzzy_tile_texture::<V>(draw_config, builder.n_faces());
+        builder.shape_texture_builder = fuzzy_tile_tex.clone()
     }
     for builder in &mut ceilings_long {
-        builder.shape_texture_builder =
-            build_fuzzy_tile_texture::<V>(draw_config, builder.n_faces());
+        builder.shape_texture_builder = fuzzy_tile_tex.clone()
     }
 
     shape_builders.append(&mut floors_long);
@@ -106,7 +103,7 @@ fn build_corridor_cross<V: VectorTrait>(
         cube_builder
             .clone()
             .with_translation(-V::one_hot(1) * (wall_height + corr_width) / 2.0)
-            .with_texture(fuzzy_color_cube_texture::<V>()),
+            .with_texture(cube_tex),
     );
     //center ceiling
     if !open_center {
@@ -120,12 +117,8 @@ fn build_corridor_cross<V: VectorTrait>(
     shape_builders
 }
 
-pub fn build_lvl_1<V>(
-    world: &mut World,
-    ref_shapes: &RefShapes<V>,
-    open_center: bool,
-    draw_config: &DrawConfig,
-) where
+pub fn build_lvl_1<V>(world: &mut World, ref_shapes: &RefShapes<V>, open_center: bool)
+where
     V: VectorTrait + Componentable,
     V::SubV: Componentable,
     V::M: Componentable,
@@ -134,7 +127,7 @@ pub fn build_lvl_1<V>(
 
     let wall_length = 3.0;
     let walls: Vec<ShapeEntityBuilderV<V>> =
-        build_corridor_cross(&cube_builder, wall_length, open_center, draw_config);
+        build_corridor_cross(&cube_builder, wall_length, open_center);
 
     for wall in walls.into_iter() {
         insert_static_collider(world, wall)

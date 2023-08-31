@@ -12,7 +12,6 @@ use crate::coin::Coin;
 use crate::config::Config;
 use crate::constants::{COIN_LABEL_STR, SELECTION_COLOR};
 use crate::draw::draw_line_collection::DrawLineCollection;
-use crate::draw::texture::shape_texture::shape_default_orientation_color_texture;
 
 use crate::draw::texture::ShapeTextureBuilder;
 use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
@@ -209,12 +208,11 @@ pub fn create_shape<V: VectorTrait>(
                 ShapeEntityBuilder::new_from_ref_shape(ref_shapes, shape_label.clone())
                     .with_transform(Transform::pos(shape_pos))
                     .with_scale(Scaling::Scalar(1.0))
-                    .with_texturing_fn(|shape| {
-                        if is_coin {
-                            ShapeTextureBuilder::new_default(shape.faces.len()).with_color(YELLOW)
-                        } else {
-                            shape_default_orientation_color_texture(shape).with_fuzz()
-                        }
+                    .with_texture(if is_coin {
+                        ShapeTextureBuilder::default().with_color(YELLOW)
+                    } else {
+                        ShapeTextureBuilder::from_resource("DefaultOrientationColor".into())
+                            .with_fuzz()
                     })
                     .with_collider((!is_coin).then_some(StaticCollider))
                     .with_coin(is_coin.then_some(Coin))

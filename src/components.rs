@@ -70,3 +70,7 @@ impl<V: Componentable> Component for DrawLineCollection<V> {
 impl<M: Componentable> Component for Heading<M> {
     type Storage = HashMapStorage<Self>;
 }
+
+impl Component for ShapeLabel {
+    type Storage = VecStorage<Self>;
+}

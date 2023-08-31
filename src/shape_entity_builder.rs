@@ -17,7 +17,7 @@ use specs::prelude::*;
 
 #[derive(Clone)]
 pub struct ShapeEntityBuilder<V, M> {
-    ref_shape: Shape<V>, // this field is only needed for with_texturing_fn; we don't really need until build
+    ref_shape: Shape<V>, // TODO: deprecate
     shape_label: ShapeLabel,
     pub transformation: Transform<V, M>,
     pub shape_texture_builder: ShapeTextureBuilder,
@@ -35,14 +35,10 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
             ref_shape: ref_shape.clone(),
             shape_label: label,
             transformation: Transform::identity(),
-            shape_texture_builder: ShapeTextureBuilder::new_default(ref_shape.faces.len()),
+            shape_texture_builder: ShapeTextureBuilder::default(),
             static_collider: None,
             coin: None,
         }
-    }
-    // TODO: this is a temporary hack until ref_shape is not part of the struct
-    pub fn n_faces(&self) -> usize {
-        self.ref_shape.faces.len()
     }
     pub fn with_texture(mut self, texture: ShapeTextureBuilder) -> Self {
         self.shape_texture_builder = texture;
@@ -50,13 +46,6 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
     }
     pub fn with_face_texture(mut self, texture: TextureBuilder) -> Self {
         self.shape_texture_builder = self.shape_texture_builder.with_texture(texture);
-        self
-    }
-    pub fn with_texturing_fn<F>(mut self, f: F) -> Self
-    where
-        F: Fn(&Shape<V>) -> ShapeTextureBuilder,
-    {
-        self.shape_texture_builder = f(&self.ref_shape);
         self
     }
     pub fn with_color(mut self, color: Color) -> Self {
@@ -154,5 +143,5 @@ fn make_shape_texture<V: VectorTrait>(
     ref_shape: &Shape<V>,
     shape: &Shape<V>,
 ) -> ShapeTexture<V> {
-    builder.build::<V>(&config.into(), ref_shape, shape)
+    builder.build::<V>(&config.into(), &config.draw, ref_shape, shape)
 }
