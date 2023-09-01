@@ -133,6 +133,7 @@ impl<K: Eq + Hash, V> Default for ResourceLibrary<K, V> {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ResourceLabel<R> {
     name: String,
+    #[serde(skip)]
     resource: PhantomData<R>,
 }
 impl<R> PartialEq for ResourceLabel<R> {

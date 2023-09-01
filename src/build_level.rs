@@ -7,7 +7,9 @@ use crate::coin::Coin;
 use crate::collide::StaticCollider;
 use crate::components::{Cursor, Heading, Player, Transform};
 use crate::config::{Config, LevelConfig};
+use crate::constants::COIN_TEXTURE_LABEL_STR;
 use crate::draw::draw_line_collection::DrawLineCollection;
+use crate::draw::texture::ShapeTextureBuilder;
 use crate::draw::visual_aids::{calc_grid_lines, draw_horizon, draw_sky, draw_stars};
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::buildshapes::ShapeBuilder;
@@ -47,7 +49,13 @@ pub fn insert_coin<V>(
     V::SubV: Componentable,
     V::M: Componentable,
 {
-    shape_builder.build(ref_shapes, world).with(Coin).build();
+    shape_builder
+        .with_texture(ShapeTextureBuilder::from_resource(
+            COIN_TEXTURE_LABEL_STR.into(),
+        ))
+        .with_coin(Some(Coin))
+        .build(ref_shapes, world)
+        .build();
 }
 
 pub fn build_scene<V>(world: &mut World)

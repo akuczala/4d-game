@@ -10,16 +10,14 @@ use super::{Input, MovementMode, PlayerMovementMode, ShapeMovementMode};
 use crate::cleanup::DeletedEntities;
 use crate::coin::Coin;
 use crate::config::Config;
-use crate::constants::{COIN_LABEL_STR, SELECTION_COLOR};
+use crate::constants::{COIN_LABEL_STR, COIN_TEXTURE_LABEL_STR, SELECTION_COLOR};
 use crate::draw::draw_line_collection::DrawLineCollection;
 
-use crate::draw::texture::texture_builder::TextureBuilderStep;
 use crate::draw::texture::ShapeTextureBuilder;
 use crate::draw::visual_aids::{calc_wireframe_lines, draw_axes};
 
 use crate::geometry::transform::Scaling;
 
-use crate::graphics::colors::YELLOW;
 use crate::shape_entity_builder::{ShapeEntityBuilder, ShapeEntityBuilderV};
 
 use winit::event::VirtualKeyCode as VKC;
@@ -208,11 +206,9 @@ pub fn create_shape<V: VectorTrait>(
                     .with_transform(Transform::pos(shape_pos))
                     .with_scale(Scaling::Scalar(1.0))
                     .with_texture(if is_coin {
-                        ShapeTextureBuilder::default().with_color(YELLOW)
+                        ShapeTextureBuilder::from_resource(COIN_TEXTURE_LABEL_STR.into())
                     } else {
                         ShapeTextureBuilder::default()
-                            .map(TextureBuilderStep::ColorByNormal.into())
-                            .with_fuzz()
                     })
                     .with_collider((!is_coin).then_some(StaticCollider))
                     .with_coin(is_coin.then_some(Coin))

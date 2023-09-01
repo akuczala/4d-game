@@ -8,10 +8,11 @@ use transform::Transform;
 use crate::coin::Coin;
 use crate::components::{ShapeLabel, StaticCollider};
 
-use crate::draw::texture::texture_builder::{TextureBuilderStep, TexturePrim};
+use crate::constants::COIN_TEXTURE_LABEL_STR;
+use crate::draw::texture::texture_builder::TexturePrim;
 use crate::draw::texture::{FrameTextureMapping, ShapeTextureBuilder};
 
-use crate::graphics::colors::{Color, YELLOW};
+use crate::graphics::colors::Color;
 use crate::saveload::{load_save_struct_from_file, save_save_struct_to_file};
 use crate::{geometry::transform, vector::VectorTrait};
 
@@ -33,11 +34,9 @@ struct OldShapeTextureBuilder {
 impl OldShapeTextureBuilder {
     fn to_new(is_coin: bool) -> ShapeTextureBuilder {
         if is_coin {
-            ShapeTextureBuilder::default().with_color(YELLOW)
+            ShapeTextureBuilder::from_resource(COIN_TEXTURE_LABEL_STR.into())
         } else {
             ShapeTextureBuilder::default()
-                .map(TextureBuilderStep::ColorByNormal.into())
-                .with_fuzz()
         }
     }
 }
@@ -90,11 +89,11 @@ fn convert_save_struct<V: VectorTrait>(old: OldSaveStructureV<V>) -> SaveStructu
 /// Used to upgrade old texture format to new
 #[allow(dead_code)]
 fn upgrade_old_save_file() {
-    let old_save_struct: OldSaveStructureV<Vec4> =
-        load_save_struct_from_file("./resources/levels/level_2_all_coins.4d.ron").unwrap();
+    let old_save_struct: OldSaveStructureV<Vec3> =
+        load_save_struct_from_file("./resources/levels/level_2.3d.ron").unwrap();
     let new_save_struct = convert_save_struct(old_save_struct);
     save_save_struct_to_file(
-        Path::new("./resources/levels/level_2_all_coins_upgraded.4d.ron"),
+        Path::new("./resources/levels/level_2.3d.ron"),
         &new_save_struct,
     )
     .unwrap();
@@ -104,7 +103,7 @@ fn upgrade_old_save_file() {
 // may or may not be useful in the future, but I anticipate making future changes to the data representation
 // this could be used in tandem with creating invariant structs for each datatype for saving, and converting
 // the runtime types (which may change over time) to the invariant types
-use crate::vector::{Field, Mat4, Vec4, Vec3};
+use crate::vector::{Field, Mat4, Vec3, Vec4};
 
 use super::{EntitySave, PlayerData, SaveStructure, SaveStructureGeneric, SaveStructureV};
 

@@ -2,8 +2,7 @@ use specs::{Builder, World};
 
 use crate::{
     components::{RefShapes, ShapeLabel, StaticCollider, Transformable},
-    constants::{CUBE_LABEL_STR, FUZZY_COLOR_CUBE_LABEL_STR, HALF_PI},
-    draw::texture::ShapeTextureBuilder,
+    constants::{CUBE_LABEL_STR, HALF_PI},
     ecs_utils::Componentable,
     graphics::colors::WHITE,
     shape_entity_builder::ShapeEntityBuilderV,
@@ -16,10 +15,8 @@ where
     V::M: Componentable,
     V::SubV: Componentable,
 {
-    let fuzzy_tex = ShapeTextureBuilder::from_resource(FUZZY_COLOR_CUBE_LABEL_STR.into());
     ShapeEntityBuilderV::new(ShapeLabel::from("OpenCube"))
         .with_scale(crate::geometry::transform::Scaling::Scalar(2.0))
-        .with_texture(fuzzy_tex.clone())
         .with_collider(Some(StaticCollider))
         .with_translation(V::one_hot(0) * 4.0)
         .with_rotation(0, 1, HALF_PI)
@@ -30,7 +27,6 @@ where
 
     ShapeEntityBuilderV::new(ShapeLabel::from("OpenInvertedCube"))
         .with_scale(crate::geometry::transform::Scaling::Scalar(2.0))
-        .with_texture(fuzzy_tex.clone())
         .with_collider(Some(StaticCollider))
         .with_translation(V::one_hot(0) * 4.0 + V::one_hot(2) * 4.0)
         .with_rotation(0, 1, HALF_PI)
@@ -41,14 +37,12 @@ where
 
     ShapeEntityBuilderV::new(ShapeLabel::from(CUBE_LABEL_STR))
         .with_translation(V::one_hot(0) * 8.0)
-        .with_texture(fuzzy_tex.clone())
         .with_color(WHITE)
         .with_collider(Some(StaticCollider))
         .build(ref_shapes, world)
         .build();
 
     ShapeEntityBuilderV::new(ShapeLabel::from(CUBE_LABEL_STR))
-        .with_texture(fuzzy_tex)
         .with_color(WHITE)
         .with_translation(V::one_hot(0) * 1.0)
         .with_collider(Some(StaticCollider))

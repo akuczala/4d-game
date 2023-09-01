@@ -2,7 +2,7 @@ use specs::World;
 
 use crate::{
     components::{RefShapes, Transformable},
-    constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FUZZY_COLOR_CUBE_LABEL_STR, FUZZY_TILE_LABEL_STR},
+    constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FUZZY_TILE_LABEL_STR},
     draw::texture::ShapeTextureBuilder,
     ecs_utils::Componentable,
     graphics::colors::YELLOW,
@@ -58,14 +58,12 @@ fn build_corridor_cross<V: VectorTrait>(
     shape_builders.append(&mut walls1);
 
     //end walls
-    let cube_tex = ShapeTextureBuilder::from_resource(FUZZY_COLOR_CUBE_LABEL_STR.into());
 
     let end_walls = iproduct!(axes.clone(), signs.iter()).map(|(i, sign)| {
         cube_builder
             .clone()
             .with_translation(V::one_hot(i) * (wall_length + corr_width) * (*sign))
             .stretch(&(V::one_hot(1) * (wall_height - corr_width) + V::ones() * corr_width))
-            .with_texture(cube_tex.clone())
     });
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
@@ -102,8 +100,7 @@ fn build_corridor_cross<V: VectorTrait>(
     shape_builders.push(
         cube_builder
             .clone()
-            .with_translation(-V::one_hot(1) * (wall_height + corr_width) / 2.0)
-            .with_texture(cube_tex),
+            .with_translation(-V::one_hot(1) * (wall_height + corr_width) / 2.0),
     );
     //center ceiling
     if !open_center {
@@ -150,13 +147,3 @@ where
         );
     }
 }
-// pub fn build_lvl_1_with_faces<V : VectorTrait>(world : &mut World, ref_shapes: &mut RefShapes<V>) {
-//     let square_builder = ShapeBuilder::<V::SubV>::build_cube(1.0);
-//     let wall_length = 3.0;
-//     let rect_builder = square_builder.clone().stretch(&(V::one_hot(0)*wall_length));
-//     // let tube =
-//     let coin = ShapeBuilder::<V>::build_coin().build();
-//
-//
-//
-// }

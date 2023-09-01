@@ -18,7 +18,7 @@ use super::{
 pub enum TexturePrim {
     Empty,
     #[default]
-    Default,
+    Default, // TODO: rename to "simple" or some such thing
     Tile {
         scales: Vec<Field>,
         n_divisions: Vec<i32>,
@@ -64,6 +64,14 @@ type ShapeData<'a, V> = (&'a Shape<V>, &'a Shape<V>, FaceIndex);
 pub struct TextureBuilder {
     start: TexturePrim,
     steps: Vec<TextureBuilderStep>,
+}
+impl From<TexturePrim> for TextureBuilder {
+    fn from(value: TexturePrim) -> Self {
+        Self {
+            start: value,
+            steps: vec![],
+        }
+    }
 }
 
 impl TextureBuilder {
