@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     components::Shape,
     config::Config,
+    draw::normal_to_color,
     geometry::{affine_transform::AffineTransform, shape::FaceIndex},
     graphics::colors::{Color, WHITE},
     vector::{Field, VectorTrait},
@@ -40,12 +41,13 @@ pub enum TextureBuilderStep {
     WithColor(Color),
     //WithTexture(TexturePrim),
     MergedWith(Box<TextureBuilder>),
+    ColorByNormal,
 }
 
 #[derive(Clone)]
 pub struct TextureBuilderConfig {
     n_fuzz_lines: usize,
-    face_scale: Field,
+    pub face_scale: Field,
 }
 impl From<&Config> for TextureBuilderConfig {
     fn from(value: &Config) -> Self {
@@ -66,10 +68,10 @@ pub struct TextureBuilder {
 
 impl TextureBuilder {
     pub fn new(texture_prim: TexturePrim) -> Self {
-       Self {
-        start: texture_prim,
-        steps: vec![]
-       }
+        Self {
+            start: texture_prim,
+            steps: vec![],
+        }
     }
     pub fn new_tile_texture(scales: Vec<Field>, n_divisions: Vec<i32>) -> Self {
         Self::new(TexturePrim::Tile {
@@ -82,9 +84,7 @@ impl TextureBuilder {
     }
 
     pub fn merged_with(self, texture_builder: TextureBuilder) -> Self {
-        self.with_step(TextureBuilderStep::MergedWith(
-            Box::new(texture_builder),
-        ))
+        self.with_step(TextureBuilderStep::MergedWith(Box::new(texture_builder)))
     }
 
     pub fn with_step(mut self, step: TextureBuilderStep) -> Self {
@@ -151,9 +151,13 @@ impl TextureBuilder {
                 texture: texture.set_color(color),
                 texture_mapping: mapping,
             },
+            TextureBuilderStep::ColorByNormal => FaceTexture {
+                texture: texture.set_color(normal_to_color(ref_shape.faces[face_index].normal())),
+                texture_mapping: mapping,
+            },
             TextureBuilderStep::MergedWith(boxed_builder) => {
-                let mut other_face_texture = (*boxed_builder)
-                    .build::<V>(config, ref_shape, shape, face_index);
+                let mut other_face_texture =
+                    (*boxed_builder).build::<V>(config, ref_shape, shape, face_index);
                 // use UV space from our mapping, rather than other
                 //transform lines from other into our map
                 let old_to_new_transform = AffineTransform::from(mapping.uv_map.map)

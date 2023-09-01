@@ -21,7 +21,7 @@ pub fn build_fun_level<V: VectorTrait>() -> Vec<ShapeEntityBuilderV<V>> {
         .with_scale(Scaling::Scalar(len))
         .with_face_texture(
             TextureBuilder::new_tile_texture(vec![0.8], n_divisions)
-            .merged_with(TextureBuilder::new_fuzz_texture())
+                .merged_with(TextureBuilder::new_fuzz_texture()),
         );
     let floor_label = ShapeLabel::from(TWO_SIDED_FACE_LABEL_STR);
     let upper_floor_builder = ShapeEntityBuilder::new(floor_label)

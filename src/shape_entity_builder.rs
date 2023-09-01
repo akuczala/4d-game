@@ -146,5 +146,5 @@ fn make_shape_texture<V: VectorTrait>(
     ref_shape: &Shape<V>,
     shape: &Shape<V>,
 ) -> ShapeTexture<V> {
-    builder.build::<V>(&config.into(), &config.draw, ref_shape, shape)
+    builder.build::<V>(&config.into(), ref_shape, shape)
 }
