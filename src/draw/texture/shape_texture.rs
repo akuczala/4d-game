@@ -23,8 +23,6 @@ pub struct ShapeTextureGeneric<V, M, U> {
     pub face_textures: Vec<Option<FaceTextureGeneric<V, M, U>>>, // TODO: replace with a hashmap or vec padded by None to allow defaults?
 }
 
-// we may also reduce # stored mappings by fixing an orientation for each face by default (derivable from normal??)
-
 pub type ShapeTexture<V> = ShapeTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -162,7 +160,7 @@ impl ShapeTextureBuilderVec {
         }
         self
     }
-
+    #[allow(dead_code)]
     pub fn zip_textures_with<I, S, F>(mut self, iter: I, f: F) -> Self
     where
         F: Fn(TextureBuilder, S) -> TextureBuilder,

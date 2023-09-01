@@ -55,7 +55,7 @@ impl<V> Texture<V> {
             ),
         }
     }
-    // TODO: create in-place version of this if allocation is a problem
+    #[allow(dead_code)]
     pub fn map_lines<W, F: Fn(Line<V>) -> Line<W>>(self, f: F) -> Texture<W> {
         match self {
             Texture::Lines { lines, color } => Texture::Lines {
@@ -71,18 +71,17 @@ impl<V> Texture<V> {
         }
     }
 }
-// TODO: look into using mem::take here
 impl<V: Copy> Texture<V> {
     pub fn map_lines_in_place<F: Fn(Line<V>) -> Line<V>>(&mut self, f: F) {
         match self {
             Texture::Lines { lines, .. } => {
                 for line in lines {
-                    *line = f((*line).clone())
+                    take_mut::take(line, &f)
                 }
             }
             Texture::DrawLines(draw_lines) => {
                 for draw_line in draw_lines {
-                    *draw_line = (draw_line.clone()).map_line(&f)
+                    take_mut::take(draw_line, |line| line.map_line(&f))
                 }
             }
         }
@@ -170,7 +169,7 @@ pub fn merge_textures<V: VectorTrait>(
                 lines
             },
             color: *color,
-        }, // TODO: check if the colors are the same; if not, create a drawlines texture with both
+        }, // TODO: check if the colors are the same; if not, create a drawlines texture with both. make this customizable
         _ => panic!("Unsupported texture merge operation"),
     }
 }
@@ -196,6 +195,7 @@ impl<V: VectorTrait> UVMapV<V> {
             _ => panic!("Expected convex bounding shape"),
         }
     }
+    #[allow(dead_code)]
     pub fn bounds(&self) -> impl Iterator<Item = &Plane<V::SubV>> {
         self.bounding_shape.faces.iter().map(|face| face.plane())
     }
@@ -359,14 +359,6 @@ pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<
     }
 }
 
-// TODO: automagically generate textures based on shape + directives, so we don't need to save them per shape
-
-// Generalize TextureMapping to arbitrary affine transformation?
-// Optional additional info to clip out lines that are outside face boundary
-
-// have a shape texture directive that says
-// For each face, do (Default -> MergedWith Fuzz -> Color color) for colors in cardinal colors
-
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct FrameTextureMapping {
     pub frame_vertis: Vec<VertIndex>,
@@ -397,9 +389,6 @@ impl<V: VectorTrait> TextureMappingV<V> {
             .map(move |line| DrawLine { line, color })
     }
 }
-
-// TODO: to rm OldTextureMapping
-type OldTextureMapping = FrameTextureMapping;
 
 impl FrameTextureMapping {
     pub fn origin<V: VectorTrait>(&self, shape_verts: &[V]) -> V {

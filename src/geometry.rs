@@ -18,14 +18,6 @@ impl<V: fmt::Display> fmt::Display for Line<V> {
         write!(f, "Line({},{})", self.0, self.1)
     }
 }
-impl<V> Line<V> {
-    pub fn map_into<F, U>(self, f: F) -> Line<U>
-    where
-        F: Fn(V) -> U,
-    {
-        Line(f(self.0), f(self.1))
-    }
-}
 impl<V: Copy> Line<V> {
     pub fn map<F, U>(&self, f: F) -> Line<U>
     where
@@ -115,6 +107,7 @@ impl<V: VectorTrait> Plane<V> {
             threshold: -self.threshold,
         }
     }
+    #[allow(dead_code)]
     pub fn contains_point(&self, point: V) -> bool {
         self.point_signed_distance(point).is_close(ZERO)
     }
