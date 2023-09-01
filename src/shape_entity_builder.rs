@@ -1,12 +1,13 @@
 use crate::coin::Coin;
 use crate::components::{
-    BBall, HasBBox, Shape, ShapeClipState, ShapeLabel, StaticCollider, Transform, Transformable,
+    BBall, BBox, HasBBox, Shape, ShapeClipState, ShapeLabel, StaticCollider, Transform,
+    Transformable,
 };
 use crate::config::Config;
 
+use crate::draw::texture::shape_texture::ShapeTextureGeneric;
 use crate::draw::texture::texture_builder::TextureBuilder;
 use crate::draw::texture::ShapeTextureBuilder;
-use crate::draw::ShapeTexture;
 use crate::ecs_utils::Componentable;
 use crate::geometry::shape::RefShapes;
 use crate::graphics::colors::Color;
@@ -18,7 +19,7 @@ use specs::prelude::*;
 #[derive(Clone)]
 pub struct ShapeEntityBuilder<V, M> {
     shape_label: ShapeLabel,
-    transformation: Transform<V, M>,
+    transform: Transform<V, M>,
     shape_texture_builder: ShapeTextureBuilder,
     static_collider: Option<StaticCollider>,
     coin: Option<Coin>,
@@ -31,7 +32,7 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
     pub fn new(label: ShapeLabel) -> Self {
         Self {
             shape_label: label,
-            transformation: Transform::identity(),
+            transform: Transform::identity(),
             shape_texture_builder: ShapeTextureBuilder::default(),
             static_collider: None,
             coin: None,
@@ -58,7 +59,7 @@ impl<V: VectorTrait> ShapeEntityBuilderV<V> {
         self
     }
     pub fn stretch(mut self, scales: &V) -> Self {
-        self.transformation.scale(Scaling::Vector(*scales));
+        self.transform.scale(Scaling::Vector(*scales));
         self
     }
 }
@@ -70,34 +71,19 @@ where
 {
     // TODO: use macro to specify components in both methods?
     pub fn build<'a>(self, ref_shapes: &RefShapes<V>, world: &'a mut World) -> EntityBuilder<'a> {
-        let Self {
-            shape_label,
-            transformation,
-            shape_texture_builder,
-            static_collider,
-            coin,
-        } = self;
-        let ref_shape = ref_shapes.get_unwrap(&shape_label);
-        let mut shape = ref_shape.clone();
-        shape.update_from_ref(ref_shape, &transformation);
-        let shape_texture = make_shape_texture::<V>(
-            &world.fetch::<Config>(),
-            shape_texture_builder.clone(),
-            ref_shape,
-            &shape,
-        );
+        let c = self.make_components(&world.fetch::<Config>(), ref_shapes);
         world
             .create_entity()
-            .with(shape.calc_bbox())
-            .with(BBall::new(&shape.verts, transformation.pos))
-            .with(transformation)
-            .with(shape)
-            .with(shape_label)
-            .with(shape_texture_builder)
-            .with(shape_texture)
-            .with(ShapeClipState::<V>::default())
-            .maybe_with(static_collider)
-            .maybe_with(coin)
+            .with(c.bbox)
+            .with(c.bball)
+            .with(c.transform)
+            .with(c.shape)
+            .with(c.shape_label)
+            .with(c.shape_texture_builder)
+            .with(c.shape_texture)
+            .with(c.shape_clip_state)
+            .maybe_with(c.static_collider)
+            .maybe_with(c.coin)
     }
     pub fn insert(
         self,
@@ -106,45 +92,69 @@ where
         config: &Config,
         ref_shapes: &RefShapes<V>,
     ) {
+        let c = self.make_components(config, ref_shapes);
+        lazy.insert(e, c.bbox);
+        lazy.insert(e, c.bball);
+        lazy.insert(e, c.transform);
+        lazy.insert(e, c.shape);
+        lazy.insert(e, c.shape_texture_builder);
+        lazy.insert(e, c.shape_texture);
+        lazy.insert(e, c.shape_clip_state);
+        lazy.insert(e, c.shape_label);
+        if let Some(c) = c.static_collider {
+            lazy.insert(e, c)
+        };
+        if let Some(c) = c.coin {
+            lazy.insert(e, c)
+        };
+    }
+    fn make_components(
+        self,
+        config: &Config,
+        ref_shapes: &RefShapes<V>,
+    ) -> ComponentsToInsert<V, V::M, V::SubV> {
         let Self {
             shape_label,
-            transformation,
+            transform,
             shape_texture_builder,
             static_collider,
             coin,
         } = self;
         let ref_shape = ref_shapes.get_unwrap(&shape_label);
         let mut shape = ref_shape.clone();
-        shape.update_from_ref(ref_shape, &transformation);
+        shape.update_from_ref(ref_shape, &transform);
         let shape_texture =
-            make_shape_texture::<V>(config, shape_texture_builder.clone(), ref_shape, &shape);
-        lazy.insert(e, shape.calc_bbox());
-        lazy.insert(e, BBall::new(&shape.verts, transformation.pos));
-        lazy.insert(e, transformation);
-        lazy.insert(e, shape);
-        lazy.insert(e, shape_texture_builder);
-        lazy.insert(e, shape_texture);
-        lazy.insert(e, ShapeClipState::<V>::default());
-        lazy.insert(e, shape_label);
-        if let Some(c) = static_collider {
-            lazy.insert(e, c)
-        };
-        if let Some(c) = coin {
-            lazy.insert(e, c)
-        };
+            shape_texture_builder
+                .clone()
+                .build::<V>(&config.into(), ref_shape, &shape);
+        ComponentsToInsert {
+            shape_label,
+            bbox: shape.calc_bbox(),
+            bball: BBall::new(&shape.verts, transform.pos),
+            transform,
+            shape,
+            shape_texture_builder,
+            shape_texture,
+            shape_clip_state: ShapeClipState::<V>::default(),
+            static_collider,
+            coin,
+        }
     }
 }
 impl<V: VectorTrait> Transformable<V> for ShapeEntityBuilderV<V> {
     fn transform(&mut self, transformation: Transform<V, V::M>) {
-        self.transformation = self.transformation.with_transform(transformation);
+        self.transform = self.transform.with_transform(transformation);
     }
 }
-
-fn make_shape_texture<V: VectorTrait>(
-    config: &Config,
-    builder: ShapeTextureBuilder,
-    ref_shape: &Shape<V>,
-    shape: &Shape<V>,
-) -> ShapeTexture<V> {
-    builder.build::<V>(&config.into(), ref_shape, shape)
+struct ComponentsToInsert<V, M, U> {
+    shape_label: ShapeLabel,
+    bbox: BBox<V>,
+    bball: BBall<V>,
+    transform: Transform<V, M>,
+    shape: Shape<V>,
+    shape_texture_builder: ShapeTextureBuilder,
+    shape_texture: ShapeTextureGeneric<V, M, U>,
+    shape_clip_state: ShapeClipState<V>,
+    static_collider: Option<StaticCollider>,
+    coin: Option<Coin>,
 }
