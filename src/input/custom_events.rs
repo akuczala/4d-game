@@ -8,4 +8,6 @@ pub enum CustomEvent {
     Quit,
     SwapEngine,
     LoadLevel(PathBuf),
+    NewLevel,
+    RestartLevel,
 }

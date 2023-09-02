@@ -3,6 +3,7 @@ extern crate glium;
 #[macro_use]
 extern crate itertools;
 
+use config::LevelConfig;
 use glium::glutin;
 use winit::dpi::LogicalSize;
 use winit::event::Event;
@@ -72,26 +73,35 @@ fn main() {
 
         engine.update(&event, &event_loop_proxy, &display, &mut fps_timer);
 
-        if let Event::UserEvent(CustomEvent::SwapEngine) = event {
-            dim = match dim {
-                ValidDimension::Three => ValidDimension::Four,
-                ValidDimension::Four => ValidDimension::Three,
-            };
-            engine = engine.restart(dim, &config, &display);
-        }
-
-        if let Event::UserEvent(CustomEvent::LoadLevel(ref file)) = event {
-            match set_load_file_in_config(&mut config, file) {
-                Ok(vd) => {
-                    dim = vd;
+        if let Event::UserEvent(custom_event) = event {
+            match custom_event {
+                CustomEvent::SwapEngine => {
+                    dim = match dim {
+                        ValidDimension::Three => ValidDimension::Four,
+                        ValidDimension::Four => ValidDimension::Three,
+                    };
                     engine = engine.restart(dim, &config, &display);
                 }
-                Err(msg) => println!("{}", msg),
+                CustomEvent::NewLevel => {
+                    config.scene.level = LevelConfig::Empty;
+                    engine = engine.restart(dim, &config, &display);
+                }
+                CustomEvent::RestartLevel => engine = engine.restart(dim, &config, &display),
+                CustomEvent::LoadLevel(ref file) => {
+                    match set_load_file_in_config(&mut config, file) {
+                        Ok(vd) => {
+                            dim = vd;
+                            engine = engine.restart(dim, &config, &display);
+                        }
+                        Err(msg) => println!("{}", msg),
+                    }
+                }
+                CustomEvent::Quit => {
+                    println!("Exiting.");
+                    *control_flow = ControlFlow::Exit;
+                }
+                _ => (),
             }
-        }
-        if let Event::UserEvent(CustomEvent::Quit) = event {
-            println!("Exiting.");
-            *control_flow = ControlFlow::Exit;
         }
     }); //end of event loop
 }

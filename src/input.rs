@@ -26,7 +26,8 @@ use winit::event::{Event, WindowEvent};
 
 use self::custom_events::CustomEvent;
 use self::key_map::{
-    KeyCombo, LOAD_LEVEL, MOVEMENT_MODE, QUIT, SAVE_LEVEL, TOGGLEABLE_KEYS, TOGGLE_DIMENSION,
+    KeyCombo, LOAD_LEVEL, MOVEMENT_MODE, NEW_LEVEL, QUIT, RESTART_LEVEL, SAVE_LEVEL,
+    TOGGLEABLE_KEYS, TOGGLE_DIMENSION,
 };
 use self::saveload_dialog::{request_load, request_save};
 
@@ -216,12 +217,22 @@ impl Input {
                 e => mouse_event(&mut self.mouse, e),
             }
         }
-        if self.save_requested(ev) {
+        if self.key_combo(NEW_LEVEL, ev) {
+            event_loop_proxy
+                .send_event(CustomEvent::NewLevel)
+                .unwrap_or_default()
+        }
+        if self.key_combo(RESTART_LEVEL, ev) {
+            event_loop_proxy
+                .send_event(CustomEvent::RestartLevel)
+                .unwrap_or_default()
+        }
+        if self.key_combo(SAVE_LEVEL, ev) {
             self.last_movement_mode = self.movement_mode;
             self.movement_mode = MovementMode::Dialog;
             request_save(dim, event_loop_proxy);
         }
-        if self.load_requested(ev) {
+        if self.key_combo(LOAD_LEVEL, ev) {
             self.last_movement_mode = self.movement_mode;
             self.movement_mode = MovementMode::Dialog;
             request_load(event_loop_proxy);
@@ -235,12 +246,6 @@ impl Input {
             self.movement_mode,
             MovementMode::Player(PlayerMovementMode::Mouse) | MovementMode::Shape(_)
         )
-    }
-    fn save_requested(&self, event: &Event<CustomEvent>) -> bool {
-        self.key_combo(SAVE_LEVEL, event)
-    }
-    fn load_requested(&self, event: &Event<CustomEvent>) -> bool {
-        self.key_combo(LOAD_LEVEL, event)
     }
     fn key_combo(&self, key_combo: KeyCombo, event: &Event<CustomEvent>) -> bool {
         // we explicitly event match here to get one event; winit helper generates multiple events

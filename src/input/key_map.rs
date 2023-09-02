@@ -54,6 +54,7 @@ pub const TOGGLEABLE_KEYS: [VKC; 7] = [
     DELETE_SHAPE,
 ];
 
+// TODO: allow use of L or RWin
 pub const SAVE_LEVEL: KeyCombo = KeyCombo {
     hold: VKC::LWin,
     release: VKC::S,
@@ -61,4 +62,12 @@ pub const SAVE_LEVEL: KeyCombo = KeyCombo {
 pub const LOAD_LEVEL: KeyCombo = KeyCombo {
     hold: VKC::LWin,
     release: VKC::O,
+};
+pub const NEW_LEVEL: KeyCombo = KeyCombo {
+    hold: VKC::LWin,
+    release: VKC::N,
+};
+pub const RESTART_LEVEL: KeyCombo = KeyCombo {
+    hold: VKC::LWin,
+    release: VKC::R,
 };

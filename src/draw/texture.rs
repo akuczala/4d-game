@@ -97,73 +97,69 @@ impl<V: Copy> Texture<V> {
     }
 }
 
-impl<V: VectorTrait> Texture<V> {
-    pub fn make_tile_texture(scales: &[Field], n_divisions: &[i32]) -> Self {
-        if V::DIM != n_divisions.len() as VecIndex {
-            panic!(
-                "make_tile_texture: Expected n_divisions.len()={} but got {}",
-                V::DIM,
-                n_divisions.len()
-            );
-        }
+fn make_tile_texture<V: VectorTrait>(scales: &[Field], n_divisions: &[i32]) -> Texture<V> {
+    if V::DIM != n_divisions.len() as VecIndex {
+        panic!(
+            "make_tile_texture: Expected n_divisions.len()={} but got {}",
+            V::DIM,
+            n_divisions.len()
+        );
+    }
 
-        let centers = n_divisions
-            .iter()
-            .map(|n| (0..*n))
-            .multi_cartesian_product()
-            .map(|ivec| {
-                ivec.iter()
-                    .enumerate()
-                    .map(|(axis, &i)| ((i as Field) + HALF) / ((n_divisions[axis]) as Field))
-                    .collect::<V>()
-            });
+    let centers = n_divisions
+        .iter()
+        .map(|n| (0..*n))
+        .multi_cartesian_product()
+        .map(|ivec| {
+            ivec.iter()
+                .enumerate()
+                .map(|(axis, &i)| ((i as Field) + HALF) / ((n_divisions[axis]) as Field))
+                .collect::<V>()
+        });
 
-        let corner: V = n_divisions
-            .iter()
-            .map(|n| 1.0 / (*n as Field))
-            .collect::<V>()
-            * HALF;
+    let corner: V = n_divisions
+        .iter()
+        .map(|n| 1.0 / (*n as Field))
+        .collect::<V>()
+        * HALF;
 
-        //grow edges starting from a line
-        let mut tile_lines: Vec<Line<V>> = Vec::new();
-        for (i, &n) in n_divisions.iter().enumerate() {
-            if i == 0 {
-                tile_lines.push(Line(-corner, -corner + V::one_hot(0) / (n as Field)));
-            } else {
-                let new_dir = V::one_hot(i as VecIndex) / (n as Field);
-                let mut new_lines: Vec<Line<V>> = tile_lines
-                    .iter()
-                    .flat_map(|line| {
-                        vec![
-                            line.map(|v| v + new_dir),
-                            Line(line.0, line.0 + new_dir),
-                            Line(line.1, line.1 + new_dir),
-                        ]
-                    })
-                    .collect();
+    //grow edges starting from a line
+    let mut tile_lines: Vec<Line<V>> = Vec::new();
+    for (i, &n) in n_divisions.iter().enumerate() {
+        if i == 0 {
+            tile_lines.push(Line(-corner, -corner + V::one_hot(0) / (n as Field)));
+        } else {
+            let new_dir = V::one_hot(i as VecIndex) / (n as Field);
+            let mut new_lines: Vec<Line<V>> = tile_lines
+                .iter()
+                .flat_map(|line| {
+                    vec![
+                        line.map(|v| v + new_dir),
+                        Line(line.0, line.0 + new_dir),
+                        Line(line.1, line.1 + new_dir),
+                    ]
+                })
+                .collect();
 
-                tile_lines.append(&mut new_lines);
-            }
-        }
-
-        let lines = centers
-            .cartesian_product(scales.iter())
-            .flat_map(|(center, &scale)| {
-                tile_lines
-                    .iter()
-                    .map(move |line| line.map(|v| v * scale + center))
-            })
-            .collect();
-        Texture::Lines {
-            lines,
-            color: DEFAULT_COLOR,
+            tile_lines.append(&mut new_lines);
         }
     }
+
+    let lines = centers
+        .cartesian_product(scales.iter())
+        .flat_map(|(center, &scale)| {
+            tile_lines
+                .iter()
+                .map(move |line| line.map(|v| v * scale + center))
+        })
+        .collect();
+    Texture::Lines {
+        lines,
+        color: DEFAULT_COLOR,
+    }
 }
-pub fn merge_textures<V: VectorTrait>(
-    texture_1: &Texture<V::SubV>,
-    texture: &Texture<V::SubV>,
-) -> Texture<V::SubV> {
+
+pub fn merge_textures<U: Clone>(texture_1: &Texture<U>, texture: &Texture<U>) -> Texture<U> {
     match (texture_1, texture) {
         (
             Texture::Lines {
@@ -386,7 +382,7 @@ fn make_auto_tile_texture<V: VectorTrait>(
     // sort by decreasing scale
     n_divisions.sort();
     n_divisions.reverse();
-    Texture::make_tile_texture(&[face_scale], &n_divisions)
+    make_tile_texture(&[face_scale], &n_divisions)
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -454,9 +450,6 @@ impl FrameTextureMapping {
             .sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap())
             .map(|(vi, _v)| vi)
             .collect();
-        // for &vi in &sorted_frame_vertis {
-        // 	println!("{}",(verts[vi]-verts[origin_verti]).norm() );
-        // }
         Self {
             origin_verti,
             frame_vertis: sorted_frame_vertis,

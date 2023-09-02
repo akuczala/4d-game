@@ -64,7 +64,6 @@ pub enum ShapeTextureBuilder {
 }
 impl ShapeTextureBuilder {
     pub fn parse_default() -> Self {
-        // TODO rv
         Self::Uniform(
             TextureBuilder::new(Default::default()).merged_with(TextureBuilder::new_fuzz_texture()),
         )
@@ -182,7 +181,7 @@ impl ShapeTextureBuilderVec {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FaceTextureGeneric<V, M, U> {
     pub texture: Texture<U>,
-    pub texture_mapping: TextureMapping<V, M, U>,
+    pub mapping: TextureMapping<V, M, U>,
 }
 
 pub type FaceTexture<V> = FaceTextureGeneric<V, <V as VectorTrait>::M, <V as VectorTrait>::SubV>;
@@ -231,7 +230,7 @@ pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
     }
     match &face_texture.texture {
         Texture::Lines { lines, color } => {
-            BranchIterator2::Option2(face_texture.texture_mapping.draw_lines(
+            BranchIterator2::Option2(face_texture.mapping.draw_lines(
                 shape_transform,
                 lines,
                 override_color.unwrap_or(*color),
