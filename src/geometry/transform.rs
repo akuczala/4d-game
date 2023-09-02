@@ -90,6 +90,7 @@ impl<V: VectorTrait> Scaling<V> {
         }
     }
 }
+
 impl<V> Scaling<V> {
     pub fn fmap<F, U>(self, f: F) -> Scaling<U>
     where

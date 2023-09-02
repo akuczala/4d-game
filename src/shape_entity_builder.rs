@@ -126,7 +126,7 @@ where
         let shape_texture =
             shape_texture_builder
                 .clone()
-                .build::<V>(&config.into(), ref_shape, &shape);
+                .build::<V>(&config.into(), ref_shape, &shape, &transform);
         ComponentsToInsert {
             shape_label,
             bbox: shape.calc_bbox(),

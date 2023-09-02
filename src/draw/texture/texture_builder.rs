@@ -1,16 +1,16 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::Shape,
+    components::{Shape, Transform},
     config::Config,
     draw::normal_to_color,
-    geometry::{affine_transform::AffineTransform, shape::FaceIndex},
+    geometry::{affine_transform::AffineTransform, shape::FaceIndex, transform::Scaling},
     graphics::colors::{Color, WHITE},
     vector::{Field, VectorTrait},
 };
 
 use super::{
-    draw_fuzz_on_uv, make_default_lines_texture, merge_textures,
+    draw_fuzz_on_uv, make_auto_tile_texture, make_default_lines_texture, merge_textures,
     shape_texture::TextureMappingDirective, FaceTexture, Texture, UVMapV,
 };
 
@@ -23,6 +23,7 @@ pub enum TexturePrim {
         scales: Vec<Field>,
         n_divisions: Vec<i32>,
     },
+    AutoTile,
     Fuzz,
 }
 impl TexturePrim {
@@ -31,6 +32,7 @@ impl TexturePrim {
             Self::Empty => TextureMappingDirective::None,
             Self::Default => TextureMappingDirective::UVDefault,
             Self::Tile { .. } => TextureMappingDirective::Orthogonal,
+            Self::AutoTile => TextureMappingDirective::Orthogonal,
             Self::Fuzz => TextureMappingDirective::UVDefault,
         }
     }
@@ -39,6 +41,7 @@ impl TexturePrim {
 #[derive(Clone, Serialize, Deserialize)]
 pub enum TextureBuilderStep {
     WithColor(Color),
+    WithAlpha(f32),
     //WithTexture(TexturePrim),
     MergedWith(Box<TextureBuilder>),
     ColorByNormal,
@@ -58,7 +61,7 @@ impl From<&Config> for TextureBuilderConfig {
     }
 }
 
-type ShapeData<'a, V> = (&'a Shape<V>, &'a Shape<V>, FaceIndex);
+type ShapeData<'a, V, M> = (&'a Shape<V>, &'a Shape<V>, &'a Transform<V, M>, FaceIndex);
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct TextureBuilder {
@@ -110,6 +113,7 @@ impl TextureBuilder {
     pub fn make_texture<V: VectorTrait>(
         config: &TextureBuilderConfig,
         start: TexturePrim,
+        shape_scaling: &Scaling<V>,
         uv_map: &UVMapV<V>,
     ) -> Texture<V::SubV> {
         {
@@ -122,6 +126,9 @@ impl TextureBuilder {
                     scales,
                     n_divisions,
                 } => Texture::make_tile_texture(&scales, &n_divisions),
+                TexturePrim::AutoTile => {
+                    make_auto_tile_texture(config.face_scale, shape_scaling, uv_map)
+                }
                 TexturePrim::Fuzz => draw_fuzz_on_uv(uv_map, config.n_fuzz_lines),
             }
         }
@@ -129,18 +136,20 @@ impl TextureBuilder {
     pub fn build<V: VectorTrait>(
         self,
         config: &TextureBuilderConfig,
-        ref_shape: &Shape<V>,
-        shape: &Shape<V>,
-        face_index: FaceIndex,
+        shape_data @ (ref_shape, shape, shape_transform, face_index): ShapeData<V, V::M>,
     ) -> FaceTexture<V> {
-        let shape_data = (ref_shape, shape, face_index);
         let starting_map = self
             .start
             .required_mapping()
             .build(face_index, ref_shape, shape);
         self.steps.into_iter().fold(
             FaceTexture {
-                texture: Self::make_texture(config, self.start, &starting_map.uv_map),
+                texture: Self::make_texture(
+                    config,
+                    self.start,
+                    &shape_transform.scale,
+                    &starting_map.uv_map,
+                ),
                 texture_mapping: starting_map,
             },
             |face_texture, step| Self::apply_step(config, shape_data, face_texture, step),
@@ -148,7 +157,7 @@ impl TextureBuilder {
     }
     fn apply_step<V: VectorTrait>(
         config: &TextureBuilderConfig,
-        (ref_shape, shape, face_index): ShapeData<V>,
+        shape_data @ (ref_shape, _shape, _shape_transform, face_index): ShapeData<V, V::M>,
         face_texture: FaceTexture<V>,
         step: TextureBuilderStep,
     ) -> FaceTexture<V> {
@@ -159,13 +168,16 @@ impl TextureBuilder {
                 texture: texture.set_color(color),
                 texture_mapping: mapping,
             },
+            TextureBuilderStep::WithAlpha(alpha) => FaceTexture {
+                texture: texture.map_color(|color| color.with_alpha(alpha)),
+                texture_mapping: mapping,
+            },
             TextureBuilderStep::ColorByNormal => FaceTexture {
                 texture: texture.set_color(normal_to_color(ref_shape.faces[face_index].normal())),
                 texture_mapping: mapping,
             },
             TextureBuilderStep::MergedWith(boxed_builder) => {
-                let mut other_face_texture =
-                    (*boxed_builder).build::<V>(config, ref_shape, shape, face_index);
+                let mut other_face_texture = (*boxed_builder).build::<V>(config, shape_data);
                 // use UV space from our mapping, rather than other
                 //transform lines from other into our map
                 let old_to_new_transform = AffineTransform::from(mapping.uv_map.map)

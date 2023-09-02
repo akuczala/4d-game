@@ -12,7 +12,7 @@ impl Color {
     pub fn from_iter<I: Iterator<Item = f32>>(iter: I) -> Self {
         Color(iter.collect::<Vec<f32>>().try_into().unwrap())
     }
-    pub const fn set_alpha(self, alpha: f32) -> Color {
+    pub const fn with_alpha(self, alpha: f32) -> Color {
         let mut arr = *self.get_arr();
         arr[3] = alpha;
         Color(arr)

@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::{Shape, Transform},
-    constants::{COIN_TEXTURE_LABEL_STR, FUZZY_TILE_LABEL_STR},
+    constants::{AUTO_TILE_LABEL_STR, COIN_TEXTURE_LABEL_STR, FUZZY_TILE_LABEL_STR},
     draw::DrawLine,
     geometry::shape::FaceIndex,
     graphics::colors::{Color, YELLOW},
-    utils::{BranchIterator2, ResourceLabel, ValidDimension},
-    vector::{Field, VectorTrait},
+    utils::{BranchIterator2, ResourceLabel},
+    vector::VectorTrait,
 };
 
 use super::{
@@ -28,13 +28,15 @@ pub type ShapeTexture<V> = ShapeTextureGeneric<V, <V as VectorTrait>::M, <V as V
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct ShapeTextureMap(Vec<TextureBuilderStep>);
 impl ShapeTextureMap {
+    fn new() -> Self {
+        Self::default()
+    }
     fn single(step: TextureBuilderStep) -> Self {
         Self(vec![step])
     }
     fn apply(&self, tex: TextureBuilder) -> TextureBuilder {
         tex.with_steps(self.0.clone())
     }
-    #[allow(dead_code)]
     fn with_step(mut self, step: TextureBuilderStep) -> Self {
         self.0.push(step);
         self
@@ -62,6 +64,7 @@ pub enum ShapeTextureBuilder {
 }
 impl ShapeTextureBuilder {
     pub fn parse_default() -> Self {
+        // TODO rv
         Self::Uniform(
             TextureBuilder::new(Default::default()).merged_with(TextureBuilder::new_fuzz_texture()),
         )
@@ -91,25 +94,26 @@ impl ShapeTextureBuilder {
         config: &TextureBuilderConfig,
         ref_shape: &Shape<V>,
         shape: &Shape<V>,
+        shape_transform: &Transform<V, V::M>,
     ) -> ShapeTexture<V> {
         match self {
-            Self::Default => Self::parse_default().build(config, ref_shape, shape),
+            Self::Default => Self::parse_default().build(config, ref_shape, shape, shape_transform),
             ShapeTextureBuilder::Uniform(t) => {
                 ShapeTextureBuilderVec::new_default(ref_shape.faces.len())
                     .with_texture(t)
-                    .build(config, ref_shape, shape)
+                    .build(config, ref_shape, shape, shape_transform)
             }
-            ShapeTextureBuilder::Vec(ts) => ts.build(config, ref_shape, shape),
+            ShapeTextureBuilder::Vec(ts) => ts.build(config, ref_shape, shape, shape_transform),
             ShapeTextureBuilder::FromResource(label, map) => (match label {
-                label if label == COIN_TEXTURE_LABEL_STR.into() => build_coin_texture(),
-                // TODO: generalize to arbitrary shape dimensions (e.g. be smart about how many tiles are in each direction)
-                label if label == FUZZY_TILE_LABEL_STR.into() => {
-                    build_fuzzy_tile_texture::<V>(config.face_scale)
+                label if label == AUTO_TILE_LABEL_STR.into() => {
+                    ShapeTextureBuilder::Uniform(TextureBuilder::new(TexturePrim::AutoTile))
                 }
+                label if label == COIN_TEXTURE_LABEL_STR.into() => build_coin_texture(),
+                label if label == FUZZY_TILE_LABEL_STR.into() => build_fuzzy_tile_texture(),
                 _ => panic!("Invalid shape texture label {}", label),
             })
             .map(map)
-            .build(config, ref_shape, shape),
+            .build(config, ref_shape, shape, shape_transform),
         }
     }
 }
@@ -129,6 +133,7 @@ impl ShapeTextureBuilderVec {
         config: &TextureBuilderConfig,
         ref_shape: &Shape<V>,
         shape: &Shape<V>,
+        shape_transform: &Transform<V, V::M>,
     ) -> ShapeTexture<V> {
         ShapeTexture {
             face_textures: self
@@ -136,7 +141,9 @@ impl ShapeTextureBuilderVec {
                 .into_iter()
                 .enumerate()
                 .map(|(face_index, face_texture)| {
-                    Some(face_texture.build(config, ref_shape, shape, face_index))
+                    Some(
+                        face_texture.build(config, (ref_shape, shape, shape_transform, face_index)),
+                    )
                 })
                 .collect(),
         }
@@ -234,12 +241,12 @@ pub fn draw_face_texture<'a, V: VectorTrait + 'a>(
     }
 }
 
-pub fn build_coin_texture() -> ShapeTextureBuilder {
+fn build_coin_texture() -> ShapeTextureBuilder {
     ShapeTextureBuilder::Uniform(TexturePrim::Default.into()).with_color(YELLOW)
 }
 
 #[allow(dead_code)]
-pub fn color_duocylinder<V: VectorTrait>(
+fn color_duocylinder<V: VectorTrait>(
     shape_texture: &mut ShapeTextureBuilderVec,
     m: usize,
     n: usize,
@@ -256,17 +263,13 @@ pub fn color_duocylinder<V: VectorTrait>(
     }
 }
 
-pub fn build_fuzzy_tile_texture<V: VectorTrait>(face_scale: Field) -> ShapeTextureBuilder {
-    ShapeTextureBuilder::Uniform(
-        TextureBuilder::new_tile_texture(
-            vec![face_scale],
-            match V::DIM.into() {
-                ValidDimension::Three => vec![3, 1],
-                ValidDimension::Four => vec![3, 1, 1],
-            },
-        )
-        .merged_with(TextureBuilder::new_fuzz_texture())
-        .with_step(TextureBuilderStep::ColorByNormal),
+fn build_fuzzy_tile_texture() -> ShapeTextureBuilder {
+    ShapeTextureBuilder::from_resource(AUTO_TILE_LABEL_STR.into()).map(
+        ShapeTextureMap::new()
+            .with_step(TextureBuilderStep::MergedWith(
+                TextureBuilder::new_fuzz_texture().into(),
+            ))
+            .with_step(TextureBuilderStep::ColorByNormal),
     )
 }
 

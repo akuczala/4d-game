@@ -20,7 +20,7 @@ pub const SKY_DISTANCE: Field = 1e4;
 pub const STAR_SIZE: Field = 100.0;
 pub const SKY_FUZZ_SIZE: Field = 100.0;
 
-pub const SELECTION_COLOR: Color = WHITE.set_alpha(0.2);
+pub const SELECTION_COLOR: Color = WHITE.with_alpha(0.2);
 pub const CURSOR_COLOR: Color = WHITE;
 
 pub const CUBE_LABEL_STR: &str = "Cube";
@@ -52,3 +52,4 @@ pub const DEFAULT_SAVELOAD_PATH_STR: &str = "./";
 
 pub const FUZZY_TILE_LABEL_STR: &str = "FuzzyTile";
 pub const COIN_TEXTURE_LABEL_STR: &str = "Coin";
+pub const AUTO_TILE_LABEL_STR: &str = "AutoTile";

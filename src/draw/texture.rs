@@ -42,14 +42,23 @@ impl<V> Default for Texture<V> {
 }
 impl<V> Texture<V> {
     pub fn set_color(self, color: Color) -> Self {
+        self.map_color(|_| color)
+    }
+    pub fn map_color<F>(self, f: F) -> Self
+    where
+        F: Fn(Color) -> Color,
+    {
         match self {
-            Texture::Lines { lines, .. } => Texture::Lines { lines, color },
+            Texture::Lines { lines, color } => Texture::Lines {
+                lines,
+                color: f(color),
+            },
             Texture::DrawLines(draw_lines) => Texture::DrawLines(
                 draw_lines
                     .into_iter()
                     .map(|draw_line| DrawLine {
                         line: draw_line.line,
-                        color,
+                        color: f(draw_line.color),
                     })
                     .collect(),
             ),
@@ -359,6 +368,27 @@ pub fn draw_fuzz_on_uv<V: VectorTrait>(uv_map: &UVMapV<V>, n: usize) -> Texture<
     }
 }
 
+// TODO: tile size arg
+fn make_auto_tile_texture<V: VectorTrait>(
+    face_scale: Field,
+    scale: &Scaling<V>,
+    uv_map: &UVMapV<V>,
+) -> Texture<V::SubV> {
+    // apply UV map to shape scale as if it were a vector, take abs value
+    let scale_on_uv = (uv_map.map.frame * scale.get_vec())
+        .map(|s| s.abs())
+        .project();
+    // round to get n divisions, must be at least one
+    let mut n_divisions: Vec<_> = scale_on_uv
+        .into_iter()
+        .map(|s| s.round().max(1.0) as i32)
+        .collect();
+    // sort by decreasing scale
+    n_divisions.sort();
+    n_divisions.reverse();
+    Texture::make_tile_texture(&[face_scale], &n_divisions)
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct FrameTextureMapping {
     pub frame_vertis: Vec<VertIndex>,
@@ -465,8 +495,6 @@ fn test_uv_map_bounds() {
 
         for (face_index, face) in shape.faces.iter().enumerate() {
             let uv_map = auto_uv_map_face(&shape, face_index);
-            //println!("face verts {:?}", face.get_verts(&shape.verts).collect_vec());
-            //println!("subface planes {:?}", shape.shape_type.get_face_subfaces(face_index).map(|sf| subface_plane(&shape.faces, face_index, &sf)).collect_vec());
             // assert that all projected verts are within the boundaries
             for b in uv_map.bounds() {
                 //println!("plane: {:?}", b);
