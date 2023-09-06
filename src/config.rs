@@ -29,6 +29,7 @@ pub struct DrawConfig {
     pub fuzz_lines: FuzzLinesConfig,
     pub face_scale: Field,
     pub color_by_orientation: bool,
+    pub alpha: f32,
 }
 impl Default for DrawConfig {
     fn default() -> Self {
@@ -36,6 +37,7 @@ impl Default for DrawConfig {
             fuzz_lines: Default::default(),
             face_scale: 0.8,
             color_by_orientation: false,
+            alpha: 0.5,
         }
     }
 }

@@ -1,0 +1,60 @@
+(
+    components: [
+        ((
+            name: "InvertedPipe",
+        ), (
+            pos: ((5.0, 0.0, 7.0)),
+            frame: (((1.0, 0.0, 0.0)), ((0.0, 1.0, 0.0)), ((0.0, 0.0, 1.0))),
+            scale: Vector(((1.0, 1.0, 4.0))),
+        ), FromResource((
+            name: "FuzzyTile",
+        ), ([])), Some(()), None),
+        ((
+            name: "InvertedPipe",
+        ), (
+            pos: ((0.0, 0.0, 2.0)),
+            frame: (((1.0, 0.0, 0.0)), ((0.0, 1.0, 0.0)), ((0.0, 0.0, 1.0))),
+            scale: Vector(((1.0, 1.0, 4.0))),
+        ), FromResource((
+            name: "FuzzyTile",
+        ), ([])), Some(()), None),
+        ((
+            name: "InvertedPipe",
+        ), (
+            pos: ((2.5, 0.0, 4.5)),
+            frame: (((0.0, 0.0, 1.0)), ((0.0, 1.0, 0.0)), ((-1.0, 0.0, 0.0))),
+            scale: Vector(((1.0, 1.0, 4.0))),
+        ), FromResource((
+            name: "FuzzyTile",
+        ), ([])), Some(()), None),
+        ((
+            name: "InvertedMissingSubfaceCube",
+        ), (
+            pos: ((5.0, 0.0, 4.5)),
+            frame: (((0.00000008742278, 1.0, 0.0)), ((0.0, 0.0, -1.0)), ((-1.0, 0.00000008742278, 0.0))),
+            scale: Scalar(1.0),
+        ), Default, Some(()), None),
+        ((
+            name: "InvertedMissingSubfaceCube",
+        ), (
+            pos: ((0.0, 0.0, 4.5)),
+            frame: (((0.0, -1.0, 0.0)), ((0.0, 0.0, -1.0)), ((1.0, 0.0, 0.0))),
+            scale: Scalar(1.0),
+        ), Default, Some(()), None),
+        ((
+            name: "OpenInvertedCube",
+        ), (
+            pos: ((0.0, 0.0, -0.5)),
+            frame: (((1.0, 0.0, 0.0)), ((0.0, 0.0, 1.0)), ((0.0, -1.0, 0.0))),
+            scale: Scalar(1.0),
+        ), Default, Some(()), None),
+    ],
+    player_data: (
+        transform: (
+            pos: ((-1.3654438, 0.31649998, 7.631519)),
+            frame: (((-0.7704752, 0.00000005378388, -0.63744)), ((0.10263439, 0.98694426, -0.12405479)), ((0.62912333, -0.16100751, -0.76042))),
+            scale: Scalar(1.0),
+        ),
+        heading: ((((-0.7704814, 0.0, -0.6374419)), ((0.0, 1.0, 0.0)), ((0.63744587, 0.0, -0.77047974)))),
+    ),
+)

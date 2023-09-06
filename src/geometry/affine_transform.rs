@@ -39,17 +39,14 @@ impl<V: VectorTrait> AffineTransform<V, V::M> {
         let norms: Vec<Field> = cols.iter().map(|v| v.norm()).collect();
         //for n in norms.iter() { println!{":: {}", n}}
         (
-            V::M::from_vec_of_vecs(
-                &self
-                    .frame
-                    .transpose()
-                    .get_rows()
-                    .iter()
-                    .zip(norms.iter())
-                    .map(|(v, n)| *v / *n)
-                    .collect::<Vec<V>>(),
-            )
-            .transpose(),
+            self.frame
+                .transpose()
+                .get_rows()
+                .iter()
+                .zip(norms.iter())
+                .map(|(v, n)| *v / *n)
+                .collect::<V::M>()
+                .transpose(),
             Scaling::Vector(norms.into_iter().collect()),
         )
     }

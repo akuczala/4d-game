@@ -24,6 +24,8 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
     let sub_cube = ShapeBuilder::<V::SubV>::build_cube(1.0).build();
     let inverted_cube = invert_normals(&cube);
     let open_cube = remove_face(cube.clone(), cube.faces.len() - 1);
+    // rm face adjacent to already open face
+    let missing_subface_cube = remove_face(open_cube.clone(), open_cube.faces.len() - 1);
 
     RefShapes::build(vec![
         (CUBE_LABEL_STR.into(), cube.clone()),
@@ -51,6 +53,11 @@ pub fn build_shape_library<V: VectorTrait>() -> RefShapes<V> {
         (
             INVERTED_PIPE_LABEL_STR.into(),
             make_pipe(V::one_hot(-1), inverted_cube),
+        ),
+        ("MissingSubfaceCube".into(), missing_subface_cube.clone()),
+        (
+            "InvertedMissingSubfaceCube".into(),
+            invert_normals(&missing_subface_cube),
         ),
         (
             "TestPrism".into(),

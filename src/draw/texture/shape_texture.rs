@@ -88,21 +88,13 @@ impl ShapeTextureBuilder {
     pub fn with_texture(self, texture: TextureBuilder) -> Self {
         Self::Uniform(texture)
     }
-    pub fn build<V: VectorTrait>(
-        self,
-        config: &TextureBuilderConfig,
-        ref_shape: &Shape<V>,
-        shape: &Shape<V>,
-        shape_transform: &Transform<V, V::M>,
-    ) -> ShapeTexture<V> {
+    fn finalize(self, n_faces: usize) -> ShapeTextureBuilderVec {
         match self {
-            Self::Default => Self::parse_default().build(config, ref_shape, shape, shape_transform),
+            Self::Default => Self::parse_default().finalize(n_faces),
             ShapeTextureBuilder::Uniform(t) => {
-                ShapeTextureBuilderVec::new_default(ref_shape.faces.len())
-                    .with_texture(t)
-                    .build(config, ref_shape, shape, shape_transform)
+                ShapeTextureBuilderVec::new_default(n_faces).with_texture(t)
             }
-            ShapeTextureBuilder::Vec(ts) => ts.build(config, ref_shape, shape, shape_transform),
+            ShapeTextureBuilder::Vec(ts) => ts,
             ShapeTextureBuilder::FromResource(label, map) => (match label {
                 label if label == AUTO_TILE_LABEL_STR.into() => {
                     ShapeTextureBuilder::Uniform(TextureBuilder::new(TexturePrim::AutoTile))
@@ -112,8 +104,19 @@ impl ShapeTextureBuilder {
                 _ => panic!("Invalid shape texture label {}", label),
             })
             .map(map)
-            .build(config, ref_shape, shape, shape_transform),
+            .finalize(n_faces),
         }
+    }
+    pub fn build<V: VectorTrait>(
+        self,
+        config: &TextureBuilderConfig,
+        ref_shape: &Shape<V>,
+        shape: &Shape<V>,
+        shape_transform: &Transform<V, V::M>,
+    ) -> ShapeTexture<V> {
+        self.finalize(ref_shape.faces.len())
+            .map_textures(|t| t.with_step(TextureBuilderStep::WithAlpha(config.alpha)))
+            .build(config, ref_shape, shape, shape_transform)
     }
 }
 #[derive(Clone, Serialize, Deserialize)]

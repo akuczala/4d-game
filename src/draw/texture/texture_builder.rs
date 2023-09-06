@@ -52,12 +52,14 @@ pub enum TextureBuilderStep {
 pub struct TextureBuilderConfig {
     n_fuzz_lines: usize,
     pub face_scale: Field,
+    pub alpha: f32,
 }
 impl From<&Config> for TextureBuilderConfig {
     fn from(value: &Config) -> Self {
         Self {
             n_fuzz_lines: value.draw.fuzz_lines.face_num,
             face_scale: value.draw.face_scale,
+            alpha: value.draw.alpha,
         }
     }
 }
@@ -158,7 +160,7 @@ impl TextureBuilder {
     }
     fn apply_step<V: VectorTrait>(
         config: &TextureBuilderConfig,
-        shape_data @ (ref_shape, _shape, _shape_transform, face_index): ShapeData<V, V::M>,
+        shape_data @ (_ref_shape, shape, _shape_transform, face_index): ShapeData<V, V::M>,
         face_texture: FaceTexture<V>,
         step: TextureBuilderStep,
     ) -> FaceTexture<V> {
@@ -174,7 +176,7 @@ impl TextureBuilder {
                 mapping,
             },
             TextureBuilderStep::ColorByNormal => FaceTexture {
-                texture: texture.set_color(normal_to_color(ref_shape.faces[face_index].normal())),
+                texture: texture.set_color(normal_to_color(shape.faces[face_index].normal())),
                 mapping,
             },
             TextureBuilderStep::MergedWith(boxed_builder) => {
