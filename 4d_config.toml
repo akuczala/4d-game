@@ -2,7 +2,8 @@ gui = "Simple"
 
 [draw]
 face_scale = 0.8
-color_by_orientation = true
+color_by_orientation = false
+alpha = 0.5
 
 [draw.fuzz_lines]
 face_num = 500
@@ -10,8 +11,8 @@ sky_num = 1000
 horizon_num = 1000
 
 [view]
-height = 0.5
-radius = 0.6
+height = 0.3
+radius = 0.4
 viewport_shape = "Cylinder"
 focal = 0.5
 spin_speed = 0.1

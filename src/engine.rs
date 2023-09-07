@@ -241,7 +241,7 @@ where
 {
     fn init(config: &Config, display: &Display, gui: Option<crate::gui::GuiSystem>) -> Self {
         println!("Starting {}d engine", V::DIM);
-        Self::new(config, G::init(display), gui)
+        Self::new(config, G::init(display, V::DIM), gui)
     }
 }
 

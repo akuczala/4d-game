@@ -11,9 +11,9 @@ use crate::draw::{DrawLine, DrawVertex};
 use crate::vector::VecIndex;
 use crate::vector::VectorTrait;
 
+use self::matrices::build_other_view_matrix;
 use self::matrices::build_perspective_matrix;
 use self::matrices::build_view_matrix;
-use self::matrices::IDENTITY_MATRIX;
 use self::proj_line_vertex::ProjLineVertex;
 
 pub mod colors;
@@ -22,6 +22,13 @@ mod proj_line_vertex;
 mod simple_vertex;
 
 const FRAGMENT_SHADER_SRC: &str = include_str!("graphics/simple-shader.frag");
+
+#[derive(Copy, Clone)]
+pub struct InstanceAttr {
+    view: [[f32; 4]; 4],
+    view_offset: [f32; 4],
+}
+implement_vertex!(InstanceAttr, view, view_offset);
 
 pub trait VertexTrait: Vertex {
     const NO_DRAW: Self;
@@ -38,7 +45,7 @@ pub trait VertexTrait: Vertex {
 }
 
 pub trait GraphicsTrait {
-    fn init(display: &Display) -> Self;
+    fn init(display: &Display, dim: VecIndex) -> Self;
     fn draw_lines<V: VectorTrait>(
         &mut self,
         draw_lines: &[DrawLine<V>],
@@ -51,10 +58,11 @@ pub type DefaultGraphics = Graphics<ProjLineVertex>;
 pub struct Graphics<X: Copy> {
     pub vertex_buffer: glium::VertexBuffer<X>,
     pub program: glium::Program,
+    pub per_instance: glium::VertexBuffer<InstanceAttr>,
     cur_lines_len: usize, // we store buffer size here because apparently calling vertex_buffer.len() is expensive
 }
 impl<X: VertexTrait> Graphics<X> {
-    pub fn new(display: &glium::Display) -> Self {
+    pub fn new(display: &glium::Display, dim: VecIndex) -> Self {
         Self {
             vertex_buffer: glium::VertexBuffer::dynamic(display, &Vec::new()).unwrap(),
             program: glium::Program::from_source(
@@ -64,8 +72,30 @@ impl<X: VertexTrait> Graphics<X> {
                 None,
             )
             .unwrap(),
+            per_instance: VertexBuffer::dynamic(
+                display,
+                &[
+                    InstanceAttr {
+                        view: build_view_matrix(dim - 1),
+                        view_offset: [-get_offset(dim), 0.0, 0.0, 0.0],
+                    },
+                    InstanceAttr {
+                        view: build_other_view_matrix(dim - 1),
+                        view_offset: [get_offset(dim), 0.0, 0.0, 0.0],
+                    },
+                ],
+            )
+            .unwrap(),
             cur_lines_len: 0,
         }
+    }
+}
+
+fn get_offset(dim: VecIndex) -> f32 {
+    match dim {
+        3 => 0.5,
+        4 => 3.0,
+        _ => panic!("Invalid dimension"),
     }
 }
 
@@ -102,8 +132,8 @@ fn write_opt_lines_to_buffer<X: VertexTrait, V: VectorTrait>(
 }
 
 impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
-    fn init(display: &Display) -> Self {
-        Self::new(display)
+    fn init(display: &Display, dim: VecIndex) -> Self {
+        Self::new(display, dim)
     }
 
     fn update_buffer<V: VectorTrait>(&mut self, draw_lines: &[DrawLine<V>], display: &Display) {
@@ -142,13 +172,10 @@ impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
         };
         let (width, height) = target.get_dimensions();
         let uniforms = uniform! {
-            perspective : build_perspective_matrix(V::DIM, width, height),
-            view : build_view_matrix(V::DIM),
-            model: IDENTITY_MATRIX,
-            // below needed only for proj_line vertex
+            perspective: build_perspective_matrix(V::DIM, width, height),
+            // below needed only for proj_line / test-shader vertex
             aspect : (width as f32)/(height as f32),
             thickness : X::line_thickness(V::DIM),
-            miter : 1,
         };
         target.clear_color(
             BACKGROUND_COLOR[0],
@@ -158,7 +185,10 @@ impl<X: VertexTrait> GraphicsTrait for Graphics<X> {
         );
         target
             .draw(
-                &self.vertex_buffer,
+                (
+                    &self.vertex_buffer,
+                    self.per_instance.per_instance().unwrap(),
+                ),
                 glium::index::NoIndices(X::PRIMITIVE_TYPE),
                 &self.program,
                 &uniforms,

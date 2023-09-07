@@ -14,7 +14,18 @@ pub const IDENTITY_MATRIX: Matrix4 = [
 pub fn build_view_matrix(dim: VecIndex) -> Matrix4 {
     match dim {
         2 => IDENTITY_MATRIX,
-        3 => build_view_matrix_3d(&[2.0, 2.0, -4.0], &[-1.0, -1.0, 2.0], &[0.0, 1.0, 0.0]),
+        3 => build_view_matrix_3d(&[3.0, 3.0, -4.0], &[-3.0, -3.0, 4.0], &[0.0, 1.0, 0.0]),
+        //3 => build_view_matrix_3d(&[4.0, 2.0, 2.0], &[-2.0, -1.0, -1.0], &[0.0, 1.0, 0.0]),
+        _ => panic!("Invalid dimension"),
+    }
+}
+
+// TODO: rename
+pub fn build_other_view_matrix(dim: VecIndex) -> Matrix4 {
+    match dim {
+        2 => IDENTITY_MATRIX,
+        //3 => build_view_matrix_3d(&[2.0, 2.0, -4.0], &[-1.0, -1.0, 2.0], &[0.0, 1.0, 0.0]),
+        3 => build_view_matrix_3d(&[4.0, 3.0, 3.0], &[-4.0, -3.0, -3.0], &[0.0, 1.0, 0.0]),
         _ => panic!("Invalid dimension"),
     }
 }
