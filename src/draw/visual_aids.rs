@@ -15,9 +15,7 @@ use crate::{
     },
     graphics::colors::{blend, BLUE, CYAN},
     utils::ValidDimension,
-    vector::{
-        linspace, random_sphere_point, rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait,
-    },
+    vector::{linspace, random_sphere_point, Field, VecIndex, VectorTrait},
 };
 
 use super::DrawLine;
@@ -175,23 +173,30 @@ fn pointlike_sky_line<V: VectorTrait>(pos: V) -> Line<V> {
 pub fn draw_compass<V: VectorTrait>(heading: &Heading<V::M>) -> Vec<DrawLine<V::SubV>> {
     // project unit vectors pointing at horizon into (D - 2) sphere, with heading vec at "center"
     // draw a circle
-    let rotation = rotation_matrix(V::one_hot(-1), V::one_hot(UP_AXIS), None).dot(heading.0);
+
+    let radius = CURSOR_SIZE * 2.0;
+    let compass_point_size = CURSOR_SIZE / 4.0;
+    let center = -V::SubV::one_hot(UP_AXIS) * 0.3;
+    let get_alpha = |x: Field| ((x / radius) + 1.0) / 2.0;
+
+    // forward direction is centermost
+    let rotation = heading.0;
     let compass_points = (0..V::DIM)
         .filter(|&i| i != UP_AXIS)
-        .flat_map(|i| [-1.0, 1.0].map(|s| rotation * (V::one_hot(i) * s * CURSOR_SIZE * 2.0)));
+        .flat_map(|i| [-1.0, 1.0].map(|s| rotation * (V::one_hot(i) * s * radius)));
     let colors = CARDINAL_COLORS
         .iter()
         .zip((0..V::DIM).flat_map(|i| [i, i]))
         .filter(|(_, i)| *i != UP_AXIS)
         .map(|(color, _)| color);
     let sub_cube_lines: Vec<Line<V::SubV>> =
-        calc_wireframe_lines(&ShapeBuilder::build_cube(CURSOR_SIZE / 4.0).build());
+        calc_wireframe_lines(&ShapeBuilder::build_cube(compass_point_size).build());
     compass_points
         .zip(colors)
         .flat_map(|(cp, &color)| {
             sub_cube_lines.iter().map(move |line| DrawLine {
-                line: line.map(|p| p + V::project(&cp) - V::SubV::one_hot(UP_AXIS) * 0.3),
-                color,
+                line: line.map(|p| p + V::project(&cp) + center),
+                color: color.with_alpha(get_alpha(cp[-1])),
             })
         })
         .collect()
