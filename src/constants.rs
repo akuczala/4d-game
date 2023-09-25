@@ -1,7 +1,10 @@
 pub use std::f32::consts::{E, PI};
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_3, TAU};
 
-use crate::{graphics::colors::*, vector::Field};
+use crate::{
+    graphics::colors::*,
+    vector::{Field, VecIndex},
+};
 
 pub const HALF_PI: Field = FRAC_PI_2;
 pub const TWO_PI: Field = TAU;
@@ -22,6 +25,8 @@ pub const SKY_FUZZ_SIZE: Field = 100.0;
 
 pub const SELECTION_COLOR: Color = WHITE.with_alpha(0.2);
 pub const CURSOR_COLOR: Color = WHITE;
+
+pub const CURSOR_SIZE: Field = 0.03;
 
 pub const CUBE_LABEL_STR: &str = "Cube";
 pub const COIN_LABEL_STR: &str = "Coin";
@@ -46,6 +51,8 @@ pub const MAX_TILT: Field = 0.99;
 pub const MAX_TARGET_DIST: Field = 10.;
 
 pub const FRAME_MS: u64 = 16;
+
+pub const UP_AXIS: VecIndex = 1;
 
 pub const CONFIG_FILE_PATH_STR: &str = "./4d_config.toml";
 pub const DEFAULT_SAVELOAD_PATH_STR: &str = "./";

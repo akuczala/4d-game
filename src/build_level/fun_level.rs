@@ -1,4 +1,6 @@
-use crate::constants::{CARDINAL_COLORS, ONE_SIDED_FACE_LABEL_STR, PI, TWO_SIDED_FACE_LABEL_STR};
+use crate::constants::{
+    CARDINAL_COLORS, ONE_SIDED_FACE_LABEL_STR, PI, TWO_SIDED_FACE_LABEL_STR, UP_AXIS,
+};
 
 use crate::draw::texture::texture_builder::TextureBuilder;
 
@@ -26,9 +28,9 @@ pub fn build_fun_level<V: VectorTrait>() -> Vec<ShapeEntityBuilderV<V>> {
     let floor_label = ShapeLabel::from(TWO_SIDED_FACE_LABEL_STR);
     let upper_floor_builder = ShapeEntityBuilder::new(floor_label)
         .with_scale(Scaling::Scalar(len))
-        .stretch(&(V::ones() * 0.5 - V::one_hot(1) * 0.25))
+        .stretch(&(V::ones() * 0.5 - V::one_hot(UP_AXIS) * 0.25))
         .with_rotation(-1, 1, -PI / 2.0)
-        .with_translation(V::one_hot(1) * len / 2.0);
+        .with_translation(V::one_hot(UP_AXIS) * len / 2.0);
     // upper_floor_builder.build(world)
     //     .with(StaticCollider).build();
     let colors = CARDINAL_COLORS;

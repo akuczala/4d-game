@@ -1,5 +1,6 @@
 use crate::components::MoveNext;
 use crate::config::Config;
+use crate::constants::UP_AXIS;
 use crate::ecs_utils::Componentable;
 use crate::input::Input;
 use crate::vector::VectorTrait;
@@ -18,7 +19,7 @@ impl<'a, V: VectorTrait + Componentable> System<'a> for PlayerGravitySystem<V> {
 
     fn run(&mut self, (input, config, mut write_move_next): Self::SystemData) {
         for move_next in (&mut write_move_next).join() {
-            let gvec = -V::one_hot(1) * input.get_dt() * config.physics.gravity_acceleration;
+            let gvec = -V::one_hot(UP_AXIS) * input.get_dt() * config.physics.gravity_acceleration;
             match move_next {
                 MoveNext {
                     next_dpos: Some(next_dpos),

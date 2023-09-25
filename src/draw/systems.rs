@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 use specs::{Entities, Join, ReadExpect, ReadStorage, System, WriteExpect, WriteStorage};
 
 use crate::{
-    components::{BBall, Camera, ClipState, Cursor, Player, Shape, ShapeClipState, Transform},
+    components::{
+        BBall, Camera, ClipState, Cursor, Heading, Player, Shape, ShapeClipState, Transform,
+    },
     config::Config,
     ecs_utils::{Componentable, SystemName},
     geometry::Line,
@@ -15,7 +17,9 @@ use super::{
     clipping::calc_in_front,
     draw_cursor,
     draw_line_collection::{draw_collection, DrawLineCollection},
-    transform_draw_line, update_shape_visibility, DrawLine, DrawLineList, Scratch, ShapeTexture,
+    transform_draw_line, update_shape_visibility,
+    visual_aids::draw_compass,
+    DrawLine, DrawLineList, Scratch, ShapeTexture,
 };
 
 //would be nicer to move lines out of read_in_lines rather than clone them
@@ -224,4 +228,27 @@ where
 }
 impl SystemName for DrawLineCollectionSystem<()> {
     const NAME: &'static str = "line_collection_system";
+}
+
+pub struct DrawCompassSystem<V>(pub PhantomData<V>);
+impl<'a, V> System<'a> for DrawCompassSystem<V>
+where
+    V: VectorTrait + Componentable,
+    V::M: Componentable,
+    V::SubV: Componentable,
+{
+    type SystemData = (
+        ReadStorage<'a, Heading<V::M>>,
+        ReadExpect<'a, Player>,
+        WriteExpect<'a, DrawLineList<V::SubV>>,
+    );
+
+    fn run(&mut self, (headings, player, mut draw_line_list): Self::SystemData) {
+        let heading = headings.get(player.0).unwrap();
+        draw_line_list.0.extend(draw_compass::<V>(heading))
+    }
+}
+
+impl SystemName for DrawCompassSystem<()> {
+    const NAME: &'static str = "draw_compass_system";
 }

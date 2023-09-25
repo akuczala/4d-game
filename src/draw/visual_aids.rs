@@ -1,9 +1,10 @@
 use itertools::Itertools;
 
 use crate::{
-    components::{Shape, Transform, Transformable},
+    components::{Heading, Shape, Transform, Transformable},
     constants::{
-        AXES_COLORS, CARDINAL_COLORS, HALF_PI, SKY_DISTANCE, SKY_FUZZ_SIZE, STAR_SIZE, ZERO,
+        AXES_COLORS, CARDINAL_COLORS, CURSOR_SIZE, HALF_PI, SKY_DISTANCE, SKY_FUZZ_SIZE, STAR_SIZE,
+        UP_AXIS, ZERO,
     },
     geometry::{
         shape::{
@@ -14,7 +15,9 @@ use crate::{
     },
     graphics::colors::{blend, BLUE, CYAN},
     utils::ValidDimension,
-    vector::{linspace, random_sphere_point, Field, VecIndex, VectorTrait},
+    vector::{
+        linspace, random_sphere_point, rotation_matrix, Field, MatrixTrait, VecIndex, VectorTrait,
+    },
 };
 
 use super::DrawLine;
@@ -147,10 +150,10 @@ pub fn draw_horizon<V: VectorTrait>(n_lines: usize) -> Vec<Line<V>> {
 pub fn draw_sky<V: VectorTrait>(n_lines: usize) -> Vec<DrawLine<V>> {
     (0..n_lines)
         .map(|_| {
-            let pos = random_hemisphere_point(V::one_hot(1)) * SKY_DISTANCE;
+            let pos = random_hemisphere_point(V::one_hot(UP_AXIS)) * SKY_DISTANCE;
             DrawLine {
                 line: pointlike_sky_line(pos),
-                color: blend(CYAN, BLUE, pos.normalize().dot(V::one_hot(1))),
+                color: blend(CYAN, BLUE, pos.normalize().dot(V::one_hot(UP_AXIS))),
             }
         })
         .collect_vec()
@@ -167,4 +170,29 @@ fn random_hemisphere_point<V: VectorTrait>(normal: V) -> V {
 
 fn pointlike_sky_line<V: VectorTrait>(pos: V) -> Line<V> {
     Line(pos, pos + random_sphere_point::<V>() * SKY_FUZZ_SIZE)
+}
+
+pub fn draw_compass<V: VectorTrait>(heading: &Heading<V::M>) -> Vec<DrawLine<V::SubV>> {
+    // project unit vectors pointing at horizon into (D - 2) sphere, with heading vec at "center"
+    // draw a circle
+    let rotation = rotation_matrix(V::one_hot(-1), V::one_hot(UP_AXIS), None).dot(heading.0);
+    let compass_points = (0..V::DIM)
+        .filter(|&i| i != UP_AXIS)
+        .flat_map(|i| [-1.0, 1.0].map(|s| rotation * (V::one_hot(i) * s * CURSOR_SIZE * 2.0)));
+    let colors = CARDINAL_COLORS
+        .iter()
+        .zip((0..V::DIM).flat_map(|i| [i, i]))
+        .filter(|(_, i)| *i != UP_AXIS)
+        .map(|(color, _)| color);
+    let sub_cube_lines: Vec<Line<V::SubV>> =
+        calc_wireframe_lines(&ShapeBuilder::build_cube(CURSOR_SIZE / 4.0).build());
+    compass_points
+        .zip(colors)
+        .flat_map(|(cp, &color)| {
+            sub_cube_lines.iter().map(move |line| DrawLine {
+                line: line.map(|p| p + V::project(&cp) - V::SubV::one_hot(UP_AXIS) * 0.3),
+                color,
+            })
+        })
+        .collect()
 }

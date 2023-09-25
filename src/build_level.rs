@@ -7,7 +7,7 @@ use crate::coin::Coin;
 use crate::collide::StaticCollider;
 use crate::components::{Cursor, Heading, Player, Transform};
 use crate::config::{Config, LevelConfig};
-use crate::constants::COIN_TEXTURE_LABEL_STR;
+use crate::constants::{COIN_TEXTURE_LABEL_STR, CURSOR_SIZE, UP_AXIS};
 use crate::draw::draw_line_collection::DrawLineCollection;
 use crate::draw::texture::ShapeTextureBuilder;
 use crate::draw::visual_aids::{calc_grid_lines, draw_horizon, draw_sky, draw_stars};
@@ -111,7 +111,7 @@ pub fn build_scenery<V: VectorTrait + Componentable>(world: &mut World) {
     let scene_config = config.scene;
     vec![
         DrawLineCollection::from_lines(
-            calc_grid_lines(V::one_hot(1) * (-1.0) + (V::ones() * 0.5), 1.0, 2),
+            calc_grid_lines(V::one_hot(UP_AXIS) * (-1.0) + (V::ones() * 0.5), 1.0, 2),
             WHITE.with_alpha(0.2),
         ),
         DrawLineCollection(draw_sky::<V>(config.draw.fuzz_lines.sky_num)),
@@ -156,6 +156,6 @@ where
     world
         .create_entity()
         .with(Cursor)
-        .with(ShapeBuilder::<V::SubV>::build_cube(0.03).build())
+        .with(ShapeBuilder::<V::SubV>::build_cube(CURSOR_SIZE).build())
         .build();
 }

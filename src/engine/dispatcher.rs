@@ -58,6 +58,11 @@ where
             DrawCursorSystem::NAME,
             &[TransformDrawLinesSystem::NAME],
         )
+        .with(
+            DrawCompassSystem(ph),
+            DrawCompassSystem::NAME,
+            &[TransformDrawLinesSystem::NAME],
+        )
 }
 
 //start game update phase

@@ -2,7 +2,7 @@ use specs::World;
 
 use crate::{
     components::{RefShapes, Transformable},
-    constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FUZZY_TILE_LABEL_STR},
+    constants::{COIN_LABEL_STR, CUBE_LABEL_STR, FUZZY_TILE_LABEL_STR, UP_AXIS},
     draw::texture::ShapeTextureBuilder,
     ecs_utils::Componentable,
     graphics::colors::YELLOW,
@@ -44,7 +44,7 @@ fn build_corridor_cross<V: VectorTrait>(
                             + V::one_hot(*ax2) * (*s2) * (corr_width + wall_length) / 2.0,
                     )
                     .stretch(
-                        &(V::one_hot(1) * (wall_height - corr_width)
+                        &(V::one_hot(UP_AXIS) * (wall_height - corr_width)
                             + V::one_hot(*ax1) * (wall_length - corr_width)
                             + V::one_hot(*ax2) * (wall_length - corr_width)
                             + V::ones() * corr_width),
@@ -63,7 +63,7 @@ fn build_corridor_cross<V: VectorTrait>(
         cube_builder
             .clone()
             .with_translation(V::one_hot(i) * (wall_length + corr_width) * (*sign))
-            .stretch(&(V::one_hot(1) * (wall_height - corr_width) + V::ones() * corr_width))
+            .stretch(&(V::one_hot(UP_AXIS) * (wall_height - corr_width) + V::ones() * corr_width))
     });
     shape_builders.append(&mut end_walls.collect());
     //floors and ceilings
@@ -73,7 +73,7 @@ fn build_corridor_cross<V: VectorTrait>(
                 .clone()
                 .with_translation(
                     V::one_hot(i) * (wall_length + corr_width) * (*sign) / 2.0
-                        - V::one_hot(1) * (wall_height + corr_width) / 2.0,
+                        - V::one_hot(UP_AXIS) * (wall_height + corr_width) / 2.0,
                 )
                 .stretch(&(V::one_hot(i) * (wall_length - corr_width) + V::ones() * corr_width))
         })
@@ -83,7 +83,7 @@ fn build_corridor_cross<V: VectorTrait>(
         .map(|block| {
             block
                 .clone()
-                .with_translation(V::one_hot(1) * (wall_height + corr_width))
+                .with_translation(V::one_hot(UP_AXIS) * (wall_height + corr_width))
         })
         .collect();
 
@@ -100,14 +100,14 @@ fn build_corridor_cross<V: VectorTrait>(
     shape_builders.push(
         cube_builder
             .clone()
-            .with_translation(-V::one_hot(1) * (wall_height + corr_width) / 2.0),
+            .with_translation(-V::one_hot(UP_AXIS) * (wall_height + corr_width) / 2.0),
     );
     //center ceiling
     if !open_center {
         shape_builders.push(
             shape_builders[shape_builders.len() - 1]
                 .clone()
-                .with_translation(V::one_hot(1) * (wall_height + corr_width)),
+                .with_translation(V::one_hot(UP_AXIS) * (wall_height + corr_width)),
         );
     }
 

@@ -1,4 +1,4 @@
-use crate::constants::TWO_SIDED_FACE_LABEL_STR;
+use crate::constants::{TWO_SIDED_FACE_LABEL_STR, UP_AXIS};
 
 use crate::draw::texture::texture_builder::TextureBuilder;
 
@@ -41,21 +41,21 @@ fn build_test_walls<'a, V: VectorTrait + 'a>(
 
     let floor = build_shape
         .clone()
-        .with_translation(-V::one_hot(1) * 1.0)
+        .with_translation(-V::one_hot(UP_AXIS) * 1.0)
         .with_rotation(-1, 1, PI / 2.)
         .with_color(BLUE)
         .with_collider(Some(StaticCollider));
 
     let walls = [
         build_wall(
-            V::one_hot(-1) * (-1.0 - cos) + V::one_hot(1) * (sin - 1.0),
+            V::one_hot(-1) * (-1.0 - cos) + V::one_hot(UP_AXIS) * (sin - 1.0),
             (-1, 1, PI / 2.0 - theta),
             RED,
         ),
         build_wall(V::one_hot(-1) * 1.0, (0, -1, PI), GREEN),
         build_wall(V::one_hot(0) * 1.0, (0, -1, PI / 2.), ORANGE),
         build_wall(
-            -V::one_hot(0) * 0.9 + V::one_hot(1) * 1.0,
+            -V::one_hot(0) * 0.9 + V::one_hot(UP_AXIS) * 1.0,
             (0, -1, 3.0 * PI / 2.),
             CYAN,
         ),
@@ -65,18 +65,20 @@ fn build_test_walls<'a, V: VectorTrait + 'a>(
         floor
             .clone()
             .with_translation(-V::one_hot(0) * 2.0 - V::one_hot(-1) * 2.0),
+        floor.clone().with_translation(
+            V::one_hot(UP_AXIS) * (2.0 * sin) - V::one_hot(-1) * (2.0 + 2.0 * cos),
+        ),
         floor
             .clone()
-            .with_translation(V::one_hot(1) * (2.0 * sin) - V::one_hot(-1) * (2.0 + 2.0 * cos)),
-        floor
-            .clone()
-            .with_translation(V::one_hot(1) * (2.0 * sin) - V::one_hot(-1) * (4.0 + 2.0 * cos))
+            .with_translation(
+                V::one_hot(UP_AXIS) * (2.0 * sin) - V::one_hot(-1) * (4.0 + 2.0 * cos),
+            )
             .with_color(MAGENTA),
         //TODO: yellow does not collide??
         floor,
         build_shape
             .clone()
-            .with_translation(V::one_hot(1) * 1.0)
+            .with_translation(V::one_hot(UP_AXIS) * 1.0)
             .with_rotation(-1, 1, -PI / 2.)
             .with_color(YELLOW),
     ];
