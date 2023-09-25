@@ -240,12 +240,15 @@ where
     type SystemData = (
         ReadStorage<'a, Heading<V::M>>,
         ReadExpect<'a, Player>,
+        ReadExpect<'a, Config>,
         WriteExpect<'a, DrawLineList<V::SubV>>,
     );
 
-    fn run(&mut self, (headings, player, mut draw_line_list): Self::SystemData) {
+    fn run(&mut self, (headings, player, config, mut draw_line_list): Self::SystemData) {
         let heading = headings.get(player.0).unwrap();
-        draw_line_list.0.extend(draw_compass::<V>(heading))
+        draw_line_list
+            .0
+            .extend(draw_compass::<V>(&config.view.compass_config, heading.0))
     }
 }
 

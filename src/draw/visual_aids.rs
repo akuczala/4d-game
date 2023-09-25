@@ -1,10 +1,11 @@
 use itertools::Itertools;
 
 use crate::{
-    components::{Heading, Shape, Transform, Transformable},
+    components::{Shape, Transform, Transformable},
+    config::CompassConfig,
     constants::{
-        AXES_COLORS, CARDINAL_COLORS, CURSOR_SIZE, HALF_PI, SKY_DISTANCE, SKY_FUZZ_SIZE, STAR_SIZE,
-        UP_AXIS, ZERO,
+        AXES_COLORS, CARDINAL_COLORS, HALF_PI, SKY_DISTANCE, SKY_FUZZ_SIZE, STAR_SIZE, UP_AXIS,
+        ZERO,
     },
     geometry::{
         shape::{
@@ -170,27 +171,33 @@ fn pointlike_sky_line<V: VectorTrait>(pos: V) -> Line<V> {
     Line(pos, pos + random_sphere_point::<V>() * SKY_FUZZ_SIZE)
 }
 
-pub fn draw_compass<V: VectorTrait>(heading: &Heading<V::M>) -> Vec<DrawLine<V::SubV>> {
+pub fn draw_compass<V: VectorTrait>(
+    config: &CompassConfig,
+    heading_matrix: V::M,
+) -> Vec<DrawLine<V::SubV>> {
     // project unit vectors pointing at horizon into (D - 2) sphere, with heading vec at "center"
-    // draw a circle
+    // TODO: add coin positions
+    //     : store lines and apply heading transform
+    //     : add declination indicator
+    //     : pipe into separate 2d gui render pipeline?
+    // draw a circle?
 
-    let radius = CURSOR_SIZE * 2.0;
-    let compass_point_size = CURSOR_SIZE / 4.0;
-    let center = -V::SubV::one_hot(UP_AXIS) * 0.3;
-    let get_alpha = |x: Field| ((x / radius) + 1.0) / 2.0;
+    let center =
+        V::SubV::one_hot(0) * config.center[0] + V::SubV::one_hot(UP_AXIS) * config.center[1];
+    let get_alpha = |x: Field| ((x / config.radius) + 1.0) / 2.0;
 
     // forward direction is centermost
-    let rotation = heading.0;
+    let rotation = heading_matrix;
     let compass_points = (0..V::DIM)
         .filter(|&i| i != UP_AXIS)
-        .flat_map(|i| [-1.0, 1.0].map(|s| rotation * (V::one_hot(i) * s * radius)));
+        .flat_map(|i| [-1.0, 1.0].map(|s| rotation * (V::one_hot(i) * s * config.radius)));
     let colors = CARDINAL_COLORS
         .iter()
         .zip((0..V::DIM).flat_map(|i| [i, i]))
         .filter(|(_, i)| *i != UP_AXIS)
         .map(|(color, _)| color);
     let sub_cube_lines: Vec<Line<V::SubV>> =
-        calc_wireframe_lines(&ShapeBuilder::build_cube(compass_point_size).build());
+        calc_wireframe_lines(&ShapeBuilder::build_cube(config.icon_size).build());
     compass_points
         .zip(colors)
         .flat_map(|(cp, &color)| {

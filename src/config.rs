@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    constants::CONFIG_FILE_PATH_STR, draw::ViewportShape, utils::ValidDimension, vector::Field,
+    constants::{CONFIG_FILE_PATH_STR, CURSOR_SIZE},
+    draw::ViewportShape,
+    utils::ValidDimension,
+    vector::Field,
 };
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -11,6 +14,8 @@ pub struct ViewConfig {
     pub viewport_shape: ViewportShape,
     pub focal: Field,
     pub spin_speed: Field,
+    #[serde(default)]
+    pub compass_config: CompassConfig, // TODO: move to GUI?
 }
 impl Default for ViewConfig {
     fn default() -> Self {
@@ -20,6 +25,25 @@ impl Default for ViewConfig {
             viewport_shape: ViewportShape::Cylinder,
             focal: 1.0,
             spin_speed: 0.1,
+            compass_config: Default::default(),
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct CompassConfig {
+    pub enabled: bool,
+    pub radius: Field,
+    pub center: [Field; 2],
+    pub icon_size: Field,
+}
+impl Default for CompassConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            radius: CURSOR_SIZE * 2.0,
+            center: [0.0, -0.3],
+            icon_size: CURSOR_SIZE / 4.0,
         }
     }
 }
