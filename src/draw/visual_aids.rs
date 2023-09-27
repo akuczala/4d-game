@@ -12,9 +12,10 @@ use crate::{
             buildshapes::{convex_shape_to_face_shape, ShapeBuilder},
             VertIndex,
         },
+        transform::Scaling,
         Line,
     },
-    graphics::colors::{blend, BLUE, CYAN},
+    graphics::colors::{blend, Color, BLUE, CYAN},
     utils::ValidDimension,
     vector::{linspace, random_sphere_point, Field, VecIndex, VectorTrait},
 };
@@ -171,40 +172,66 @@ fn pointlike_sky_line<V: VectorTrait>(pos: V) -> Line<V> {
     Line(pos, pos + random_sphere_point::<V>() * SKY_FUZZ_SIZE)
 }
 
-pub fn draw_compass<V: VectorTrait>(
+pub(super) enum CompassIcon {
+    Cube,
+    Hex,
+}
+pub(super) struct CompassPoint<V: VectorTrait> {
+    pub point: V,
+    pub icon: CompassIcon,
+    pub color: Color,
+}
+
+pub(super) fn draw_compass<V: VectorTrait, I: Iterator<Item = CompassPoint<V>>>(
     config: &CompassConfig,
     heading_matrix: V::M,
-) -> Vec<DrawLine<V::SubV>> {
+    compass_points: I,
+    draw_line_list: &mut Vec<DrawLine<V::SubV>>,
+) {
     // project unit vectors pointing at horizon into (D - 2) sphere, with heading vec at "center"
-    // TODO: add coin positions
-    //     : store lines and apply heading transform
+    // TODO: store lines and apply heading transform
     //     : add declination indicator
     //     : pipe into separate 2d gui render pipeline?
+    //     : alpha by distance
     // draw a circle?
 
     let center =
         V::SubV::one_hot(0) * config.center[0] + V::SubV::one_hot(UP_AXIS) * config.center[1];
-    let get_alpha = |x: Field| ((x / config.radius) + 1.0) / 2.0;
-
+    let get_alpha = |x: Field| (x + 1.0) / 2.0;
     // forward direction is centermost
     let rotation = heading_matrix;
-    let compass_points = (0..V::DIM)
-        .filter(|&i| i != UP_AXIS)
-        .flat_map(|i| [-1.0, 1.0].map(|s| rotation * (V::one_hot(i) * s * config.radius)));
-    let colors = CARDINAL_COLORS
-        .iter()
-        .zip((0..V::DIM).flat_map(|i| [i, i]))
-        .filter(|(_, i)| *i != UP_AXIS)
-        .map(|(color, _)| color);
+
+    let cardinal_points = iproduct!((0..V::DIM), [-1.0, 1.0])
+        .zip(CARDINAL_COLORS)
+        .filter(|t| t.0 .0 != UP_AXIS)
+        .map(|((i, s), color)| CompassPoint {
+            point: V::one_hot(i) * s,
+            icon: CompassIcon::Cube,
+            color,
+        });
+
     let sub_cube_lines: Vec<Line<V::SubV>> =
         calc_wireframe_lines(&ShapeBuilder::build_cube(config.icon_size).build());
-    compass_points
-        .zip(colors)
-        .flat_map(|(cp, &color)| {
-            sub_cube_lines.iter().map(move |line| DrawLine {
-                line: line.map(|p| p + V::project(&cp) + center),
-                color: color.with_alpha(get_alpha(cp[-1])),
-            })
-        })
-        .collect()
+    let hex_lines: Vec<Line<V::SubV>> = calc_wireframe_lines(
+        &ShapeBuilder::build_coin()
+            .with_scale(Scaling::Scalar(config.icon_size * 8.0))
+            .build(),
+    );
+    draw_line_list.extend(
+        cardinal_points
+            .chain(compass_points.into_iter())
+            .flat_map(|cp| {
+                let center_point = rotation * cp.point;
+                let alpha = get_alpha(center_point[-1]);
+                let proj_center_point = V::project(&(center_point * config.radius)) + center;
+                (match cp.icon {
+                    CompassIcon::Cube => sub_cube_lines.iter(),
+                    CompassIcon::Hex => hex_lines.iter(),
+                })
+                .map(move |line| DrawLine {
+                    line: line.map(|p| p + proj_center_point),
+                    color: cp.color.with_alpha(alpha),
+                })
+            }),
+    );
 }

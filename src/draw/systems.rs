@@ -3,12 +3,14 @@ use std::marker::PhantomData;
 use specs::{Entities, Join, ReadExpect, ReadStorage, System, WriteExpect, WriteStorage};
 
 use crate::{
+    coin::Coin,
     components::{
         BBall, Camera, ClipState, Cursor, Heading, Player, Shape, ShapeClipState, Transform,
     },
     config::Config,
     ecs_utils::{Componentable, SystemName},
     geometry::Line,
+    graphics::colors::YELLOW,
     vector::VectorTrait,
 };
 
@@ -18,7 +20,7 @@ use super::{
     draw_cursor,
     draw_line_collection::{draw_collection, DrawLineCollection},
     transform_draw_line, update_shape_visibility,
-    visual_aids::draw_compass,
+    visual_aids::{draw_compass, CompassPoint},
     DrawLine, DrawLineList, Scratch, ShapeTexture,
 };
 
@@ -239,16 +241,31 @@ where
 {
     type SystemData = (
         ReadStorage<'a, Heading<V::M>>,
+        ReadStorage<'a, Coin>,
+        ReadStorage<'a, Transform<V, V::M>>,
         ReadExpect<'a, Player>,
         ReadExpect<'a, Config>,
         WriteExpect<'a, DrawLineList<V::SubV>>,
     );
 
-    fn run(&mut self, (headings, player, config, mut draw_line_list): Self::SystemData) {
+    fn run(
+        &mut self,
+        (headings, coins, transforms, player, config, mut draw_line_list): Self::SystemData,
+    ) {
         let heading = headings.get(player.0).unwrap();
-        draw_line_list
-            .0
-            .extend(draw_compass::<V>(&config.view.compass_config, heading.0))
+        let player_pos = transforms.get(player.0).unwrap().pos;
+        draw_compass(
+            &config.view.compass_config,
+            heading.0,
+            (&coins, &transforms)
+                .join()
+                .map(|(_, transform)| CompassPoint {
+                    point: (transform.pos - player_pos).normalize(),
+                    icon: super::visual_aids::CompassIcon::Hex,
+                    color: YELLOW,
+                }),
+            &mut draw_line_list.0,
+        );
     }
 }
 
